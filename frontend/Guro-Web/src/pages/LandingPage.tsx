@@ -1,0 +1,370 @@
+import React, { useState } from 'react';
+import { User, Users, BookOpenText, ArrowLeft, Mail, Lock, Sparkles } from 'lucide-react';
+import { RoleCard, type RoleCardProps } from '../components/landing/RoleCard';
+import { FeatureCard, type FeatureCardProps } from '../components/landing/FeatureCard';
+
+// ─── Logo ────────────────────────────────────────────────────────────────────
+
+const GuroLogoGraphic: React.FC = () => (
+    <div className="relative flex size-14 items-center justify-center">
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 38 C8 38 8 14 26 14 C44 14 44 38 44 38" stroke="#3b5bdb" strokeWidth="3.5" strokeLinecap="round" />
+            <path d="M26 14 L26 38" stroke="#3b5bdb" strokeWidth="3.5" strokeLinecap="round" />
+            <path d="M8 38 L44 38" stroke="#3b5bdb" strokeWidth="3.5" strokeLinecap="round" />
+        </svg>
+        <span className="absolute -top-1 -right-1 text-sm leading-none">✦</span>
+    </div>
+);
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface LandingPageProps {
+    onSelectRole: (role: 'student' | 'teacher' | 'parent' | 'lesson-builder') => void;
+    onLoginSuccess: (user: { userId: string; email: string; name: string; role: string; classroomId?: string | null }) => void;
+}
+
+type ViewType = 'login' | 'register' | 'guest-roles';
+
+// ─── Shared page background ───────────────────────────────────────────────────
+
+const pageStyle: React.CSSProperties = {
+    background: 'linear-gradient(160deg, #eef1fb 0%, #f3eeff 50%, #f0eeff 100%)',
+};
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginSuccess }) => {
+    const [view, setView] = useState<ViewType>('login');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
+    const [roleSelection, setRoleSelection] = useState('teacher');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [authError, setAuthError] = useState('');
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!email.trim() || !password.trim()) return;
+        setIsSubmitting(true);
+        setAuthError('');
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                onLoginSuccess(data.user);
+            } else {
+                const err = await res.json();
+                setAuthError(err.error || 'Authentication failed.');
+            }
+        } catch {
+            setAuthError('Connection error. Is the server running?');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!email.trim() || !password.trim() || !name.trim()) return;
+        setIsSubmitting(true);
+        setAuthError('');
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, name, role: roleSelection }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                onLoginSuccess(data.user);
+            } else {
+                const err = await res.json();
+                setAuthError(err.error || 'Registration failed.');
+            }
+        } catch {
+            setAuthError('Connection error. Is the server running?');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // ── Data ──────────────────────────────────────────────────────────────────
+
+    const roleCards: (RoleCardProps & { key: 'student' | 'teacher' | 'parent' | 'lesson-builder' })[] = [
+        {
+            key: 'student',
+            role: 'Student',
+            description: 'Learn Math & English with fun lessons',
+            Icon: User,
+            bgColor: 'bg-blue-500',
+        },
+        {
+            key: 'teacher',
+            role: 'Teacher',
+            description: 'Monitor student progress & performance',
+            Icon: BookOpenText,
+            bgColor: 'bg-purple-500',
+        },
+        {
+            key: 'parent',
+            role: 'Parent',
+            description: "Track your child's learning journey",
+            Icon: Users,
+            bgColor: 'bg-pink-500',
+        },
+    ];
+
+    const featureCards: FeatureCardProps[] = [
+        { label: 'DepEd MELC Aligned', icon: '📚' },
+        { label: 'Adaptive Learning', icon: '🎯' },
+        { label: 'Works Offline', icon: '📱' },
+    ];
+
+    // ── Shared sub-components ─────────────────────────────────────────────────
+
+    const Brand = () => (
+        <div className="flex flex-col items-center gap-1 text-center">
+            <GuroLogoGraphic />
+            <h1 className="text-5xl font-extrabold tracking-tight text-blue-700 mt-1">GURO</h1>
+            <p className="text-base font-semibold text-purple-600">Guided Unified Remote Online</p>
+            <p className="text-sm text-slate-400 mt-0.5">Your Learning Companion for Math &amp; English</p>
+        </div>
+    );
+
+    // ── Input field helper ────────────────────────────────────────────────────
+
+    const inputCls = "w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-400/20 focus:bg-white transition-all";
+    const labelCls = "text-[11px] font-bold text-slate-400 uppercase tracking-wider";
+
+    // ── Views ─────────────────────────────────────────────────────────────────
+
+    return (
+        <div
+            className="min-h-screen w-full flex flex-col items-center justify-center p-8 relative overflow-hidden select-none"
+            style={pageStyle}
+        >
+
+            {/* ── Guest role top nav ── */}
+            {view === 'guest-roles' && (
+                <div className="absolute top-6 left-6 right-6 md:top-10 md:left-10 md:right-10 flex items-center justify-between z-20">
+                    <button
+                        onClick={() => setView('login')}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-full shadow-sm text-slate-600 hover:bg-slate-50 transition-all font-semibold text-xs cursor-pointer"
+                    >
+                        <ArrowLeft className="size-3 text-slate-400" strokeWidth={2.5} />
+                        Back to sign in
+                    </button>
+                    <div className="px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-full text-blue-600 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                        <Sparkles className="size-3" /> Guest session
+                    </div>
+                </div>
+            )}
+
+            <div className="flex w-full max-w-5xl flex-col items-center gap-10 relative z-10">
+
+                <Brand />
+
+                {/* ── Login ── */}
+                {view === 'login' && (
+                    <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl shadow-indigo-100/60 flex flex-col gap-6 border border-slate-100/80">
+                        <div className="text-center">
+                            <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Welcome back</h2>
+                            <p className="text-sm text-slate-400 mt-1">Sign in to sync your classroom progress</p>
+                        </div>
+
+                        {authError && (
+                            <div className="bg-red-50 border border-red-100 text-red-600 text-xs font-semibold p-3.5 rounded-xl text-center">
+                                ⚠️ {authError}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleLogin} className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-1.5">
+                                <label className={labelCls}>Email address</label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                    <input
+                                        type="email"
+                                        placeholder="you@school.edu"
+                                        className={inputCls}
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className={labelCls}>Password</label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                    <input
+                                        type="password"
+                                        placeholder="••••••••"
+                                        className={inputCls}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full py-3.5 rounded-xl text-white text-sm font-bold tracking-wide shadow-lg shadow-blue-500/25 transition-all disabled:opacity-60 cursor-pointer hover:opacity-90 active:scale-[0.99]"
+                                style={{ background: 'linear-gradient(135deg, #3b5bdb 0%, #4c6ef5 100%)' }}
+                            >
+                                {isSubmitting ? 'Signing in…' : 'Sign in'}
+                            </button>
+                        </form>
+
+                        <div className="flex flex-col items-center gap-3">
+                            <button
+                                onClick={() => setView('register')}
+                                className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+                            >
+                                Need an account? Create one here
+                            </button>
+                            <div className="w-full flex items-center gap-3">
+                                <div className="flex-1 h-px bg-slate-100" />
+                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">or</span>
+                                <div className="flex-1 h-px bg-slate-100" />
+                            </div>
+                            <button
+                                onClick={() => setView('guest-roles')}
+                                className="w-full flex items-center justify-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold py-3 rounded-xl transition-all text-sm cursor-pointer"
+                            >
+                                🚀 Continue as guest / try demo
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Register ── */}
+                {view === 'register' && (
+                    <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl shadow-indigo-100/60 flex flex-col gap-6 border border-slate-100/80">
+                        <div className="text-center">
+                            <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Create account</h2>
+                            <p className="text-sm text-slate-400 mt-1">Register to start managing classes and tracking logs</p>
+                        </div>
+
+                        {authError && (
+                            <div className="bg-red-50 border border-red-100 text-red-600 text-xs font-semibold p-3.5 rounded-xl text-center">
+                                ⚠️ {authError}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleRegister} className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-1.5">
+                                <label className={labelCls}>Full name</label>
+                                <div className="relative">
+                                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Teacher Maria / Juan Dela Cruz"
+                                        className={inputCls}
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className={labelCls}>Email address</label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                    <input
+                                        type="email"
+                                        placeholder="you@school.edu"
+                                        className={inputCls}
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className={labelCls}>Password</label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                    <input
+                                        type="password"
+                                        placeholder="Minimum 6 characters"
+                                        className={inputCls}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className={labelCls}>Account role</label>
+                                <select
+                                    value={roleSelection}
+                                    onChange={(e) => setRoleSelection(e.target.value)}
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-400/20 focus:bg-white transition-all"
+                                >
+                                    <option value="teacher">Teacher — dashboard &amp; curriculums</option>
+                                    <option value="parent">Parent — child monitoring</option>
+                                    <option value="student">Student — quizzes &amp; practice</option>
+                                </select>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full py-3.5 rounded-xl text-white text-sm font-bold tracking-wide shadow-lg shadow-blue-500/25 transition-all disabled:opacity-60 cursor-pointer hover:opacity-90 active:scale-[0.99]"
+                                style={{ background: 'linear-gradient(135deg, #3b5bdb 0%, #4c6ef5 100%)' }}
+                            >
+                                {isSubmitting ? 'Creating account…' : 'Create account'}
+                            </button>
+                        </form>
+
+                        <button
+                            onClick={() => setView('login')}
+                            className="text-xs font-bold text-slate-400 hover:text-slate-600 text-center cursor-pointer"
+                        >
+                            Already have an account? Sign in here
+                        </button>
+                    </div>
+                )}
+
+                {/* ── Guest role picker ── */}
+                {view === 'guest-roles' && (
+                    <div className="flex flex-col items-center gap-8 w-full mt-4">
+                        <div className="grid w-full max-w-2xl grid-cols-1 gap-5 md:grid-cols-3 px-2">
+                            {roleCards.map((card) => (
+                                <RoleCard
+                                    key={card.key}
+                                    role={card.role}
+                                    description={card.description}
+                                    Icon={card.Icon}
+                                    bgColor={card.bgColor}
+                                    onClick={() => onSelectRole(card.key)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Feature strip ── */}
+                {view !== 'guest-roles' && (
+                    <div className="grid w-full grid-cols-3 gap-4 max-w-lg mt-2">
+                        {featureCards.map((card) => (
+                            <FeatureCard key={card.label} {...card} />
+                        ))}
+                    </div>
+                )}
+
+            </div>
+        </div>
+    );
+};
