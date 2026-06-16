@@ -1,0 +1,233 @@
+{
+  "Mathematics": {
+    "4": {
+      "Fractions": {
+        "Easy": {
+          "Multiple-Choice": [
+            {
+              "id": "MATH-G4-FRAC-001",
+              "questionText": "What is the sum of 1/4 and 2/4?",
+              "options": [
+                "1/4",
+                "2/4",
+                "3/4",
+                "4/4"
+              ],
+              "correctAnswer": "3/4",
+              "feedback": {
+                "en": "Since the denominators are the same, simply add the numerators: 1 + 2 = 3. Keep the denominator: 3/4.",
+                "fil": "Dahil pareho ang denominator, idagdag lamang ang mga numerator: 1 + 2 = 3. Panatilihin ang denominator: 3/4."
+              }
+            }
+          ]
+        }
+      }
+    },
+    "5": {
+      "Decimals": {
+        "Average": {
+          "Multiple-Choice": [
+            {
+              "id": "MATH-G5-DEC-002",
+              "questionText": "Multiply 0.5 by 0.2. What is the product?",
+              "options": [
+                "0.1",
+                "0.01",
+                "1.0",
+                "0.001"
+              ],
+              "correctAnswer": "0.1",
+              "feedback": {
+                "en": "Multiplying 5 by 2 gives 10. Since there are two decimal places in total in the factors, place the decimal point two spaces left: 0.10 or 0.1.",
+                "fil": "Ang pag-multiply ng 5 sa 2 ay nagbibigay ng 10. Dahil may dalawang decimal places sa kabuuan, ilagay ang decimal point dalawang puwang pakaliwa: 0.10 o 0.1."
+              }
+            }
+          ]
+        }
+      }
+    },
+    "6": {
+      "Algebraic Equations": {
+        "Difficult": {
+          "Multiple-Choice": [
+            {
+              "id": "MATH-G6-ALG-003",
+              "questionText": "Solve for x: 3x - 5 = 16.",
+              "options": [
+                "x = 3",
+                "x = 7",
+                "x = 9",
+                "x = 21"
+              ],
+              "correctAnswer": "x = 7",
+              "feedback": {
+                "en": "Add 5 to both sides to get 3x = 21, then divide by 3 to find x = 7.",
+                "fil": "Idagdag ang 5 sa magkabilang panig upang makuha ang 3x = 21, pagkatapos ay i-divide sa 3 upang makuha ang x = 7."
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "English": {
+    "4": {
+      "Figurative Language": {
+        "Easy": {
+          "Figures of Speech": [
+            {
+              "id": "ENG-G4-FIG-001",
+              "questionText": "Which of the following sentences is a simile?",
+              "options": [
+                "He is a shining star.",
+                "Her cheeks are like red roses.",
+                "The wind whispered in the night.",
+                "Time is gold."
+              ],
+              "correctAnswer": "Her cheeks are like red roses.",
+              "feedback": {
+                "en": "A simile compares two things using \"like\" or \"as\". Here, cheeks are compared to roses using \"like\".",
+                "fil": "Ang simile ay naghahambing ng dalawang bagay gamit ang \"like\" o \"as\" (tulad ng/parang). Dito, inihambing ang pisngi sa rosas gamit ang \"like\"."
+              }
+            }
+          ]
+        }
+      }
+    },
+    "5": {
+      "Short Story Comprehension": {
+        "Average": {
+          "Paragraph Comprehension": [
+            {
+              "id": "ENG-G5-RC-002",
+              "questionText": "Read the text: \"Maria worked diligently on her science project every night, verifying every source. When the results were announced, she won first place.\" What is the main idea of this paragraph?",
+              "options": [
+                "Maria loves science projects.",
+                "Hard work leads to success.",
+                "The competition was very easy.",
+                "Maria did not sleep well."
+              ],
+              "correctAnswer": "Hard work leads to success.",
+              "feedback": {
+                "en": "The paragraph shows how Maria worked hard (\"diligently every night\") and was rewarded with success (\"won first place\").",
+                "fil": "Ipinapakita ng talata kung paano nagsumikap si Maria (\"masigasig gabi-gabi\") at nagbunga ito ng tagumpay (\"nanalo ng unang puwesto\")."
+              }
+            }
+          ]
+        }
+      },
+      "Adjectives": {
+        "Easy": {
+          "Multiple-Choice": [
+            {
+              "id": "ENG-G5-ADJ-001",
+              "questionText": "Which word in the sentence \"The big dog barked loudly\" is an adjective?",
+              "options": [
+                "The",
+                "big",
+                "dog",
+                "loudly"
+              ],
+              "correctAnswer": "big",
+              "feedback": {
+                "en": "An adjective describes a noun or pronoun. In this sentence, \"big\" describes the noun \"dog\".",
+                "fil": "Ang pang-uri ay naglalarawan ng pangngalan o panghalip. Sa pangungusap na ito, inilalarawan ng \"big\" ang pangngalang \"dog\"."
+              }
+            }
+          ]
+        },
+        "Average": {
+          "Multiple-Choice": [
+            {
+              "id": "ENG-G5-ADJ-002",
+              "questionText": "Choose the correct comparative adjective to complete the sentence: \"My cat is ______ than your cat.\"",
+              "options": [
+                "fast",
+                "faster",
+                "fastest",
+                "more fast"
+              ],
+              "correctAnswer": "faster",
+              "feedback": {
+                "en": "\"Faster\" is the comparative form of \"fast\" and is used when comparing exactly two things, like \"my cat\" and \"your cat\".",
+                "fil": "Ang \"faster\" ay ang comparative form ng \"fast\" at ginagamit kapag naghahambing ng eksaktong dalawang bagay, tulad ng \"my cat\" at \"your cat\"."
+              }
+            },
+            {
+              "id": "ENG-G5-ADJ-003",
+              "questionText": "Which word correctly completes the sentence: \"Mount Everest is the ______ mountain in the world.\"",
+              "options": [
+                "tall",
+                "taller",
+                "tallest",
+                "more tall"
+              ],
+              "correctAnswer": "tallest",
+              "feedback": {
+                "en": "\"Tallest\" is the superlative form of \"tall\" and is used when comparing three or more things, or when describing the upper limit of a quality among many, like all mountains in the world.",
+                "fil": "Ang \"tallest\" ay ang superlative form ng \"tall\" at ginagamit kapag naghahambing ng tatlo o higit pang bagay, o kapag inilalarawan ang pinakamataas na antas ng isang kalidad sa marami, tulad ng lahat ng bundok sa mundo."
+              }
+            }
+          ]
+        },
+        "Difficult": {
+          "Multiple-Choice": [
+            {
+              "id": "ENG-G5-ADJ-004",
+              "questionText": "Read the sentence: \"Among the three runners, Sarah was the ______.\" Which adjective form correctly completes the sentence?",
+              "options": [
+                "quick",
+                "quicker",
+                "quickest",
+                "more quick"
+              ],
+              "correctAnswer": "quickest",
+              "feedback": {
+                "en": "Since the sentence compares \"three runners,\" the superlative form \"quickest\" is required to describe the one at the upper limit of speed.",
+                "fil": "Dahil ang pangungusap ay naghahambing ng \"tatlong mananakbo,\" ang superlative form na \"quickest\" ang kinakailangan upang ilarawan ang isa na nasa pinakamataas na antas ng bilis."
+              }
+            },
+            {
+              "id": "ENG-G5-ADJ-005",
+              "questionText": "In the phrase \"She sings beautifully,\" which word is an adjective?",
+              "options": [
+                "She",
+                "sings",
+                "beautifully",
+                "There is no adjective in this phrase."
+              ],
+              "correctAnswer": "There is no adjective in this phrase.",
+              "feedback": {
+                "en": "An adjective modifies a noun or pronoun. \"Beautifully\" is an adverb because it describes how she sings (a verb). There is no word describing a noun or pronoun in this specific phrase.",
+                "fil": "Ang pang-uri ay naglalarawan ng pangngalan o panghalip. Ang \"beautifully\" ay isang pang-abay dahil inilalarawan nito kung paano siya kumanta (isang pandiwa). Walang salitang naglalarawan ng pangngalan o panghalip sa partikular na pariralang ito."
+              }
+            }
+          ]
+        }
+      }
+    },
+    "6": {
+      "Idiomatic Expressions": {
+        "Difficult": {
+          "Multiple-Choice": [
+            {
+              "id": "ENG-G6-IDIOM-003",
+              "questionText": "What does the idiom \"burn the midnight oil\" mean?",
+              "options": [
+                "To light a candle during a power outage.",
+                "To work or study late into the night.",
+                "To waste oil or fuel resources.",
+                "To start a fire accidentally."
+              ],
+              "correctAnswer": "To work or study late into the night.",
+              "feedback": {
+                "en": "The idiom refers to staying awake late into the night working or studying, historically by the light of an oil lamp.",
+                "fil": "Ang idyomang ito ay tumutukoy sa pagpupuyat sa gabi para magtrabaho o mag-aral, na hango sa paggamit ng ilawan noon."
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
