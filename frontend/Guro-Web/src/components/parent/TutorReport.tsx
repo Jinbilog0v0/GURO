@@ -1,6 +1,5 @@
 import React from 'react';
 import { Sparkles, MessageCircle } from 'lucide-react';
-import { styles } from '../../styles/tutorReportStyles';
 
 interface SyncedEvent {
   studentId: string;
@@ -92,48 +91,48 @@ export const TutorReport: React.FC<TutorReportProps> = ({ logs }) => {
   const tips = getParentTips();
 
   return (
-    <div className="glass-panel" style={styles.container}>
-      <div style={styles.header}>
-        <Sparkles size={20} style={{ color: '#EC4899' }} />
-        <h3 style={styles.title}>Bilingual AI Study Feedback</h3>
+    <div className="glass-panel p-6 flex flex-col gap-5 w-full">
+      <div className="flex items-center gap-2.5">
+        <Sparkles size={20} className="text-[#EC4899]" />
+        <h3 className="text-base font-bold text-[#F8FAFC]">Bilingual AI Study Feedback</h3>
       </div>
 
-      <div style={styles.content}>
+      <div className="grid grid-cols-[1fr_1px_1fr] gap-6 items-start">
         {/* English Section */}
-        <div style={styles.langBlock}>
-          <div style={styles.langHeader}>
-            <span style={styles.flag}>🇺🇸</span>
-            <span style={styles.langName}>English Report</span>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🇺🇸</span>
+            <span className="text-xs font-bold text-[#94A3B8] uppercase tracking-[0.5px]">English Report</span>
           </div>
-          <p style={styles.reportText}>
+          <p className="text-[13px] text-[#EEF2F6] leading-5">
             Your child shows solid progress! Their strongest performance is in{' '}
-            <strong style={{ color: '#10B981' }}>{strongestTopic.name} ({strongestTopic.average}%)</strong>.
+            <strong className="text-[#10B981] font-bold">{strongestTopic.name} ({strongestTopic.average}%)</strong>.
             We recommend focusing practice sessions on <strong>{weakestTopic.name}</strong>, where they currently average{' '}
-            <strong style={{ color: '#EF4444' }}>{weakestTopic.average}%</strong>.
+            <strong className="text-[#EF4444] font-bold">{weakestTopic.average}%</strong>.
           </p>
-          <div style={styles.tipBox}>
-            <MessageCircle size={14} style={{ color: '#EC4899', marginTop: '2px' }} />
-            <p style={styles.tipText}>{tips.en}</p>
+          <div className="flex gap-2 p-3 bg-pink-500/5 border border-pink-500/15 rounded-xl">
+            <MessageCircle size={14} className="text-[#EC4899] mt-0.5" />
+            <p className="text-xs text-[#F9A8D4] leading-[18px] font-medium">{tips.en}</p>
           </div>
         </div>
 
-        <div style={styles.divider} />
+        <div className="bg-white/[0.06] h-full w-full" />
 
         {/* Filipino Section */}
-        <div style={styles.langBlock}>
-          <div style={styles.langHeader}>
-            <span style={styles.flag}>🇵🇭</span>
-            <span style={styles.langName}>Filipino Report</span>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🇵🇭</span>
+            <span className="text-xs font-bold text-[#94A3B8] uppercase tracking-[0.5px]">Filipino Report</span>
           </div>
-          <p style={styles.reportText}>
+          <p className="text-[13px] text-[#EEF2F6] leading-5">
             Maganda ang pag-unlad ng iyong anak! Pinakamahusay sila sa paksang{' '}
-            <strong style={{ color: '#10B981' }}>{strongestTopic.name} ({strongestTopic.average}%)</strong>.
+            <strong className="text-[#10B981] font-bold">{strongestTopic.name} ({strongestTopic.average}%)</strong>.
             Inirerekomenda naming pagtuunan ng pansin ang <strong>{weakestTopic.name}</strong>, kung saan mayroon silang average na{' '}
-            <strong style={{ color: '#EF4444' }}>{weakestTopic.average}%</strong>.
+            <strong className="text-[#EF4444] font-bold">{weakestTopic.average}%</strong>.
           </p>
-          <div style={styles.tipBox}>
-            <MessageCircle size={14} style={{ color: '#EC4899', marginTop: '2px' }} />
-            <p style={styles.tipText}>{tips.fil}</p>
+          <div className="flex gap-2 p-3 bg-pink-500/5 border border-pink-500/15 rounded-xl">
+            <MessageCircle size={14} className="text-[#EC4899] mt-0.5" />
+            <p className="text-xs text-[#F9A8D4] leading-[18px] font-medium">{tips.fil}</p>
           </div>
         </div>
       </div>

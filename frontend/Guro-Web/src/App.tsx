@@ -4,7 +4,6 @@ import { LandingPage } from './pages/LandingPage';
 import { LogoutConfirmModal } from './components/shared/LogoutConfirmModal';
 import type { Question } from './pages/LessonSpace';
 import { LiveActivityTicker } from './components/teacher/LiveActivityTicker';
-import { styles } from './styles/appStyles';
 import './App.css';
 
 const StudentSpace = lazy(() => import('./pages/StudentSpace').then(m => ({ default: m.StudentSpace })));
@@ -224,22 +223,21 @@ function App() {
   };
 
   return (
-    <div style={styles.appContainer}>
+    <div className="flex h-screen w-screen bg-[var(--bg-main)] overflow-hidden">
       {/* Sidebar Navigation */}
-      <aside style={styles.sidebar}>
-        <div style={styles.logoSection}>
-          <div style={styles.logoBadge}>GURO</div>
-          <span style={styles.logoTitle}>Portal</span>
+      <aside className="w-[280px] shrink-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col px-5 py-7">
+        <div className="flex items-center gap-3 mb-10 pl-1.5">
+          <div className="bg-gradient-to-br from-[#6366f1] to-[#0ea5e9] text-white font-['Space_Grotesk',sans-serif] font-bold text-lg px-3 py-2 rounded-lg shadow-[0_4px_15px_rgba(99,102,241,0.3)]">GURO</div>
+          <span className="font-['Space_Grotesk',sans-serif] text-[22px] font-bold text-[var(--text-main)] tracking-tight">Portal</span>
         </div>
 
-        <nav style={styles.navList}>
+        <nav className="flex flex-col gap-2 flex-1">
           {(!currentUser || currentUser.role === 'lesson-builder' || currentUser.role === 'developer' || currentUser.role === 'teacher') && (
             <button
               onClick={() => setActiveTab('dashboard')}
-              style={{
-                ...styles.navBtn,
-                ...(activeTab === 'dashboard' ? styles.navBtnActive : {}),
-              }}
+              className={`flex items-center gap-3 bg-transparent border border-transparent text-[var(--text-muted)] p-3 rounded-[10px] cursor-pointer font-semibold text-sm text-left transition-all duration-200 w-full hover:bg-white/3 ${
+                activeTab === 'dashboard' ? 'bg-[#6366f1]/10 text-[var(--text-main)] border-[#6366f1]/20 hover:bg-[#6366f1]/10' : ''
+              }`}
             >
               <LayoutDashboard size={18} />
               <span>System Dashboard</span>
@@ -247,34 +245,31 @@ function App() {
           )}
 
           {(!currentUser || currentUser.role === 'teacher') && (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="flex flex-col">
               <button
                 onClick={() => {
                   setActiveTab('teacher');
                   setActiveSubTab('analytics');
                 }}
-                style={{
-                  ...styles.navBtn,
-                  ...(activeTab === 'teacher' ? styles.navBtnActive : {}),
-                  marginBottom: '4px',
-                }}
+                className={`flex items-center gap-3 bg-transparent border border-transparent text-[var(--text-muted)] p-3 rounded-[10px] cursor-pointer font-semibold text-sm text-left transition-all duration-200 w-full mb-1 hover:bg-white/3 ${
+                  activeTab === 'teacher' ? 'bg-[#6366f1]/10 text-[var(--text-main)] border-[#6366f1]/20 hover:bg-[#6366f1]/10' : ''
+                }`}
               >
                 <School size={18} />
                 <span>Teacher Console</span>
               </button>
               
-              <div style={styles.subNavList}>
+              <div className="flex flex-col gap-1 pl-3.5 border-l border-[var(--border-color)] ml-6.5 mt-1 mb-2">
                 <button
                   onClick={() => {
                     setActiveTab('teacher');
                     setActiveSubTab('analytics');
                   }}
-                  style={{
-                    ...styles.subNavBtn,
-                    ...(activeTab === 'teacher' && activeSubTab === 'analytics' ? styles.subNavBtnActive : {}),
-                  }}
+                  className={`flex items-center gap-2.5 bg-transparent border border-transparent text-[var(--text-muted)] px-3 py-2 rounded-lg cursor-pointer font-medium text-xs text-left transition-all duration-200 w-full hover:bg-white/3 ${
+                    activeTab === 'teacher' && activeSubTab === 'analytics' ? 'bg-[#0ea5e9]/8 text-[#38BDF8] font-semibold hover:bg-[#0ea5e9]/8' : ''
+                  }`}
                 >
-                  <TrendingUp size={14} style={{ opacity: 0.7 }} />
+                  <TrendingUp size={14} className="opacity-70" />
                   <span>Classroom Analytics</span>
                 </button>
                 <button
@@ -282,12 +277,11 @@ function App() {
                     setActiveTab('teacher');
                     setActiveSubTab('classroom-pairing');
                   }}
-                  style={{
-                    ...styles.subNavBtn,
-                    ...(activeTab === 'teacher' && activeSubTab === 'classroom-pairing' ? styles.subNavBtnActive : {}),
-                  }}
+                  className={`flex items-center gap-2.5 bg-transparent border border-transparent text-[var(--text-muted)] px-3 py-2 rounded-lg cursor-pointer font-medium text-xs text-left transition-all duration-200 w-full hover:bg-white/3 ${
+                    activeTab === 'teacher' && activeSubTab === 'classroom-pairing' ? 'bg-[#0ea5e9]/8 text-[#38BDF8] font-semibold hover:bg-[#0ea5e9]/8' : ''
+                  }`}
                 >
-                  <Key size={14} style={{ opacity: 0.7 }} />
+                  <Key size={14} className="opacity-70" />
                   <span>Classroom Setup</span>
                 </button>
                 <button
@@ -295,12 +289,11 @@ function App() {
                     setActiveTab('teacher');
                     setActiveSubTab('manual-lesson');
                   }}
-                  style={{
-                    ...styles.subNavBtn,
-                    ...(activeTab === 'teacher' && activeSubTab === 'manual-lesson' ? styles.subNavBtnActive : {}),
-                  }}
+                  className={`flex items-center gap-2.5 bg-transparent border border-transparent text-[var(--text-muted)] px-3 py-2 rounded-lg cursor-pointer font-medium text-xs text-left transition-all duration-200 w-full hover:bg-white/3 ${
+                    activeTab === 'teacher' && activeSubTab === 'manual-lesson' ? 'bg-[#0ea5e9]/8 text-[#38BDF8] font-semibold hover:bg-[#0ea5e9]/8' : ''
+                  }`}
                 >
-                  <PlusCircle size={14} style={{ opacity: 0.7 }} />
+                  <PlusCircle size={14} className="opacity-70" />
                   <span>Create Lesson Manually</span>
                 </button>
               </div>
@@ -310,10 +303,9 @@ function App() {
           {(!currentUser || currentUser.role === 'parent') && (
             <button
               onClick={() => setActiveTab('parent')}
-              style={{
-                ...styles.navBtn,
-                ...(activeTab === 'parent' ? styles.navBtnActive : {}),
-              }}
+              className={`flex items-center gap-3 bg-transparent border border-transparent text-[var(--text-muted)] p-3 rounded-[10px] cursor-pointer font-semibold text-sm text-left transition-all duration-200 w-full hover:bg-white/3 ${
+                activeTab === 'parent' ? 'bg-[#6366f1]/10 text-[var(--text-main)] border-[#6366f1]/20 hover:bg-[#6366f1]/10' : ''
+              }`}
             >
               <Users size={18} />
               <span>Parent Explorer</span>
@@ -323,17 +315,16 @@ function App() {
           {(!currentUser || currentUser.role === 'lesson-builder' || currentUser.role === 'developer' || currentUser.role === 'teacher') && (
             <button
               onClick={() => setActiveTab('lesson-builder')}
-              style={{
-                ...styles.navBtn,
-                ...(activeTab === 'lesson-builder' ? styles.navBtnActive : {}),
-              }}
+              className={`flex items-center gap-3 bg-transparent border border-transparent text-[var(--text-muted)] p-3 rounded-[10px] cursor-pointer font-semibold text-sm text-left transition-all duration-200 w-full hover:bg-white/3 ${
+                activeTab === 'lesson-builder' ? 'bg-[#6366f1]/10 text-[var(--text-main)] border-[#6366f1]/20 hover:bg-[#6366f1]/10' : ''
+              }`}
             >
               <Zap size={18} />
               <span>Lesson Ingestor</span>
             </button>
           )}
 
-          <div style={{ flex: 1 }} />
+          <div className="flex-1" />
 
           {/* Entrance Role Gateway Button */}
           <button
@@ -344,30 +335,29 @@ function App() {
                 handleExitToLanding();
               }
             }}
-            style={styles.exitBtn}
+            className="flex items-center gap-3 bg-[rgba(239,68,68,0.05)] border border-[rgba(239,68,68,0.15)] text-[#fca5a5] p-3 rounded-[10px] cursor-pointer font-semibold text-sm text-left transition-all duration-200 w-full mb-5 hover:bg-[rgba(239,68,68,0.1)]"
           >
             <LogOut size={18} />
             <span>{currentUser ? 'Log Out' : 'Exit Workspace'}</span>
           </button>
         </nav>
 
-        <div style={styles.footerSection}>
-          <div style={styles.avatar}>
-            {currentUser ? <User size={18} style={{ color: '#94A3B8' }} /> : <Laptop size={18} style={{ color: '#94A3B8' }} />}
+        <div className="border-t border-[var(--border-color)] pt-5 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-white/4 border border-[var(--border-color)] flex items-center justify-center text-lg">
+            {currentUser ? <User size={18} className="text-[#94A3B8]" /> : <Laptop size={18} className="text-[#94A3B8]" />}
           </div>
-          <div style={{ ...styles.footerInfo, flex: 1 }}>
-            <span style={styles.devName}>
+          <div className="flex flex-col flex-1">
+            <span className="text-xs font-bold text-[var(--text-main)]">
               {currentUser ? currentUser.name : 'Guest Workspace'}
             </span>
-            <span style={styles.devRole}>
+            <span className="text-[11px] text-[var(--text-muted)] mt-0.5">
               {currentUser ? `${currentUser.role.toUpperCase()} • Sync'd` : 'Local Session'}
             </span>
           </div>
           <button
             onClick={toggleTheme}
-            style={styles.themeToggleBtn}
             title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="hover:bg-white/5 active:scale-[0.93] transition-all"
+            className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-white/5 active:scale-[0.93]"
           >
             {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
           </button>
@@ -375,48 +365,43 @@ function App() {
       </aside>
 
       {/* Main Panel Content Area */}
-      <main style={styles.mainContent}>
+      <main className="flex-1 flex flex-col h-full min-w-0">
         {/* Top Header */}
-        <header style={styles.header}>
-          <div style={styles.breadcrumb}>
-            <span style={styles.breadRoot}>GURO</span>
-            <span style={styles.breadDivider}>/</span>
+        <header className="py-2 border-b border-[var(--border-color)] flex justify-between items-center px-10 bg-black/5 backdrop-blur-xl">
+          <div className="flex items-center gap-1.5 text-xs font-medium">
+            <span className="text-[var(--text-muted)]">GURO</span>
+            <span className="text-[var(--border-color)]">/</span>
             {activeTab === 'teacher' ? (
               <>
-                <span style={styles.breadRoot}>Teacher Console</span>
-                <span style={styles.breadDivider}>/</span>
-                <span style={styles.breadActive}>
+                <span className="text-[var(--text-muted)]">Teacher Console</span>
+                <span className="text-[var(--border-color)]">/</span>
+                <span className="text-[var(--text-main)] font-bold">
                   {activeSubTab === 'analytics' && 'Classroom Analytics'}
                   {activeSubTab === 'classroom-pairing' && 'Classroom Setup'}
                   {activeSubTab === 'manual-lesson' && 'Create Lesson Manually'}
                 </span>
               </>
             ) : (
-              <span style={styles.breadActive}>
+              <span className="text-[var(--text-main)] font-bold">
                 {activeTab === 'parent' ? 'Parent Explorer' :
                   activeTab === 'dashboard' ? 'System Dashboard' : 'Lesson Ingestor'}
               </span>
             )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="flex items-center gap-4">
             {activeTab === 'teacher' && activeSubTab === 'analytics' && (
               <button 
                 onClick={() => fetchLogs(false)}
-                style={{
-                  ...styles.refreshBtn,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
+                className="bg-white/4 border border-[var(--border-color)] text-[var(--text-main)] px-3 py-1.25 rounded-md cursor-pointer text-xs font-semibold transition-all duration-200 hover:bg-white/10 flex items-center gap-1.5"
               >
                 <RotateCw size={13} />
                 <span>Refresh Logs</span>
               </button>
             )}
-            <div style={styles.indicatorContainer}>
-              <div style={styles.statusDot}></div>
-              <span style={styles.statusText}>Sync Server Active</span>
+            <div className="flex items-center gap-1.5 bg-[#10B981]/8 border border-[#10B981]/20 px-2.5 py-1 rounded-full">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]"></div>
+              <span className="text-[11px] font-bold text-[#10B981] tracking-[0.5px]">Sync Server Active</span>
             </div>
           </div>
         </header>
@@ -425,8 +410,8 @@ function App() {
         <LiveActivityTicker events={progressLogs} />
 
         {/* View Component Wrapper */}
-        <div style={styles.viewBody}>
-          <Suspense fallback={<div style={{ padding: '24px', color: '#94a3b8' }}>Loading Workspace...</div>}>
+        <div className="flex-1 overflow-y-auto p-10">
+          <Suspense fallback={<div className="p-6 text-[#94a3b8]">Loading Workspace...</div>}>
             {renderContent()}
           </Suspense>
         </div>

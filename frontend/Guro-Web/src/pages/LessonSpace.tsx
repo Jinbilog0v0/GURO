@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { styles } from '../styles/lessonSpaceStyles';
 
 export interface Question {
   id: string;
@@ -447,11 +446,11 @@ export function LessonSpace({
   };
 
   return (
-    <div className="fade-in" style={styles.container}>
+    <div className="fade-in w-full">
       <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-7 items-start">
         {/* Left Form Panel */}
-        <form onSubmit={handleGenerate} className="glass-panel" style={styles.formPanel}>
-          <h3 style={styles.cardTitle}>📖 Lesson Plan Ingestion</h3>
+        <form onSubmit={handleGenerate} className="glass-panel p-6 flex flex-col gap-[18px]">
+          <h3 className="text-lg">📖 Lesson Plan Ingestion</h3>
           
           {isMissingClassroom && (
             <div style={{
@@ -595,10 +594,10 @@ export function LessonSpace({
         </form>
 
         {/* Right Preview/Editor Panel */}
-        <div className="glass-panel" style={styles.editorPanel}>
+        <div className="glass-panel p-6 flex flex-col min-h-[500px]">
 
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 border-b border-white/10 pb-4 mb-5">
-            <h3 style={styles.cardTitle}>🛠️ Review & Commit Workspace</h3>
+            <h3 className="text-lg">🛠️ Review & Commit Workspace</h3>
             <button
               onClick={handleSave}
               className={`btn btn-primary ${stagedQuestions.length === 0 || isCommiting || isMissingClassroom ? 'btn-disabled' : ''}`}
@@ -608,21 +607,21 @@ export function LessonSpace({
             </button>
           </div>
 
-          <div style={styles.workspaceBody}>
+          <div className="flex-1 flex flex-col">
             {loading ? (
-              <div style={styles.centered}>
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-10">
                 <div className="spinner"></div>
-                <p style={styles.loadingText}>GEMINI FRAGMENTING LESSON MATRIX</p>
-                <p style={styles.loadingSubText}>Synthesizing questions and writing bilingual explanations...</p>
+                <p className="text-[13px] font-bold text-[#6366F1] tracking-[0.5px]">GEMINI FRAGMENTING LESSON MATRIX</p>
+                <p className="text-xs text-[var(--text-muted)] text-center">Synthesizing questions and writing bilingual explanations...</p>
               </div>
             ) : (!stagedStudyContent && stagedQuestions.length === 0) ? (
-              <div style={styles.centered}>
-                <span style={styles.emptyIcon}>📂</span>
-                <p style={styles.emptyText}>No content currently staged.</p>
-                <p style={styles.loadingSubText}>Submit a lesson plan on the left to start the ingestion pipeline.</p>
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-10">
+                <span className="text-[44px] opacity-30">📂</span>
+                <p className="text-[var(--text-main)] font-bold text-sm">No content currently staged.</p>
+                <p className="text-xs text-[var(--text-muted)] text-center">Submit a lesson plan on the left to start the ingestion pipeline.</p>
               </div>
             ) : (
-              <div style={styles.questionsList}>
+              <div className="flex flex-col gap-5">
                 {/* Tabs Header */}
                 <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '20px', gap: '16px' }}>
                   <button
@@ -746,17 +745,23 @@ export function LessonSpace({
                   </div>
                 ) : (
                   /* Render Questions List */
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="flex flex-col gap-4">
                     {stagedQuestions.map((q, idx) => {
                       const badgeClass = q.difficulty.toLowerCase();
                       return (
-                        <div key={idx} style={styles.questionCard}>
+                        <div key={idx} className="bg-[var(--bg-sidebar)] border border-[var(--border-color)] rounded-[12px] p-4 flex flex-col gap-3.5">
                           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3">
-                            <div style={styles.badgesRow}>
-                              <span style={{ ...styles.qBadge, ...(badgeClass === 'easy' ? styles.badgeEasy : badgeClass === 'average' ? styles.badgeAvg : styles.badgeDiff) }}>
+                            <div className="flex gap-2">
+                              <span className={`px-2 py-0.75 rounded-md text-[10px] font-bold uppercase ${
+                                badgeClass === 'easy' 
+                                  ? 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20' 
+                                  : badgeClass === 'average' 
+                                    ? 'bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20' 
+                                    : 'bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20'
+                              }`}>
                                 {q.difficulty}
                               </span>
-                              <span style={{ ...styles.qBadge, ...styles.badgeCat }}>
+                              <span className="px-2 py-0.75 rounded-md text-[10px] font-bold uppercase bg-[#6366F1]/10 text-[var(--accent-primary)] border border-[#6366F1]/20">
                                 {q.category}
                               </span>
                             </div>
@@ -764,7 +769,7 @@ export function LessonSpace({
                               type="text"
                               value={q.id}
                               onChange={(e) => updateField(idx, 'id', e.target.value)}
-                              style={styles.idInput}
+                              className="bg-transparent border-none border-b border-dashed border-[var(--border-color)] font-['Space_Grotesk',sans-serif] font-bold text-xs text-[var(--text-main)] px-1 py-0.5 w-[150px] rounded-none focus:outline-none"
                             />
                           </div>
 
@@ -774,30 +779,30 @@ export function LessonSpace({
                               type="text"
                               value={q.questionText}
                               onChange={(e) => updateField(idx, 'questionText', e.target.value)}
-                              style={styles.textInput}
+                              className="form-control w-full bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)]"
                             />
                           </div>
 
-                          <div style={styles.optionsSection}>
+                          <div className="flex flex-col gap-2">
                             <label>Multiple Choice options (Check the correct answer)</label>
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 mt-1.5">
                               {q.options.map((option, optIdx) => {
                                 const isCorrect = option === q.correctAnswer;
                                 return (
-                                  <div key={optIdx} style={styles.optRow}>
-                                    <span style={styles.optLabel}>{String.fromCharCode(65 + optIdx)}</span>
+                                  <div key={optIdx} className="flex items-center gap-2 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-lg px-2">
+                                    <span className="text-[10px] font-extrabold text-[var(--text-muted)] bg-[var(--border-color)] w-4.5 h-4.5 rounded flex items-center justify-center">{String.fromCharCode(65 + optIdx)}</span>
                                     <input
                                       type="text"
                                       value={option}
                                       onChange={(e) => updateOption(idx, optIdx, e.target.value)}
-                                      style={styles.optInput}
+                                      className="flex-1 bg-transparent border-none py-2 px-1 text-[13px] text-[var(--text-main)] focus:outline-none"
                                     />
                                     <input
                                       type="radio"
                                       name={`correct-${idx}`}
                                       checked={isCorrect}
                                       onChange={() => setCorrectAnswer(idx, optIdx)}
-                                      style={styles.radio}
+                                      className="w-4 h-4 accent-[#10B981]"
                                     />
                                   </div>
                                 );
@@ -812,7 +817,7 @@ export function LessonSpace({
                                 type="text"
                                 value={q.feedback.en}
                                 onChange={(e) => updateFeedback(idx, 'en', e.target.value)}
-                                style={styles.feedbackInput}
+                                className="form-control w-full bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] text-[13px]"
                               />
                             </div>
                             <div className="form-group">
@@ -821,7 +826,7 @@ export function LessonSpace({
                                 type="text"
                                 value={q.feedback.fil}
                                 onChange={(e) => updateFeedback(idx, 'fil', e.target.value)}
-                                style={styles.feedbackInput}
+                                className="form-control w-full bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] text-[13px]"
                               />
                             </div>
                           </div>

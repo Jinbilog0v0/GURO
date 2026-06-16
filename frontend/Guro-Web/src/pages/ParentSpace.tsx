@@ -3,7 +3,6 @@ import { List } from 'react-window';
 import { ActivityHeatmap } from '../components/parent/ActivityHeatmap';
 import { TutorReport } from '../components/parent/TutorReport';
 import { BadgeCase } from '../components/parent/BadgeCase';
-import { styles } from '../styles/parentSpaceStyles';
 
 interface SyncedEvent {
   studentId: string;
@@ -56,21 +55,13 @@ const RowRenderer = ({
       }}
     >
       <div
-        className={pulseClass}
-        style={{
-          ...styles.timelineItem,
-          borderRadius: '8px',
-          padding: '6px',
-          transition: 'all 0.5s ease',
-          height: '100px',
-          boxSizing: 'border-box'
-        }}
+        className={`relative flex gap-4 rounded-[8px] p-[6px] transition-all duration-500 ease-in-out h-[100px] box-border ${pulseClass}`}
       >
         {/* Timeline dot connector line */}
         {!isLast && (
           <div
+            className="absolute left-[-16px] w-[2px] bg-[var(--border-color)]"
             style={{
-              ...styles.timelineLine,
               bottom: 0,
               top: '24px',
               height: 'calc(100% + 20px)' // Extends down to next item
@@ -79,21 +70,32 @@ const RowRenderer = ({
         )}
         
         {/* Bullet icon */}
-        <div style={{
-          ...styles.timelineDot,
-          ...(percentage >= 80 ? styles.dotGreen : percentage >= 50 ? styles.dotYellow : styles.dotRed)
-        }} />
+        <div 
+          className={`absolute left-[-22px] top-[4px] w-3.5 h-3.5 rounded-[7px] border-2 z-10 ${
+            percentage >= 80 
+              ? 'bg-[#064E3B] border-[#10B981]' 
+              : percentage >= 50 
+                ? 'bg-[#78350F] border-[#F59E0B]' 
+                : 'bg-[#7F1D1D] border-[#EF4444]'
+          }`} 
+        />
 
-        <div style={{ ...styles.timelineContent, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', boxSizing: 'border-box', padding: '12px 16px' }}>
-          <div style={styles.timelineHeader}>
-            <h4 style={styles.topicName}>
+        <div className="flex-1 bg-white/1 border border-[var(--border-color)] rounded-[12px] flex flex-col justify-center h-full box-border px-4 py-3">
+          <div className="flex justify-between items-center mb-1.5">
+            <h4 className="text-sm font-extrabold text-[var(--text-main)]">
               {log.subject === 'Mathematics' ? '🧮' : '📚'} {log.topic}
             </h4>
-            <span style={percentage >= 80 ? styles.badgeSuccess : percentage >= 50 ? styles.badgeWarning : styles.badgeDanger}>
+            <span className={
+              percentage >= 80 
+                ? "px-2 py-0.75 rounded-md text-[10px] font-bold bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20" 
+                : percentage >= 50 
+                  ? "px-2 py-0.75 rounded-md text-[10px] font-bold bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20" 
+                  : "px-2 py-0.75 rounded-md text-[10px] font-bold bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20"
+            }>
               Score: {log.score} / {log.totalQuestions} ({percentage}%)
             </span>
           </div>
-          <p style={styles.logMeta}>
+          <p className="text-[11px] text-[var(--text-muted)]">
             Grade {log.gradeLevel} {log.subject} • Synced on {new Date(log.timestamp).toLocaleDateString()} at {new Date(log.timestamp).toLocaleTimeString()}
           </p>
         </div>
@@ -147,8 +149,8 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
   const avgScore = getAverageScore();
 
   return (
-    <div className="fade-in" style={styles.container}>
-      <div style={styles.header}>
+    <div className="fade-in flex flex-col gap-6 w-full">
+      <div className="mb-2">
         <h2 style={{ color: 'var(--text-main)' }}>👪 Parent Progress Explorer</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
           Enter your child's unique mobile identifier and 6-digit access code to view practice results and telemetry synced from their device.
@@ -156,7 +158,7 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
       </div>
 
       {/* Search Input Card */}
-      <form onSubmit={handleSearch} className="glass-panel" style={styles.searchCard}>
+      <form onSubmit={handleSearch} className="glass-panel px-6 py-5">
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div className="form-group" style={{ flex: 1, minWidth: '200px' }}>
             <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
@@ -188,7 +190,7 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
             />
           </div>
           <div style={{ minWidth: '150px' }}>
-            <button type="submit" className="btn btn-primary" style={{ ...styles.searchBtn, width: '100%', height: '42px' }}>
+            <button type="submit" className="btn btn-primary px-6" style={{ width: '100%', height: '42px' }}>
               🔍 Search Reports
             </button>
           </div>
@@ -201,36 +203,36 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
       </form>
 
       {loading ? (
-        <div style={styles.centered}>
+        <div className="text-center px-10 py-15 flex flex-col items-center gap-3">
           <div className="spinner"></div>
-          <p style={styles.loadingText}>Retrieving learning curves...</p>
+          <p className="text-[#6366F1] font-semibold text-sm">Retrieving learning curves...</p>
         </div>
       ) : searched ? (
         studentLogs.length === 0 ? (
-          <div className="glass-panel" style={styles.centered}>
+          <div className="glass-panel text-center px-10 py-15 flex flex-col items-center gap-3">
             <TextEmoji>☁️</TextEmoji>
-            <p style={styles.emptyText}>
+            <p className="text-[15px] font-bold text-[var(--text-main)]">
               No reports registered for device ID <strong>"{studentIdInput}"</strong>.
             </p>
-            <p style={styles.emptySubText}>
+            <p className="text-xs text-[var(--text-muted)] max-w-[450px] leading-[18px]">
               Ensure your child has submitted quiz results in their mobile app and that you have clicked "Sync Progress Now" in the mobile Parent Space.
             </p>
           </div>
         ) : (
-          <div style={styles.resultsContainer} className="fade-in">
+          <div className="flex flex-col gap-6 fade-in">
             {/* Stats Dashboard cards */}
-            <div style={styles.statsRow}>
-              <div className="glass-panel" style={styles.statBox}>
-                <span style={styles.statLbl}>Completed Quests</span>
-                <span style={styles.statVal}>{totalQuizzes}</span>
+            <div className="grid grid-cols-3 gap-5">
+              <div className="glass-panel p-5 flex flex-col gap-1.5 items-center">
+                <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.5px]">Completed Quests</span>
+                <span className="font-['Space_Grotesk',sans-serif] text-[26px] font-bold text-[var(--text-main)]">{totalQuizzes}</span>
               </div>
-              <div className="glass-panel" style={styles.statBox}>
-                <span style={styles.statLbl}>Average Accuracy</span>
-                <span style={{ ...styles.statVal, color: '#10B981' }}>{avgScore}%</span>
+              <div className="glass-panel p-5 flex flex-col gap-1.5 items-center">
+                <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.5px]">Average Accuracy</span>
+                <span className="font-['Space_Grotesk',sans-serif] text-[26px] font-bold text-[#10B981]">{avgScore}%</span>
               </div>
-              <div className="glass-panel" style={styles.statBox}>
-                <span style={styles.statLbl}>Learning Status</span>
-                <span style={{ ...styles.statVal, color: avgScore >= 80 ? '#10B981' : avgScore >= 50 ? '#F59E0B' : '#EF4444', fontFamily: 'sans-serif', fontSize: 22 }}>
+              <div className="glass-panel p-5 flex flex-col gap-1.5 items-center">
+                <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.5px]">Learning Status</span>
+                <span className="font-['Space_Grotesk',sans-serif] text-[26px] font-bold" style={{ color: avgScore >= 80 ? '#10B981' : avgScore >= 50 ? '#F59E0B' : '#EF4444', fontFamily: 'sans-serif', fontSize: 22 }}>
                   {avgScore >= 80 ? '⭐ Advanced' : avgScore >= 50 ? '📈 Progressing' : '⚠️ Remedial'}
                 </span>
               </div>
@@ -240,16 +242,16 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
             <TutorReport logs={studentLogs} />
 
             {/* Split layout block: Tracker columns on left, Timeline logs on right */}
-            <div style={styles.splitLayout}>
-              <div style={styles.leftCol}>
+            <div className="grid grid-cols-2 gap-6 items-start">
+              <div className="flex flex-col gap-6">
                 <ActivityHeatmap logs={studentLogs} />
                 <BadgeCase logs={studentLogs} />
               </div>
               
-              <div style={styles.rightCol}>
+              <div className="flex flex-col">
                 {/* Performance Timeline feed */}
-                <div className="glass-panel" style={styles.feedCard}>
-                  <h3 style={styles.cardTitle}>📅 Practice Timeline History</h3>
+                <div className="glass-panel p-6">
+                  <h3 className="text-base mb-5">📅 Practice Timeline History</h3>
                     <List<{ studentLogs: SyncedEvent[]; lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null }>
                       style={{ overflowX: 'hidden', height: 500, width: '100%' }}
                       rowCount={studentLogs.length}
@@ -264,10 +266,10 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
         )
       ) : (
         /* Prompt to search */
-        <div className="glass-panel" style={styles.centered}>
+        <div className="glass-panel text-center px-10 py-15 flex flex-col items-center gap-3">
           <TextEmoji>📊</TextEmoji>
-          <p style={styles.emptyText}>Enter a Student ID and Access Code to query performance history</p>
-          <p style={styles.emptySubText}>
+          <p className="text-[15px] font-bold text-[var(--text-main)]">Enter a Student ID and Access Code to query performance history</p>
+          <p className="text-xs text-[var(--text-muted)] max-w-[450px] leading-[18px]">
             You can find the Student ID and the 6-Digit Parent Access Code on the home dashboard settings modal of the child's mobile app.
           </p>
         </div>
@@ -277,5 +279,5 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
 }
 
 function TextEmoji({ children }: { children: React.ReactNode }) {
-  return <span style={styles.emojiIcon}>{children}</span>;
+  return <span className="text-[44px] opacity-50">{children}</span>;
 }

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Award, Lock, CheckCircle2 } from 'lucide-react';
-import { styles } from '../../styles/badgeCaseStyles';
 
 interface SyncedEvent {
   studentId: string;
@@ -12,7 +11,6 @@ interface SyncedEvent {
   totalQuestions: number;
   timestamp: string;
 }
-
 interface BadgeCaseProps {
   logs: SyncedEvent[];
 }
@@ -77,56 +75,58 @@ export const BadgeCase: React.FC<BadgeCaseProps> = ({ logs }) => {
   };
 
   return (
-    <div className="glass-panel" style={styles.container}>
-      <div style={styles.header}>
-        <Award size={20} style={{ color: '#F59E0B' }} />
-        <h3 style={styles.title}>Child's Milestone Badge Case</h3>
+    <div className="glass-panel p-6 flex flex-col gap-4 w-full">
+      <div className="flex items-center gap-2.5">
+        <Award size={20} className="text-[#F59E0B]" />
+        <h3 className="text-base font-bold text-[#F8FAFC]">Child's Milestone Badge Case</h3>
       </div>
-      <p style={styles.subtitle}>Badges unlock when the student completes topics with 80%+ mastery.</p>
+      <p className="text-xs text-[#94A3B8]">Badges unlock when the student completes topics with 80%+ mastery.</p>
 
-      <div style={styles.grid}>
+      <div className="grid grid-cols-2 gap-4">
         {badgeDefinitions.map((badge) => {
           const unlocked = isBadgeUnlocked(badge.topicName);
           return (
             <div
               key={badge.id}
+              className={`flex gap-3.5 p-4 rounded-2xl border transition-all duration-200 ${
+                unlocked
+                  ? 'bg-white/[0.02] shadow-[0_4px_15px_rgba(0,0,0,0.1)]'
+                  : 'bg-white/[0.01] opacity-60'
+              }`}
               style={{
-                ...styles.badgeCard,
-                ...(unlocked ? styles.unlockedCard : styles.lockedCard),
                 borderColor: unlocked ? `${badge.color}30` : 'rgba(255, 255, 255, 0.04)',
               }}
             >
               <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center relative border border-white/[0.05]"
                 style={{
-                  ...styles.iconWrapper,
                   backgroundColor: unlocked ? `${badge.color}15` : 'rgba(255, 255, 255, 0.02)',
                 }}
               >
                 <span
+                  className="text-[28px]"
                   style={{
-                    ...styles.emoji,
                     filter: unlocked ? 'none' : 'grayscale(100%) opacity(40%)',
                   }}
                 >
                   {badge.icon}
                 </span>
                 {unlocked ? (
-                  <CheckCircle2 size={14} style={styles.checkIcon} />
+                  <CheckCircle2 size={14} className="absolute -bottom-[3px] -right-[3px] text-[#10B981] fill-[#060913]" />
                 ) : (
-                  <Lock size={12} style={styles.lockIcon} />
+                  <Lock size={12} className="absolute -bottom-[3px] -right-[3px] text-[#64748B]" />
                 )}
               </div>
               
-              <div style={styles.badgeInfo}>
-                <h4 style={{ ...styles.badgeName, color: unlocked ? '#F8FAFC' : '#64748B' }}>
+              <div className="flex flex-col gap-[3px] flex-1">
+                <h4 className={`text-[13px] font-bold ${unlocked ? 'text-[#F8FAFC]' : 'text-[#64748B]'}`}>
                   {badge.name}
                 </h4>
-                <p style={styles.badgeDesc}>{badge.description}</p>
+                <p className="text-[11px] text-[#94A3B8] leading-[15px]">{badge.description}</p>
                 <span
-                  style={{
-                    ...styles.statusText,
-                    color: unlocked ? '#10B981' : '#64748B',
-                  }}
+                  className={`text-[10px] font-bold uppercase tracking-[0.5px] mt-1 ${
+                    unlocked ? 'text-[#10B981]' : 'text-[#64748B]'
+                  }`}
                 >
                   {unlocked ? '✓ Completed' : 'Locked'}
                 </span>

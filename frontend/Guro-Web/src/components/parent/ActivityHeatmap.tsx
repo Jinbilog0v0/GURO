@@ -1,6 +1,5 @@
 import React from 'react';
 import { Calendar } from 'lucide-react';
-import { styles } from '../../styles/activityHeatmapStyles';
 
 interface SyncedEvent {
   studentId: string;
@@ -51,15 +50,15 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ logs }) => {
   };
 
   return (
-    <div className="glass-panel" style={styles.container}>
-      <div style={styles.header}>
-        <Calendar size={18} style={{ color: '#8B5CF6' }} />
-        <h3 style={styles.title}>Practice Consistency Tracker</h3>
+    <div className="glass-panel p-6 flex flex-col gap-3 w-full">
+      <div className="flex items-center gap-2">
+        <Calendar size={18} className="text-[#8B5CF6]" />
+        <h3 className="text-[15px] font-bold text-[#F8FAFC]">Practice Consistency Tracker</h3>
       </div>
-      <p style={styles.subtitle}>Daily activity calendar (past 4 weeks) tracking synced study quests.</p>
+      <p className="text-xs text-[#94A3B8] mb-2">Daily activity calendar (past 4 weeks) tracking synced study quests.</p>
       
-      <div style={styles.gridWrapper}>
-        <div style={styles.grid}>
+      <div className="flex justify-center py-2">
+        <div className="grid grid-cols-7 gap-2 max-w-[220px]">
           {past28Days.map((date, idx) => {
             const count = getEventCountForDate(date);
             const title = `${date.toLocaleDateString()}: ${count} activity log${count === 1 ? '' : 's'}`;
@@ -67,8 +66,8 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ logs }) => {
               <div
                 key={idx}
                 title={title}
+                className="w-6 h-6 rounded-[6px] border border-white/5 transition-transform duration-100 ease-in-out cursor-pointer hover:scale-110"
                 style={{
-                  ...styles.cell,
                   backgroundColor: getHeatmapColor(count),
                 }}
               />
@@ -77,16 +76,17 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ logs }) => {
         </div>
       </div>
 
-      <div style={styles.legend}>
-        <span style={styles.legendText}>Less consistency</span>
-        <div style={{ ...styles.cell, backgroundColor: getHeatmapColor(0) }} />
-        <div style={{ ...styles.cell, backgroundColor: getHeatmapColor(1) }} />
-        <div style={{ ...styles.cell, backgroundColor: getHeatmapColor(2) }} />
-        <div style={{ ...styles.cell, backgroundColor: getHeatmapColor(3) }} />
-        <span style={styles.legendText}>More practice</span>
+      <div className="flex items-center justify-end gap-1.5 mt-2">
+        <span className="text-[10px] text-[#64748B] mx-1">Less consistency</span>
+        <div className="w-6 h-6 rounded-[6px] border border-white/5 transition-transform duration-100 ease-in-out cursor-pointer hover:scale-110" style={{ backgroundColor: getHeatmapColor(0) }} />
+        <div className="w-6 h-6 rounded-[6px] border border-white/5 transition-transform duration-100 ease-in-out cursor-pointer hover:scale-110" style={{ backgroundColor: getHeatmapColor(1) }} />
+        <div className="w-6 h-6 rounded-[6px] border border-white/5 transition-transform duration-100 ease-in-out cursor-pointer hover:scale-110" style={{ backgroundColor: getHeatmapColor(2) }} />
+        <div className="w-6 h-6 rounded-[6px] border border-white/5 transition-transform duration-100 ease-in-out cursor-pointer hover:scale-110" style={{ backgroundColor: getHeatmapColor(3) }} />
+        <span className="text-[10px] text-[#64748B] mx-1">More practice</span>
       </div>
     </div>
   );
 };
+
 
 

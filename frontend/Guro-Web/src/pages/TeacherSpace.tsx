@@ -3,7 +3,6 @@ import { MasteryMatrix } from '../components/teacher/MasteryMatrix';
 import { StudentTile } from '../components/teacher/StudentTile';
 import { DiagnosticAlerts } from '../components/teacher/DiagnosticAlerts';
 import { ManualLessonBuilder } from '../components/teacher/ManualLessonBuilder';
-import { styles } from '../styles/teacherSpaceStyles';
 import { Lock } from 'lucide-react';
 
 interface SyncedEvent {
@@ -210,43 +209,40 @@ export function TeacherSpace({
   };
 
   return (
-    <div className="fade-in" style={styles.container}>
+    <div className="fade-in flex flex-col gap-6 w-full">
       {propActiveSubTab === undefined && (
-        <div style={styles.header}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-[28px]">
             <h2>🏫 Teacher Console</h2>
-            <div style={styles.subTabGroup}>
+            <div className="flex bg-white/3 border border-[var(--border-color)] rounded-[10px] p-1 gap-1">
               <button
                 onClick={() => setActiveSubTab('analytics')}
-                style={{
-                  ...styles.subTabBtn,
-                  ...(activeSubTab === 'analytics' ? styles.subTabBtnActive : {}),
-                }}
+                className={`px-3.5 py-1.5 border-none bg-transparent font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 ${
+                  activeSubTab === 'analytics' ? 'bg-white/6 text-[var(--text-main)]' : 'text-[var(--text-muted)]'
+                }`}
               >
                 📈 Classroom Analytics
               </button>
               <button
                 onClick={() => setActiveSubTab('classroom-pairing')}
-                style={{
-                  ...styles.subTabBtn,
-                  ...(activeSubTab === 'classroom-pairing' ? styles.subTabBtnActive : {}),
-                }}
+                className={`px-3.5 py-1.5 border-none bg-transparent font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 ${
+                  activeSubTab === 'classroom-pairing' ? 'bg-white/6 text-[var(--text-main)]' : 'text-[var(--text-muted)]'
+                }`}
               >
                 🔑 Classroom Setup
               </button>
               <button
                 onClick={() => setActiveSubTab('manual-lesson')}
-                style={{
-                  ...styles.subTabBtn,
-                  ...(activeSubTab === 'manual-lesson' ? styles.subTabBtnActive : {}),
-                }}
+                className={`px-3.5 py-1.5 border-none bg-transparent font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 ${
+                  activeSubTab === 'manual-lesson' ? 'bg-white/6 text-[var(--text-main)]' : 'text-[var(--text-muted)]'
+                }`}
               >
                 ✍️ Create Lesson Manually
               </button>
             </div>
           </div>
           {activeSubTab === 'analytics' && (
-            <button style={styles.refreshBtn} onClick={refreshLogs}>🔄 Refresh Logs</button>
+            <button className="bg-white/4 border border-[var(--border-color)] text-[var(--text-main)] px-4 py-2 rounded-lg cursor-pointer text-sm font-semibold hover:bg-white/10 transition-colors" onClick={refreshLogs}>🔄 Refresh Logs</button>
           )}
         </div>
       )}
@@ -604,30 +600,30 @@ export function TeacherSpace({
       ) : (
         <>
           {classroomCode && classroomData && (
-            <div className="glass-panel" style={{ padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(14, 165, 233, 0.08)', borderColor: 'var(--border-color)', borderRadius: '12px', marginBottom: '8px' }}>
-              <span style={{ fontSize: '13px', color: 'var(--accent-secondary)', fontWeight: 600 }}>
-                🏫 Filtered to Classroom Invite Code: <strong style={{ color: 'var(--text-main)', fontFamily: 'monospace', fontSize: '14px', letterSpacing: '1px' }}>{classroomCode}</strong> ({classroomData.subject} • Grade {classroomData.gradeLevel})
+            <div className="glass-panel px-6 py-3.5 flex justify-between items-center bg-[rgba(14,165,233,0.08)] border border-[var(--border-color)] rounded-[12px] mb-2">
+              <span className="text-[13px] color-[var(--accent-secondary)] font-semibold">
+                🏫 Filtered to Classroom Invite Code: <strong className="text-[var(--text-main)] font-mono text-[14px] tracking-[1px]">{classroomCode}</strong> ({classroomData.subject} • Grade {classroomData.gradeLevel})
               </span>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              <span className="text-[11px] text-[var(--text-muted)]">
                 Deselect/switch classroom setup in the Setup tab to view all logs.
               </span>
             </div>
           )}
           {/* Analytics Summary Row */}
-          <div style={styles.summaryRow}>
-            <div className="glass-panel" style={styles.summaryCard}>
+          <div className="grid grid-cols-4 gap-5">
+            <div className="glass-panel p-5 flex flex-col gap-1.5">
               <TextLabel>Total Sync Reports</TextLabel>
               <TextValue>{progressLogs.length}</TextValue>
             </div>
-            <div className="glass-panel" style={styles.summaryCard}>
+            <div className="glass-panel p-5 flex flex-col gap-1.5">
               <TextLabel>Filtered Logs</TextLabel>
               <TextValue>{filteredLogs.length}</TextValue>
             </div>
-            <div className="glass-panel" style={styles.summaryCard}>
+            <div className="glass-panel p-5 flex flex-col gap-1.5">
               <TextLabel>Classroom Accuracy</TextLabel>
               <TextValue style={{ color: '#10B981' }}>{getAverageAccuracy()}%</TextValue>
             </div>
-            <div className="glass-panel" style={styles.summaryCard}>
+            <div className="glass-panel p-5 flex flex-col gap-1.5">
               <TextLabel>Unique Active Devices</TextLabel>
               <TextValue style={{ color: '#0EA5E9' }}>
                 {uniqueStudents.length}
@@ -647,9 +643,9 @@ export function TeacherSpace({
 
           {/* Interactive Student profile cards grid */}
           {!loading && uniqueStudents.length > 0 && (
-            <div style={styles.gridSection}>
-              <h3 style={styles.sectionTitle}>Students Telemetry Profiles</h3>
-              <div style={styles.studentGrid}>
+            <div className="flex flex-col gap-3">
+              <h3 className="text-base font-bold text-[var(--text-main)]">Students Telemetry Profiles</h3>
+              <div className="grid grid-cols-4 gap-4">
                 {uniqueStudents.map(studentId => {
                   const studentLogs = progressLogs.filter(l => l.studentId === studentId);
                   return (
@@ -667,7 +663,7 @@ export function TeacherSpace({
           )}
 
           {/* Filters Area */}
-          <div className="glass-panel" style={styles.filterBar}>
+          <div className="glass-panel px-6 py-4.5 flex items-end gap-5">
             <div className="form-group" style={{ flex: 2 }}>
               <label>Search Student or Topic</label>
               <input
@@ -686,12 +682,11 @@ export function TeacherSpace({
               </select>
             </div>
             {selectedStudentId && (
-              <div style={styles.filterChipContainer}>
+              <div className="flex flex-col">
                 <label style={{ display: 'block', marginBottom: '8px' }}>Active Filter</label>
                 <button
                   onClick={() => setSelectedStudentId(null)}
-                  className="btn btn-secondary"
-                  style={styles.filterChip}
+                  className="btn btn-secondary px-3.5 py-2 text-xs font-bold text-[var(--accent-primary)] border border-[var(--accent-primary-glow)] bg-[var(--accent-primary-glow)]"
                 >
                   🔑 {selectedStudentId} ✕
                 </button>
@@ -700,60 +695,66 @@ export function TeacherSpace({
           </div>
 
           {/* Progress Table */}
-          <div className="glass-panel" style={styles.tableContainer}>
+          <div className="glass-panel overflow-x-auto p-1">
             {loading ? (
-              <div style={styles.centered}>
+              <div className="text-center p-10">
                 <div className="spinner" style={{ margin: '20px auto' }}></div>
                 <p style={{ color: '#6366F1', fontWeight: 600 }}>Loading sync records...</p>
               </div>
             ) : filteredLogs.length === 0 ? (
-              <div style={styles.centered}>
+              <div className="text-center p-10">
                 <p style={{ color: '#64748B', fontStyle: 'italic', padding: 20 }}>
                   No synced progress logs found matching criteria.
                 </p>
               </div>
             ) : (
-              <table style={styles.table}>
+              <table className="w-full border-collapse text-left text-sm">
                 <thead>
                   <tr>
-                    <th style={styles.th}>Student / Device ID</th>
-                    <th style={styles.th}>Subject</th>
-                    <th style={styles.th}>Grade</th>
-                    <th style={styles.th}>Topic</th>
-                    <th style={styles.th}>Accuracy Score</th>
-                    <th style={styles.th}>Status</th>
-                    <th style={styles.th}>Timestamp</th>
+                    <th className="px-5 py-4 border-b border-[var(--border-color)] text-[var(--text-muted)] font-bold">Student / Device ID</th>
+                    <th className="px-5 py-4 border-b border-[var(--border-color)] text-[var(--text-muted)] font-bold">Subject</th>
+                    <th className="px-5 py-4 border-b border-[var(--border-color)] text-[var(--text-muted)] font-bold">Grade</th>
+                    <th className="px-5 py-4 border-b border-[var(--border-color)] text-[var(--text-muted)] font-bold">Topic</th>
+                    <th className="px-5 py-4 border-b border-[var(--border-color)] text-[var(--text-muted)] font-bold">Accuracy Score</th>
+                    <th className="px-5 py-4 border-b border-[var(--border-color)] text-[var(--text-muted)] font-bold">Status</th>
+                    <th className="px-5 py-4 border-b border-[var(--border-color)] text-[var(--text-muted)] font-bold">Timestamp</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredLogs.map((log) => {
                     const percentage = Math.round((log.score / log.totalQuestions) * 100);
                     return (
-                      <tr key={log.eventId} style={styles.tr}>
-                        <td style={styles.td}>
-                          <span style={styles.studentIdBadge}>🔑 {log.studentId}</span>
+                      <tr key={log.eventId} className="border-b border-[var(--border-color)]">
+                        <td className="px-5 py-4 text-[var(--text-main)]">
+                          <span className="bg-[var(--border-color)] px-2 py-1 rounded-md font-mono text-xs border border-[var(--border-color)]">🔑 {log.studentId}</span>
                         </td>
-                        <td style={styles.td}>
+                        <td className="px-5 py-4 text-[var(--text-main)]">
                           <span style={{ fontWeight: 600 }}>
                             {log.subject === 'Mathematics' ? '🧮 Math' : '📚 English'}
                           </span>
                         </td>
-                        <td style={styles.td}>Grade {log.gradeLevel}</td>
-                        <td style={styles.td}>{log.topic}</td>
-                        <td style={styles.td}>
-                          <div style={styles.scoreCell}>
+                        <td className="px-5 py-4 text-[var(--text-main)]">Grade {log.gradeLevel}</td>
+                        <td className="px-5 py-4 text-[var(--text-main)]">{log.topic}</td>
+                        <td className="px-5 py-4 text-[var(--text-main)]">
+                          <div className="flex items-baseline gap-1.5">
                             <span style={{ fontWeight: 800, color: percentage >= 80 ? '#10B981' : percentage >= 50 ? '#F59E0B' : '#EF4444' }}>
                               {percentage}%
                             </span>
-                            <span style={styles.fractionText}>({log.score}/{log.totalQuestions})</span>
+                            <span className="text-[11px] text-[var(--text-muted)] font-medium">({log.score}/{log.totalQuestions})</span>
                           </div>
                         </td>
-                        <td style={styles.td}>
-                          <span style={percentage >= 80 ? styles.badgeSuccess : percentage >= 50 ? styles.badgeWarning : styles.badgeDanger}>
+                        <td className="px-5 py-4 text-[var(--text-main)]">
+                          <span className={
+                            percentage >= 80 
+                              ? "px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20" 
+                              : percentage >= 50 
+                                ? "px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20" 
+                                : "px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20"
+                          }>
                             {percentage >= 80 ? 'Mastery' : percentage >= 50 ? 'Review' : 'Remediation'}
                           </span>
                         </td>
-                        <td style={styles.td}>{new Date(log.timestamp).toLocaleString()}</td>
+                        <td className="px-5 py-4 text-[var(--text-main)]">{new Date(log.timestamp).toLocaleString()}</td>
                       </tr>
                     );
                   })}
@@ -769,11 +770,11 @@ export function TeacherSpace({
 
 // Inline components for styles structure
 function TextLabel({ children }: { children: React.ReactNode }) {
-  return <span style={styles.cardLabel}>{children}</span>;
+  return <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.5px]">{children}</span>;
 }
 
 function TextValue({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return <span style={{ ...styles.cardValue, ...style }}>{children}</span>;
+  return <span className="font-['Space_Grotesk',sans-serif] text-[26px] font-bold text-[var(--text-main)]" style={style}>{children}</span>;
 }
 
 function InviteExpirationTimer({ 
@@ -840,23 +841,22 @@ function InviteExpirationTimer({
 
   if (isExpired) {
     return (
-      <span style={{ fontSize: '12px', color: 'var(--danger)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+      <span className="text-xs text-[var(--danger)] font-bold inline-flex items-center gap-1.5">
         <Lock size={12} /> Expiration Status: Locked / Closed
       </span>
     );
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: 700 }}>
+    <div className="flex items-center gap-3">
+      <span className="text-xs text-[var(--success)] font-bold">
         🟢 Active - {timeLeft}
       </span>
       {expiresAt && (
         <button
           onClick={handleLockNow}
           disabled={isLocking}
-          className="btn btn-secondary"
-          style={{ padding: '3px 8px', fontSize: '10px', borderRadius: '4px' }}
+          className="btn btn-secondary px-2 py-0.5 text-[10px] rounded"
         >
           🔒 Lock Now
         </button>

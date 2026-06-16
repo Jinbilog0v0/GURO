@@ -1,5 +1,4 @@
 import React from 'react';
-import { styles } from '../../styles/masteryMatrixStyles';
 
 interface SyncedEvent {
   studentId: string;
@@ -68,27 +67,27 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
   };
 
   return (
-    <div className="glass-panel" style={styles.container}>
-      <div style={styles.header}>
-        <span style={styles.icon}>📊</span>
+    <div className="glass-panel p-6 flex flex-col gap-5 w-full overflow-hidden">
+      <div className="flex items-center gap-3">
+        <span className="text-2xl">📊</span>
         <div>
-          <h3 style={styles.title}>Classroom Mastery Matrix</h3>
-          <p style={styles.subtitle}>Overview of topic mastery grades across all synced student profiles.</p>
+          <h3 className="text-base font-bold text-[var(--text-main)]">Classroom Mastery Matrix</h3>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">Overview of topic mastery grades across all synced student profiles.</p>
         </div>
       </div>
 
       {students.length === 0 ? (
-        <div style={styles.empty}>
+        <div className="text-center p-10 text-[var(--text-muted)] text-sm italic">
           <p>No student progress telemetry synced yet.</p>
         </div>
       ) : (
-        <div style={styles.tableWrapper}>
-          <table style={styles.table}>
+        <div className="overflow-x-auto w-full max-h-[400px] overflow-y-auto border border-[var(--border-color)] rounded-xl">
+          <table className="w-full border-collapse text-[13px] text-left">
             <thead>
               <tr>
-                <th style={{ ...styles.th, ...styles.stickyCol }}>Student / Device ID</th>
+                <th className="p-3.5 px-4.5 bg-[var(--bg-main)] border-b border-[var(--border-color)] text-[var(--text-muted)] font-bold whitespace-nowrap sticky left-0 z-10 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)]">Student / Device ID</th>
                 {topics.map((topic) => (
-                  <th key={topic} style={styles.th}>
+                  <th key={topic} className="p-3.5 px-4.5 bg-[var(--bg-main)] border-b border-[var(--border-color)] text-[var(--text-muted)] font-bold whitespace-nowrap">
                     {topic}
                   </th>
                 ))}
@@ -96,8 +95,8 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
             </thead>
             <tbody>
               {students.map((student) => (
-                <tr key={student} style={styles.tr}>
-                  <td style={{ ...styles.td, ...styles.stickyCol, ...styles.studentCell }}>
+                <tr key={student} className="border-b border-[var(--border-color)] hover:bg-white/[0.02]">
+                  <td className="p-3 px-4.5 text-[var(--text-main)] whitespace-nowrap sticky left-0 z-10 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] font-semibold font-mono text-xs">
                     🔑 {student}
                   </td>
                   {topics.map((topic) => {
@@ -110,7 +109,7 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
                       lastUpdatedCell.studentId === student &&
                       lastUpdatedCell.topic === topic &&
                       Date.now() - lastUpdatedCell.timestamp < 5000;
-
+ 
                     let pulseClass = '';
                     if (isRecentlyUpdated && bestScore !== null) {
                       if (bestScore >= 80) pulseClass = 'flash-green';
@@ -119,11 +118,10 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
                     }
 
                     return (
-                      <td key={topic} style={styles.td}>
+                      <td key={topic} className="p-3 px-4.5 text-[var(--text-main)] whitespace-nowrap">
                         <div
-                          className={pulseClass}
+                          className={pulseClass + " inline-flex items-center justify-center py-1.5 px-3 min-w-[55px] text-xs"}
                           style={{
-                            ...styles.cellBadge,
                             ...cellStyle,
                             borderRadius: '8px',
                             transition: 'all 0.5s ease',
@@ -143,5 +141,3 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
     </div>
   );
 };
-
-

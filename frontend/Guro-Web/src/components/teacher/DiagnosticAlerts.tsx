@@ -1,6 +1,5 @@
 import React from 'react';
 import { AlertCircle, Lightbulb, TrendingDown, BookOpen } from 'lucide-react';
-import { styles } from '../../styles/diagnosticAlertsStyles';
 
 interface SyncedEvent {
   studentId: string;
@@ -41,29 +40,29 @@ export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs
     .filter((stat) => stat.average < 65);
 
   return (
-    <div style={styles.container}>
+    <div className="grid grid-cols-2 gap-5 w-full">
       {/* Commonly Struggling Topics */}
-      <div className="glass-panel" style={styles.card}>
-        <div style={styles.cardHeader}>
-          <TrendingDown size={20} style={{ color: '#EF4444' }} />
-          <h3 style={styles.title}>Struggling Topics (Class Average &lt; 65%)</h3>
+      <div className="glass-panel p-6 flex flex-col gap-4 h-full">
+        <div className="flex items-center gap-2.5">
+          <TrendingDown size={20} className="text-[#EF4444]" />
+          <h3 className="text-[15px] font-bold text-[var(--text-main)]">Struggling Topics (Class Average &lt; 65%)</h3>
         </div>
-        <div style={styles.list}>
+        <div className="flex flex-col gap-3 overflow-y-auto max-h-[220px]">
           {lowAverageTopics.length === 0 ? (
-            <div style={styles.empty}>
+            <div className="p-4 text-[#10B981] text-[13px] font-semibold">
               <p>🟢 No topic averages fall below mastery thresholds currently.</p>
             </div>
           ) : (
             lowAverageTopics.map((item) => (
-              <div key={item.topic} style={styles.alertItem}>
-                <AlertCircle size={16} style={{ color: '#EF4444', marginTop: '2px' }} />
-                <div style={styles.alertText}>
-                  <span style={styles.alertTitle}>
+              <div key={item.topic} className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
+                <AlertCircle size={16} className="text-[#EF4444] mt-0.5" />
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[13px] font-bold text-[var(--text-main)]">
                     {item.topic} (Grade {item.grade} {item.subject})
                   </span>
-                  <p style={styles.alertDesc}>
+                  <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
                     The class has an average accuracy of only{' '}
-                    <strong style={{ color: '#EF4444' }}>{item.average}%</strong> on this topic.
+                    <strong className="text-[#EF4444] font-extrabold">{item.average}%</strong> on this topic.
                     Remediation exercises are recommended.
                   </p>
                 </div>
@@ -74,29 +73,29 @@ export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs
       </div>
 
       {/* AI Lesson Recommendations */}
-      <div className="glass-panel" style={styles.card}>
-        <div style={styles.cardHeader}>
-          <Lightbulb size={20} style={{ color: '#F59E0B' }} />
-          <h3 style={styles.title}>AI Curriculum Recommendations</h3>
+      <div className="glass-panel p-6 flex flex-col gap-4 h-full">
+        <div className="flex items-center gap-2.5">
+          <Lightbulb size={20} className="text-[#F59E0B]" />
+          <h3 className="text-[15px] font-bold text-[var(--text-main)]">AI Curriculum Recommendations</h3>
         </div>
-        <div style={styles.list}>
+        <div className="flex flex-col gap-3 overflow-y-auto max-h-[220px]">
           {lowAverageTopics.length === 0 ? (
-            <div style={styles.alertItem}>
-              <BookOpen size={16} style={{ color: '#10B981' }} />
-              <div style={styles.alertText}>
-                <span style={styles.alertTitle}>Keep building standard lessons!</span>
-                <p style={styles.alertDesc}>
+            <div className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
+              <BookOpen size={16} className="text-[#10B981]" />
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[13px] font-bold text-[var(--text-main)]">Keep building standard lessons!</span>
+                <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
                   Everything looks stable. Consider creating a new Grade 5 Decimals or Fractions lesson to extend the curriculum bank.
                 </p>
               </div>
             </div>
           ) : (
             lowAverageTopics.map((item) => (
-              <div key={item.topic} style={styles.alertItem}>
-                <Lightbulb size={16} style={{ color: '#F59E0B', marginTop: '2px' }} />
-                <div style={styles.alertText}>
-                  <span style={styles.alertTitle}>Targeted Lesson Boost: {item.topic}</span>
-                  <p style={styles.alertDesc}>
+              <div key={item.topic} className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
+                <Lightbulb size={16} className="text-[#F59E0B] mt-0.5" />
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[13px] font-bold text-[var(--text-main)]">Targeted Lesson Boost: {item.topic}</span>
+                  <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
                     Go to the <strong>Lesson Ingestor</strong> tab, set Grade to <strong>{item.grade}</strong>, Subject to <strong>{item.subject}</strong>, and parse an extension lesson about <em>"{item.topic}"</em> with more simplified questions and detailed step-by-step explanations.
                   </p>
                 </div>

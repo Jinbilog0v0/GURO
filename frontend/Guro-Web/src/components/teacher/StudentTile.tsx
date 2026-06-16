@@ -1,6 +1,5 @@
 import React from 'react';
 import { Trophy, BookOpen, Clock, Award } from 'lucide-react';
-import { styles } from '../../styles/studentTileStyles';
 
 interface SyncedEvent {
   studentId: string;
@@ -52,21 +51,21 @@ export const StudentTile: React.FC<StudentTileProps> = ({
   return (
     <button
       onClick={() => onSelect(studentId)}
-      className="glass-panel"
-      style={{
-        ...styles.card,
-        ...(isSelected ? styles.cardSelected : {}),
-      }}
+      className={`glass-panel p-5 flex flex-col gap-4 text-left cursor-pointer w-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] border ${
+        isSelected
+          ? 'border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.15)] bg-indigo-500/5'
+          : 'border-[var(--border-color)] hover:border-indigo-500/50'
+      }`}
     >
-      <div style={styles.header}>
-        <div style={styles.avatar}>🔑</div>
-        <div style={styles.nameContainer}>
-          <h4 style={styles.name}>{studentId}</h4>
-          <span style={styles.badge}>Active student</span>
+      <div className="flex items-center gap-3 w-full">
+        <div className="w-9 h-9 rounded-[10px] bg-[var(--border-color)] flex items-center justify-center text-base border border-[var(--border-color)]">🔑</div>
+        <div className="flex-1 flex flex-col">
+          <h4 className="text-sm font-bold text-[var(--text-main)] font-mono truncate max-w-[120px]">{studentId}</h4>
+          <span className="text-[10px] text-[var(--text-muted)] mt-0.5 font-semibold uppercase">Active student</span>
         </div>
         <div
+          className="px-2 py-1 rounded-md text-xs font-extrabold"
           style={{
-            ...styles.scoreBadge,
             backgroundColor: `${getStatusColor()}15`,
             color: getStatusColor(),
             border: `1px solid ${getStatusColor()}30`,
@@ -76,24 +75,24 @@ export const StudentTile: React.FC<StudentTileProps> = ({
         </div>
       </div>
 
-      <div style={styles.statsGrid}>
-        <div style={styles.statItem}>
+      <div className="grid grid-cols-2 gap-2.5 w-full pt-3 border-t border-[var(--border-color)]">
+        <div className="flex items-center gap-2">
           <Trophy size={14} style={{ color: '#F59E0B' }} />
-          <span style={styles.statVal}>{totalQuizzes} Quizzes</span>
+          <span className="text-[11px] text-[var(--text-muted)] font-semibold">{totalQuizzes} Quizzes</span>
         </div>
-        <div style={styles.statItem}>
+        <div className="flex items-center gap-2">
           <BookOpen size={14} style={{ color: '#0EA5E9' }} />
-          <span style={styles.statVal}>
+          <span className="text-[11px] text-[var(--text-muted)] font-semibold">
             {new Set(logs.map(l => l.topic)).size} Topics
           </span>
         </div>
-        <div style={styles.statItem}>
+        <div className="flex items-center gap-2">
           <Clock size={14} style={{ color: '#94A3B8' }} />
-          <span style={styles.statVal}>Active {lastActive}</span>
+          <span className="text-[11px] text-[var(--text-muted)] font-semibold">Active {lastActive}</span>
         </div>
-        <div style={styles.statItem}>
+        <div className="flex items-center gap-2">
           <Award size={14} style={{ color: '#A855F7' }} />
-          <span style={styles.statVal}>
+          <span className="text-[11px] text-[var(--text-muted)] font-semibold">
             {avgScore >= 80 ? 'Mastery ⭐' : avgScore >= 50 ? 'Progressing 📈' : 'Needs Aid ⚠️'}
           </span>
         </div>
