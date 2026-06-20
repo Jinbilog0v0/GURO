@@ -50,7 +50,7 @@ describe('LessonSpace Page', () => {
 
   test('renders the Lesson Plan Ingestion header', () => {
     render(<LessonSpace currentUser={null} />);
-    expect(screen.getByText('📖 Lesson Plan Ingestion')).toBeInTheDocument();
+    expect(screen.getByText(/Lesson Plan Ingestion/)).toBeInTheDocument();
   });
 
   test('triggers generation when form is submitted', async () => {
@@ -75,10 +75,10 @@ describe('LessonSpace Page', () => {
     fireEvent.change(screen.getByPlaceholderText(/e.g. Metric Conversions/i), { target: { value: 'Test Topic' } });
     fireEvent.change(screen.getByPlaceholderText(/Paste textbook/i), { target: { value: 'Test Content' } });
     
-    fireEvent.click(screen.getByText('⚡ Parse & Generate Items'));
+    fireEvent.click(screen.getByText('Parse & Generate Items'));
 
     await waitFor(() => {
-      expect(screen.getByText('📖 Study Content Guide')).toBeInTheDocument();
+      expect(screen.getByText(/Study Content Guide/)).toBeInTheDocument();
     });
 
     // Click on Question Bank tab to render questions
@@ -118,10 +118,10 @@ describe('LessonSpace Page', () => {
     
     fireEvent.change(screen.getByPlaceholderText(/e.g. Metric Conversions/i), { target: { value: 'Test Topic' } });
     fireEvent.change(screen.getByPlaceholderText(/Paste textbook/i), { target: { value: 'Test Content' } });
-    fireEvent.click(screen.getByText('⚡ Parse & Generate Items'));
+    fireEvent.click(screen.getByText('Parse & Generate Items'));
 
     await waitFor(() => {
-      expect(screen.getByText('📖 Study Content Guide')).toBeInTheDocument();
+      expect(screen.getByText(/Study Content Guide/)).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByText(/Question Bank/i));

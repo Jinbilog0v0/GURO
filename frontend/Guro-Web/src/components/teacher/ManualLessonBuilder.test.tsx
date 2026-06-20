@@ -81,13 +81,11 @@ describe('ManualLessonBuilder Component', () => {
     fireEvent.click(screen.getAllByRole('radio')[0]);
 
     fireEvent.submit(form);
-    expect(global.alert).toHaveBeenCalledWith('Bilingual feedback for Question #1 is required.');
+    expect(global.alert).toHaveBeenCalledWith('Explanation for Question #1 is required.');
 
-    // Fill English and Filipino explanations
+    // Fill English explanation
     const explanationEn = screen.getByPlaceholderText('Explain why this option is correct...');
-    const explanationFil = screen.getByPlaceholderText('Ipaliwanag kung bakit tama ang sagot...');
     fireEvent.change(explanationEn, { target: { value: 'Dog is a noun.' } });
-    fireEvent.change(explanationFil, { target: { value: 'Ang aso ay pangngalan.' } });
 
     // Submit valid form
     fireEvent.submit(form);

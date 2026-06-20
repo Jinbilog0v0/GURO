@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, Lightbulb, TrendingDown, BookOpen } from 'lucide-react';
+import { AlertCircle, Lightbulb, TrendingDown, BookOpen, CheckCircle } from 'lucide-react';
 
 interface SyncedEvent {
   studentId: string;
@@ -44,25 +44,26 @@ export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs
       {/* Commonly Struggling Topics */}
       <div className="glass-panel p-6 flex flex-col gap-4 h-full">
         <div className="flex items-center gap-2.5">
-          <TrendingDown size={20} className="text-[#EF4444]" />
+          <TrendingDown size={20} className="text-[#A01322]" />
           <h3 className="text-[15px] font-bold text-[var(--text-main)]">Struggling Topics (Class Average &lt; 65%)</h3>
         </div>
         <div className="flex flex-col gap-3 overflow-y-auto max-h-[220px]">
           {lowAverageTopics.length === 0 ? (
-            <div className="p-4 text-[#10B981] text-[13px] font-semibold">
-              <p>🟢 No topic averages fall below mastery thresholds currently.</p>
+            <div className="p-4 text-[#10B981] text-[13px] font-semibold flex items-center gap-1.5">
+              <CheckCircle size={16} className="text-[#10B981] shrink-0" />
+              <span>No topic averages fall below mastery thresholds currently.</span>
             </div>
           ) : (
             lowAverageTopics.map((item) => (
               <div key={item.topic} className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
-                <AlertCircle size={16} className="text-[#EF4444] mt-0.5" />
+                <AlertCircle size={16} className="text-[#A01322] mt-0.5" />
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[13px] font-bold text-[var(--text-main)]">
                     {item.topic} (Grade {item.grade} {item.subject})
                   </span>
                   <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
                     The class has an average accuracy of only{' '}
-                    <strong className="text-[#EF4444] font-extrabold">{item.average}%</strong> on this topic.
+                    <strong className="text-[#A01322] font-extrabold">{item.average}%</strong> on this topic.
                     Remediation exercises are recommended.
                   </p>
                 </div>

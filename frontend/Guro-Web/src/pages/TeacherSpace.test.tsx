@@ -53,7 +53,7 @@ describe('TeacherSpace Page', () => {
         loading={false} 
       />
     );
-    expect(screen.getByText('🏫 Teacher Console')).toBeInTheDocument();
+    expect(screen.getByText('Teacher Console')).toBeInTheDocument();
   });
 
   test('displays summary statistics correctly', () => {
@@ -71,7 +71,7 @@ describe('TeacherSpace Page', () => {
     expect(totalReportsCard).toHaveTextContent('2');
 
     // Unique students - expect 2
-    const uniqueDevicesCard = screen.getByText('Unique Active Devices').parentElement;
+    const uniqueDevicesCard = screen.getByText('Active Devices').parentElement;
     expect(uniqueDevicesCard).toHaveTextContent('2');
   });
 
@@ -105,7 +105,7 @@ describe('TeacherSpace Page', () => {
       />
     );
 
-    const setupTabBtn = screen.getByText('🔑 Classroom Setup');
+    const setupTabBtn = screen.getByText('Classroom Setup');
     fireEvent.click(setupTabBtn);
 
     expect(screen.getByText(/Active Classroom Config & Pairing/i)).toBeInTheDocument();
@@ -140,10 +140,10 @@ describe('TeacherSpace Page', () => {
       />
     );
 
-    fireEvent.click(screen.getByText('🔑 Classroom Setup'));
+    fireEvent.click(screen.getByText('Classroom Setup'));
     
     fireEvent.change(screen.getByPlaceholderText('e.g. Teacher Maria'), { target: { value: 'Teacher Maria' } });
-    fireEvent.click(screen.getByText('⚡ Generate Classroom Invite Code'));
+    fireEvent.click(screen.getByText('Generate Classroom Invite Code'));
 
     await waitFor(() => {
       expect(screen.getByText('CLASS-999')).toBeInTheDocument();

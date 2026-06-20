@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, BookOpen, Clock, Award } from 'lucide-react';
+import { Trophy, BookOpen, Clock, Award, Key, Star, TrendingUp, AlertTriangle } from 'lucide-react';
 
 interface SyncedEvent {
   studentId: string;
@@ -40,7 +40,7 @@ export const StudentTile: React.FC<StudentTileProps> = ({
   const getStatusColor = () => {
     if (avgScore >= 80) return '#10B981'; // Green
     if (avgScore >= 50) return '#F59E0B'; // Yellow
-    return '#EF4444'; // Red
+    return '#A01322'; // Red
   };
 
   // Find most recent topic completed
@@ -53,12 +53,14 @@ export const StudentTile: React.FC<StudentTileProps> = ({
       onClick={() => onSelect(studentId)}
       className={`glass-panel p-5 flex flex-col gap-4 text-left cursor-pointer w-full transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] border ${
         isSelected
-          ? 'border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.15)] bg-indigo-500/5'
-          : 'border-[var(--border-color)] hover:border-indigo-500/50'
+          ? 'border-[#11428E] shadow-[0_0_15px_rgba(17,66,142,0.15)] bg-[#11428E]/5'
+          : 'border-[var(--border-color)] hover:border-[#11428E]/50'
       }`}
     >
       <div className="flex items-center gap-3 w-full">
-        <div className="w-9 h-9 rounded-[10px] bg-[var(--border-color)] flex items-center justify-center text-base border border-[var(--border-color)]">🔑</div>
+        <div className="w-9 h-9 rounded-[10px] bg-[var(--border-color)] flex items-center justify-center border border-[var(--border-color)]">
+          <Key size={16} className="text-[#F59E0B]" />
+        </div>
         <div className="flex-1 flex flex-col">
           <h4 className="text-sm font-bold text-[var(--text-main)] font-mono truncate max-w-[120px]">{studentId}</h4>
           <span className="text-[10px] text-[var(--text-muted)] mt-0.5 font-semibold uppercase">Active student</span>
@@ -92,8 +94,15 @@ export const StudentTile: React.FC<StudentTileProps> = ({
         </div>
         <div className="flex items-center gap-2">
           <Award size={14} style={{ color: '#A855F7' }} />
-          <span className="text-[11px] text-[var(--text-muted)] font-semibold">
-            {avgScore >= 80 ? 'Mastery ⭐' : avgScore >= 50 ? 'Progressing 📈' : 'Needs Aid ⚠️'}
+          <span className="text-[11px] text-[var(--text-muted)] font-semibold flex items-center gap-1">
+            <span>{avgScore >= 80 ? 'Mastery' : avgScore >= 50 ? 'Progressing' : 'Needs Aid'}</span>
+            {avgScore >= 80 ? (
+              <Star size={11} className="text-[#F59E0B] fill-[#F59E0B]" />
+            ) : avgScore >= 50 ? (
+              <TrendingUp size={11} className="text-[#10B981]" />
+            ) : (
+               <AlertTriangle size={11} className="text-[#A01322]" />
+            )}
           </span>
         </div>
       </div>

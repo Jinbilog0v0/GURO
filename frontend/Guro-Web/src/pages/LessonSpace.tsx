@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { BookOpenText, Wrench, FolderOpen, Folder, FileText, Star, BookOpen, FileCheck, Loader2, X, Zap, Briefcase, Check, AlertTriangle, Hourglass, Languages } from 'lucide-react';
 
 export interface Question {
   id: string;
@@ -293,7 +294,7 @@ export function LessonSpace({
         } else if (pct < 70) {
           setProgressStage('Synthesizing Easy, Average, and Difficult tiers...');
         } else if (pct < 90) {
-          setProgressStage('Formatting bilingual explanations (English/Filipino)...');
+          setProgressStage('Formatting structured explanations (English)...');
         } else {
           setProgressStage('Polishing and validating structured response...');
         }
@@ -381,7 +382,7 @@ export function LessonSpace({
           }}
         >
           <h4 style={{ fontSize: '18px', fontWeight: 700, color: '#f8fafc', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: 0 }}>
-            <span>⚡</span> Ingestion Pipeline Active
+            <Zap className="size-4.5 text-[#3b82f6] shrink-0" /> Ingestion Pipeline Active
           </h4>
           <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '20px' }}>
             Topic: <strong style={{ color: '#3b82f6' }}>{topic || 'Untitled Lesson'}</strong>
@@ -425,13 +426,17 @@ export function LessonSpace({
                 fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
               }}
             >
-              💼 Run in Background (Minimize)
+              <Briefcase size={14} className="shrink-0" /> Run in Background (Minimize)
             </button>
           ) : (
             <div style={{ fontSize: '13px', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              <span>✓</span> Ingestion Complete!
+              <Check size={14} className="shrink-0" /> Ingestion Complete!
             </div>
           )}
         </div>
@@ -439,9 +444,12 @@ export function LessonSpace({
     );
   };
 
-  const updateFeedback = (index: number, lang: 'en' | 'fil', value: string) => {
+  const updateFeedback = (index: number, value: string) => {
     const updated = [...stagedQuestions];
-    updated[index].feedback = { ...updated[index].feedback, [lang]: value };
+    updated[index].feedback = {
+      en: value,
+      fil: value,
+    };
     setStagedQuestions(updated);
   };
 
@@ -450,21 +458,27 @@ export function LessonSpace({
       <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-7 items-start">
         {/* Left Form Panel */}
         <form onSubmit={handleGenerate} className="glass-panel p-6 flex flex-col gap-[18px]">
-          <h3 className="text-lg">📖 Lesson Plan Ingestion</h3>
+          <h3 className="text-lg flex items-center gap-2">
+            <BookOpenText className="size-5 text-blue-500" /> Lesson Plan Ingestion
+          </h3>
           
           {isMissingClassroom && (
             <div style={{
               padding: '12px 16px',
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
+              backgroundColor: 'rgba(160, 19, 34, 0.1)',
+              border: '1px solid rgba(160, 19, 34, 0.2)',
               borderRadius: '8px',
-              color: '#EF4444',
+              color: '#A01322',
               fontSize: '12px',
               lineHeight: '18px',
               fontWeight: 600,
-              marginBottom: '16px'
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '8px'
             }}>
-              ⚠️ Active Classroom Code Required: Go to the <strong>Classroom Setup</strong> tab in the Teacher Console first so that your custom ingested lessons can be saved to your classroom's private bank.
+              <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+              <span>Active Classroom Code Required: Go to the <strong>Classroom Setup</strong> tab in the Teacher Console first so that your custom ingested lessons can be saved to your classroom's private bank.</span>
             </div>
           )}
           
@@ -534,7 +548,9 @@ export function LessonSpace({
                     cursor: 'pointer'
                   }}
                 />
-                <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>📁</span>
+                <span style={{ display: 'block', marginBottom: '8px' }}>
+                  <Folder className="size-8 text-slate-400 mx-auto" />
+                </span>
                 <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>
                   Drag & drop or click to upload PDF
                 </span>
@@ -555,7 +571,7 @@ export function LessonSpace({
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                  <span style={{ fontSize: '20px' }}>📄</span>
+                  <FileText className="size-5 text-blue-400 shrink-0" />
                   <span style={{ 
                     fontSize: '13px', 
                     color: '#93C5FD', 
@@ -574,22 +590,33 @@ export function LessonSpace({
                     background: 'none',
                     border: 'none',
                     color: 'rgba(255, 255, 255, 0.5)',
-                    fontSize: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     cursor: 'pointer',
                     padding: '4px',
                     borderRadius: '4px',
-                    lineHeight: 1,
                     transition: 'color 0.2s',
                   }}
                 >
-                  ✕
+                  <X className="size-4" />
                 </button>
               </div>
             )}
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ marginTop: '8px' }} disabled={loading || isMissingClassroom}>
-            {loading ? '⌛ Splitting Content...' : '⚡ Parse & Generate Items'}
+          <button type="submit" className="btn btn-primary flex items-center justify-center gap-2" style={{ marginTop: '8px' }} disabled={loading || isMissingClassroom}>
+            {loading ? (
+              <>
+                <Hourglass className="size-4 animate-spin shrink-0" />
+                <span>Splitting Content...</span>
+              </>
+            ) : (
+              <>
+                <Zap className="size-4 shrink-0" />
+                <span>Parse & Generate Items</span>
+              </>
+            )}
           </button>
         </form>
 
@@ -597,26 +624,36 @@ export function LessonSpace({
         <div className="glass-panel p-6 flex flex-col min-h-[500px]">
 
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 border-b border-white/10 pb-4 mb-5">
-            <h3 className="text-lg">🛠️ Review & Commit Workspace</h3>
+            <h3 className="text-lg flex items-center gap-2">
+              <Wrench className="size-5 text-purple-500" /> Review & Commit Workspace
+            </h3>
             <button
               onClick={handleSave}
-              className={`btn btn-primary ${stagedQuestions.length === 0 || isCommiting || isMissingClassroom ? 'btn-disabled' : ''}`}
+              className={`btn btn-primary flex items-center gap-2 ${stagedQuestions.length === 0 || isCommiting || isMissingClassroom ? 'btn-disabled' : ''}`}
               disabled={stagedQuestions.length === 0 || isCommiting || isMissingClassroom}
             >
-              {isCommiting ? 'Saving...' : `📥 Commit ${stagedQuestions.length} Items to Disk`}
+              {isCommiting ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <FileCheck className="size-4" /> Commit {stagedQuestions.length} Items to Disk
+                </>
+              )}
             </button>
           </div>
 
           <div className="flex-1 flex flex-col">
             {loading ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 p-10">
-                <div className="spinner"></div>
-                <p className="text-[13px] font-bold text-[#6366F1] tracking-[0.5px]">GEMINI FRAGMENTING LESSON MATRIX</p>
-                <p className="text-xs text-[var(--text-muted)] text-center">Synthesizing questions and writing bilingual explanations...</p>
+                <Loader2 className="size-8 text-[#11428E] animate-spin" />
+                <p className="text-[13px] font-bold text-[#11428E] tracking-[0.5px]">GEMINI FRAGMENTING LESSON MATRIX</p>
+                <p className="text-xs text-[var(--text-muted)] text-center">Synthesizing questions and writing explanations...</p>
               </div>
             ) : (!stagedStudyContent && stagedQuestions.length === 0) ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 p-10">
-                <span className="text-[44px] opacity-30">📂</span>
+                <FolderOpen className="size-12 text-slate-500 opacity-40" />
                 <p className="text-[var(--text-main)] font-bold text-sm">No content currently staged.</p>
                 <p className="text-xs text-[var(--text-muted)] text-center">Submit a lesson plan on the left to start the ingestion pipeline.</p>
               </div>
@@ -636,9 +673,12 @@ export function LessonSpace({
                       fontWeight: 600,
                       cursor: 'pointer',
                       fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
                     }}
                   >
-                    📖 Study Content Guide
+                    <BookOpen className="size-4" /> Study Content Guide
                   </button>
                   <button
                     type="button"
@@ -652,9 +692,12 @@ export function LessonSpace({
                       fontWeight: 600,
                       cursor: 'pointer',
                       fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
                     }}
                   >
-                    🛠️ Question Bank ({stagedQuestions.length})
+                    <Wrench className="size-4" /> Question Bank ({stagedQuestions.length})
                   </button>
                 </div>
 
@@ -665,7 +708,9 @@ export function LessonSpace({
                       <>
                         {/* Introduction Card */}
                         <div style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px' }}>
-                          <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#93C5FD', fontWeight: 600 }}>🌟 Lesson Introduction</h4>
+                          <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#93C5FD', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Star className="size-4" /> Lesson Introduction
+                          </h4>
                           <div className="form-group" style={{ margin: 0 }}>
                             <textarea
                               value={stagedStudyContent.introduction}
@@ -678,7 +723,9 @@ export function LessonSpace({
 
                         {/* Definitions Card */}
                         <div style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px' }}>
-                          <h4 style={{ margin: '0 0 16px 0', fontSize: '15px', color: '#93C5FD', fontWeight: 600 }}>📚 Key Vocabulary & Definitions</h4>
+                          <h4 style={{ margin: '0 0 16px 0', fontSize: '15px', color: '#93C5FD', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <BookOpenText className="size-4" /> Key Vocabulary & Definitions
+                          </h4>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             {stagedStudyContent.definitions.map((def, defIdx) => (
                               <div key={defIdx} style={{ borderBottom: defIdx === stagedStudyContent.definitions.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)', paddingBottom: defIdx === stagedStudyContent.definitions.length - 1 ? 0 : '16px' }}>
@@ -723,7 +770,9 @@ export function LessonSpace({
 
                         {/* Summary Card */}
                         <div style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px' }}>
-                          <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#93C5FD', fontWeight: 600 }}>📝 Key Takeaways & Summary</h4>
+                          <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#93C5FD', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <FileText className="size-4" /> Key Takeaways & Summary
+                          </h4>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {stagedStudyContent.summary.map((sumItem, sumIdx) => (
                               <div key={sumIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -757,11 +806,11 @@ export function LessonSpace({
                                   ? 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20' 
                                   : badgeClass === 'average' 
                                     ? 'bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20' 
-                                    : 'bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20'
+                                    : 'bg-[#A01322]/10 text-[#A01322] border border-[#A01322]/20'
                               }`}>
                                 {q.difficulty}
                               </span>
-                              <span className="px-2 py-0.75 rounded-md text-[10px] font-bold uppercase bg-[#6366F1]/10 text-[var(--accent-primary)] border border-[#6366F1]/20">
+                              <span className="px-2 py-0.75 rounded-md text-[10px] font-bold uppercase bg-[#11428E]/10 text-[var(--accent-primary)] border border-[#11428E]/20">
                                 {q.category}
                               </span>
                             </div>
@@ -810,25 +859,17 @@ export function LessonSpace({
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                            <div className="form-group">
-                              <label>🇺🇸 English Feedback</label>
-                              <input
-                                type="text"
-                                value={q.feedback.en}
-                                onChange={(e) => updateFeedback(idx, 'en', e.target.value)}
-                                className="form-control w-full bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] text-[13px]"
-                              />
-                            </div>
-                            <div className="form-group">
-                              <label>🇵🇭 Filipino Feedback</label>
-                              <input
-                                type="text"
-                                value={q.feedback.fil}
-                                onChange={(e) => updateFeedback(idx, 'fil', e.target.value)}
-                                className="form-control w-full bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] text-[13px]"
-                              />
-                            </div>
+                          <div className="form-group mt-3">
+                            <label className="flex items-center gap-1.5">
+                              <Languages size={14} className="text-[#38BDF8] shrink-0" />
+                              <span>Explanation</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={q.feedback.en}
+                              onChange={(e) => updateFeedback(idx, e.target.value)}
+                              className="form-control w-full bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] text-[13px]"
+                            />
                           </div>
                         </div>
                       );

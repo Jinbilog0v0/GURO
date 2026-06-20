@@ -64,7 +64,7 @@ describe('DiagnosticAlerts Component', () => {
 
     render(<DiagnosticAlerts progressLogs={highScoresOnly} />);
 
-    expect(screen.getByText('🟢 No topic averages fall below mastery thresholds currently.')).toBeInTheDocument();
+    expect(screen.getByText('No topic averages fall below mastery thresholds currently.')).toBeInTheDocument();
     expect(screen.getByText('Keep building standard lessons!')).toBeInTheDocument();
   });
 });

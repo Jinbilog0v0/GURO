@@ -42,7 +42,7 @@ describe('StudentTile Component', () => {
     expect(screen.getByText('85%')).toBeInTheDocument();
     expect(screen.getByText('2 Quizzes')).toBeInTheDocument();
     expect(screen.getByText('2 Topics')).toBeInTheDocument();
-    expect(screen.getByText('Mastery ⭐')).toBeInTheDocument();
+    expect(screen.getByText('Mastery')).toBeInTheDocument();
   });
 
   test('calls onSelect when clicked', () => {

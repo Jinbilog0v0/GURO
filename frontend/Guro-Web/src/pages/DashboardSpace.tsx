@@ -1,4 +1,17 @@
 import { useState, useEffect } from 'react';
+import { BarChart3, RotateCw, Loader2, FolderOpen, Inbox, Calculator, BookOpen, School } from 'lucide-react';
+
+function StatCard({ label, value, accentColor, valueColor }: {
+  label: string; value: React.ReactNode; accentColor: string; valueColor?: string;
+}) {
+  return (
+    <div className="relative bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[16px] p-[18px_20px_20px] overflow-hidden shadow-sm">
+      <span className="absolute left-0 top-4 bottom-4 w-1 rounded-[0_4px_4px_0]" style={{ background: accentColor }} />
+      <div className="text-[11px] font-extrabold tracking-[0.08em] uppercase text-[var(--text-muted)]">{label}</div>
+      <div className="text-[34px] font-extrabold mt-2 text-[var(--text-main)]" style={valueColor ? { color: valueColor } : undefined}>{value}</div>
+    </div>
+  );
+}
 
 export interface DashboardSpaceProps {
   currentUser: {
@@ -100,117 +113,97 @@ export function DashboardSpace({ currentUser, stagedQuestionsCount }: DashboardS
   return (
     <div className="fade-in w-full flex flex-col gap-6 text-[var(--text-main)]">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 border-b border-[var(--border-color)] pb-4">
-        <div>
-          <h2 className="text-2xl font-bold text-[var(--text-main)] flex items-center gap-2">
-            📊 Database & System Dashboard
-          </h2>
-          <p className="text-[var(--text-muted)] text-xs mt-1">
-            Real-time telemetry and overview of Guro curriculum assets
-          </p>
+      <div className="flex items-start gap-[14px] mb-[6px]">
+        <div className="w-[46px] h-[46px] shrink-0 rounded-[13px] bg-[var(--accent-primary-glow)] text-[var(--accent-primary)] flex items-center justify-center">
+          <BarChart3 className="size-[23px]" />
         </div>
-        <button 
+        <div className="flex-1 min-w-0">
+          <h1 className="text-[25px] font-extrabold tracking-[-0.02em] text-[var(--text-main)] m-0">Database &amp; System Dashboard</h1>
+          <p className="text-[14px] text-[var(--text-muted)] font-medium mt-1 mb-0">Real-time telemetry and overview of GURO curriculum assets.</p>
+        </div>
+        <button
           onClick={fetchStats}
-          className="btn btn-secondary flex items-center gap-2 transition-all text-xs self-start lg:self-auto"
+          className="btn btn-secondary flex items-center gap-2 text-xs self-start cursor-pointer shrink-0"
           disabled={loading}
         >
-          {loading ? '⌛ Fetching...' : '🔄 Refresh Data'}
+          {loading ? <><Loader2 className="size-3.5 animate-spin" />Fetching...</> : <><RotateCw className="size-3.5" />Refresh Data</>}
         </button>
       </div>
 
       {/* Stats Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
-        <div className="glass-panel p-4 flex flex-col gap-1 border-l-4 border-l-sky-500 shadow-md">
-          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Subjects Loaded</span>
-          <span className="text-2xl font-extrabold text-[var(--text-main)]">{loading ? '-' : dbStats.subjects}</span>
-        </div>
-        
-        <div className="glass-panel p-4 flex flex-col gap-1 border-l-4 border-l-indigo-500 shadow-md">
-          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Unique Topics</span>
-          <span className="text-2xl font-extrabold text-[var(--text-main)]">{loading ? '-' : dbStats.topics}</span>
-        </div>
-
-        <div className="glass-panel p-4 flex flex-col gap-1 border-l-4 border-l-emerald-500 shadow-md">
-          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Total Questions</span>
-          <span className="text-2xl font-extrabold text-[var(--text-main)]">{loading ? '-' : dbStats.questions}</span>
-        </div>
-
-        <div className="glass-panel p-4 flex flex-col gap-1 border-l-4 border-l-amber-500 shadow-md">
-          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Staged Questions</span>
-          <span className="text-2xl font-extrabold text-amber-500">{stagedQuestionsCount}</span>
-        </div>
+        <StatCard label="Subjects Loaded" value={loading ? '–' : dbStats.subjects} accentColor="#11428E" />
+        <StatCard label="Unique Topics" value={loading ? '–' : dbStats.topics} accentColor="#CE1126" />
+        <StatCard label="Total Questions" value={loading ? '–' : dbStats.questions} accentColor="#16A34A" />
+        <StatCard label="Staged Questions" value={stagedQuestionsCount} accentColor="#E8890C" valueColor="#E8890C" />
       </div>
 
       {/* Classroom Context Info if active */}
       {isTeacher && classCode && (
-        <div className="bg-sky-500/5 border border-sky-500/20 rounded-xl p-4 text-xs text-sky-500 font-semibold">
-          🏫 Connected to classroom <strong>{classCode}</strong>. Showing custom items loaded for this specific classroom.
+        <div className="bg-[var(--accent-primary-glow)] border border-[var(--accent-primary)]/20 rounded-[12px] px-4 py-3 text-xs text-[var(--accent-primary)] font-semibold flex items-center gap-2">
+          <School className="size-4 shrink-0" />
+          <span>Connected to classroom <strong>{classCode}</strong>. Showing custom items for this classroom.</span>
         </div>
       )}
 
       {/* Item Bank Details Panel */}
-      <div className="glass-panel p-6 flex flex-col gap-4">
-        <h3 className="text-lg font-bold text-[var(--text-main)]">📂 Ingested Asset Tree</h3>
-        <p className="text-[var(--text-muted)] text-xs">
-          Explore subjects, grade levels, and topics currently loaded in the database.
+      <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[18px] p-[24px_28px] flex flex-col gap-4 shadow-sm">
+        <div className="flex items-center gap-[11px]">
+          <FolderOpen className="size-[22px] text-[var(--accent-primary)]" />
+          <h2 className="text-[18px] font-extrabold text-[var(--text-main)] m-0">Ingested Asset Tree</h2>
+        </div>
+        <p className="text-[13.5px] text-[var(--text-muted)] font-medium mt-0 mb-2">
+          Subjects, grade levels, and topics currently loaded in the database.
         </p>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-8 gap-2">
-            <div className="spinner"></div>
+          <div className="flex flex-col items-center justify-center p-8 gap-3">
+            <Loader2 className="size-6 text-[var(--accent-primary)] animate-spin" />
             <p className="text-[var(--accent-primary)] text-xs font-semibold">Traversing database tree...</p>
           </div>
         ) : Object.keys(itemBankData).length === 0 ? (
-          <div className="text-center p-8 border border-dashed border-[var(--border-color)] rounded-xl bg-[var(--bg-main)]">
-            <span className="text-3xl">📭</span>
-            <p className="text-[var(--text-muted)] text-sm font-semibold mt-2">Item bank is currently empty.</p>
-            <p className="text-[var(--text-muted)] opacity-60 text-xs mt-1">Use the Lesson Ingestor to populate subjects and topics.</p>
+          <div className="text-center p-10 border border-dashed border-[var(--border-color)] rounded-[14px] bg-[var(--bg-main)] flex flex-col items-center gap-3">
+            <Inbox className="size-10 text-[var(--text-dark)]" />
+            <p className="text-[var(--text-muted)] text-sm font-semibold">Item bank is currently empty.</p>
+            <p className="text-[var(--text-dark)] text-xs">Use the Lesson Ingestor to populate subjects and topics.</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-6 mt-2">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-[18px]">
             {Object.keys(itemBankData).map(subjectName => (
-              <div key={subjectName} className="border border-[var(--border-color)] rounded-xl bg-[var(--bg-main)] p-4">
-                <h4 className="text-md font-bold text-[var(--accent-primary)] border-b border-[var(--border-color)] pb-2 mb-3 flex items-center gap-2">
-                  {subjectName === 'Mathematics' ? '🧮' : '📚'} {subjectName}
-                </h4>
+              <div key={subjectName} className="border border-[var(--border-color)] rounded-[15px] p-5 bg-[var(--bg-main)]">
+                <div className="flex items-center gap-[10px] mb-4">
+                  <div className={`w-[30px] h-[30px] rounded-[9px] flex items-center justify-center ${subjectName === 'Mathematics' ? 'bg-[var(--accent-primary-glow)] text-[var(--accent-primary)]' : 'bg-[var(--danger-glow)] text-[var(--danger)]'}`}>
+                    {subjectName === 'Mathematics' ? <Calculator className="size-[17px]" /> : <BookOpen className="size-[17px]" />}
+                  </div>
+                  <h3 className="text-[16px] font-extrabold text-[var(--accent-primary)] m-0">{subjectName}</h3>
+                </div>
 
-                <div className="flex flex-col gap-4">
-                  {Object.keys(itemBankData[subjectName] || {}).map(gradeLevel => (
-                    <div key={gradeLevel} className="flex flex-col gap-2 pl-2">
-                      <span className="text-xs font-bold text-emerald-500 uppercase tracking-wider">
-                        Grade {gradeLevel}
-                      </span>
-                      
-                      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-                        {Object.keys(itemBankData[subjectName][gradeLevel] || {}).map(topicName => {
+                {Object.keys(itemBankData[subjectName] || {}).map(gradeLevel => {
+                  const topics = Object.keys(itemBankData[subjectName][gradeLevel] || {});
+                  return (
+                    <div key={gradeLevel} className="mb-[13px] last:mb-0">
+                      <div className="text-[11px] font-extrabold tracking-[0.07em] uppercase text-[var(--success)] mb-[7px]">Grade {gradeLevel}</div>
+                      <div className="flex flex-col gap-[8px]">
+                        {topics.map(topicName => {
                           const topicNode = itemBankData[subjectName][gradeLevel][topicName];
                           let qCount = 0;
                           if (topicNode) {
                             Object.keys(topicNode).forEach(diff => {
                               const diffNode = topicNode[diff];
-                              if (diffNode) {
-                                Object.keys(diffNode).forEach(cat => {
-                                  if (Array.isArray(diffNode[cat])) {
-                                    qCount += diffNode[cat].length;
-                                  }
-                                });
-                              }
+                              if (diffNode) Object.keys(diffNode).forEach(cat => { if (Array.isArray(diffNode[cat])) qCount += diffNode[cat].length; });
                             });
                           }
-
                           return (
-                            <div key={topicName} className="bg-[var(--bg-sidebar)] border border-[var(--border-color)] rounded-lg p-3 flex justify-between items-center hover:border-[var(--text-muted)] transition-colors">
-                              <span className="text-xs font-semibold text-[var(--text-main)]">{topicName}</span>
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--border-color)] text-[var(--text-muted)] font-bold">
-                                {qCount} items
-                              </span>
+                            <div key={topicName} className="flex items-center justify-between px-[15px] py-[12px] bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[11px]">
+                              <span className="font-bold text-[14px] text-[var(--text-main)]">{topicName}</span>
+                              <span className="text-[11.5px] font-bold text-[var(--text-muted)] bg-[var(--bg-main)] border border-[var(--border-color)] px-[10px] py-[4px] rounded-full">{qCount} {qCount === 1 ? 'item' : 'items'}</span>
                             </div>
                           );
                         })}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             ))}
           </div>

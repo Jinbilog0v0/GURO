@@ -6,8 +6,8 @@ describe('LiveActivityTicker Component', () => {
   test('renders placeholder items when no telemetry events exist', () => {
     render(<LiveActivityTicker events={[]} />);
     
-    expect(screen.getByText('🟢 Live Telemetry Stream Active. Awaiting student practice events...')).toBeInTheDocument();
-    expect(screen.getByText('💡 Tip: Teachers can define lessons and customize diagnostic questions manually.')).toBeInTheDocument();
+    expect(screen.getByText(/Live Telemetry Stream Active/)).toBeInTheDocument();
+    expect(screen.getByText(/Tip: Teachers can define/)).toBeInTheDocument();
   });
 
   test('renders student practice events with correct styling and metrics', () => {

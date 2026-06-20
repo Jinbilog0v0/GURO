@@ -3,7 +3,7 @@ import { MasteryMatrix } from '../components/teacher/MasteryMatrix';
 import { StudentTile } from '../components/teacher/StudentTile';
 import { DiagnosticAlerts } from '../components/teacher/DiagnosticAlerts';
 import { ManualLessonBuilder } from '../components/teacher/ManualLessonBuilder';
-import { Lock } from 'lucide-react';
+import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock } from 'lucide-react';
 
 interface SyncedEvent {
   studentId: string;
@@ -213,36 +213,51 @@ export function TeacherSpace({
       {propActiveSubTab === undefined && (
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-[28px]">
-            <h2>🏫 Teacher Console</h2>
-            <div className="flex bg-white/3 border border-[var(--border-color)] rounded-[10px] p-1 gap-1">
+            <h2 className="flex items-center gap-2">
+              <School className="size-6 text-[#11428E] shrink-0" />
+              <span>Teacher Console</span>
+            </h2>
+            <div className="flex bg-white/5 border border-[var(--border-color)] rounded-[10px] p-1 gap-1">
               <button
                 onClick={() => setActiveSubTab('analytics')}
-                className={`px-3.5 py-1.5 border-none bg-transparent font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 ${
-                  activeSubTab === 'analytics' ? 'bg-white/6 text-[var(--text-main)]' : 'text-[var(--text-muted)]'
+                className={`px-3.5 py-1.5 border-none font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 flex items-center gap-1.5 ${
+                  activeSubTab === 'analytics'
+                    ? 'bg-white/10 text-[var(--text-main)]'
+                    : 'bg-transparent text-[var(--text-muted)]'
                 }`}
               >
-                📈 Classroom Analytics
+                <TrendingUp size={14} className="shrink-0" />
+                <span>Classroom Analytics</span>
               </button>
               <button
                 onClick={() => setActiveSubTab('classroom-pairing')}
-                className={`px-3.5 py-1.5 border-none bg-transparent font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 ${
-                  activeSubTab === 'classroom-pairing' ? 'bg-white/6 text-[var(--text-main)]' : 'text-[var(--text-muted)]'
+                className={`px-3.5 py-1.5 border-none font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 flex items-center gap-1.5 ${
+                  activeSubTab === 'classroom-pairing'
+                    ? 'bg-white/10 text-[var(--text-main)]'
+                    : 'bg-transparent text-[var(--text-muted)]'
                 }`}
               >
-                🔑 Classroom Setup
+                <Key size={14} className="shrink-0" />
+                <span>Classroom Setup</span>
               </button>
               <button
                 onClick={() => setActiveSubTab('manual-lesson')}
-                className={`px-3.5 py-1.5 border-none bg-transparent font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 ${
-                  activeSubTab === 'manual-lesson' ? 'bg-white/6 text-[var(--text-main)]' : 'text-[var(--text-muted)]'
+                className={`px-3.5 py-1.5 border-none font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 flex items-center gap-1.5 ${
+                  activeSubTab === 'manual-lesson'
+                    ? 'bg-white/10 text-[var(--text-main)]'
+                    : 'bg-transparent text-[var(--text-muted)]'
                 }`}
               >
-                ✍️ Create Lesson Manually
+                <Edit3 size={14} className="shrink-0" />
+                <span>Create Lesson Manually</span>
               </button>
             </div>
           </div>
           {activeSubTab === 'analytics' && (
-            <button className="bg-white/4 border border-[var(--border-color)] text-[var(--text-main)] px-4 py-2 rounded-lg cursor-pointer text-sm font-semibold hover:bg-white/10 transition-colors" onClick={refreshLogs}>🔄 Refresh Logs</button>
+            <button className="bg-white/4 border border-[var(--border-color)] text-[var(--text-main)] px-4 py-2 rounded-lg cursor-pointer text-sm font-semibold hover:bg-white/10 transition-colors flex items-center gap-1.5" onClick={refreshLogs}>
+              <RotateCw size={14} />
+              <span>Refresh Logs</span>
+            </button>
           )}
         </div>
       )}
@@ -253,11 +268,12 @@ export function TeacherSpace({
             Active Classroom Config & Pairing
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', width: '100%' }}>
-          
+
           {/* Left Column: Classroom Directory & Creation Form */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <h3 style={{ fontSize: '18px', color: 'var(--text-main)', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', margin: 0 }}>
-              📁 Classroom Directory
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '18px', padding: '24px 26px', display: 'flex', flexDirection: 'column', gap: '24px', boxShadow: '0 2px 10px rgba(20,30,55,0.06)' }}>
+            <h3 style={{ fontSize: '18px', color: 'var(--text-main)', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Folder size={18} className="text-[#11428E] shrink-0" />
+              <span>Classroom Directory</span>
             </h3>
 
             {/* Switch / Select Classroom List */}
@@ -297,9 +313,13 @@ export function TeacherSpace({
                           textAlign: 'left'
                         }}
                       >
-                        <span style={{ fontWeight: isActive ? 800 : 500 }}>
-                          {isActive ? '🟢 ' : '🔑 '}
-                          {c.id} - {c.teacherName} ({c.subject} • Grade {c.gradeLevel})
+                        <span style={{ fontWeight: isActive ? 800 : 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {isActive ? (
+                            <span className="w-2 h-2 rounded-full bg-[#10B981] inline-block shadow-[0_0_8px_#10B981]" />
+                          ) : (
+                            <Key size={12} className="text-[var(--text-muted)] inline-block shrink-0" />
+                          )}
+                          <span>{c.id} - {c.teacherName} ({c.subject} • Grade {c.gradeLevel})</span>
                         </span>
                       </button>
                     );
@@ -310,8 +330,8 @@ export function TeacherSpace({
 
             {/* Creation Form (Always Visible) */}
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <span style={{ fontSize: '14px', color: 'var(--text-main)', fontWeight: 700 }}>
-                ➕ Setup a New Classroom
+              <span style={{ fontSize: '14px', color: 'var(--text-main)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Plus size={16} className="text-[#11428E] shrink-0" /> Setup a New Classroom
               </span>
 
               <div className="form-group">
@@ -417,18 +437,24 @@ export function TeacherSpace({
                 }}
                 style={{ marginTop: '5px' }}
               >
-                {isCreatingClass ? 'Generating Code...' : '⚡ Generate Classroom Invite Code'}
+                {isCreatingClass ? 'Generating Code...' : (
+                  <span className="flex items-center justify-center gap-1.5">
+                    <Zap size={14} className="shrink-0" />
+                    <span>Generate Classroom Invite Code</span>
+                  </span>
+                )}
               </button>
             </div>
           </div>
 
           {/* Right Column: Active Session Configurations */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '18px', padding: '24px 26px', display: 'flex', flexDirection: 'column', gap: '24px', boxShadow: '0 2px 10px rgba(20,30,55,0.06)' }}>
             {classroomCode && classroomData ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-                  <h3 style={{ fontSize: '18px', color: 'var(--text-main)', margin: 0 }}>
-                    ⚙️ Session Control
+                  <h3 style={{ fontSize: '18px', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Settings size={18} className="text-[#11428E] shrink-0" />
+                    <span>Session Control</span>
                   </h3>
                   <button
                     onClick={() => {
@@ -437,16 +463,17 @@ export function TeacherSpace({
                       setClassroomData(null);
                       setSelectedModules([]);
                     }}
-                    className="btn btn-secondary"
+                    className="btn btn-secondary flex items-center gap-1.5"
                     style={{ padding: '6px 12px', fontSize: '12px' }}
                   >
-                    🚪 Deselect Session
+                    <LogOut size={12} className="shrink-0" />
+                    <span>Deselect Session</span>
                   </button>
                 </div>
 
-                <div style={{ padding: '20px', backgroundColor: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.2)', borderRadius: '12px', textAlign: 'center' }}>
+                <div style={{ padding: '20px', backgroundColor: 'var(--accent-primary-glow)', border: '1px solid var(--accent-primary-glow)', borderRadius: '14px', textAlign: 'center' }}>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>Invite Code for Students</span>
-                  <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--accent-secondary)', letterSpacing: '3px', marginTop: '6px', fontFamily: 'monospace' }}>
+                  <div style={{ fontSize: '32px', fontWeight: 800, color: '#11428E', letterSpacing: '3px', marginTop: '6px', fontFamily: 'monospace' }}>
                     {classroomCode}
                   </div>
                   
@@ -462,7 +489,7 @@ export function TeacherSpace({
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: 'var(--text-main)', backgroundColor: 'rgba(99, 102, 241, 0.03)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: 'var(--text-main)', backgroundColor: 'var(--bg-main)', padding: '14px', borderRadius: '11px', border: '1px solid var(--border-color)' }}>
                   <div><strong>Teacher Name:</strong> {classroomData.teacherName}</div>
                   <div><strong>Subject Focus:</strong> {classroomData.subject}</div>
                   <div><strong>Grade Level:</strong> Grade {classroomData.gradeLevel}</div>
@@ -473,7 +500,7 @@ export function TeacherSpace({
                     Select Modules to Claim:
                   </span>
                   {globalBank ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto', padding: '12px', border: '1px solid var(--border-color)', borderRadius: '10px', backgroundColor: 'rgba(0,0,0,0.15)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto', padding: '12px', border: '1px solid var(--border-color)', borderRadius: '10px', backgroundColor: 'var(--bg-main)' }}>
                       {getSelectableTopics().map((mod) => {
                         const isClaimed = isTopicAlreadyClaimed(mod.subject, mod.grade, mod.topic);
                         const isSelected = isClaimed || selectedModules.some(
@@ -513,9 +540,19 @@ export function TeacherSpace({
                               }}
                               style={{ width: '16px', height: '16px', cursor: isClaimed ? 'not-allowed' : 'pointer' }}
                             />
-                            <span>
-                              <strong>{mod.subject === 'Mathematics' ? '🧮 Math' : '📚 English'}</strong> (Grade {mod.grade}) - {mod.topic}
-                              {isClaimed && <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--success)', fontWeight: 700 }}>🟢 Claimed</span>}
+                            <span className="flex items-center gap-1.5">
+                              {mod.subject === 'Mathematics' ? (
+                                <Calculator size={14} className="text-[#11428E] shrink-0" />
+                              ) : (
+                                <BookOpen size={14} className="text-emerald-500 shrink-0" />
+                              )}
+                              <strong>{mod.subject === 'Mathematics' ? 'Math' : 'English'}</strong> (Grade {mod.grade}) - {mod.topic}
+                              {isClaimed && (
+                                <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--success)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] inline-block shadow-[0_0_6px_#10B981]" />
+                                  <span>Claimed</span>
+                                </span>
+                              )}
                             </span>
                           </label>
                         );
@@ -577,7 +614,19 @@ export function TeacherSpace({
                           cursor: allClaimed ? 'not-allowed' : 'pointer'
                         }}
                       >
-                        {isClaiming ? 'Claiming Templates...' : allClaimed ? '✔️ All Curriculum Active' : `📋 Claim Selected (${newClaims.length} New)`}
+                        {isClaiming ? (
+                          'Claiming Templates...'
+                        ) : allClaimed ? (
+                          <span className="flex items-center justify-center gap-1.5">
+                            <Check size={16} className="text-[#10B981] shrink-0" strokeWidth={3} />
+                            <span>All Curriculum Active</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center justify-center gap-1.5">
+                            <ClipboardList size={16} className="shrink-0" />
+                            <span>Claim Selected ({newClaims.length} New)</span>
+                          </span>
+                        )}
                       </button>
                     );
                   })()}
@@ -585,7 +634,7 @@ export function TeacherSpace({
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: '300px', color: 'var(--text-muted)' }}>
-                <span style={{ fontSize: '48px' }}>🏫</span>
+                <School size={48} className="text-slate-400 shrink-0" />
                 <span style={{ fontSize: '15px', fontWeight: 600, textAlign: 'center' }}>No Active Classroom Selected</span>
                 <span style={{ fontSize: '12px', textAlign: 'center', maxWidth: '300px' }}>
                   Select an existing classroom from the Directory on the left, or create a new session code to begin managing paired templates.
@@ -600,9 +649,10 @@ export function TeacherSpace({
       ) : (
         <>
           {classroomCode && classroomData && (
-            <div className="glass-panel px-6 py-3.5 flex justify-between items-center bg-[rgba(14,165,233,0.08)] border border-[var(--border-color)] rounded-[12px] mb-2">
-              <span className="text-[13px] color-[var(--accent-secondary)] font-semibold">
-                🏫 Filtered to Classroom Invite Code: <strong className="text-[var(--text-main)] font-mono text-[14px] tracking-[1px]">{classroomCode}</strong> ({classroomData.subject} • Grade {classroomData.gradeLevel})
+            <div className="px-6 py-3.5 flex justify-between items-center bg-[var(--accent-primary-glow)] border border-[var(--accent-primary)]/20 rounded-[12px] mb-2">
+              <span className="text-[13px] color-[var(--accent-secondary)] font-semibold flex items-center gap-2">
+                <School className="size-4 text-sky-500 shrink-0" />
+                <span>Filtered to Classroom Invite Code: <strong className="text-[var(--text-main)] font-mono text-[14px] tracking-[1px]">{classroomCode}</strong> ({classroomData.subject} • Grade {classroomData.gradeLevel})</span>
               </span>
               <span className="text-[11px] text-[var(--text-muted)]">
                 Deselect/switch classroom setup in the Setup tab to view all logs.
@@ -610,25 +660,11 @@ export function TeacherSpace({
             </div>
           )}
           {/* Analytics Summary Row */}
-          <div className="grid grid-cols-4 gap-5">
-            <div className="glass-panel p-5 flex flex-col gap-1.5">
-              <TextLabel>Total Sync Reports</TextLabel>
-              <TextValue>{progressLogs.length}</TextValue>
-            </div>
-            <div className="glass-panel p-5 flex flex-col gap-1.5">
-              <TextLabel>Filtered Logs</TextLabel>
-              <TextValue>{filteredLogs.length}</TextValue>
-            </div>
-            <div className="glass-panel p-5 flex flex-col gap-1.5">
-              <TextLabel>Classroom Accuracy</TextLabel>
-              <TextValue style={{ color: '#10B981' }}>{getAverageAccuracy()}%</TextValue>
-            </div>
-            <div className="glass-panel p-5 flex flex-col gap-1.5">
-              <TextLabel>Unique Active Devices</TextLabel>
-              <TextValue style={{ color: '#0EA5E9' }}>
-                {uniqueStudents.length}
-              </TextValue>
-            </div>
+          <div className="grid grid-cols-4 gap-4">
+            <StatCard label="Total Sync Reports" value={progressLogs.length} accentColor="#11428E" />
+            <StatCard label="Filtered Logs" value={filteredLogs.length} accentColor="#CE1126" />
+            <StatCard label="Classroom Accuracy" value={`${getAverageAccuracy()}%`} accentColor="#16A34A" valueColor="#16A34A" />
+            <StatCard label="Active Devices" value={uniqueStudents.length} accentColor="#11428E" valueColor="#11428E" />
           </div>
 
           {/* Diagnostics Alerts Row */}
@@ -663,7 +699,7 @@ export function TeacherSpace({
           )}
 
           {/* Filters Area */}
-          <div className="glass-panel px-6 py-4.5 flex items-end gap-5">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[18px] px-6 py-[22px] flex items-end gap-5 shadow-sm">
             <div className="form-group" style={{ flex: 2 }}>
               <label>Search Student or Topic</label>
               <input
@@ -686,20 +722,22 @@ export function TeacherSpace({
                 <label style={{ display: 'block', marginBottom: '8px' }}>Active Filter</label>
                 <button
                   onClick={() => setSelectedStudentId(null)}
-                  className="btn btn-secondary px-3.5 py-2 text-xs font-bold text-[var(--accent-primary)] border border-[var(--accent-primary-glow)] bg-[var(--accent-primary-glow)]"
+                  className="btn btn-secondary px-3.5 py-2 text-xs font-bold text-[var(--accent-primary)] border border-[var(--accent-primary-glow)] bg-[var(--accent-primary-glow)] flex items-center justify-center gap-1.5"
                 >
-                  🔑 {selectedStudentId} ✕
+                  <Key size={12} className="shrink-0" />
+                  <span>{selectedStudentId}</span>
+                  <X size={12} className="shrink-0 ml-0.5" />
                 </button>
               </div>
             )}
           </div>
 
           {/* Progress Table */}
-          <div className="glass-panel overflow-x-auto p-1">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[18px] overflow-x-auto shadow-sm">
             {loading ? (
               <div className="text-center p-10">
                 <div className="spinner" style={{ margin: '20px auto' }}></div>
-                <p style={{ color: '#6366F1', fontWeight: 600 }}>Loading sync records...</p>
+                <p style={{ color: '#11428E', fontWeight: 600 }}>Loading sync records...</p>
               </div>
             ) : filteredLogs.length === 0 ? (
               <div className="text-center p-10">
@@ -726,18 +764,31 @@ export function TeacherSpace({
                     return (
                       <tr key={log.eventId} className="border-b border-[var(--border-color)]">
                         <td className="px-5 py-4 text-[var(--text-main)]">
-                          <span className="bg-[var(--border-color)] px-2 py-1 rounded-md font-mono text-xs border border-[var(--border-color)]">🔑 {log.studentId}</span>
+                          <span className="bg-[var(--border-color)] px-2 py-1 rounded-md font-mono text-xs border border-[var(--border-color)] flex items-center gap-1.5 w-fit">
+                            <Key size={12} className="text-[#F59E0B] shrink-0" />
+                            <span>{log.studentId}</span>
+                          </span>
                         </td>
                         <td className="px-5 py-4 text-[var(--text-main)]">
-                          <span style={{ fontWeight: 600 }}>
-                            {log.subject === 'Mathematics' ? '🧮 Math' : '📚 English'}
+                          <span style={{ fontWeight: 600 }} className="flex items-center gap-1.5">
+                            {log.subject === 'Mathematics' ? (
+                              <>
+                                <Calculator size={14} className="text-[#11428E] shrink-0" />
+                                <span>Math</span>
+                              </>
+                            ) : (
+                              <>
+                                <BookOpen size={14} className="text-emerald-500 shrink-0" />
+                                <span>English</span>
+                              </>
+                            )}
                           </span>
                         </td>
                         <td className="px-5 py-4 text-[var(--text-main)]">Grade {log.gradeLevel}</td>
                         <td className="px-5 py-4 text-[var(--text-main)]">{log.topic}</td>
                         <td className="px-5 py-4 text-[var(--text-main)]">
                           <div className="flex items-baseline gap-1.5">
-                            <span style={{ fontWeight: 800, color: percentage >= 80 ? '#10B981' : percentage >= 50 ? '#F59E0B' : '#EF4444' }}>
+                            <span style={{ fontWeight: 800, color: percentage >= 80 ? '#10B981' : percentage >= 50 ? '#F59E0B' : '#A01322' }}>
                               {percentage}%
                             </span>
                             <span className="text-[11px] text-[var(--text-muted)] font-medium">({log.score}/{log.totalQuestions})</span>
@@ -749,7 +800,7 @@ export function TeacherSpace({
                               ? "px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20" 
                               : percentage >= 50 
                                 ? "px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20" 
-                                : "px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20"
+                                : "px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#A01322]/10 text-[#A01322] border border-[#A01322]/20"
                           }>
                             {percentage >= 80 ? 'Mastery' : percentage >= 50 ? 'Review' : 'Remediation'}
                           </span>
@@ -768,13 +819,16 @@ export function TeacherSpace({
   );
 }
 
-// Inline components for styles structure
-function TextLabel({ children }: { children: React.ReactNode }) {
-  return <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.5px]">{children}</span>;
-}
-
-function TextValue({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return <span className="font-['Space_Grotesk',sans-serif] text-[26px] font-bold text-[var(--text-main)]" style={style}>{children}</span>;
+function StatCard({ label, value, accentColor, valueColor }: {
+  label: string; value: React.ReactNode; accentColor: string; valueColor?: string;
+}) {
+  return (
+    <div className="relative bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[16px] p-[18px_20px_20px] overflow-hidden shadow-sm">
+      <span className="absolute left-0 top-4 bottom-4 w-1 rounded-[0_4px_4px_0]" style={{ background: accentColor }} />
+      <div className="text-[11px] font-extrabold tracking-[0.08em] uppercase text-[var(--text-muted)]">{label}</div>
+      <div className="text-[34px] font-extrabold mt-2 text-[var(--text-main)]" style={valueColor ? { color: valueColor } : undefined}>{value}</div>
+    </div>
+  );
 }
 
 function InviteExpirationTimer({ 
@@ -849,16 +903,18 @@ function InviteExpirationTimer({
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs text-[var(--success)] font-bold">
-        🟢 Active - {timeLeft}
+      <span className="text-xs text-[var(--success)] font-bold flex items-center gap-1.5">
+        <span className="w-2 h-2 rounded-full bg-[#10B981] inline-block shadow-[0_0_8px_#10B981]" />
+        <span>Active - {timeLeft}</span>
       </span>
       {expiresAt && (
         <button
           onClick={handleLockNow}
           disabled={isLocking}
-          className="btn btn-secondary px-2 py-0.5 text-[10px] rounded"
+          className="btn btn-secondary px-2 py-1 text-[10px] rounded flex items-center gap-1"
         >
-          🔒 Lock Now
+          <Lock size={10} className="shrink-0" />
+          <span>Lock Now</span>
         </button>
       )}
     </div>

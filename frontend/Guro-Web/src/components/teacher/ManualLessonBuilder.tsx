@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Save, BookOpen } from 'lucide-react';
+import { Plus, Trash2, Save, BookOpen, Languages } from 'lucide-react';
 
 interface Question {
   id: string;
@@ -123,11 +123,11 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
   };
 
   // Update feedback translations
-  const handleUpdateFeedback = (qIdx: number, lang: 'en' | 'fil', value: string) => {
+  const handleUpdateFeedback = (qIdx: number, value: string) => {
     const updated = [...questions];
     updated[qIdx].feedback = {
-      ...updated[qIdx].feedback,
-      [lang]: value
+      en: value,
+      fil: value
     };
     setQuestions(updated);
   };
@@ -163,8 +163,8 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
         alert(`Please select the correct answer option for Question #${i + 1}.`);
         return;
       }
-      if (!q.feedback.en.trim() || !q.feedback.fil.trim()) {
-        alert(`Bilingual feedback for Question #${i + 1} is required.`);
+      if (!q.feedback.en.trim()) {
+        alert(`Explanation for Question #${i + 1} is required.`);
         return;
       }
     }
@@ -224,7 +224,7 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
         {/* Left Form: Lesson details */}
         <div className="glass-panel p-6 flex flex-col gap-4.5">
           <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-3 mb-1">
-            <BookOpen size={18} className="text-[#6366F1]" />
+            <BookOpen size={18} className="text-[#11428E]" />
             <h3 className="text-[15px] font-bold text-[var(--text-main)]">Lesson Profile</h3>
           </div>
 
@@ -305,7 +305,7 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
                   <button
                     type="button"
                     onClick={() => handleRemoveQuestion(idx)}
-                    className="bg-transparent border-none text-[#EF4444] cursor-pointer opacity-70 hover:opacity-100 transition-opacity duration-200"
+                    className="bg-transparent border-none text-[#A01322] cursor-pointer opacity-70 hover:opacity-100 transition-opacity duration-200"
                     title="Delete question slot"
                   >
                     <Trash2 size={16} />
@@ -376,27 +376,18 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3.5">
-                  <div className="form-group">
-                    <label>🇺🇸 English Explanation</label>
-                    <input
-                      type="text"
-                      placeholder="Explain why this option is correct..."
-                      value={q.feedback.en}
-                      onChange={(e) => handleUpdateFeedback(idx, 'en', e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>🇵🇭 Filipino Explanation</label>
-                    <input
-                      type="text"
-                      placeholder="Ipaliwanag kung bakit tama ang sagot..."
-                      value={q.feedback.fil}
-                      onChange={(e) => handleUpdateFeedback(idx, 'fil', e.target.value)}
-                      required
-                    />
-                  </div>
+                <div className="form-group">
+                  <label className="flex items-center gap-1.5">
+                    <Languages size={14} className="text-[#38BDF8] shrink-0" />
+                    <span>Explanation</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Explain why this option is correct..."
+                    value={q.feedback.en}
+                    onChange={(e) => handleUpdateFeedback(idx, e.target.value)}
+                    required
+                  />
                 </div>
               </div>
             ))}

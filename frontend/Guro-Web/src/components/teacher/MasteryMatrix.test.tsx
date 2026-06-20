@@ -60,8 +60,8 @@ describe('MasteryMatrix Component', () => {
     expect(screen.getByText('Decimals')).toBeInTheDocument();
 
     // Check student rows
-    expect(screen.getByText('🔑 stud-1')).toBeInTheDocument();
-    expect(screen.getByText('🔑 stud-2')).toBeInTheDocument();
+    expect(screen.getByText('stud-1')).toBeInTheDocument();
+    expect(screen.getByText('stud-2')).toBeInTheDocument();
 
     // Check cell values
     expect(screen.getByText('80%')).toBeInTheDocument();

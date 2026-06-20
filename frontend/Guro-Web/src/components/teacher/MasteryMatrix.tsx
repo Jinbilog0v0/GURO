@@ -1,4 +1,5 @@
 import React from 'react';
+import { BarChart3, Key } from 'lucide-react';
 
 interface SyncedEvent {
   studentId: string;
@@ -59,9 +60,9 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
       };
     }
     return {
-      backgroundColor: 'rgba(239, 68, 68, 0.12)',
-      color: '#EF4444',
-      border: '1px solid rgba(239, 68, 68, 0.25)',
+      backgroundColor: 'rgba(160, 19, 34, 0.12)',
+      color: '#A01322',
+      border: '1px solid rgba(160, 19, 34, 0.25)',
       fontWeight: 700,
     };
   };
@@ -69,7 +70,7 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
   return (
     <div className="glass-panel p-6 flex flex-col gap-5 w-full overflow-hidden">
       <div className="flex items-center gap-3">
-        <span className="text-2xl">📊</span>
+        <BarChart3 className="size-6 text-blue-500" />
         <div>
           <h3 className="text-base font-bold text-[var(--text-main)]">Classroom Mastery Matrix</h3>
           <p className="text-xs text-[var(--text-muted)] mt-0.5">Overview of topic mastery grades across all synced student profiles.</p>
@@ -97,7 +98,7 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
               {students.map((student) => (
                 <tr key={student} className="border-b border-[var(--border-color)] hover:bg-white/[0.02]">
                   <td className="p-3 px-4.5 text-[var(--text-main)] whitespace-nowrap sticky left-0 z-10 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] font-semibold font-mono text-xs">
-                    🔑 {student}
+                    <span className="inline-flex items-center gap-1.5"><Key className="size-3 text-slate-400" />{student}</span>
                   </td>
                   {topics.map((topic) => {
                     const bestScore = getBestScore(student, topic);
