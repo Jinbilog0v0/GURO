@@ -17,6 +17,20 @@ describe('DashboardStep Component', () => {
       averageScore: 90,
       streak: 4,
     },
+    stars: 0,
+    avatarEmoji: '🚀',
+    activeOutfit: 'default',
+    ownedOutfits: ['default'],
+    xpPoints: 0,
+    onPurchaseOutfit: jest.fn(),
+    onEquipOutfit: jest.fn(),
+    onSelectAvatarEmoji: jest.fn(),
+    recommendedLesson: null,
+    lastActivity: null,
+    onResumeQuiz: jest.fn(),
+    dailyMinutesUsed: 0,
+    dailyTimeLimit: 0,
+    isTimeLimitExceeded: false,
   };
 
   beforeEach(() => {

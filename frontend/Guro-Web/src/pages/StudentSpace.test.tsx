@@ -11,6 +11,7 @@ global.fetch = jest.fn();
 describe('StudentSpace Page (Web)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
     (global.fetch as jest.Mock).mockImplementation(() =>
       Promise.resolve({
         ok: true,
@@ -22,14 +23,14 @@ describe('StudentSpace Page (Web)', () => {
   test('renders name input when logged out guest starts', () => {
     const mockExit = jest.fn();
     render(<StudentSpace onExit={mockExit} currentUser={null} />);
-    expect(screen.getByPlaceholderText(/Your name\.\.\./i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/e\.g\. Juan Dela Cruz/i)).toBeInTheDocument();
   });
 
   test('proceeds to grade selection when guest enters name', () => {
     const mockExit = jest.fn();
     render(<StudentSpace onExit={mockExit} currentUser={null} />);
 
-    const input = screen.getByPlaceholderText(/Your name\.\.\./i);
+    const input = screen.getByPlaceholderText(/e\.g\. Juan Dela Cruz/i);
     fireEvent.change(input, { target: { value: 'Neal' } });
 
     const continueBtn = screen.getByRole('button', { name: /Start Learning/i });
@@ -44,14 +45,14 @@ describe('StudentSpace Page (Web)', () => {
     render(<StudentSpace onExit={mockExit} currentUser={user} />);
 
     expect(screen.getByText(/Select your grade level/i)).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText(/Enter your name/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/e\.g\. Juan Dela Cruz/i)).not.toBeInTheDocument();
   });
 
   test('triggers exit when back/exit button is clicked', () => {
     const mockExit = jest.fn();
     render(<StudentSpace onExit={mockExit} currentUser={null} />);
 
-    const backBtn = screen.getByRole('button', { name: 'Back' });
+    const backBtn = screen.getByRole('button', { name: 'Back to sign in' });
     fireEvent.click(backBtn);
 
     expect(mockExit).toHaveBeenCalled();

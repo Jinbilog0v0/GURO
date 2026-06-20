@@ -3,6 +3,13 @@ import { ArrowLeft, Volume2, Square } from 'lucide-react';
 import { QuizOption } from './QuizOption';
 import { QuizExplanation } from './QuizExplanation';
 
+interface AnswerDetails {
+    questionText: string;
+    selectedOption: string;
+    correctOption: string;
+    explanationEn: string;
+}
+
 interface QuestionStepProps {
     currentQuestionIndex: number;
     totalQuestions: number;
@@ -12,7 +19,7 @@ interface QuestionStepProps {
     correctOption: string;
     explanationEn: string;
     onBack: () => void;
-    onNextOrFinish: (isCorrect: boolean) => void;
+    onNextOrFinish: (isCorrect: boolean, details: AnswerDetails) => void;
 }
 
 export const QuestionStep: React.FC<QuestionStepProps> = ({
@@ -156,6 +163,21 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                 .join('. ');
             const utterance = new SpeechSynthesisUtterance(`${questionText}. ${optionsText}`.replace(/_+/g, ' blank '));
             
+            // Sync voice rate and pitch from localStorage (alignment with mobile settings)
+            const storedRate = localStorage.getItem('guro_student_speech_rate');
+            const rate = storedRate ? parseFloat(storedRate) : 0.9;
+            const storedVoice = localStorage.getItem('guro_student_guide_voice');
+            let pitch = 1.0;
+            if (storedVoice === 'robot') {
+                pitch = 0.65;
+            } else if (storedVoice === 'owl') {
+                pitch = 1.25;
+            }
+
+            utterance.rate = rate;
+            utterance.pitch = pitch;
+            utterance.lang = 'en-US';
+            
             utterance.onend = () => setIsSpeaking(false);
             utterance.onerror = () => setIsSpeaking(false);
             
@@ -168,8 +190,12 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
         if (!isSubmitted) {
             setIsSubmitted(true);
         } else {
-            onNextOrFinish(isCorrect);
-            // Reset local states
+            onNextOrFinish(isCorrect, {
+                questionText,
+                selectedOption: selectedOption!,
+                correctOption,
+                explanationEn,
+            });
             setIsSubmitted(false);
             setSelectedOption(null);
         }
@@ -240,8 +266,29 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                     </div>
                 </div>
 
+                {/* Question dot indicators */}
+                <div className="w-full max-w-7xl mx-auto flex items-center justify-center gap-2">
+                    {Array.from({ length: totalQuestions }).map((_, idx) => {
+                        const dotNum = idx + 1;
+                        const isPast = dotNum < currentQuestionIndex;
+                        const isCurrent = dotNum === currentQuestionIndex;
+                        return (
+                            <div
+                                key={idx}
+                                className={`rounded-full transition-all duration-300 ${
+                                    isCurrent
+                                        ? 'w-6 h-2.5 bg-blue-500 shadow-sm shadow-blue-400/40'
+                                        : isPast
+                                        ? 'w-2.5 h-2.5 bg-emerald-400'
+                                        : 'w-2.5 h-2.5 bg-zinc-200'
+                                }`}
+                            />
+                        );
+                    })}
+                </div>
+
                 {/* Global Progress Track Line */}
-                <div className="w-full max-w-7xl mx-auto bg-zinc-100 h-3 rounded-full overflow-hidden shadow-inner">
+                <div className="w-full max-w-7xl mx-auto bg-zinc-100 h-2 rounded-full overflow-hidden shadow-inner">
                     <div
                         className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out"
                         style={{ width: `${progressPercentage}%` }}

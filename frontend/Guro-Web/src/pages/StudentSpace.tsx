@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { NameInputStep } from '../components/student/NameInputStep';
 import { GradeSelectionStep } from '../components/student/GradeSelectionStep';
 import { DashboardStep } from '../components/student/DashboardStep';
 import { QuestionStep } from '../components/student/QuestionStep';
 import { QuizResultsStep } from '../components/student/QuizResultsStep';
-import { StudentProfile } from '../components/student/StudentProfile';
-import { ArrowLeft, BookOpen, Calculator, Award, Inbox } from 'lucide-react';
+import { StudyContentStep } from '../components/student/StudyContentStep';
+import { StepProgressBar } from '../components/student/StepProgressBar';
+import { StudentShell, type ShellView } from '../components/student/StudentShell';
+import { ProgressView } from '../components/student/ProgressView';
+import { BookOpen, Calculator, Inbox, CheckCircle2, Circle, TrendingUp } from 'lucide-react';
 import { getParentAccessCode } from '../utils/security';
 import { LogoutConfirmModal } from '../components/shared/LogoutConfirmModal';
-import { toast } from 'react-hot-toast';
+import { toast } from '../utils/toast';
 
 interface QuestionItem {
     id: string;
@@ -168,12 +171,36 @@ interface StudentSpaceProps {
     currentUser?: { name: string; email: string; userId: string } | null;
 }
 
-type StepType = 'name' | 'grade' | 'dashboard' | 'topics' | 'quiz' | 'results';
+type StepType = 'name' | 'grade' | 'dashboard' | 'topics' | 'progress' | 'study' | 'quiz' | 'results';
+
+interface AnsweredQuestion {
+    questionText: string;
+    selectedOption: string;
+    correctOption: string;
+    explanationEn: string;
+    isCorrect: boolean;
+}
+
+interface TopicStat {
+    bestScore: number;
+    lastScore: number;
+    attempts: number;
+}
+
+const STORAGE_KEY_NAME = 'guro_student_name';
+const STORAGE_KEY_GRADE = 'guro_student_grade';
 
 export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser }) => {
-    const [step, setStep] = useState<StepType>(currentUser ? 'grade' : 'name');
-    const [userName, setUserName] = useState(currentUser ? currentUser.name : '');
-    const [selectedGrade, setSelectedGrade] = useState<number>(4);
+    const savedName = !currentUser ? (localStorage.getItem(STORAGE_KEY_NAME) ?? '') : '';
+    const savedGrade = parseInt(localStorage.getItem(STORAGE_KEY_GRADE) ?? '4', 10) || 4;
+
+    const [step, setStep] = useState<StepType>(() => {
+        if (currentUser) return 'grade';
+        if (savedName) return 'grade'; // skip name step if name is saved
+        return 'name';
+    });
+    const [userName, setUserName] = useState(currentUser ? currentUser.name : savedName);
+    const [selectedGrade, setSelectedGrade] = useState<number>(savedGrade);
     const [selectedSubject, setSelectedSubject] = useState<'Mathematics' | 'English'>('Mathematics');
     const [selectedTopic, setSelectedTopic] = useState('');
 
@@ -181,6 +208,10 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
     const [questions, setQuestions] = useState<QuestionItem[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [score, setScore] = useState(0);
+    const [answeredHistory, setAnsweredHistory] = useState<AnsweredQuestion[]>([]);
+
+    // Per-topic progress history (key: `${subject}-${grade}-${topic}`)
+    const [topicHistory, setTopicHistory] = useState<Record<string, TopicStat>>({});
 
     // Sync metrics history
     const [lessonsCompleted, setLessonsCompleted] = useState(0);
@@ -189,19 +220,197 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
 
     // Dynamic item bank loading
     const [itemBank, setItemBank] = useState<ItemBank>(FALLBACK_ITEM_BANK);
+    const [itemBankLoading, setItemBankLoading] = useState(true);
+
+    // Gamification & Rewards
+    const [stars, setStars] = useState<number>(() => parseInt(localStorage.getItem('guro_student_stars') ?? '0', 10) || 0);
+    const [avatarEmoji, setAvatarEmoji] = useState<string>(() => localStorage.getItem('guro_student_avatar') ?? '🚀');
+    const [activeOutfit, setActiveOutfit] = useState<string>(() => localStorage.getItem('guro_student_outfit') ?? 'default');
+    const [ownedOutfits, setOwnedOutfits] = useState<string[]>(() => {
+        try {
+            return JSON.parse(localStorage.getItem('guro_student_owned_outfits') ?? '["default"]');
+        } catch {
+            return ['default'];
+        }
+    });
+    const [xpPoints, setXpPoints] = useState<number>(() => parseInt(localStorage.getItem('guro_student_xp') ?? '0', 10) || 0);
+
+    // Screen Time Limits
+    const [dailyMinutesUsed, setDailyMinutesUsed] = useState<number>(() => {
+        const today = new Date().toISOString().split('T')[0];
+        const lastActiveDay = localStorage.getItem('guro_student_last_active_day');
+        if (lastActiveDay !== today) {
+            localStorage.setItem('guro_student_last_active_day', today);
+            localStorage.setItem('guro_student_minutes_used', '0');
+            return 0;
+        }
+        return parseFloat(localStorage.getItem('guro_student_minutes_used') ?? '0') || 0;
+    });
+
+    const [dailyTimeLimit] = useState<number>(() => parseInt(localStorage.getItem('guro_parent_time_limit') ?? '0', 10) || 0);
+    const isTimeLimitExceeded = dailyTimeLimit > 0 && dailyMinutesUsed >= dailyTimeLimit;
+
+    // Active screen time tracker using focus and active interaction deltas
+    useEffect(() => {
+        let lastTickTime = Date.now();
+        let lastInteractionTime = Date.now();
+
+        const updateInteraction = () => {
+            lastInteractionTime = Date.now();
+        };
+
+        // Track user activity
+        window.addEventListener('mousedown', updateInteraction);
+        window.addEventListener('keydown', updateInteraction);
+        window.addEventListener('touchstart', updateInteraction);
+
+        const interval = setInterval(() => {
+            const now = Date.now();
+            const elapsedMs = now - lastTickTime;
+            lastTickTime = now;
+
+            // Only count if document is visible and user has interacted in the last 60 seconds
+            const isTabVisible = document.visibilityState === 'visible';
+            const isUserActive = now - lastInteractionTime < 60000;
+
+            if (isTabVisible && isUserActive) {
+                const today = new Date().toISOString().split('T')[0];
+                const lastActiveDay = localStorage.getItem('guro_student_last_active_day');
+                
+                let currentMinutes = parseFloat(localStorage.getItem('guro_student_minutes_used') ?? '0') || 0;
+                
+                if (lastActiveDay !== today) {
+                    localStorage.setItem('guro_student_last_active_day', today);
+                    currentMinutes = 0;
+                }
+                
+                const addedMinutes = elapsedMs / 60000;
+                const nextMinutes = currentMinutes + addedMinutes;
+                localStorage.setItem('guro_student_minutes_used', String(nextMinutes));
+                setDailyMinutesUsed(nextMinutes);
+            }
+        }, 15000);
+        
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('mousedown', updateInteraction);
+            window.removeEventListener('keydown', updateInteraction);
+            window.removeEventListener('touchstart', updateInteraction);
+        };
+    }, []);
+
+    const handlePurchaseOutfit = (key: string, cost: number): boolean => {
+        if (stars >= cost && !ownedOutfits.includes(key)) {
+            const updatedStars = stars - cost;
+            const updatedOwned = [...ownedOutfits, key];
+            setStars(updatedStars);
+            setOwnedOutfits(updatedOwned);
+            setActiveOutfit(key);
+            
+            localStorage.setItem('guro_student_stars', String(updatedStars));
+            localStorage.setItem('guro_student_owned_outfits', JSON.stringify(updatedOwned));
+            localStorage.setItem('guro_student_outfit', key);
+            
+            toast.success(`Unlocked ${key.replace('_', ' ')}! Equipped mascot.`);
+            return true;
+        }
+        return false;
+    };
+
+    const handleEquipOutfit = (key: string) => {
+        if (ownedOutfits.includes(key)) {
+            setActiveOutfit(key);
+            localStorage.setItem('guro_student_outfit', key);
+            toast.success(`Equipped outfit: ${key.replace('_', ' ')}`);
+        }
+    };
+    
+    const handleSelectAvatarEmoji = (emoji: string) => {
+        setAvatarEmoji(emoji);
+        localStorage.setItem('guro_student_avatar', emoji);
+        toast.success('Avatar emoji updated!');
+    };
+
+    const getRecommendedLesson = () => {
+        const mathAvg = computeSubjectAvg('Mathematics', selectedGrade);
+        const engAvg = computeSubjectAvg('English', selectedGrade);
+        const subjectOrder = mathAvg <= engAvg ? ['Mathematics', 'English'] : ['English', 'Mathematics'];
+        
+        for (const subject of subjectOrder) {
+            if (subject === 'English' && isEnglishLocked) continue;
+            const topics = getTopicsForCurrentSelection(subject as 'Mathematics' | 'English');
+            
+            // Priority 1: Needs Improvement (40% - 79%)
+            for (const topic of topics) {
+                const key = `${subject}-${selectedGrade}-${topic}`;
+                const stat = topicHistory[key];
+                if (stat && stat.bestScore >= 0.4 && stat.bestScore < 0.8) {
+                    return { subject, topic, reason: 'Needs Improvement' };
+                }
+            }
+            
+            // Priority 2: Not Started
+            for (const topic of topics) {
+                const key = `${subject}-${selectedGrade}-${topic}`;
+                const stat = topicHistory[key];
+                if (!stat || stat.attempts === 0) {
+                    return { subject, topic, reason: 'Not Started' };
+                }
+            }
+        }
+        return null;
+    };
+
+    const getLastActivity = () => {
+        try {
+            const raw = localStorage.getItem('guro_last_activity');
+            if (raw) return JSON.parse(raw);
+        } catch {}
+        return null;
+    };
+
+    const loadTopicHistory = useCallback(() => {
+        const queueJson = localStorage.getItem('guro_sync_queue');
+        if (!queueJson) return;
+        try {
+            const queue = JSON.parse(queueJson);
+            const history: Record<string, TopicStat> = {};
+            queue.forEach((item: any) => {
+                const { event } = item;
+                if (!event) return;
+                const key = `${event.subject}-${event.gradeLevel}-${event.topic}`;
+                const pct = event.score / event.totalQuestions;
+                const existing = history[key];
+                if (!existing) {
+                    history[key] = { bestScore: pct, lastScore: pct, attempts: 1 };
+                } else {
+                    history[key] = {
+                        bestScore: Math.max(existing.bestScore, pct),
+                        lastScore: pct,
+                        attempts: existing.attempts + 1,
+                    };
+                }
+            });
+            setTopicHistory(history);
+        } catch (e) {
+            // non-fatal
+        }
+    }, []);
 
     const fetchItemBank = async () => {
+        setItemBankLoading(true);
         try {
             const res = await fetch('/api/item-bank');
             if (res.ok) {
                 const data = await res.json();
-                // If the bank is not empty, merge/set it
                 if (Object.keys(data).length > 0) {
                     setItemBank(data);
                 }
             }
         } catch (error) {
             console.warn('Could not load online item bank, falling back to local static bank:', error);
+        } finally {
+            setItemBankLoading(false);
         }
     };
 
@@ -259,6 +468,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
 
     useEffect(() => {
         fetchItemBank();
+        loadTopicHistory();
         // Flush any pending progress reports from previous offline sessions on load
         flushSyncQueue();
 
@@ -283,28 +493,22 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
         return Object.keys(gradeNode);
     };
 
-    // Handler when student picks a subject
     const handleSelectSubject = (subject: string) => {
         const selected = subject as 'Mathematics' | 'English';
         setSelectedSubject(selected);
         setStep('topics');
     };
 
-    // Handler to launch the quiz for a selected topic
-    const handleStartTopicQuiz = (topicName: string) => {
-        setSelectedTopic(topicName);
+    // Collect and shuffle questions for a topic, return the slice ready for quiz
+    const prepareQuestions = (topicName: string): QuestionItem[] | null => {
         const gradeStr = selectedGrade.toString();
         const topicNode = itemBank[selectedSubject]?.[gradeStr]?.[topicName];
+        if (!topicNode) return null;
 
-        if (!topicNode) {
-            alert('No questions available for this topic.');
-            return;
-        }
-
-        // Collect all questions across difficulties and categories for this topic node
         const allQuestions: QuestionItem[] = [];
         Object.keys(topicNode).forEach((difficulty) => {
-            const categories = topicNode[difficulty];
+            if (difficulty === 'studyContent') return;
+            const categories = topicNode[difficulty] as Record<string, QuestionItem[]>;
             Object.keys(categories).forEach((category) => {
                 const qList = categories[category];
                 if (Array.isArray(qList)) {
@@ -314,33 +518,58 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
                             questionText: q.questionText,
                             options: q.options,
                             correctAnswer: q.correctAnswer,
-                            feedback: q.feedback
+                            feedback: q.feedback,
                         });
                     });
                 }
             });
         });
 
-        if (allQuestions.length === 0) {
-            alert('No questions staged in this topic structure.');
+        if (allQuestions.length === 0) return null;
+        return [...allQuestions].sort(() => 0.5 - Math.random()).slice(0, 5);
+    };
+
+    // Select a topic — show study content first, then quiz
+    const handleSelectTopic = (topicName: string) => {
+        if (selectedSubject === 'English' && isEnglishLocked) {
+            toast.error(englishLockReason ?? 'Unlock English by scoring 80%+ in Mathematics first.');
             return;
         }
-
-        // Shuffle questions list
-        const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
-        // Take at most 5 questions for a fast, mobile-friendly quiz experience
-        const quizSlice = shuffled.slice(0, 5);
-
+        const quizSlice = prepareQuestions(topicName);
+        if (!quizSlice) {
+            toast.error('No questions staged in this topic yet. Check back soon!');
+            return;
+        }
+        setSelectedTopic(topicName);
         setQuestions(quizSlice);
         setCurrentQuestionIndex(0);
         setScore(0);
-        setStep('quiz');
+        setAnsweredHistory([]);
+
+        // Check for study content
+        const gradeStr = selectedGrade.toString();
+        const topicNode = itemBank[selectedSubject]?.[gradeStr]?.[topicName] as any;
+        const hasStudyContent =
+            topicNode?.studyContent &&
+            (topicNode.studyContent.introduction || topicNode.studyContent.definitions?.length > 0);
+
+        setStep(hasStudyContent ? 'study' : 'quiz');
     };
 
+    // Called by StudyContentStep "Start Quiz" button
+    const handleStartQuiz = () => setStep('quiz');
+
     // Handler when an answer is submitted and the student clicks next
-    const handleQuestionNext = async (isCorrect: boolean) => {
+    const handleQuestionNext = async (
+        isCorrect: boolean,
+        details?: { questionText: string; selectedOption: string; correctOption: string; explanationEn: string },
+    ) => {
         const newScore = isCorrect ? score + 1 : score;
         setScore(newScore);
+
+        if (details) {
+            setAnsweredHistory((prev) => [...prev, { ...details, isCorrect }]);
+        }
 
         if (currentQuestionIndex + 1 < questions.length) {
             setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -349,6 +578,44 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
             setLessonsCompleted((prev) => prev + 1);
             setTotalScoreSum((prev) => prev + newScore);
             setTotalQuestionsAnswered((prev) => prev + questions.length);
+
+            // Calculate XP and Stars
+            const isPerfect = newScore === questions.length;
+            const earnedXP = newScore * 10 + (isPerfect ? 50 : 0);
+            const earnedStars = newScore * 2 + (isPerfect ? 10 : 0);
+
+            const nextXp = xpPoints + earnedXP;
+            const nextStars = stars + earnedStars;
+            setXpPoints(nextXp);
+            setStars(nextStars);
+
+            localStorage.setItem('guro_student_xp', String(nextXp));
+            localStorage.setItem('guro_student_stars', String(nextStars));
+
+            // Record last activity
+            const activityData = {
+                subject: selectedSubject,
+                topic: selectedTopic,
+                gradeLevel: selectedGrade,
+                score: newScore,
+                totalQuestions: questions.length
+            };
+            localStorage.setItem('guro_last_activity', JSON.stringify(activityData));
+
+            // Update per-topic history
+            const topicKey = `${selectedSubject}-${selectedGrade}-${selectedTopic}`;
+            const pct = newScore / questions.length;
+            setTopicHistory((prev) => {
+                const existing = prev[topicKey];
+                return {
+                    ...prev,
+                    [topicKey]: {
+                        bestScore: existing ? Math.max(existing.bestScore, pct) : pct,
+                        lastScore: pct,
+                        attempts: existing ? existing.attempts + 1 : 1,
+                    },
+                };
+            });
 
             const studentId = userName.replace(/\s+/g, '-').toUpperCase() || 'STUDENT-WEB-USER';
             const newEvent = {
@@ -375,6 +642,13 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
             // Attempt immediate telemetry upload
             flushSyncQueue();
 
+            // Badge unlock toasts
+            if (lessonsCompleted === 0) toast('👣 Badge unlocked: First Step!', { icon: '🏅' });
+            if (isPerfect) toast('💯 Perfect score! Badge unlocked: Perfect 100%!', { icon: '🌟' });
+            if (newScore > 0 && lessonsCompleted > 0 && lessonsCompleted % 2 === 0) {
+                toast(`🔥 ${lessonsCompleted + 1} lessons completed! Keep it up!`, { icon: '🔥' });
+            }
+
             setStep('results');
         }
     };
@@ -384,10 +658,39 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
         ? Math.round((totalScoreSum / totalQuestionsAnswered) * 100)
         : 0;
 
+    // Derive real subject progress % from topicHistory
+    const computeSubjectAvg = (subject: string, grade: number): number => {
+        const keys = Object.keys(topicHistory).filter(k => k.startsWith(`${subject}-${grade}-`));
+        if (keys.length === 0) return 0;
+        const avg = keys.reduce((sum, k) => sum + topicHistory[k].bestScore, 0) / keys.length;
+        return Math.round(avg * 100);
+    };
+
+    const liveMathProgress = computeSubjectAvg('Mathematics', selectedGrade);
+    const liveEnglishProgress = computeSubjectAvg('English', selectedGrade);
+
+    // Math-before-English lock: only apply if Math has been attempted and avg < 80%
+    const mathAttempted = Object.keys(topicHistory).some(k => k.startsWith(`Mathematics-${selectedGrade}-`));
+    const isEnglishLocked = mathAttempted && liveMathProgress < 80;
+    const englishLockReason = isEnglishLocked
+        ? `Score at least 80% in Grade ${selectedGrade} Mathematics to unlock English. Your current Math score: ${liveMathProgress}%.`
+        : undefined;
+
     const mathTopicsList = getTopicsForCurrentSelection('Mathematics');
     const englishTopicsList = getTopicsForCurrentSelection('English');
 
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+    useEffect(() => {
+        const handleOnlineChange = () => setIsOnline(navigator.onLine);
+        window.addEventListener('online', handleOnlineChange);
+        window.addEventListener('offline', handleOnlineChange);
+        return () => {
+            window.removeEventListener('online', handleOnlineChange);
+            window.removeEventListener('offline', handleOnlineChange);
+        };
+    }, []);
 
     const handleLogout = () => {
         setIsLogoutModalOpen(true);
@@ -396,17 +699,36 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
     const confirmLogout = () => {
         setIsLogoutModalOpen(false);
         localStorage.removeItem('guro_user_session');
+        localStorage.removeItem(STORAGE_KEY_NAME);
+        localStorage.removeItem(STORAGE_KEY_GRADE);
         onExit();
         toast.success('Logged out successfully.');
     };
 
+    // Onboarding-only steps that bypass the shell
+    const isOnboardingStep = step === 'name' || step === 'grade';
+
+    const handleShellViewChange = (view: ShellView) => {
+        if (view === 'dashboard') setStep('dashboard');
+        else if (view === 'lessons') setStep('topics');
+        else if (view === 'progress') setStep('progress');
+    };
+
     return (
-        <div style={{ minHeight: '100vh', width: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ minHeight: '100vh', width: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+            {/* Step progress bar — only shown during onboarding/quiz flow */}
+            {isOnboardingStep && step !== 'name' && (
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 glass-panel shadow-lg w-full max-w-lg mx-auto">
+                    <StepProgressBar currentStep={step} />
+                </div>
+            )}
+
             {step === 'name' && (
                 <NameInputStep
                     onBack={onExit}
                     onStartLearning={(name) => {
                         setUserName(name);
+                        localStorage.setItem(STORAGE_KEY_NAME, name);
                         setStep('grade');
                     }}
                 />
@@ -416,118 +738,209 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
                 <GradeSelectionStep
                     userName={userName}
                     email={currentUser?.email}
-                    onBack={() => setStep('name')}
+                    onBack={() => currentUser ? handleLogout() : setStep('name')}
                     onLogout={handleLogout}
                     onSelectGrade={(grade) => {
                         setSelectedGrade(grade);
+                        localStorage.setItem(STORAGE_KEY_GRADE, String(grade));
                         setStep('dashboard');
                     }}
                 />
             )}
 
-            {step === 'dashboard' && (
-                <DashboardStep
+            {/* ── Shell — wraps dashboard, topics, and progress views ── */}
+            {(step === 'dashboard' || step === 'topics' || step === 'progress') && (
+                <StudentShell
                     userName={userName}
                     email={currentUser?.email}
                     selectedGrade={selectedGrade}
-                    onBack={() => setStep('grade')}
+                    onGradeChange={(grade) => { setSelectedGrade(grade); localStorage.setItem(STORAGE_KEY_GRADE, String(grade)); setStep('dashboard'); }}
                     onLogout={handleLogout}
-                    onSelectSubject={handleSelectSubject}
-                    mathTopics={mathTopicsList.length > 0 ? mathTopicsList : ['Fractions']}
-                    englishTopics={englishTopicsList.length > 0 ? englishTopicsList : ['Short Stories']}
-                    mathProgress={selectedGrade === 4 ? 65 : selectedGrade === 5 ? 40 : 15}
-                    englishProgress={selectedGrade === 4 ? 75 : selectedGrade === 5 ? 55 : 30}
-                    stats={{
-                        lessonsCompleted: lessonsCompleted,
-                        averageScore: averageScorePercent || 80,
-                        streak: lessonsCompleted > 0 ? 1 : 0
-                    }}
+                    isOnline={isOnline}
+                    currentView={step === 'dashboard' ? 'dashboard' : step === 'topics' ? 'lessons' : 'progress'}
+                    onViewChange={handleShellViewChange}
                     parentAccessCode={getParentAccessCode(userName.replace(/\s+/g, '-').toUpperCase() || 'STUDENT-WEB-USER')}
-                />
+                >
+                    {step === 'dashboard' && (
+                        <DashboardStep
+                            userName={userName}
+                            email={currentUser?.email}
+                            selectedGrade={selectedGrade}
+                            onBack={() => setStep('grade')}
+                            onLogout={handleLogout}
+                            onSelectSubject={handleSelectSubject}
+                            mathTopics={mathTopicsList.length > 0 ? mathTopicsList : ['Fractions']}
+                            englishTopics={englishTopicsList.length > 0 ? englishTopicsList : ['Short Stories']}
+                            mathProgress={liveMathProgress || (selectedGrade === 4 ? 65 : selectedGrade === 5 ? 40 : 15)}
+                            englishProgress={liveEnglishProgress || (selectedGrade === 4 ? 75 : selectedGrade === 5 ? 55 : 30)}
+                            stats={{
+                                lessonsCompleted: lessonsCompleted,
+                                averageScore: averageScorePercent || 0,
+                                streak: lessonsCompleted > 0 ? 1 : 0
+                            }}
+                            parentAccessCode={getParentAccessCode(userName.replace(/\s+/g, '-').toUpperCase() || 'STUDENT-WEB-USER')}
+                            isEnglishLocked={isEnglishLocked}
+                            englishLockReason={englishLockReason}
+                            inShell
+                            
+                            // Gamification
+                            stars={stars}
+                            avatarEmoji={avatarEmoji}
+                            activeOutfit={activeOutfit}
+                            ownedOutfits={ownedOutfits}
+                            xpPoints={xpPoints}
+                            onPurchaseOutfit={handlePurchaseOutfit}
+                            onEquipOutfit={handleEquipOutfit}
+                            onSelectAvatarEmoji={handleSelectAvatarEmoji}
+
+                            // Recommendation
+                            recommendedLesson={getRecommendedLesson()}
+                            lastActivity={getLastActivity()}
+                            onResumeQuiz={handleSelectTopic}
+
+                            // Time Limits
+                            dailyMinutesUsed={dailyMinutesUsed}
+                            dailyTimeLimit={dailyTimeLimit}
+                            isTimeLimitExceeded={isTimeLimitExceeded}
+                        />
+                    )}
+
+                    {step === 'topics' && (
+                        <div className="min-h-[calc(100vh-56px)] w-full flex flex-col items-center p-6 md:p-10 relative overflow-hidden select-none fade-in" style={{ background: 'var(--bg-main)' }}>
+                            <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 rounded-full blur-[160px]" style={{ background: 'rgba(17,66,142,0.12)' }} />
+                            <div className="absolute -top-48 right-1/4 size-80 rounded-full blur-[140px]" style={{ background: 'rgba(160,19,34,0.08)' }} />
+
+                            <div className="flex w-full max-w-4xl flex-col items-center gap-8 relative z-10 pt-4">
+                                {/* Header */}
+                                <div className="flex flex-col items-center text-center w-full">
+                                    <h1 className="text-2xl md:text-3xl font-extrabold text-[var(--text-main)] flex items-center justify-center gap-2.5 tracking-tight">
+                                        {selectedSubject === 'Mathematics' ? (
+                                            <><Calculator className="size-7 text-[#11428E] shrink-0" /><span>Math</span></>
+                                        ) : (
+                                            <><BookOpen className="size-7 text-purple-400 shrink-0" /><span>English</span></>
+                                        )}
+                                        <span>Practice Topics</span>
+                                    </h1>
+                                    <p className="text-sm font-medium text-[var(--text-muted)] mt-1.5">
+                                        Select a topic to start your diagnostic quest · Grade {selectedGrade}
+                                    </p>
+
+                                    {/* English lock banner in topics view */}
+                                    {selectedSubject === 'English' && isEnglishLocked && (
+                                        <div className="flex items-start gap-2.5 w-full max-w-lg px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl mt-2">
+                                            <span className="text-amber-500 text-lg shrink-0">🔒</span>
+                                            <p className="text-xs font-semibold text-[var(--text-muted)] text-left">{englishLockReason}</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Topics grid */}
+                                <div className="grid w-full grid-cols-1 md:grid-cols-2 gap-5">
+                                    {itemBankLoading ? (
+                                        // Skeleton shimmer cards
+                                        Array.from({ length: 4 }).map((_, i) => (
+                                            <div key={i} className="glass-panel rounded-2xl p-5 flex flex-col gap-3 animate-pulse">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="size-12 rounded-xl bg-[var(--border-color)] shrink-0" />
+                                                    <div className="flex-1 flex flex-col gap-2">
+                                                        <div className="h-4 bg-[var(--border-color)] rounded-full w-3/4" />
+                                                        <div className="h-3 bg-[var(--border-color)] rounded-full w-1/2" />
+                                                    </div>
+                                                </div>
+                                                <div className="h-1.5 bg-[var(--border-color)] rounded-full w-full" />
+                                            </div>
+                                        ))
+                                    ) : getTopicsForCurrentSelection(selectedSubject).length === 0 ? (
+                                        <div className="col-span-full glass-panel rounded-3xl p-12 text-center border border-dashed border-[var(--border-color)] flex flex-col items-center justify-center gap-3">
+                                            <Inbox className="size-10 text-[var(--text-dark)] shrink-0" />
+                                            <h3 className="text-base font-bold text-[var(--text-main)]">No topics available yet</h3>
+                                            <p className="text-[var(--text-muted)] text-sm">Staged lessons will appear here once loaded by the teacher workspace.</p>
+                                        </div>
+                                    ) : (
+                                        getTopicsForCurrentSelection(selectedSubject).map((topicName) => {
+                                            const topicKey = `${selectedSubject}-${selectedGrade}-${topicName}`;
+                                            const stat = topicHistory[topicKey];
+                                            const bestPct = stat ? Math.round(stat.bestScore * 100) : null;
+                                            const isMastered = bestPct !== null && bestPct >= 80;
+                                            const isStarted = bestPct !== null && !isMastered;
+                                            const statusLabel = isMastered ? 'Mastered' : isStarted ? 'In Progress' : 'Not Started';
+                                            const statusColor = isMastered ? 'text-emerald-500' : isStarted ? 'text-blue-400' : 'text-[var(--text-dark)]';
+                                            const isMath = selectedSubject === 'Mathematics';
+                                            return (
+                                                <button
+                                                    key={topicName}
+                                                    onClick={() => handleSelectTopic(topicName)}
+                                                    className="group glass-panel rounded-2xl p-5 text-left hover:-translate-y-0.5 hover:border-[var(--accent-primary)] transition-all duration-300 flex flex-col gap-3 cursor-pointer"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`p-3.5 rounded-xl text-white shrink-0 ${isMath ? 'bg-[#11428E]' : 'bg-purple-600'}`}>
+                                                            {isMath ? <Calculator className="size-5" /> : <BookOpen className="size-5" />}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h3 className="text-base font-extrabold text-[var(--text-main)] tracking-tight group-hover:text-[#11428E] transition-colors truncate">
+                                                                {topicName}
+                                                            </h3>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                {isMastered
+                                                                    ? <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
+                                                                    : isStarted
+                                                                    ? <TrendingUp className="size-3.5 text-blue-400 shrink-0" />
+                                                                    : <Circle className="size-3.5 text-[var(--text-dark)] shrink-0" />
+                                                                }
+                                                                <span className={`text-xs font-bold ${statusColor}`}>{statusLabel}</span>
+                                                                {stat && stat.attempts > 0 && (
+                                                                    <span className="text-[11px] text-[var(--text-dark)]">· {stat.attempts} attempt{stat.attempts !== 1 ? 's' : ''}</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        {bestPct !== null && (
+                                                            <span className={`text-sm font-extrabold shrink-0 ${isMastered ? 'text-emerald-500' : 'text-[var(--text-muted)]'}`}>
+                                                                {bestPct}%
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="w-full bg-[var(--border-color)] rounded-full h-1.5 overflow-hidden">
+                                                        <div
+                                                            className={`h-full rounded-full transition-all duration-500 ${isMastered ? 'bg-emerald-500' : isMath ? 'bg-[#11428E]' : 'bg-purple-500'}`}
+                                                            style={{ width: `${bestPct ?? 0}%` }}
+                                                        />
+                                                    </div>
+                                                </button>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 'progress' && (
+                        <ProgressView
+                            studentProgress={(() => {
+                                try {
+                                    const q = localStorage.getItem('guro_sync_queue');
+                                    if (!q) return [];
+                                    return (JSON.parse(q) as any[]).map((item: any) => item.event).filter(Boolean);
+                                } catch { return []; }
+                            })()}
+                            streakCount={lessonsCompleted > 0 ? 1 : 0}
+                            xpPoints={totalScoreSum * 10}
+                        />
+                    )}
+                </StudentShell>
             )}
 
-            {step === 'topics' && (
-                <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 md:p-12 bg-zinc-50 relative overflow-hidden select-none">
-                    {/* Background blurs */}
-                    <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 bg-purple-100 rounded-full blur-[160px]" />
-                    <div className="absolute -bottom-48 left-1/4 -translate-x-1/2 size-96 bg-blue-100 rounded-full blur-[160px]" />
-
-                    {/* Navigation Row */}
-                    <div className="absolute top-6 left-6 right-6 md:top-10 md:left-10 md:right-10 flex items-center justify-between z-20">
-                        <button
-                            onClick={() => setStep('dashboard')}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-zinc-200/60 rounded-full shadow-md text-zinc-700 hover:bg-zinc-50 transition-all hover:scale-[1.02] active:scale-[0.98] font-semibold text-sm cursor-pointer"
-                        >
-                            <ArrowLeft className="size-4 text-zinc-600" strokeWidth={2.5} />
-                            Dashboard
-                        </button>
-                        <div className="flex items-center gap-3">
-                            <div className={`px-5 py-2.5 rounded-full shadow-md font-bold text-sm border ${
-                                selectedGrade === 4 ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' :
-                                selectedGrade === 5 ? 'bg-blue-50 text-blue-700 border-blue-200/60' :
-                                selectedGrade === 6 ? 'bg-purple-50 text-purple-700 border-purple-200/60' :
-                                'bg-white text-zinc-700 border-zinc-200/60'
-                            }`}>
-                                Grade {selectedGrade} • {selectedSubject}
-                            </div>
-                            <StudentProfile
-                                userName={userName}
-                                email={currentUser?.email}
-                                onLogout={handleLogout}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex w-full max-w-4xl flex-col items-center gap-10 mt-20 relative z-10">
-                        <div className="flex flex-col items-center text-center">
-                            <h1 className="text-3xl md:text-4xl font-extrabold text-zinc-800 flex items-center justify-center gap-2.5 tracking-tight">
-                                {selectedSubject === 'Mathematics' ? (
-                                    <>
-                                        <Calculator className="size-8 text-blue-500 shrink-0" />
-                                        <span>Math</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <BookOpen className="size-8 text-purple-500 shrink-0" />
-                                        <span>English</span>
-                                    </>
-                                )}
-                                <span>Practice Topics</span>
-                            </h1>
-                            <p className="text-lg font-medium text-zinc-600 mt-2">Select a topic below to start your diagnostic quest!</p>
-                        </div>
-
-                        {/* Topics grid list */}
-                        <div className="grid w-full grid-cols-1 md:grid-cols-2 gap-6 px-4">
-                            {getTopicsForCurrentSelection(selectedSubject).length === 0 ? (
-                                <div className="col-span-full bg-white rounded-3xl p-12 text-center border border-dashed border-zinc-300 flex flex-col items-center justify-center">
-                                    <Inbox className="size-10 text-slate-400 shrink-0" />
-                                    <h3 className="text-lg font-bold text-zinc-700 mt-4">No topics found in the local repository</h3>
-                                    <p className="text-zinc-500 text-sm mt-1">Staged lessons will appear here once loaded by the teacher workspace.</p>
-                                </div>
-                            ) : (
-                                getTopicsForCurrentSelection(selectedSubject).map((topicName) => (
-                                    <button
-                                        key={topicName}
-                                        onClick={() => handleStartTopicQuiz(topicName)}
-                                        className="group bg-white border border-zinc-100 rounded-3xl p-6 text-left shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-5 cursor-pointer"
-                                    >
-                                        <div className={`p-4 rounded-2xl text-white ${selectedSubject === 'Mathematics' ? 'bg-blue-500' : 'bg-purple-500'}`}>
-                                            {selectedSubject === 'Mathematics' ? <Calculator className="size-6" /> : <BookOpen className="size-6" />}
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="text-lg font-black text-zinc-800 tracking-tight group-hover:text-blue-600 transition-colors">
-                                                {topicName}
-                                            </h3>
-                                            <p className="text-xs text-zinc-400 font-semibold mt-0.5">Click to start practice modules</p>
-                                        </div>
-                                        <Award className="size-5 text-zinc-300 group-hover:text-amber-500 transition-colors" />
-                                    </button>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                </div>
+            {step === 'study' && (
+                <StudyContentStep
+                    subject={selectedSubject}
+                    gradeLevel={selectedGrade}
+                    topic={selectedTopic}
+                    studyContent={
+                        (itemBank[selectedSubject]?.[selectedGrade.toString()]?.[selectedTopic] as any)?.studyContent ?? null
+                    }
+                    onStartQuiz={handleStartQuiz}
+                    onBack={() => setStep('topics')}
+                />
             )}
 
             {step === 'quiz' && questions.length > 0 && (
@@ -539,7 +952,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
                     options={questions[currentQuestionIndex].options}
                     correctOption={questions[currentQuestionIndex].correctAnswer}
                     explanationEn={questions[currentQuestionIndex].feedback.en}
-                    onBack={() => setStep('topics')}
+                    onBack={() => setStep('study')}
                     onNextOrFinish={handleQuestionNext}
                 />
             )}
@@ -548,11 +961,17 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
                 <QuizResultsStep
                     correctAnswersCount={score}
                     totalQuestionsCount={questions.length}
+                    topicName={selectedTopic}
+                    subject={selectedSubject}
+                    earnedXP={score * 10 + (score === questions.length ? 50 : 0)}
+                    answeredQuestions={answeredHistory}
                     onBackToSubjects={() => setStep('dashboard')}
                     onTryAgain={() => {
-                        // Reset quiz loop parameters
+                        const quizSlice = prepareQuestions(selectedTopic);
+                        if (quizSlice) setQuestions(quizSlice);
                         setCurrentQuestionIndex(0);
                         setScore(0);
+                        setAnsweredHistory([]);
                         setStep('quiz');
                     }}
                 />

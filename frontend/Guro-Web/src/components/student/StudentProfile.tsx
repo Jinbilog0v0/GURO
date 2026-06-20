@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, LogOut, ChevronDown, Mail } from 'lucide-react';
+import { User, LogOut, ChevronDown, Mail, Key } from 'lucide-react';
 
 interface StudentProfileProps {
     userName: string;
     email?: string;
     onLogout?: () => void;
+    parentAccessCode?: string;
 }
 
 export const StudentProfile: React.FC<StudentProfileProps> = ({
     userName = 'Student',
     email,
     onLogout,
+    parentAccessCode,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -60,6 +62,21 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
                     </div>
 
                     <div className="h-px bg-zinc-100" />
+
+                    {parentAccessCode && (
+                        <div className="flex flex-col gap-1.5 bg-amber-50 border border-amber-100 rounded-2xl p-3">
+                            <p className="text-xs font-bold text-amber-700 flex items-center gap-1.5">
+                                <Key className="size-3.5 text-amber-500 shrink-0" />
+                                Share with Parent
+                            </p>
+                            <p className="text-[11px] text-zinc-500 leading-relaxed">
+                                Show this code to your parent or guardian to let them track your progress.
+                            </p>
+                            <p className="text-center font-black text-base text-[#11428E] tracking-widest mt-0.5 select-all bg-white border border-amber-200 rounded-xl px-3 py-2">
+                                {parentAccessCode}
+                            </p>
+                        </div>
+                    )}
 
                     {onLogout && (
                         <button

@@ -71,7 +71,7 @@ describe('QuestionStep Component', () => {
     // Click next question button
     fireEvent.click(screen.getByRole('button', { name: 'Next Question →' }));
     
-    expect(defaultProps.onNextOrFinish).toHaveBeenCalledWith(true);
+    expect(defaultProps.onNextOrFinish).toHaveBeenCalledWith(true, expect.any(Object));
   });
 
   test('shows Finish Quiz button for the last question', () => {
