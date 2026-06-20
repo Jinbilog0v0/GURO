@@ -22,7 +22,8 @@ import {
   RotateCw,
   Sun,
   Moon,
-  GraduationCap
+  GraduationCap,
+  Shield
 } from 'lucide-react';
 
 interface SyncedEvent {
@@ -81,6 +82,7 @@ function App() {
       if (currentUser.role === 'teacher') setActiveTab('teacher');
       else if (currentUser.role === 'parent') setActiveTab('parent');
       else if (currentUser.role === 'student') setActiveTab('student');
+      else if (currentUser.role === 'admin') setActiveTab('dashboard');
       else if (currentUser.role === 'lesson-builder' || currentUser.role === 'developer') setActiveTab('lesson-builder');
     }
   }, []);
@@ -157,6 +159,7 @@ function App() {
           if (user.role === 'teacher') setActiveTab('teacher');
           else if (user.role === 'parent') setActiveTab('parent');
           else if (user.role === 'student') setActiveTab('student');
+          else if (user.role === 'admin') setActiveTab('dashboard');
           else if (user.role === 'lesson-builder' || user.role === 'developer') setActiveTab('lesson-builder');
         }}
       />
@@ -220,127 +223,89 @@ function App() {
     }
   };
 
+  const isAdmin = currentUser?.role === 'admin';
   const isTeacherView = ['teacher', 'dashboard', 'lesson-builder'].includes(activeTab);
+
+  const navBtn = (active: boolean) =>
+    `flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-[14.5px] text-left transition-all duration-200 w-full ${
+      active
+        ? 'bg-[var(--nav-active-bg)] shadow-[inset_3px_0_0_#11428E] text-[var(--text-main)] font-bold'
+        : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-[var(--bg-main)]'
+    }`;
 
   return (
     <div className={`flex h-screen w-screen bg-[var(--bg-main)] overflow-hidden${isTeacherView ? ' teacher-portal' : ''}`}>
       {/* Sidebar Navigation */}
       <aside className="w-64 shrink-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col px-4 py-5">
+        {/* Logo */}
         <div className="flex items-center gap-[11px] px-1.5 pb-5 mb-1">
           <div className="w-[42px] h-[42px] shrink-0 rounded-[12px] bg-gradient-to-br from-[#11428E] to-[#1C5BC0] flex items-center justify-center text-white font-extrabold text-sm shadow-[0_6px_16px_rgba(17,66,142,0.34)]">GU</div>
           <div className="leading-tight">
             <div className="font-['Space_Grotesk',sans-serif] text-[18px] font-extrabold text-[var(--text-main)]">GURO</div>
-            <div className="text-[12px] font-semibold text-[var(--text-muted)]">Teacher Portal</div>
+            <div className={`text-[12px] font-semibold ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--text-muted)]'}`}>
+              {isAdmin ? 'Admin Console' : 'Teacher Portal'}
+            </div>
           </div>
         </div>
 
-        <nav className="flex flex-col gap-2 flex-1">
-          {(!currentUser || currentUser.role === 'lesson-builder' || currentUser.role === 'developer' || currentUser.role === 'teacher') && (
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-sm text-left transition-all duration-200 w-full ${
-                activeTab === 'dashboard'
-                  ? 'bg-[var(--nav-active-bg)] shadow-[inset_3px_0_0_#11428E] text-[var(--text-main)] font-bold'
-                  : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-[var(--bg-main)]'
-              }`}
-            >
+        <nav className="flex flex-col gap-1 flex-1">
+          {/* ── Admin nav ── */}
+          {isAdmin && (
+            <>
+              <button onClick={() => setActiveTab('dashboard')} className={navBtn(activeTab === 'dashboard')}>
+                <LayoutDashboard size={18} className="shrink-0" />
+                <span>Main Dashboard</span>
+              </button>
+              <button onClick={() => setActiveTab('lesson-builder')} className={navBtn(activeTab === 'lesson-builder')}>
+                <Zap size={18} className="shrink-0" />
+                <span>Lesson Ingestor</span>
+              </button>
+            </>
+          )}
+
+          {/* ── Teacher / builder nav ── */}
+          {!isAdmin && (!currentUser || currentUser.role === 'lesson-builder' || currentUser.role === 'developer' || currentUser.role === 'teacher') && (
+            <button onClick={() => setActiveTab('dashboard')} className={navBtn(activeTab === 'dashboard')}>
               <LayoutDashboard size={18} className="shrink-0" />
               <span>System Dashboard</span>
             </button>
           )}
 
-          {(!currentUser || currentUser.role === 'teacher') && (
+          {!isAdmin && (!currentUser || currentUser.role === 'teacher') && (
             <div className="flex flex-col">
               <div className="px-[14px] pt-4 pb-1.5 text-[10.5px] font-extrabold tracking-[0.1em] uppercase text-[var(--text-dark)]">
                 Teacher Console
               </div>
-
               <div className="flex flex-col gap-[3px] pl-2 border-l-[1.5px] border-[var(--border-color)] ml-[14px]">
-                <button
-                  onClick={() => {
-                    setActiveTab('teacher');
-                    setActiveSubTab('analytics');
-                  }}
-                  className={`flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-[14.5px] text-left transition-all duration-200 w-full ${
-                    activeTab === 'teacher' && activeSubTab === 'analytics'
-                      ? 'bg-[var(--nav-active-bg)] shadow-[inset_3px_0_0_#11428E] text-[var(--text-main)] font-bold'
-                      : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-[var(--bg-main)]'
-                  }`}
-                >
-                  <TrendingUp size={17} className="shrink-0" />
-                  <span>Classroom Analytics</span>
+                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'analytics')}>
+                  <TrendingUp size={17} className="shrink-0" /><span>Classroom Analytics</span>
                 </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('teacher');
-                    setActiveSubTab('classroom-pairing');
-                  }}
-                  className={`flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-[14.5px] text-left transition-all duration-200 w-full ${
-                    activeTab === 'teacher' && activeSubTab === 'classroom-pairing'
-                      ? 'bg-[var(--nav-active-bg)] shadow-[inset_3px_0_0_#11428E] text-[var(--text-main)] font-bold'
-                      : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-[var(--bg-main)]'
-                  }`}
-                >
-                  <Key size={17} className="shrink-0" />
-                  <span>Classroom Setup</span>
+                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('classroom-pairing'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'classroom-pairing')}>
+                  <Key size={17} className="shrink-0" /><span>Classroom Setup</span>
                 </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('teacher');
-                    setActiveSubTab('manual-lesson');
-                  }}
-                  className={`flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-[14.5px] text-left transition-all duration-200 w-full ${
-                    activeTab === 'teacher' && activeSubTab === 'manual-lesson'
-                      ? 'bg-[var(--nav-active-bg)] shadow-[inset_3px_0_0_#11428E] text-[var(--text-main)] font-bold'
-                      : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-[var(--bg-main)]'
-                  }`}
-                >
-                  <PlusCircle size={17} className="shrink-0" />
-                  <span>Create Lesson Manually</span>
+                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('manual-lesson'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'manual-lesson')}>
+                  <PlusCircle size={17} className="shrink-0" /><span>Create Lesson Manually</span>
                 </button>
               </div>
             </div>
           )}
 
-          {(!currentUser || currentUser.role === 'parent') && (
-            <button
-              onClick={() => setActiveTab('parent')}
-              className={`flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-sm text-left transition-all duration-200 w-full ${
-                activeTab === 'parent'
-                  ? 'bg-[#11428E]/10 text-[var(--text-main)] font-bold'
-                  : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-white/5'
-              }`}
-            >
-              <Users size={18} className="shrink-0" />
-              <span>Parent Explorer</span>
+          {!isAdmin && (!currentUser || currentUser.role === 'parent') && (
+            <button onClick={() => setActiveTab('parent')} className={`flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-sm text-left transition-all duration-200 w-full ${activeTab === 'parent' ? 'bg-[#11428E]/10 text-[var(--text-main)] font-bold' : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-white/5'}`}>
+              <Users size={18} className="shrink-0" /><span>Parent Explorer</span>
             </button>
           )}
 
-          {(!currentUser || currentUser.role === 'lesson-builder' || currentUser.role === 'developer' || currentUser.role === 'teacher') && (
-            <button
-              onClick={() => setActiveTab('lesson-builder')}
-              className={`flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-[14.5px] text-left transition-all duration-200 w-full mt-[3px] ${
-                activeTab === 'lesson-builder'
-                  ? 'bg-[var(--nav-active-bg)] shadow-[inset_3px_0_0_#11428E] text-[var(--text-main)] font-bold'
-                  : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-[var(--bg-main)]'
-              }`}
-            >
-              <Zap size={18} className="shrink-0" />
-              <span>Lesson Ingestor</span>
+          {!isAdmin && (!currentUser || currentUser.role === 'lesson-builder' || currentUser.role === 'developer' || currentUser.role === 'teacher') && (
+            <button onClick={() => setActiveTab('lesson-builder')} className={navBtn(activeTab === 'lesson-builder')}>
+              <Zap size={18} className="shrink-0" /><span>Lesson Ingestor</span>
             </button>
           )}
 
           <div className="flex-1" />
 
-          {/* Entrance Role Gateway Button */}
           <button
-            onClick={() => {
-              if (currentUser) {
-                setIsLogoutModalOpen(true);
-              } else {
-                handleExitToLanding();
-              }
-            }}
+            onClick={() => currentUser ? setIsLogoutModalOpen(true) : handleExitToLanding()}
             className="flex items-center gap-3 bg-[var(--danger)]/10 border border-[var(--danger)]/20 text-[var(--danger)] px-[14px] py-[10px] rounded-[11px] cursor-pointer font-semibold text-sm text-left transition-all duration-200 w-full mb-4 hover:bg-[var(--danger)]/20"
           >
             <LogOut size={18} className="shrink-0" />
@@ -348,16 +313,20 @@ function App() {
           </button>
         </nav>
 
+        {/* User footer */}
         <div className="border-t border-[var(--border-color)] pt-[14px] flex items-center gap-[11px]">
-          <div className="w-[38px] h-[38px] rounded-full bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-center shrink-0">
-            <GraduationCap size={18} className="text-[var(--text-muted)]" />
+          <div className={`w-[38px] h-[38px] rounded-full border border-[var(--border-color)] flex items-center justify-center shrink-0 ${isAdmin ? 'bg-[#FBECEE]' : 'bg-[var(--bg-main)]'}`}>
+            {isAdmin
+              ? <Shield size={18} className="text-[#CE1126]" />
+              : <GraduationCap size={18} className="text-[var(--text-muted)]" />
+            }
           </div>
           <div className="flex flex-col flex-1 min-w-0 leading-[1.15]">
             <span className="text-sm font-bold text-[var(--text-main)] truncate">
               {currentUser ? currentUser.name : 'Guest Workspace'}
             </span>
-            <span className="text-[11.5px] font-semibold text-[var(--success)] truncate">
-              {currentUser ? `${currentUser.role.toUpperCase()} · Sync'd` : 'Local Session'}
+            <span className={`text-[11.5px] font-semibold truncate ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--success)]'}`}>
+              {isAdmin ? 'ADMIN · Division Office' : currentUser ? `${currentUser.role.toUpperCase()} · Sync'd` : 'Local Session'}
             </span>
           </div>
           <button
@@ -375,7 +344,7 @@ function App() {
         {/* Top Header */}
         <header className="h-[62px] border-b border-[var(--border-color)] flex justify-between items-center px-[30px] bg-[var(--bg-sidebar)]">
           <div className="flex items-center gap-1.5 text-xs font-medium">
-            <span className="text-[var(--text-muted)]">GURO</span>
+            <span className="text-[var(--text-muted)] font-bold">{isAdmin ? 'GURO Admin' : 'GURO'}</span>
             <span className="text-[var(--border-color)]">/</span>
             {activeTab === 'teacher' ? (
               <>
@@ -389,20 +358,20 @@ function App() {
               </>
             ) : (
               <span className="text-[var(--text-main)] font-bold">
-                {activeTab === 'parent' ? 'Parent Explorer' :
-                  activeTab === 'dashboard' ? 'System Dashboard' : 'Lesson Ingestor'}
+                {activeTab === 'parent' ? 'Parent Explorer'
+                  : activeTab === 'dashboard' ? (isAdmin ? 'Main Dashboard' : 'System Dashboard')
+                  : 'Lesson Ingestor'}
               </span>
             )}
           </div>
 
           <div className="flex items-center gap-4">
             {activeTab === 'teacher' && activeSubTab === 'analytics' && (
-              <button 
+              <button
                 onClick={() => fetchLogs(false)}
-                className="bg-white/4 border border-[var(--border-color)] text-[var(--text-main)] px-3 py-1.25 rounded-md cursor-pointer text-xs font-semibold transition-all duration-200 hover:bg-white/10 flex items-center gap-1.5"
+                className="bg-white/4 border border-[var(--border-color)] text-[var(--text-main)] px-3 py-1.5 rounded-md cursor-pointer text-xs font-semibold transition-all duration-200 hover:bg-white/10 flex items-center gap-1.5"
               >
-                <RotateCw size={13} />
-                <span>Refresh Logs</span>
+                <RotateCw size={13} /><span>Refresh Logs</span>
               </button>
             )}
             <div className="flex items-center gap-1.5 bg-[#10B981]/8 border border-[#10B981]/20 px-2.5 py-1 rounded-full">

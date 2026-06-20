@@ -6,6 +6,6 @@
     "verbatimModuleSyntax": false,
     "esModuleInterop": true,
     "jsx": "react-jsx",
-    "types": ["jest", "node"]
+    "types": ["jest", "node", "vite/client"]
   }
 }

@@ -154,7 +154,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
             const optionsText = options
                 .map((opt, idx) => `Option ${String.fromCharCode(65 + idx)}: ${opt}`)
                 .join('. ');
-            const utterance = new SpeechSynthesisUtterance(`${questionText}. ${optionsText}`);
+            const utterance = new SpeechSynthesisUtterance(`${questionText}. ${optionsText}`.replace(/_+/g, ' blank '));
             
             utterance.onend = () => setIsSpeaking(false);
             utterance.onerror = () => setIsSpeaking(false);
