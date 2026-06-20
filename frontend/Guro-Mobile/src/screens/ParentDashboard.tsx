@@ -15,7 +15,7 @@ import { useAppStore, ProgressEvent } from '../store/useAppStore';
 import { getParentAccessCode } from '../utils/security';
 import { Colors } from '../theme/colors';
 import { Fonts, FontSizes } from '../theme/typography';
-import { Spacing } from '../theme/spacing';
+import { Spacing, Radius } from '../theme/spacing';
 import { GlassCard } from '../components/ui/GlassCard';
 import { PrimaryButton, SecondaryButton, DangerButton } from '../components/ui/Buttons';
 import { SectionHeader } from '../components/ui/SectionHeader';
@@ -25,6 +25,7 @@ import { Badge } from '../components/ui/Badge';
 import { SyncBadge } from '../components/shared/SyncBadge';
 import { styles } from '../styles/ParentDashboard.styles';
 import { ClipboardList, Target, Cloud, Shield, Hourglass, Lock, Globe, RefreshCw, Folder, Users, Settings, LogOut, Trash2 } from 'lucide-react-native';
+import { toast } from '../components';
 
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ParentDashboard'>;
@@ -100,15 +101,19 @@ export function ParentDashboard({ navigation }: Props) {
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleSync = async () => {
     if (!serverUrl.trim()) {
-      Alert.alert('Configuration Error', 'Please enter a valid server endpoint.');
+      toast.error('Please enter a valid server endpoint.');
       return;
     }
     setIsSyncing(true);
     try {
       const res = await syncProgressNow(serverUrl.trim());
-      Alert.alert(res.success ? 'Sync Successful' : 'Sync Failed', res.message);
+      if (res.success) {
+        toast.success(res.message);
+      } else {
+        toast.error(res.message);
+      }
     } catch {
-      Alert.alert('Sync Error', 'Network error or invalid server URL.');
+      toast.error('Network error or invalid server URL.');
     } finally {
       setIsSyncing(false);
     }
@@ -116,15 +121,15 @@ export function ParentDashboard({ navigation }: Props) {
 
   const handlePinChangeSubmit = () => {
     if (!newPinInput || newPinInput.length !== 4 || isNaN(Number(newPinInput))) {
-      Alert.alert('Validation Error', 'New PIN must be exactly 4 digits.');
+      toast.error('New PIN must be exactly 4 digits.');
       return;
     }
     if (newPinInput !== confirmPinInput) {
-      Alert.alert('Validation Error', 'New PIN and confirmation do not match.');
+      toast.error('New PIN and confirmation do not match.');
       return;
     }
     if (parentPin && currentPinInput !== parentPin) {
-      Alert.alert('Authentication Error', 'Current PIN code is incorrect.');
+      toast.error('Current PIN code is incorrect.');
       return;
     }
     setParentPin(newPinInput);
@@ -132,7 +137,7 @@ export function ParentDashboard({ navigation }: Props) {
     setNewPinInput('');
     setConfirmPinInput('');
     setIsChangingPin(false);
-    Alert.alert('PIN Updated', 'Parent dashboard PIN changed successfully.');
+    toast.success('Parent dashboard PIN changed successfully.');
   };
 
   const handleClearHistory = () => {
@@ -146,7 +151,7 @@ export function ParentDashboard({ navigation }: Props) {
           style: 'destructive',
           onPress: () => {
             clearProgress();
-            Alert.alert('Success', 'Practice logs cleared.');
+            toast.success('Practice logs cleared.');
           },
         },
       ]
@@ -214,7 +219,7 @@ export function ParentDashboard({ navigation }: Props) {
               style={styles.resetTodayBtn}
               onPress={() => {
                 resetDailyMinutes();
-                Alert.alert('Reset', "Today's screen time reset to 0.");
+                toast.success("Today's screen time reset to 0.");
               }}
             >
               <Text style={styles.resetTodayText}>Reset</Text>
@@ -325,11 +330,11 @@ export function ParentDashboard({ navigation }: Props) {
             label="Save Device ID"
             onPress={() => {
               if (!studentIdInput.trim()) {
-                Alert.alert('Error', 'Student ID cannot be empty.');
+                toast.error('Student ID cannot be empty.');
                 return;
               }
               setStudentId(studentIdInput.trim());
-              Alert.alert('Saved', `ID set to: ${studentIdInput.trim().toUpperCase()}`);
+              toast.success(`ID set to: ${studentIdInput.trim().toUpperCase()}`);
             }}
             style={{ marginTop: Spacing.md }}
           />
@@ -420,14 +425,19 @@ export function ParentDashboard({ navigation }: Props) {
                   label={isAuthSubmitting ? 'Signing in…' : 'Sign In & Link Progress'}
                   onPress={async () => {
                     if (!authEmail.trim() || !authPassword.trim()) {
-                      Alert.alert('Error', 'Enter email and password.');
+                      toast.error('Enter email and password.');
                       return;
                     }
                     setIsAuthSubmitting(true);
                     const res = await loginToCloud(authEmail.trim(), authPassword.trim());
                     setIsAuthSubmitting(false);
-                    Alert.alert(res.success ? 'Success' : 'Error', res.message);
-                    if (res.success) { setAuthEmail(''); setAuthPassword(''); }
+                    if (res.success) {
+                      toast.success(res.message);
+                      setAuthEmail('');
+                      setAuthPassword('');
+                    } else {
+                      toast.error(res.message);
+                    }
                   }}
                   loading={isAuthSubmitting}
                   style={{ marginTop: Spacing.lg }}
@@ -465,14 +475,20 @@ export function ParentDashboard({ navigation }: Props) {
                   label={isAuthSubmitting ? 'Registering…' : 'Register & Merge Local Data'}
                   onPress={async () => {
                     if (!authName.trim() || !authEmail.trim() || !authPassword.trim()) {
-                      Alert.alert('Error', 'Fill in all fields.');
+                      toast.error('Fill in all fields.');
                       return;
                     }
                     setIsAuthSubmitting(true);
                     const res = await registerAndPromote(authEmail.trim(), authPassword.trim(), authName.trim());
                     setIsAuthSubmitting(false);
-                    Alert.alert(res.success ? 'Success' : 'Error', res.message);
-                    if (res.success) { setAuthName(''); setAuthEmail(''); setAuthPassword(''); }
+                    if (res.success) {
+                      toast.success(res.message);
+                      setAuthName('');
+                      setAuthEmail('');
+                      setAuthPassword('');
+                    } else {
+                      toast.error(res.message);
+                    }
                   }}
                   loading={isAuthSubmitting}
                   style={{ marginTop: Spacing.lg }}
@@ -589,18 +605,28 @@ export function ParentDashboard({ navigation }: Props) {
     <SafeAreaView style={styles.screen}>
       {/* ── Header ── */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Parent Portal</Text>
-          <Text style={styles.headerSub}>Monitor, control &amp; sync</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('StudentDashboard')}
+            style={{
+              paddingHorizontal: Spacing.md,
+              paddingVertical: Spacing.xs,
+              backgroundColor: 'rgba(255,255,255,0.06)',
+              borderRadius: Radius.sm,
+              borderWidth: 1,
+              borderColor: Colors.border,
+            }}
+            accessibilityLabel="Return to student dashboard"
+          >
+            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }}>← Return</Text>
+          </TouchableOpacity>
+          <View>
+            <Text style={styles.headerTitle}>Parent Portal</Text>
+            <Text style={styles.headerSub}>Monitor, control &amp; sync</Text>
+          </View>
         </View>
         <View style={styles.headerRight}>
           <SyncBadge />
-          <TouchableOpacity
-            style={styles.exitBtn}
-            onPress={() => navigation.navigate('StudentDashboard')}
-          >
-            <Text style={styles.exitBtnText}>← Kid Zone</Text>
-          </TouchableOpacity>
         </View>
       </View>
 

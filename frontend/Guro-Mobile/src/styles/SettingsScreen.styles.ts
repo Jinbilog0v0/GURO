@@ -327,4 +327,60 @@ export const styles = StyleSheet.create({
     borderTopColor: Colors.border,
     backgroundColor: '#ffffff',
   },
+  // ── Gamification UI/UX Styles ──────────────────────────────────────────────
+  xpBarContainer: {
+    height: 16,
+    width: '100%',
+    backgroundColor: '#E5E7EB',
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginTop: Spacing.xs,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  xpBarFill: {
+    height: '100%',
+    backgroundColor: '#3B82F6',
+  },
+  closetContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  closetItem: {
+    width: '47%',
+    padding: Spacing.sm,
+    borderRadius: Radius.md,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xxs,
+  },
+  closetItemActive: {
+    borderColor: '#3B82F6',
+    backgroundColor: 'rgba(59,130,246,0.08)',
+  },
+  closetItemEmoji: {
+    fontSize: 32,
+    marginVertical: 4,
+  },
+  closetItemTitle: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.xs,
+    color: '#1F2937',
+  },
+  closetItemPrice: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSizes.xxs,
+    color: '#D97706',
+  },
+  closetItemOwned: {
+    fontFamily: Fonts.body,
+    fontSize: 9,
+    color: '#059669',
+    fontStyle: 'italic',
+  },
 });

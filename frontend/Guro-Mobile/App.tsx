@@ -20,6 +20,7 @@ import { useAppStore } from './src/store/useAppStore';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from './src/theme/colors';
 import { Fonts, FontSizes } from './src/theme/typography';
+import { ToastContainer } from './src/components';
 
 const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.254.125:8000';
 
@@ -78,6 +79,7 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <AppNavigator />
+        <ToastContainer />
         <StatusBar style="dark" />
       </NavigationContainer>
     </SafeAreaProvider>

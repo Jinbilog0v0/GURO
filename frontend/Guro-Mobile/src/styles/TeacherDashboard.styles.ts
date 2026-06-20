@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 import { Colors } from '../theme/colors';
 import { Fonts, FontSizes } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
@@ -33,7 +33,7 @@ export const styles = StyleSheet.create({
   },
   screenTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSizes['3xl'],
+    fontSize: FontSizes.lg,
     color: Colors.textMain,
     letterSpacing: -0.5,
   },
@@ -41,7 +41,7 @@ export const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSizes.sm,
     color: Colors.textMuted,
-    marginTop: Spacing.xs,
+    marginTop: 2,
   },
   roleBadge: {
     marginTop: Spacing.xs,
@@ -122,7 +122,7 @@ export const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   logLine: {
-    fontFamily: 'Courier',
+    fontFamily: Platform.select({ ios: 'Courier New', android: 'monospace', default: 'monospace' }),
     fontSize: FontSizes.sm,
     color: Colors.success,
     lineHeight: 20,

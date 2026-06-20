@@ -91,10 +91,22 @@ interface AppState {
   soundEffectsEnabled: boolean;
   speechRate: number;
   colorTheme: string;
+  xpPoints: number;
+  virtualStars: number;
+  mascotOutfit: string;
+  ownedOutfits: string[];
+  voiceGuideTheme: string;
+  correctSoundTheme: string;
+  preferredGrade: number;
   setAvatarEmoji: (emoji: string) => void;
   setSoundEffectsEnabled: (enabled: boolean) => void;
   setSpeechRate: (rate: number) => void;
   setColorTheme: (theme: string) => void;
+  setMascotOutfit: (outfit: string) => void;
+  purchaseOutfit: (outfit: string, cost: number) => boolean;
+  setVoiceGuideTheme: (theme: string) => void;
+  setCorrectSoundTheme: (theme: string) => void;
+  setPreferredGrade: (grade: number) => void;
   addLog: (message: string) => void;
   clearLogs: () => void;
   loadItemBankSync: () => Promise<void>;
@@ -142,12 +154,45 @@ export const useAppStore = create<AppState>()(
       soundEffectsEnabled: true,
       speechRate: 1.0,
       colorTheme: 'blue',
+      xpPoints: 0,
+      virtualStars: 0,
+      mascotOutfit: 'default',
+      ownedOutfits: ['default'],
+      voiceGuideTheme: 'astronaut',
+      correctSoundTheme: 'ding',
+      preferredGrade: 4,
       setAppMode: (mode) => set({ appMode: mode }),
       setGuestName: (name) => set({ guestName: name }),
       setAvatarEmoji: (emoji) => set({ avatarEmoji: emoji }),
       setSoundEffectsEnabled: (enabled) => set({ soundEffectsEnabled: enabled }),
       setSpeechRate: (rate) => set({ speechRate: rate }),
       setColorTheme: (theme) => set({ colorTheme: theme }),
+      setMascotOutfit: (outfit) => set({ mascotOutfit: outfit }),
+      purchaseOutfit: (outfit, cost) => {
+        const state = get();
+        if (state.virtualStars >= cost && !state.ownedOutfits.includes(outfit)) {
+          set({
+            virtualStars: state.virtualStars - cost,
+            ownedOutfits: [...state.ownedOutfits, outfit],
+            mascotOutfit: outfit
+          });
+          get().addLog(`Purchased and equipped mascot outfit: ${outfit}`);
+          saveParentSetting('virtual_stars', (state.virtualStars - cost).toString()).catch(console.error);
+          saveParentSetting('owned_outfits', JSON.stringify([...state.ownedOutfits, outfit])).catch(console.error);
+          saveParentSetting('mascot_outfit', outfit).catch(console.error);
+          return true;
+        }
+        return false;
+      },
+      setVoiceGuideTheme: (theme) => {
+        set({ voiceGuideTheme: theme });
+        saveParentSetting('voice_guide_theme', theme).catch(console.error);
+      },
+      setCorrectSoundTheme: (theme) => {
+        set({ correctSoundTheme: theme });
+        saveParentSetting('correct_sound_theme', theme).catch(console.error);
+      },
+      setPreferredGrade: (grade) => set({ preferredGrade: grade }),
       trackActiveMinutes: (minutes) => {
         const today = new Date().toISOString().split('T')[0];
         const state = get();
@@ -321,11 +366,17 @@ export const useAppStore = create<AppState>()(
           nextBadges.push('streak_master');
         }
 
+        // Calculate XP and Stars earned
+        const earnedXP = event.score * 10 + (isPerfect ? 50 : 0);
+        const earnedStars = event.score * 2 + (isPerfect ? 10 : 0);
+
         set((state) => ({
           studentProgress: [newEvent, ...state.studentProgress],
           streakCount: nextStreak,
           unlockedBadges: nextBadges,
           lastActiveDay: today,
+          xpPoints: (state.xpPoints || 0) + earnedXP,
+          virtualStars: (state.virtualStars || 0) + earnedStars,
         }));
 
         try {
@@ -333,10 +384,12 @@ export const useAppStore = create<AppState>()(
           await saveParentSetting('streak_count', nextStreak.toString());
           await saveParentSetting('unlocked_badges', JSON.stringify(nextBadges));
           await saveParentSetting('last_active_day', today);
+          await saveParentSetting('xp_points', get().xpPoints.toString());
+          await saveParentSetting('virtual_stars', get().virtualStars.toString());
         } catch (e) {
           console.error('[SQLite] Failed to save progress/achievements locally:', e);
         }
-        get().addLog(`Recorded local progress for "${event.topic}" (${event.score}/${event.totalQuestions})`);
+        get().addLog(`Recorded local progress for "${event.topic}" (${event.score}/${event.totalQuestions}) (+${earnedXP} XP, +${earnedStars} Stars)`);
       },
       clearProgress: async () => {
         set({ studentProgress: [] });
@@ -409,12 +462,24 @@ export const useAppStore = create<AppState>()(
           const localBank = await getLocalItemBank();
           const streakStr = await getParentSetting('streak_count');
           const badgesStr = await getParentSetting('unlocked_badges');
+          const xpStr = await getParentSetting('xp_points');
+          const starsStr = await getParentSetting('virtual_stars');
+          const ownedOutfitsStr = await getParentSetting('owned_outfits');
+          const mascotOutfitStr = await getParentSetting('mascot_outfit');
+          const voiceThemeStr = await getParentSetting('voice_guide_theme');
+          const correctSoundStr = await getParentSetting('correct_sound_theme');
 
           set({
             studentProgress: localLogs,
             itemBank: localBank || get().itemBank,
             streakCount: streakStr ? parseInt(streakStr, 10) : 0,
             unlockedBadges: badgesStr ? JSON.parse(badgesStr) : [],
+            xpPoints: xpStr ? parseInt(xpStr, 10) : get().xpPoints,
+            virtualStars: starsStr ? parseInt(starsStr, 10) : get().virtualStars,
+            ownedOutfits: ownedOutfitsStr ? JSON.parse(ownedOutfitsStr) : get().ownedOutfits,
+            mascotOutfit: mascotOutfitStr || get().mascotOutfit,
+            voiceGuideTheme: voiceThemeStr || get().voiceGuideTheme,
+            correctSoundTheme: correctSoundStr || get().correctSoundTheme,
           });
           get().addLog('[SQLite] Loaded state from local SQLite database.');
         } catch (e: any) {
@@ -440,6 +505,13 @@ export const useAppStore = create<AppState>()(
         guestName: state.guestName,
         dailyMinutesUsed: state.dailyMinutesUsed,
         lastActiveDay: state.lastActiveDay,
+        xpPoints: state.xpPoints,
+        virtualStars: state.virtualStars,
+        mascotOutfit: state.mascotOutfit,
+        ownedOutfits: state.ownedOutfits,
+        voiceGuideTheme: state.voiceGuideTheme,
+        correctSoundTheme: state.correctSoundTheme,
+        preferredGrade: state.preferredGrade,
       }),
     }
   )

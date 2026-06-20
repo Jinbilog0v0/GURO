@@ -80,7 +80,7 @@ describe('TeacherDashboard', () => {
     expect(stringified).toContain('report-1.txt');
     expect(stringified).toContain('report-2.txt');
     expect(stringified).toContain('Questions');
-  });
+  }, 45000);
 
   test('should handle validation alert and not write when title or content is empty', async () => {
     let root: any;

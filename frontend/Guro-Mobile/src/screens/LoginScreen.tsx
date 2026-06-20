@@ -18,6 +18,7 @@ import { Spacing } from '../theme/spacing';
 import { GlassCard } from '../components/ui/GlassCard';
 import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
 import { ThemedTextInput } from '../components/ui/ThemedTextInput';
+import { toast } from '../components';
 import { styles } from '../styles/LoginScreen.styles';
 import { School, Users, GraduationCap, Cloud, WifiOff } from 'lucide-react-native';
 
@@ -82,7 +83,7 @@ export function LoginScreen({ navigation }: Props) {
   const handleCloudLogin = async () => {
     let valid = true;
     if (!selectedRole) {
-      Alert.alert('Role Required', 'Please select a role before signing in.');
+      toast.warning('Please select a role before signing in.');
       valid = false;
     }
     if (!email.trim()) { setEmailError('Email is required'); valid = false; }
@@ -98,14 +99,14 @@ export function LoginScreen({ navigation }: Props) {
       if (user) {
         if (user.role !== selectedRole) {
           useAppStore.getState().logoutFromCloud();
-          Alert.alert('Role Mismatch', `This account is registered as a ${user.role}, not a ${selectedRole}.`);
+          toast.error(`Role Mismatch: This account is registered as a ${user.role}, not a ${selectedRole}.`);
         } else {
            setAppMode('online');
            routeByRole(user.role);
         }
       }
     } else {
-      Alert.alert('Login Failed', result.message);
+      toast.error(result.message || 'Login Failed');
     }
   };
 

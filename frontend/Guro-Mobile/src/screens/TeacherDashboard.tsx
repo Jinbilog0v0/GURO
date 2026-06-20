@@ -11,6 +11,7 @@ import {
   ScrollView,
   Alert,
   BackHandler,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -20,7 +21,7 @@ import { FileService } from '../services/fileService';
 
 // ── Design system ──────────────────────────────────────────────────────────
 import { Colors } from '../theme/colors';
-import { Spacing } from '../theme/spacing';
+import { Spacing, Radius } from '../theme/spacing';
 import { Fonts, FontSizes } from '../theme/typography';
 import { GlassCard } from '../components/ui/GlassCard';
 import { PrimaryButton, SecondaryButton, DangerButton } from '../components/ui/Buttons';
@@ -202,9 +203,42 @@ export function TeacherDashboard({ navigation }: Props) {
       >
         {/* ── Header ── */}
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.screenTitle}>{isPinMode ? 'Teacher Evaluation' : 'Teacher Dashboard'}</Text>
-            <Text style={styles.screenSubtitle}>{isPinMode ? `Reviewing: ${studentId}` : 'GURO Diagnostics & Reports'}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flex: 1 }}>
+            {isPinMode ? (
+              <TouchableOpacity
+                onPress={() => navigation.replace('StudentDashboard')}
+                style={{
+                  paddingHorizontal: Spacing.md,
+                  paddingVertical: Spacing.xs,
+                  backgroundColor: 'rgba(255,255,255,0.06)',
+                  borderRadius: Radius.sm,
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                }}
+                accessibilityLabel="Return to student dashboard"
+              >
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }}>← Return</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => navigation.replace('Login')}
+                style={{
+                  paddingHorizontal: Spacing.md,
+                  paddingVertical: Spacing.xs,
+                  backgroundColor: 'rgba(255,255,255,0.06)',
+                  borderRadius: Radius.sm,
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                }}
+                accessibilityLabel="Return to login screen"
+              >
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }}>← Return</Text>
+              </TouchableOpacity>
+            )}
+            <View style={styles.headerLeft}>
+              <Text style={styles.screenTitle} numberOfLines={1}>{isPinMode ? 'Teacher Evaluation' : 'Teacher Dashboard'}</Text>
+              <Text style={styles.screenSubtitle}>{isPinMode ? `Reviewing: ${studentId}` : 'GURO Diagnostics & Reports'}</Text>
+            </View>
           </View>
           <View style={styles.headerRight}>
             <SyncBadge />
@@ -212,13 +246,7 @@ export function TeacherDashboard({ navigation }: Props) {
           </View>
         </View>
 
-        {isPinMode ? (
-          <SecondaryButton
-            label="← Return to Student — Kid Zone"
-            onPress={() => navigation.replace('StudentDashboard')}
-            style={styles.backBtn}
-          />
-        ) : (
+        {!isPinMode && (
           <DangerButton
             label="Log Out of Teacher Account"
             icon={<LogOut size={16} color={Colors.dangerText} style={{ marginRight: 6 }} />}

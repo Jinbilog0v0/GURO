@@ -18,8 +18,9 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppStore, Question } from '../store/useAppStore';
 import { shuffle } from '../utils/engine';
-import { Trophy, Square, Volume2, Check, X, Inbox } from 'lucide-react-native';
+import { Trophy, Square, Volume2, Check, X, Inbox, ChevronDown, ChevronUp } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
+import * as Haptics from 'expo-haptics';
 
 // ── Design System ──────────────────────────────────────────────────────────────
 import { Colors } from '../theme/colors';
@@ -82,6 +83,16 @@ export function AssessmentScreen({ route, navigation }: Props) {
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
+  const [showAnswerReview, setShowAnswerReview] = useState(false);
+
+  interface AnswerLogEntry {
+    questionText: string;
+    selectedOption: string;
+    correctAnswer: string;
+    explanation: string;
+    isCorrect: boolean;
+  }
+  const [answerLog, setAnswerLog] = useState<AnswerLogEntry[]>([]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleOptionSelect = (option: string) => {
@@ -146,8 +157,14 @@ export function AssessmentScreen({ route, navigation }: Props) {
         .join('. ');
       const textToSpeak = `${currentQuestion.questionText}. ${optionsText}`.replace(/_+/g, ' blank ');
       const rate = useAppStore.getState().speechRate || 1.0;
+      const guide = useAppStore.getState().voiceGuideTheme || 'astronaut';
+      let pitch = 1.0;
+      if (guide === 'robot') pitch = 0.65;
+      else if (guide === 'owl') pitch = 1.25;
+
       Speech.speak(textToSpeak, {
         rate,
+        pitch,
         onDone: () => setIsSpeaking(false),
         onError: () => setIsSpeaking(false),
         onStopped: () => setIsSpeaking(false),
@@ -159,8 +176,49 @@ export function AssessmentScreen({ route, navigation }: Props) {
     if (!selectedOption || isAnswered) return;
     const correct = selectedOption === currentQuestion.correctAnswer;
     if (correct) setScore((prev) => prev + 1);
+    Haptics.notificationAsync(
+      correct
+        ? Haptics.NotificationFeedbackType.Success
+        : Haptics.NotificationFeedbackType.Error,
+    ).catch(() => {});
     setIsAnswered(true);
+    setAnswerLog((prev) => [
+      ...prev,
+      {
+        questionText: currentQuestion.questionText,
+        selectedOption: selectedOption,
+        correctAnswer: currentQuestion.correctAnswer,
+        explanation:
+          typeof currentQuestion.feedback === 'object' && currentQuestion.feedback !== null
+            ? currentQuestion.feedback.en
+            : String(currentQuestion.feedback || ''),
+        isCorrect: correct,
+      },
+    ]);
     addLog(`Submitted answer for ${currentQuestion.id}. Correct: ${correct}`);
+
+    // Dynamic voice feedback
+    const soundEnabled = useAppStore.getState().soundEffectsEnabled;
+    if (soundEnabled) {
+      const guide = useAppStore.getState().voiceGuideTheme || 'astronaut';
+      const rate = useAppStore.getState().speechRate || 1.0;
+      let pitch = 1.0;
+      let text = '';
+      
+      if (guide === 'robot') pitch = 0.65;
+      else if (guide === 'owl') pitch = 1.25;
+      
+      if (correct) {
+        const successes = ["Excellent!", "Correct!", "Nice job!", "You got it!"];
+        text = successes[Math.floor(Math.random() * successes.length)];
+      } else {
+        const tries = ["Try again next time!", "Let's review this later!", "Keep going, you'll get it!", "Not quite, but good effort!"];
+        text = tries[Math.floor(Math.random() * tries.length)];
+      }
+      
+      Speech.stop();
+      Speech.speak(text, { rate, pitch });
+    }
   };
 
   const handleNext = () => {
@@ -197,13 +255,21 @@ export function AssessmentScreen({ route, navigation }: Props) {
           showsVerticalScrollIndicator={false}
         >
           <GlassCard style={styles.finishedCard}>
-            <Trophy size={48} color="#EAB308" style={{ marginBottom: 12, alignSelf: 'center' }} />
-
-            <Badge
-              label={passed ? 'Passed' : 'Keep Practicing'}
-              variant={passed ? 'success' : 'warning'}
-              style={styles.finishedBadge}
-            />
+            {/* Celebration header */}
+            {passed ? (
+              <View style={{ alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <Text style={{ fontSize: 48 }}>🎉</Text>
+                <Badge label="Passed!" variant="success" style={styles.finishedBadge} />
+                <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: Colors.success, textAlign: 'center' }}>
+                  Amazing work! You passed this topic.
+                </Text>
+              </View>
+            ) : (
+              <View style={{ alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <Trophy size={48} color="#EAB308" style={{ marginBottom: 4 }} />
+                <Badge label="Keep Practicing" variant="warning" style={styles.finishedBadge} />
+              </View>
+            )}
 
             <Text style={styles.finishedTopic}>{topic}</Text>
             <Text style={styles.finishedSubLabel}>
@@ -243,7 +309,61 @@ export function AssessmentScreen({ route, navigation }: Props) {
               onPress={() => navigation.goBack()}
               style={styles.finishedBtn}
             />
+
+            {/* Answer Review Toggle */}
+            {answerLog.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setShowAnswerReview((v) => !v)}
+                activeOpacity={0.75}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  paddingVertical: 10,
+                  marginTop: 4,
+                }}
+              >
+                <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: Colors.accentPrimary }}>
+                  {showAnswerReview ? 'Hide' : 'Review My Answers'}
+                </Text>
+                {showAnswerReview
+                  ? <ChevronUp size={16} color={Colors.accentPrimary} />
+                  : <ChevronDown size={16} color={Colors.accentPrimary} />
+                }
+              </TouchableOpacity>
+            )}
           </GlassCard>
+
+          {/* Answer review list */}
+          {showAnswerReview && answerLog.map((entry, idx) => (
+            <GlassCard key={idx} padding={14} style={{ gap: 6 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+                {entry.isCorrect
+                  ? <Check size={16} color={Colors.success} strokeWidth={3} style={{ marginTop: 2 }} />
+                  : <X size={16} color={Colors.danger} strokeWidth={3} style={{ marginTop: 2 }} />
+                }
+                <Text style={{ flex: 1, fontFamily: 'Inter_600SemiBold', fontSize: 12, color: Colors.textMain, lineHeight: 18 }}>
+                  {entry.questionText}
+                </Text>
+              </View>
+              {!entry.isCorrect && (
+                <View style={{ marginLeft: 24, gap: 2 }}>
+                  <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 11, color: Colors.danger }}>
+                    Your answer: <Text style={{ fontFamily: 'Inter_600SemiBold' }}>{entry.selectedOption}</Text>
+                  </Text>
+                  <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 11, color: Colors.success }}>
+                    Correct: <Text style={{ fontFamily: 'Inter_600SemiBold' }}>{entry.correctAnswer}</Text>
+                  </Text>
+                </View>
+              )}
+              {entry.explanation ? (
+                <Text style={{ marginLeft: 24, fontFamily: 'Inter_400Regular', fontSize: 11, color: Colors.textMuted, lineHeight: 16, fontStyle: 'italic' }}>
+                  {entry.explanation}
+                </Text>
+              ) : null}
+            </GlassCard>
+          ))}
         </ScrollView>
       </SafeAreaView>
     );

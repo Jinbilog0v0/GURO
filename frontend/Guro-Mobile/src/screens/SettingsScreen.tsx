@@ -12,6 +12,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppStore } from '../store/useAppStore';
 import { getParentAccessCode } from '../utils/security';
+import * as Speech from 'expo-speech';
 
 // ── Icons ───────────────────────────────────────────────────────────────────
 import {
@@ -24,6 +25,9 @@ import {
   Database,
   LogOut,
   ChevronLeft,
+  Sparkles,
+  Trophy,
+  Award,
 } from 'lucide-react-native';
 
 // ── Design System & UI ────────────────────────────────────────────────────────
@@ -37,7 +41,7 @@ import { styles } from '../styles/SettingsScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
-type Category = 'profile' | 'audio' | 'theme' | 'time' | 'rules' | 'database';
+type Category = 'profile' | 'mascot' | 'audio' | 'theme' | 'time' | 'rules' | 'database';
 
 export function SettingsScreen({ navigation }: Props) {
   // ── Zustand Store Hooks ──────────────────────────────────────────────────
@@ -60,6 +64,19 @@ export function SettingsScreen({ navigation }: Props) {
   const logoutFromCloud = useAppStore((state) => state.logoutFromCloud);
   const parentalControls = useAppStore((state) => state.parentalControls);
   const dailyMinutesUsed = useAppStore((state) => state.dailyMinutesUsed);
+
+  // Gamification properties from Store
+  const xpPoints = useAppStore((state) => state.xpPoints);
+  const virtualStars = useAppStore((state) => state.virtualStars);
+  const mascotOutfit = useAppStore((state) => state.mascotOutfit);
+  const ownedOutfits = useAppStore((state) => state.ownedOutfits);
+  const voiceGuideTheme = useAppStore((state) => state.voiceGuideTheme);
+  const correctSoundTheme = useAppStore((state) => state.correctSoundTheme);
+  const purchaseOutfit = useAppStore((state) => state.purchaseOutfit);
+  const setMascotOutfit = useAppStore((state) => state.setMascotOutfit);
+  const setVoiceGuideTheme = useAppStore((state) => state.setVoiceGuideTheme);
+  const setCorrectSoundTheme = useAppStore((state) => state.setCorrectSoundTheme);
+  const syncProgressNow = useAppStore((state) => state.syncProgressNow);
 
   // ── Local Screen State ────────────────────────────────────────────────────
   const [activeCategory, setActiveCategory] = useState<Category>('profile');
@@ -134,31 +151,85 @@ export function SettingsScreen({ navigation }: Props) {
 
   // ── Settings categories navigation tabs definitions ───────────────────────
   const categories: Array<{ id: Category; label: string; icon: any }> = [
-    { id: 'profile', label: 'User Profile', icon: User },
-    { id: 'audio', label: 'Sound & Speech', icon: Volume2 },
+    { id: 'profile', label: 'My Profile', icon: User },
+    { id: 'mascot', label: 'Mascot Closet', icon: Sparkles },
+    { id: 'audio', label: 'Sound & Voice', icon: Volume2 },
     { id: 'theme', label: 'Themes Skin', icon: Palette },
     { id: 'time', label: 'Screen Time', icon: Clock },
     { id: 'rules', label: 'Parent Rules', icon: Lock },
-    { id: 'database', label: 'Local Database', icon: Database },
+    { id: 'database', label: 'Treasure Chest', icon: Database },
   ];
 
-  // ── Dynamic GitHub Settings Box Content Render ───────────────────────────
+  // Helper to trigger guide speech pitch preview
+  const playVoicePreview = (theme: string) => {
+    Speech.stop();
+    let text = "Hello! I am your astronaut learning buddy.";
+    let rate = speechRate;
+    let pitch = 1.0;
+    if (theme === 'robot') {
+      text = "Greetings human! I am your robot study partner. Beep boop!";
+      pitch = 0.65;
+    } else if (theme === 'owl') {
+      text = "Welcome back! I am your wise owl coach. Hoot hoot!";
+      pitch = 1.25;
+    }
+    Speech.speak(text, { rate, pitch });
+  };
+
+  // Outfit descriptions
+  const outfitList = [
+    { id: 'default', label: 'Casual Mascot', emoji: '', cost: 0 },
+    { id: 'detective_hat', label: 'Detective Hat', emoji: '🕵️‍♂️', cost: 20 },
+    { id: 'space_visor', label: 'Space Visor', emoji: '👨‍🚀', cost: 40 },
+    { id: 'wizard_cape', label: 'Wizard Cape', emoji: '🧙‍♂️', cost: 60 },
+    { id: 'crown', label: 'Royal Crown', emoji: '👑', cost: 100 },
+  ];
+
+  // ── Dynamic Settings Box Content Render ──────────────────────────────────
   const renderSettingsBox = () => {
+    const studentLevel = Math.floor(xpPoints / 100) + 1;
+    const progressToNextLevel = xpPoints % 100;
+    const currentOutfitObj = outfitList.find(o => o.id === mascotOutfit);
+
     switch (activeCategory) {
       case 'profile':
         return (
           <View style={styles.githubBox}>
             <View style={styles.githubBoxHeader}>
-              <Text style={styles.githubBoxTitle}>User Profile Account</Text>
-              <Text style={styles.githubBoxSubtitle}>Configure profile details and online cloud sync status.</Text>
+              <Text style={styles.githubBoxTitle}>My Explorer Profile</Text>
+              <Text style={styles.githubBoxSubtitle}>Track your learning level and sync progress.</Text>
             </View>
             <View style={styles.githubBoxBody}>
               <View style={{ backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border }}>
-                <Text style={{ fontFamily: Fonts.display, fontSize: 9, color: Colors.accentPrimary, letterSpacing: 1.2, marginBottom: 4 }}>
-                  STUDENT TYPE
+                
+                {/* Visual Level indicator */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.xs }}>
+                  <Text style={{ fontSize: 32 }}>{avatarEmoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
+                      Level {studentLevel} Study Explorer
+                    </Text>
+                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                      {xpPoints} XP Cumulative
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Progress bar to Level Up */}
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary, letterSpacing: 0.8 }}>
+                  LEVEL PROGRESS: {progressToNextLevel}/100 XP
                 </Text>
-                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
-                  {avatarEmoji} {guestName ?? currentUser?.name ?? 'Explorer'}
+                <View style={styles.xpBarContainer}>
+                  <View style={[styles.xpBarFill, { width: `${progressToNextLevel}%` }]} />
+                </View>
+
+                <View style={{ height: 1, backgroundColor: Colors.border, marginVertical: Spacing.sm }} />
+
+                <Text style={{ fontFamily: Fonts.display, fontSize: 9, color: Colors.accentPrimary, letterSpacing: 1.2, marginBottom: 4 }}>
+                  STUDENT ID & ACCESS
+                </Text>
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
+                  {guestName ?? currentUser?.name ?? 'Explorer'}
                 </Text>
                 {currentUser && (
                   <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted, marginTop: 4 }}>
@@ -224,6 +295,88 @@ export function SettingsScreen({ navigation }: Props) {
           </View>
         );
 
+      case 'mascot':
+        return (
+          <View style={styles.githubBox}>
+            <View style={styles.githubBoxHeader}>
+              <Text style={styles.githubBoxTitle}>Mascot Dressing Closet</Text>
+              <Text style={styles.githubBoxSubtitle}>Use your Study Stars to buy accessories and customize your buddy!</Text>
+            </View>
+            <View style={styles.githubBoxBody}>
+              
+              {/* Mascot Status */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: Radius.md, borderVertical: 1, borderColor: Colors.border }}>
+                <View style={{ position: 'relative' }}>
+                  <Text style={{ fontSize: 56 }}>{avatarEmoji}</Text>
+                  {currentOutfitObj && currentOutfitObj.emoji ? (
+                    <Text style={{ fontSize: 28, position: 'absolute', top: -14, right: -10 }}>{currentOutfitObj.emoji}</Text>
+                  ) : null}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
+                    {guestName ?? currentUser?.name ?? 'Explorer'}'s Buddy
+                  </Text>
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#D97706', marginTop: 4 }}>
+                    ⭐ {virtualStars} Study Stars Available
+                  </Text>
+                </View>
+              </View>
+
+              {/* Closet Catalog */}
+              <Text style={styles.formLabel}>Outfit Accessories Closet:</Text>
+              <View style={styles.closetContainer}>
+                {outfitList.map((item) => {
+                  const isOwned = ownedOutfits.includes(item.id);
+                  const isActive = mascotOutfit === item.id;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      activeOpacity={0.7}
+                      style={[styles.closetItem, isActive && styles.closetItemActive]}
+                      onPress={() => {
+                        if (isOwned) {
+                          setMascotOutfit(item.id);
+                        } else {
+                          // Try purchase
+                          if (virtualStars >= item.cost) {
+                            Alert.alert(
+                              'Unlock Accessory',
+                              `Unlock ${item.label} for ⭐ ${item.cost} Stars?`,
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                  text: 'Buy Now!',
+                                  onPress: () => {
+                                    const success = purchaseOutfit(item.id, item.cost);
+                                    if (success) {
+                                      Alert.alert('Unlocked!', `You purchased the ${item.label}!`);
+                                    }
+                                  }
+                                }
+                              ]
+                            );
+                          } else {
+                            Alert.alert('Need More Stars!', `This accessory costs ⭐ ${item.cost} Stars. Finish more quizzes to earn stars!`);
+                          }
+                        }
+                      }}
+                    >
+                      <Text style={styles.closetItemEmoji}>{item.emoji || '👕'}</Text>
+                      <Text style={styles.closetItemTitle}>{item.label}</Text>
+                      {isOwned ? (
+                        <Text style={styles.closetItemOwned}>{isActive ? '• Equipped •' : 'Owned'}</Text>
+                      ) : (
+                        <Text style={styles.closetItemPrice}>⭐ {item.cost} Stars</Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        );
+
       case 'audio':
         return (
           <View style={styles.githubBox}>
@@ -232,7 +385,8 @@ export function SettingsScreen({ navigation }: Props) {
               <Text style={styles.githubBoxSubtitle}>Tweak narration speech parameters and dynamic alert audio effects.</Text>
             </View>
             <View style={styles.githubBoxBody}>
-              {/* Ding SFX toggle */}
+              
+              {/* Correct / Wrong sound toggle */}
               <TouchableOpacity
                 onPress={() => setSoundEffectsEnabled(!soundEffectsEnabled)}
                 style={styles.switchRow}
@@ -243,6 +397,61 @@ export function SettingsScreen({ navigation }: Props) {
                   <View style={[styles.switchThumb, { alignSelf: soundEffectsEnabled ? 'flex-end' : 'flex-start' }]} />
                 </View>
               </TouchableOpacity>
+
+              {/* TTS Guide voice theme selection */}
+              <View style={{ marginTop: Spacing.xs }}>
+                <Text style={styles.formLabel}>Narrator Guide Companion Voice:</Text>
+                <View style={styles.segmentRow}>
+                  {[
+                    { key: 'astronaut', label: '👨‍🚀 Astronaut' },
+                    { key: 'robot', label: '🤖 Robot' },
+                    { key: 'owl', label: '🦉 Wise Owl' }
+                  ].map((item) => {
+                    const active = voiceGuideTheme === item.key;
+                    return (
+                      <TouchableOpacity
+                        key={item.key}
+                        onPress={() => {
+                          setVoiceGuideTheme(item.key);
+                          playVoicePreview(item.key);
+                        }}
+                        style={[styles.segmentBtn, active && styles.segmentBtnActive]}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
+                          {item.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Sound Theme Selection */}
+              <View style={{ marginTop: Spacing.xs }}>
+                <Text style={styles.formLabel}>Ding Victory Sounds Style:</Text>
+                <View style={styles.segmentRow}>
+                  {[
+                    { key: 'ding', label: '🔔 Classic' },
+                    { key: 'arcade', label: '🎮 Arcade' },
+                    { key: 'laser', label: '⚡ Laser' },
+                  ].map((item) => {
+                    const active = correctSoundTheme === item.key;
+                    return (
+                      <TouchableOpacity
+                        key={item.key}
+                        onPress={() => setCorrectSoundTheme(item.key)}
+                        style={[styles.segmentBtn, active && styles.segmentBtnActive]}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
+                          {item.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
 
               {/* Speech rate control */}
               <View style={{ marginTop: Spacing.xs }}>
@@ -269,6 +478,7 @@ export function SettingsScreen({ navigation }: Props) {
                   })}
                 </View>
               </View>
+
             </View>
           </View>
         );
@@ -283,7 +493,7 @@ export function SettingsScreen({ navigation }: Props) {
             <View style={styles.githubBoxBody}>
               {/* Mascot selection grid */}
               <View>
-                <Text style={styles.formLabel}>Choose Mascot Emoji:</Text>
+                <Text style={styles.formLabel}>Choose Mascot Emoji Base:</Text>
                 <View style={styles.avatarGrid}>
                   {['🚀', '🤖', '🦉', '⭐', '🦖', '🦄', '🍎', '⚽'].map((emoji) => {
                     const active = emoji === avatarEmoji;
@@ -306,10 +516,10 @@ export function SettingsScreen({ navigation }: Props) {
                 <Text style={styles.formLabel}>Active Color Theme Skin:</Text>
                 <View style={styles.themeRow}>
                   {[
-                    { key: 'blue', label: 'Default Blue', color: Colors.accentPrimary },
+                    { key: 'blue', label: 'Blue Galaxy', color: Colors.accentPrimary },
                     { key: 'teal', label: 'Ocean Teal', color: '#0F766E' },
-                    { key: 'yellow', label: 'Sunny Yellow', color: '#D97706' },
-                    { key: 'purple', label: 'Purple Space', color: '#6D28D9' }
+                    { key: 'yellow', label: 'Sunny Desert', color: '#D97706' },
+                    { key: 'purple', label: 'Space Nebula', color: '#6D28D9' }
                   ].map((theme) => {
                     const active = colorTheme === theme.key;
                     return (
@@ -392,26 +602,56 @@ export function SettingsScreen({ navigation }: Props) {
         );
 
       case 'database':
+        const unsyncedCount = studentProgress.filter((e) => !e.synced).length;
+        const syncedCount = studentProgress.filter((e) => e.synced).length;
+
         return (
           <View style={styles.githubBox}>
             <View style={styles.githubBoxHeader}>
-              <Text style={styles.githubBoxTitle}>Local SQLite Database Sync</Text>
-              <Text style={styles.githubBoxSubtitle}>Review pending transactions, completed exercises, and events logs.</Text>
+              <Text style={styles.githubBoxTitle}>Data Treasure Chest 💎</Text>
+              <Text style={styles.githubBoxSubtitle}>Review exercises completed offline and upload them to your teacher's dashboard!</Text>
             </View>
             <View style={styles.githubBoxBody}>
               <View style={styles.statsBox}>
-                <Text style={styles.statsText}>
-                  • Total SQLite entries completed: {studentProgress.length}
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.sm, color: Colors.accentPrimary, marginBottom: 4 }}>
+                  My Local Safe Chest
                 </Text>
                 <Text style={styles.statsText}>
-                  • Synced entries: {studentProgress.filter((e) => e.synced).length}
+                  • Total Exercises Saved: <Text style={{ fontFamily: Fonts.bodyBold }}>{studentProgress.length}</Text>
                 </Text>
                 <Text style={styles.statsText}>
-                  • Unsynced (pending sync): {studentProgress.filter((e) => !e.synced).length}
+                  • Unsynced Data Jewels: <Text style={{ fontFamily: Fonts.bodyBold, color: unsyncedCount > 0 ? Colors.warning : Colors.textMuted }}>{unsyncedCount} 💎</Text>
+                </Text>
+                <Text style={styles.statsText}>
+                  • Synced Cloud Jewels: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.success }}>{syncedCount} ✨</Text>
                 </Text>
                 
-                <Text style={styles.logsHeading}>Recent Database Transactions (Last 3):</Text>
-                {logs.slice(0, 3).map((log, index) => (
+                {unsyncedCount > 0 && appMode === 'online' ? (
+                  <View style={{ marginTop: Spacing.sm }}>
+                    <PrimaryButton
+                      label="Launch Data Rocket 🚀"
+                      onPress={async () => {
+                        const serverUrl = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.254.125:8000';
+                        const result = await syncProgressNow(serverUrl);
+                        Alert.alert(
+                          result.success ? 'Sync Successful! 🚀' : 'Sync Failed',
+                          result.message
+                        );
+                      }}
+                    />
+                  </View>
+                ) : unsyncedCount > 0 ? (
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, fontStyle: 'italic', marginTop: Spacing.xs }}>
+                    Connect to the internet and log in to launch your data jewels to the cloud rocket!
+                  </Text>
+                ) : (
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.success, fontStyle: 'italic', marginTop: Spacing.xs }}>
+                    All your study jewels are safely synced to the sky! Amazing job!
+                  </Text>
+                )}
+
+                <Text style={styles.logsHeading}>Offline Sync Telemetry Logs (Last 2):</Text>
+                {logs.slice(0, 2).map((log, index) => (
                   <Text key={index} numberOfLines={1} style={styles.logLine}>
                     {log}
                   </Text>
