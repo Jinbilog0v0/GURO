@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Users, BookOpenText, ArrowLeft, Mail, Lock, Sparkles } from 'lucide-react';
+import { User, Users, BookOpenText, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket } from 'lucide-react';
 import { RoleCard, type RoleCardProps } from '../components/landing/RoleCard';
 import { FeatureCard, type FeatureCardProps } from '../components/landing/FeatureCard';
 
@@ -8,9 +8,9 @@ import { FeatureCard, type FeatureCardProps } from '../components/landing/Featur
 const GuroLogoGraphic: React.FC = () => (
     <div className="relative flex size-14 items-center justify-center">
         <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M8 38 C8 38 8 14 26 14 C44 14 44 38 44 38" stroke="#3b5bdb" strokeWidth="3.5" strokeLinecap="round" />
-            <path d="M26 14 L26 38" stroke="#3b5bdb" strokeWidth="3.5" strokeLinecap="round" />
-            <path d="M8 38 L44 38" stroke="#3b5bdb" strokeWidth="3.5" strokeLinecap="round" />
+            <path d="M8 38 C8 38 8 14 26 14 C44 14 44 38 44 38" stroke="#11428E" strokeWidth="3.5" strokeLinecap="round" />
+            <path d="M26 14 L26 38" stroke="#11428E" strokeWidth="3.5" strokeLinecap="round" />
+            <path d="M8 38 L44 38" stroke="#11428E" strokeWidth="3.5" strokeLinecap="round" />
         </svg>
         <span className="absolute -top-1 -right-1 text-sm leading-none">✦</span>
     </div>
@@ -28,7 +28,7 @@ type ViewType = 'login' | 'register' | 'guest-roles';
 // ─── Shared page background ───────────────────────────────────────────────────
 
 const pageStyle: React.CSSProperties = {
-    background: 'linear-gradient(160deg, #eef1fb 0%, #f3eeff 50%, #f0eeff 100%)',
+    background: 'linear-gradient(160deg, #eef3fb 0%, #fcf2f2 100%)',
 };
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -100,28 +100,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
             role: 'Student',
             description: 'Learn Math & English with fun lessons',
             Icon: User,
-            bgColor: 'bg-blue-500',
+            bgColor: 'bg-[#11428E]',
         },
         {
             key: 'teacher',
             role: 'Teacher',
             description: 'Monitor student progress & performance',
             Icon: BookOpenText,
-            bgColor: 'bg-purple-500',
+            bgColor: 'bg-[#A01322]',
         },
         {
             key: 'parent',
             role: 'Parent',
             description: "Track your child's learning journey",
             Icon: Users,
-            bgColor: 'bg-pink-500',
+            bgColor: 'bg-[#F59E0B]',
         },
     ];
 
     const featureCards: FeatureCardProps[] = [
-        { label: 'DepEd MELC Aligned', icon: '📚' },
-        { label: 'Adaptive Learning', icon: '🎯' },
-        { label: 'Works Offline', icon: '📱' },
+        { label: 'DepEd MELC Aligned', Icon: BookOpen },
+        { label: 'Adaptive Learning', Icon: Target },
+        { label: 'Works Offline', Icon: Smartphone },
     ];
 
     // ── Shared sub-components ─────────────────────────────────────────────────
@@ -129,15 +129,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
     const Brand = () => (
         <div className="flex flex-col items-center gap-1 text-center">
             <GuroLogoGraphic />
-            <h1 className="text-5xl font-extrabold tracking-tight text-blue-700 mt-1">GURO</h1>
-            <p className="text-base font-semibold text-purple-600">Guided Unified Remote Online</p>
+            <h1 className="text-5xl font-extrabold tracking-tight text-[#11428E] mt-1">GURO</h1>
+            <p className="text-base font-semibold text-[#A01322]">Guided Unified Remote Online</p>
             <p className="text-sm text-slate-400 mt-0.5">Your Learning Companion for Math &amp; English</p>
         </div>
     );
 
     // ── Input field helper ────────────────────────────────────────────────────
 
-    const inputCls = "w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-400/20 focus:bg-white transition-all";
+    const inputCls = "w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all";
     const labelCls = "text-[11px] font-bold text-slate-400 uppercase tracking-wider";
 
     // ── Views ─────────────────────────────────────────────────────────────────
@@ -158,7 +158,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                         <ArrowLeft className="size-3 text-slate-400" strokeWidth={2.5} />
                         Back to sign in
                     </button>
-                    <div className="px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-full text-blue-600 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                    <div className="px-3 py-1.5 bg-[#11428E]/10 border border-[#11428E]/20 rounded-full text-[#11428E] font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
                         <Sparkles className="size-3" /> Guest session
                     </div>
                 </div>
@@ -170,15 +170,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
                 {/* ── Login ── */}
                 {view === 'login' && (
-                    <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl shadow-indigo-100/60 flex flex-col gap-6 border border-slate-100/80">
+                    <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl shadow-[rgba(17,66,142,0.08)] flex flex-col gap-6 border border-slate-100/80">
                         <div className="text-center">
                             <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Welcome back</h2>
                             <p className="text-sm text-slate-400 mt-1">Sign in to sync your classroom progress</p>
                         </div>
 
                         {authError && (
-                            <div className="bg-red-50 border border-red-100 text-red-600 text-xs font-semibold p-3.5 rounded-xl text-center">
-                                ⚠️ {authError}
+                            <div className="bg-[#A01322]/10 border border-[#A01322]/20 text-[#A01322] text-xs font-semibold p-3.5 rounded-xl text-center flex items-center justify-center gap-1.5">
+                                <AlertCircle className="size-4" /> {authError}
                             </div>
                         )}
 
@@ -216,8 +216,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="w-full py-3.5 rounded-xl text-white text-sm font-bold tracking-wide shadow-lg shadow-blue-500/25 transition-all disabled:opacity-60 cursor-pointer hover:opacity-90 active:scale-[0.99]"
-                                style={{ background: 'linear-gradient(135deg, #3b5bdb 0%, #4c6ef5 100%)' }}
+                                className="w-full py-3.5 rounded-xl text-white text-sm font-bold tracking-wide shadow-lg shadow-[#11428E]/25 transition-all disabled:opacity-60 cursor-pointer hover:opacity-90 active:scale-[0.99]"
+                                style={{ background: 'linear-gradient(135deg, #11428E 0%, #A01322 100%)' }}
                             >
                                 {isSubmitting ? 'Signing in…' : 'Sign in'}
                             </button>
@@ -225,8 +225,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
                         <div className="flex flex-col items-center gap-3">
                             <button
-                                onClick={() => setView('register')}
-                                className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+                                 onClick={() => setView('register')}
+                                 className="text-xs font-bold text-[#11428E] hover:text-[#11428E]/80 cursor-pointer"
                             >
                                 Need an account? Create one here
                             </button>
@@ -239,7 +239,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                 onClick={() => setView('guest-roles')}
                                 className="w-full flex items-center justify-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold py-3 rounded-xl transition-all text-sm cursor-pointer"
                             >
-                                🚀 Continue as guest / try demo
+                                 <Rocket className="size-4 text-[#11428E]" /> Continue as guest / try demo
                             </button>
                         </div>
                     </div>
@@ -247,15 +247,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
                 {/* ── Register ── */}
                 {view === 'register' && (
-                    <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl shadow-indigo-100/60 flex flex-col gap-6 border border-slate-100/80">
+                    <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl shadow-[rgba(17,66,142,0.08)] flex flex-col gap-6 border border-slate-100/80">
                         <div className="text-center">
                             <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Create account</h2>
                             <p className="text-sm text-slate-400 mt-1">Register to start managing classes and tracking logs</p>
                         </div>
 
                         {authError && (
-                            <div className="bg-red-50 border border-red-100 text-red-600 text-xs font-semibold p-3.5 rounded-xl text-center">
-                                ⚠️ {authError}
+                            <div className="bg-[#A01322]/10 border border-[#A01322]/20 text-[#A01322] text-xs font-semibold p-3.5 rounded-xl text-center flex items-center justify-center gap-1.5">
+                                <AlertCircle className="size-4" /> {authError}
                             </div>
                         )}
 
@@ -310,7 +310,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                 <select
                                     value={roleSelection}
                                     onChange={(e) => setRoleSelection(e.target.value)}
-                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-400/20 focus:bg-white transition-all"
+                                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all"
                                 >
                                     <option value="teacher">Teacher — dashboard &amp; curriculums</option>
                                     <option value="parent">Parent — child monitoring</option>
@@ -321,8 +321,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="w-full py-3.5 rounded-xl text-white text-sm font-bold tracking-wide shadow-lg shadow-blue-500/25 transition-all disabled:opacity-60 cursor-pointer hover:opacity-90 active:scale-[0.99]"
-                                style={{ background: 'linear-gradient(135deg, #3b5bdb 0%, #4c6ef5 100%)' }}
+                                className="w-full py-3.5 rounded-xl text-white text-sm font-bold tracking-wide shadow-lg shadow-[#11428E]/25 transition-all disabled:opacity-60 cursor-pointer hover:opacity-90 active:scale-[0.99]"
+                                style={{ background: 'linear-gradient(135deg, #11428E 0%, #A01322 100%)' }}
                             >
                                 {isSubmitting ? 'Creating account…' : 'Create account'}
                             </button>

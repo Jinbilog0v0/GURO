@@ -11,20 +11,18 @@ const TeacherSpace = lazy(() => import('./pages/TeacherSpace').then(m => ({ defa
 const ParentSpace = lazy(() => import('./pages/ParentSpace').then(m => ({ default: m.ParentSpace })));
 const LessonSpace = lazy(() => import('./pages/LessonSpace').then(m => ({ default: m.LessonSpace })));
 const DashboardSpace = lazy(() => import('./pages/DashboardSpace').then(m => ({ default: m.DashboardSpace })));
-import { 
-  LayoutDashboard, 
-  School, 
-  TrendingUp, 
-  Key, 
-  PlusCircle, 
-  Users, 
-  Zap, 
-  LogOut, 
-  User, 
-  Laptop,
+import {
+  LayoutDashboard,
+  TrendingUp,
+  Key,
+  PlusCircle,
+  Users,
+  Zap,
+  LogOut,
   RotateCw,
   Sun,
-  Moon 
+  Moon,
+  GraduationCap
 } from 'lucide-react';
 
 interface SyncedEvent {
@@ -222,54 +220,54 @@ function App() {
     }
   };
 
+  const isTeacherView = ['teacher', 'dashboard', 'lesson-builder'].includes(activeTab);
+
   return (
-    <div className="flex h-screen w-screen bg-[var(--bg-main)] overflow-hidden">
+    <div className={`flex h-screen w-screen bg-[var(--bg-main)] overflow-hidden${isTeacherView ? ' teacher-portal' : ''}`}>
       {/* Sidebar Navigation */}
-      <aside className="w-[280px] shrink-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col px-5 py-7">
-        <div className="flex items-center gap-3 mb-10 pl-1.5">
-          <div className="bg-gradient-to-br from-[#6366f1] to-[#0ea5e9] text-white font-['Space_Grotesk',sans-serif] font-bold text-lg px-3 py-2 rounded-lg shadow-[0_4px_15px_rgba(99,102,241,0.3)]">GURO</div>
-          <span className="font-['Space_Grotesk',sans-serif] text-[22px] font-bold text-[var(--text-main)] tracking-tight">Portal</span>
+      <aside className="w-64 shrink-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col px-4 py-5">
+        <div className="flex items-center gap-[11px] px-1.5 pb-5 mb-1">
+          <div className="w-[42px] h-[42px] shrink-0 rounded-[12px] bg-gradient-to-br from-[#11428E] to-[#1C5BC0] flex items-center justify-center text-white font-extrabold text-sm shadow-[0_6px_16px_rgba(17,66,142,0.34)]">GU</div>
+          <div className="leading-tight">
+            <div className="font-['Space_Grotesk',sans-serif] text-[18px] font-extrabold text-[var(--text-main)]">GURO</div>
+            <div className="text-[12px] font-semibold text-[var(--text-muted)]">Teacher Portal</div>
+          </div>
         </div>
 
         <nav className="flex flex-col gap-2 flex-1">
           {(!currentUser || currentUser.role === 'lesson-builder' || currentUser.role === 'developer' || currentUser.role === 'teacher') && (
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-3 bg-transparent border border-transparent text-[var(--text-muted)] p-3 rounded-[10px] cursor-pointer font-semibold text-sm text-left transition-all duration-200 w-full hover:bg-white/3 ${
-                activeTab === 'dashboard' ? 'bg-[#6366f1]/10 text-[var(--text-main)] border-[#6366f1]/20 hover:bg-[#6366f1]/10' : ''
+              className={`flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-sm text-left transition-all duration-200 w-full ${
+                activeTab === 'dashboard'
+                  ? 'bg-[var(--nav-active-bg)] shadow-[inset_3px_0_0_#11428E] text-[var(--text-main)] font-bold'
+                  : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-[var(--bg-main)]'
               }`}
             >
-              <LayoutDashboard size={18} />
+              <LayoutDashboard size={18} className="shrink-0" />
               <span>System Dashboard</span>
             </button>
           )}
 
           {(!currentUser || currentUser.role === 'teacher') && (
             <div className="flex flex-col">
-              <button
-                onClick={() => {
-                  setActiveTab('teacher');
-                  setActiveSubTab('analytics');
-                }}
-                className={`flex items-center gap-3 bg-transparent border border-transparent text-[var(--text-muted)] p-3 rounded-[10px] cursor-pointer font-semibold text-sm text-left transition-all duration-200 w-full mb-1 hover:bg-white/3 ${
-                  activeTab === 'teacher' ? 'bg-[#6366f1]/10 text-[var(--text-main)] border-[#6366f1]/20 hover:bg-[#6366f1]/10' : ''
-                }`}
-              >
-                <School size={18} />
-                <span>Teacher Console</span>
-              </button>
-              
-              <div className="flex flex-col gap-1 pl-3.5 border-l border-[var(--border-color)] ml-6.5 mt-1 mb-2">
+              <div className="px-[14px] pt-4 pb-1.5 text-[10.5px] font-extrabold tracking-[0.1em] uppercase text-[var(--text-dark)]">
+                Teacher Console
+              </div>
+
+              <div className="flex flex-col gap-[3px] pl-2 border-l-[1.5px] border-[var(--border-color)] ml-[14px]">
                 <button
                   onClick={() => {
                     setActiveTab('teacher');
                     setActiveSubTab('analytics');
                   }}
-                  className={`flex items-center gap-2.5 bg-transparent border border-transparent text-[var(--text-muted)] px-3 py-2 rounded-lg cursor-pointer font-medium text-xs text-left transition-all duration-200 w-full hover:bg-white/3 ${
-                    activeTab === 'teacher' && activeSubTab === 'analytics' ? 'bg-[#0ea5e9]/8 text-[#38BDF8] font-semibold hover:bg-[#0ea5e9]/8' : ''
+                  className={`flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-[14.5px] text-left transition-all duration-200 w-full ${
+                    activeTab === 'teacher' && activeSubTab === 'analytics'
+                      ? 'bg-[var(--nav-active-bg)] shadow-[inset_3px_0_0_#11428E] text-[var(--text-main)] font-bold'
+                      : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-[var(--bg-main)]'
                   }`}
                 >
-                  <TrendingUp size={14} className="opacity-70" />
+                  <TrendingUp size={17} className="shrink-0" />
                   <span>Classroom Analytics</span>
                 </button>
                 <button
@@ -277,11 +275,13 @@ function App() {
                     setActiveTab('teacher');
                     setActiveSubTab('classroom-pairing');
                   }}
-                  className={`flex items-center gap-2.5 bg-transparent border border-transparent text-[var(--text-muted)] px-3 py-2 rounded-lg cursor-pointer font-medium text-xs text-left transition-all duration-200 w-full hover:bg-white/3 ${
-                    activeTab === 'teacher' && activeSubTab === 'classroom-pairing' ? 'bg-[#0ea5e9]/8 text-[#38BDF8] font-semibold hover:bg-[#0ea5e9]/8' : ''
+                  className={`flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-[14.5px] text-left transition-all duration-200 w-full ${
+                    activeTab === 'teacher' && activeSubTab === 'classroom-pairing'
+                      ? 'bg-[var(--nav-active-bg)] shadow-[inset_3px_0_0_#11428E] text-[var(--text-main)] font-bold'
+                      : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-[var(--bg-main)]'
                   }`}
                 >
-                  <Key size={14} className="opacity-70" />
+                  <Key size={17} className="shrink-0" />
                   <span>Classroom Setup</span>
                 </button>
                 <button
@@ -289,11 +289,13 @@ function App() {
                     setActiveTab('teacher');
                     setActiveSubTab('manual-lesson');
                   }}
-                  className={`flex items-center gap-2.5 bg-transparent border border-transparent text-[var(--text-muted)] px-3 py-2 rounded-lg cursor-pointer font-medium text-xs text-left transition-all duration-200 w-full hover:bg-white/3 ${
-                    activeTab === 'teacher' && activeSubTab === 'manual-lesson' ? 'bg-[#0ea5e9]/8 text-[#38BDF8] font-semibold hover:bg-[#0ea5e9]/8' : ''
+                  className={`flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-[14.5px] text-left transition-all duration-200 w-full ${
+                    activeTab === 'teacher' && activeSubTab === 'manual-lesson'
+                      ? 'bg-[var(--nav-active-bg)] shadow-[inset_3px_0_0_#11428E] text-[var(--text-main)] font-bold'
+                      : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-[var(--bg-main)]'
                   }`}
                 >
-                  <PlusCircle size={14} className="opacity-70" />
+                  <PlusCircle size={17} className="shrink-0" />
                   <span>Create Lesson Manually</span>
                 </button>
               </div>
@@ -303,11 +305,13 @@ function App() {
           {(!currentUser || currentUser.role === 'parent') && (
             <button
               onClick={() => setActiveTab('parent')}
-              className={`flex items-center gap-3 bg-transparent border border-transparent text-[var(--text-muted)] p-3 rounded-[10px] cursor-pointer font-semibold text-sm text-left transition-all duration-200 w-full hover:bg-white/3 ${
-                activeTab === 'parent' ? 'bg-[#6366f1]/10 text-[var(--text-main)] border-[#6366f1]/20 hover:bg-[#6366f1]/10' : ''
+              className={`flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-sm text-left transition-all duration-200 w-full ${
+                activeTab === 'parent'
+                  ? 'bg-[#11428E]/10 text-[var(--text-main)] font-bold'
+                  : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-white/5'
               }`}
             >
-              <Users size={18} />
+              <Users size={18} className="shrink-0" />
               <span>Parent Explorer</span>
             </button>
           )}
@@ -315,11 +319,13 @@ function App() {
           {(!currentUser || currentUser.role === 'lesson-builder' || currentUser.role === 'developer' || currentUser.role === 'teacher') && (
             <button
               onClick={() => setActiveTab('lesson-builder')}
-              className={`flex items-center gap-3 bg-transparent border border-transparent text-[var(--text-muted)] p-3 rounded-[10px] cursor-pointer font-semibold text-sm text-left transition-all duration-200 w-full hover:bg-white/3 ${
-                activeTab === 'lesson-builder' ? 'bg-[#6366f1]/10 text-[var(--text-main)] border-[#6366f1]/20 hover:bg-[#6366f1]/10' : ''
+              className={`flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-[14.5px] text-left transition-all duration-200 w-full mt-[3px] ${
+                activeTab === 'lesson-builder'
+                  ? 'bg-[var(--nav-active-bg)] shadow-[inset_3px_0_0_#11428E] text-[var(--text-main)] font-bold'
+                  : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-[var(--bg-main)]'
               }`}
             >
-              <Zap size={18} />
+              <Zap size={18} className="shrink-0" />
               <span>Lesson Ingestor</span>
             </button>
           )}
@@ -335,29 +341,29 @@ function App() {
                 handleExitToLanding();
               }
             }}
-            className="flex items-center gap-3 bg-[rgba(239,68,68,0.05)] border border-[rgba(239,68,68,0.15)] text-[#fca5a5] p-3 rounded-[10px] cursor-pointer font-semibold text-sm text-left transition-all duration-200 w-full mb-5 hover:bg-[rgba(239,68,68,0.1)]"
+            className="flex items-center gap-3 bg-[var(--danger)]/10 border border-[var(--danger)]/20 text-[var(--danger)] px-[14px] py-[10px] rounded-[11px] cursor-pointer font-semibold text-sm text-left transition-all duration-200 w-full mb-4 hover:bg-[var(--danger)]/20"
           >
-            <LogOut size={18} />
+            <LogOut size={18} className="shrink-0" />
             <span>{currentUser ? 'Log Out' : 'Exit Workspace'}</span>
           </button>
         </nav>
 
-        <div className="border-t border-[var(--border-color)] pt-5 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-white/4 border border-[var(--border-color)] flex items-center justify-center text-lg">
-            {currentUser ? <User size={18} className="text-[#94A3B8]" /> : <Laptop size={18} className="text-[#94A3B8]" />}
+        <div className="border-t border-[var(--border-color)] pt-[14px] flex items-center gap-[11px]">
+          <div className="w-[38px] h-[38px] rounded-full bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-center shrink-0">
+            <GraduationCap size={18} className="text-[var(--text-muted)]" />
           </div>
-          <div className="flex flex-col flex-1">
-            <span className="text-xs font-bold text-[var(--text-main)]">
+          <div className="flex flex-col flex-1 min-w-0 leading-[1.15]">
+            <span className="text-sm font-bold text-[var(--text-main)] truncate">
               {currentUser ? currentUser.name : 'Guest Workspace'}
             </span>
-            <span className="text-[11px] text-[var(--text-muted)] mt-0.5">
-              {currentUser ? `${currentUser.role.toUpperCase()} • Sync'd` : 'Local Session'}
+            <span className="text-[11.5px] font-semibold text-[var(--success)] truncate">
+              {currentUser ? `${currentUser.role.toUpperCase()} · Sync'd` : 'Local Session'}
             </span>
           </div>
           <button
             onClick={toggleTheme}
             title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-white/5 active:scale-[0.93]"
+            className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--bg-main)] active:scale-[0.93] shrink-0"
           >
             {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
           </button>
@@ -367,7 +373,7 @@ function App() {
       {/* Main Panel Content Area */}
       <main className="flex-1 flex flex-col h-full min-w-0">
         {/* Top Header */}
-        <header className="py-2 border-b border-[var(--border-color)] flex justify-between items-center px-10 bg-black/5 backdrop-blur-xl">
+        <header className="h-[62px] border-b border-[var(--border-color)] flex justify-between items-center px-[30px] bg-[var(--bg-sidebar)]">
           <div className="flex items-center gap-1.5 text-xs font-medium">
             <span className="text-[var(--text-muted)]">GURO</span>
             <span className="text-[var(--border-color)]">/</span>
@@ -410,7 +416,7 @@ function App() {
         <LiveActivityTicker events={progressLogs} />
 
         {/* View Component Wrapper */}
-        <div className="flex-1 overflow-y-auto p-10">
+        <div className="flex-1 overflow-y-auto p-[28px_30px_40px]">
           <Suspense fallback={<div className="p-6 text-[#94a3b8]">Loading Workspace...</div>}>
             {renderContent()}
           </Suspense>

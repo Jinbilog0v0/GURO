@@ -14,8 +14,8 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({ isOpen, 
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] transition-opacity duration-300">
       <div className="bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-3xl p-6 max-w-md w-full mx-4 shadow-2xl transform scale-100 transition-transform duration-300">
         {/* Icon */}
-        <div className="flex items-center justify-center w-14 h-14 bg-red-500/10 border border-red-500/20 rounded-full mx-auto mb-4">
-          <LogOut className="w-6 h-6 text-red-500" />
+        <div className="flex items-center justify-center w-14 h-14 bg-[#A01322]/10 border border-[#A01322]/20 rounded-full mx-auto mb-4">
+          <LogOut className="w-6 h-6 text-[#A01322]" />
         </div>
 
         {/* Title */}
@@ -38,7 +38,7 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({ isOpen, 
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 px-5 py-3 bg-red-600 hover:bg-red-500 text-white rounded-2xl hover:shadow-lg hover:shadow-red-600/20 transition-all font-semibold text-sm cursor-pointer"
+            className="flex-1 px-5 py-3 bg-[#A01322] hover:bg-[#A01322]/90 text-white rounded-2xl hover:shadow-lg hover:shadow-[#A01322]/20 transition-all font-semibold text-sm cursor-pointer"
           >
             Logout
           </button>

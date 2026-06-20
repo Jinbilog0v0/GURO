@@ -5,12 +5,12 @@
   --bg-sidebar: rgba(10, 15, 30, 0.75);
   --bg-card: rgba(16, 22, 42, 0.65);
   --border-color: rgba(255, 255, 255, 0.08);
-  --accent-primary: #6366f1;
-  /* Indigo */
-  --accent-primary-glow: rgba(99, 102, 241, 0.25);
-  --accent-secondary: #0ea5e9;
-  /* Cyan */
-  --accent-secondary-glow: rgba(14, 165, 233, 0.2);
+  --accent-primary: #11428e;
+  /* DepEd Blue */
+  --accent-primary-glow: rgba(17, 66, 142, 0.25);
+  --accent-secondary: #a01322;
+  /* DepEd Red */
+  --accent-secondary-glow: rgba(160, 19, 34, 0.2);
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --text-dark: #64748b;
@@ -19,11 +19,11 @@
   --success-glow: rgba(16, 185, 129, 0.15);
   --warning: #f59e0b;
   --warning-glow: rgba(245, 158, 11, 0.15);
-  --danger: #ef4444;
-  --danger-glow: rgba(239, 68, 68, 0.15);
+  --danger: #a01322;
+  --danger-glow: rgba(160, 19, 34, 0.15);
 
-  --font-body: 'Plus Jakarta Sans', sans-serif;
-  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
 }
 
 @layer base {
@@ -63,7 +63,6 @@
 }
 
 @layer components {
-
   /* Glassmorphism Styles */
   .glass-panel {
     background: var(--bg-card);
@@ -76,7 +75,6 @@
 
 /* Typography Utility */
 @layer base {
-
   h1,
   h2,
   h3,
@@ -89,7 +87,6 @@
 }
 
 @layer components {
-
   /* Form Styling */
   .form-group {
     display: flex;
@@ -130,7 +127,6 @@
 }
 
 @layer components {
-
   /* Buttons */
   .btn {
     display: inline-flex;
@@ -148,14 +144,18 @@
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    background: linear-gradient(
+      135deg,
+      var(--accent-primary),
+      var(--accent-secondary)
+    );
     color: white;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 15px rgba(17, 66, 142, 0.3);
   }
 
   .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+    box-shadow: 0 6px 20px rgba(17, 66, 142, 0.45);
   }
 
   .btn-secondary {
@@ -261,12 +261,12 @@
 @keyframes flashPulseGreen {
   0% {
     box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8);
-    border-color: #10B981;
+    border-color: #10b981;
   }
 
   20% {
     box-shadow: 0 0 15px 5px rgba(16, 185, 129, 0.6);
-    border-color: #10B981;
+    border-color: #10b981;
     transform: scale(1.05);
   }
 
@@ -279,12 +279,12 @@
 @keyframes flashPulseYellow {
   0% {
     box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.8);
-    border-color: #F59E0B;
+    border-color: #f59e0b;
   }
 
   20% {
     box-shadow: 0 0 15px 5px rgba(245, 158, 11, 0.6);
-    border-color: #F59E0B;
+    border-color: #f59e0b;
     transform: scale(1.05);
   }
 
@@ -296,18 +296,18 @@
 
 @keyframes flashPulseRed {
   0% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8);
-    border-color: #EF4444;
+    box-shadow: 0 0 0 0 rgba(160, 19, 34, 0.8);
+    border-color: #a01322;
   }
 
   20% {
-    box-shadow: 0 0 15px 5px rgba(239, 68, 68, 0.6);
-    border-color: #EF4444;
+    box-shadow: 0 0 15px 5px rgba(160, 19, 34, 0.6);
+    border-color: #a01322;
     transform: scale(1.05);
   }
 
   100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 0 rgba(160, 19, 34, 0);
     transform: scale(1);
   }
 }
@@ -361,7 +361,8 @@
 }
 
 .ticker__item {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   padding: 0 2rem;
   font-size: 13px;
   color: var(--text-muted);
@@ -378,7 +379,7 @@
   --text-main: #0f172a;
   --text-muted: #475569;
   --text-dark: #94a3b8;
-  --accent-primary: #4f46e5; /* Darker Indigo for better light theme contrast */
+  --accent-primary: #11428e; /* DepEd Blue for better light theme contrast */
 }
 
 .light-mode input,
@@ -406,4 +407,64 @@
 .light-mode .ticker-wrap {
   background-color: rgba(241, 245, 249, 0.95);
   border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+
+/* ── Teacher Portal — nav active bg variable ── */
+:root {
+  --nav-active-bg: rgba(17, 66, 142, 0.12);
+}
+.light-mode {
+  --nav-active-bg: #F1F3F8;
+}
+
+/* ── Teacher Portal — structural only (both themes) ── */
+.teacher-portal .glass-panel {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ── Teacher Portal — Light Mode color overrides ── */
+body.light-mode .teacher-portal {
+  --bg-main: #F5F6F9;
+  --bg-sidebar: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --border-color: #E7E9F0;
+  --text-main: #191C24;
+  --text-muted: #5B6170;
+  --text-dark: #9AA0AD;
+  --accent-primary-glow: rgba(17, 66, 142, 0.08);
+  --success: #16A34A;
+  --success-glow: rgba(22, 163, 74, 0.12);
+  --warning: #E8890C;
+  --warning-glow: rgba(232, 137, 12, 0.12);
+  --danger: #CE1126;
+  --danger-glow: rgba(206, 17, 38, 0.10);
+}
+body.light-mode .teacher-portal .glass-panel {
+  background: #FFFFFF;
+  border: 1px solid #E7E9F0;
+  box-shadow: 0 2px 10px rgba(20, 30, 55, 0.06);
+}
+body.light-mode .teacher-portal input,
+body.light-mode .teacher-portal select,
+body.light-mode .teacher-portal textarea {
+  background-color: #FFFFFF;
+  border-color: #E7E9F0;
+  color: #191C24;
+}
+body.light-mode .teacher-portal .btn-secondary {
+  background: #F1F3F8;
+  border: 1px solid #E7E9F0;
+  color: #191C24;
+}
+body.light-mode .teacher-portal .btn-secondary:hover {
+  background: #E7E9F0;
+  border-color: #D1D5E0;
+}
+body.light-mode .teacher-portal .ticker-wrap {
+  background-color: #FFFFFF;
+  border-bottom-color: #E7E9F0;
+}
+body.light-mode .teacher-portal .ticker__item {
+  color: #5B6170;
 }
