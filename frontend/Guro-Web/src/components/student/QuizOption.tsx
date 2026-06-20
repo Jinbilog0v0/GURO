@@ -23,12 +23,12 @@ export const QuizOption: React.FC<QuizOptionProps> = ({
         if (isCorrectAnswer) {
             cardStyle = 'bg-emerald-50/30 border-emerald-500 text-emerald-700';
         } else if (isSelected) {
-            cardStyle = 'bg-red-50/30 border-red-500 text-red-700';
+            cardStyle = 'bg-[#A01322]/10 border-[#A01322] text-[#A01322]';
         } else {
             cardStyle = 'bg-zinc-50/10 border-zinc-200 text-zinc-400 opacity-60';
         }
     } else if (isSelected) {
-        cardStyle = 'bg-blue-50/40 border-blue-500 text-blue-700 ring-2 ring-blue-500/10';
+        cardStyle = 'bg-[#11428E]/10 border-[#11428E] text-[#11428E] ring-2 ring-[#11428E]/10';
     }
 
     return (
@@ -45,7 +45,7 @@ export const QuizOption: React.FC<QuizOptionProps> = ({
                 <CheckCircle2 className="size-6 text-emerald-500 shrink-0" strokeWidth={2.5} />
             )}
             {isSubmitted && isSelected && !isCorrectAnswer && (
-                <XCircle className="size-6 text-red-500 shrink-0" strokeWidth={2.5} />
+                <XCircle className="size-6 text-[#A01322] shrink-0" strokeWidth={2.5} />
             )}
         </button>
     );

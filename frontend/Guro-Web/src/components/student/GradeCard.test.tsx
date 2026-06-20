@@ -1,22 +1,22 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { GradeCard } from './GradeCard';
+import { Pencil } from 'lucide-react';
 import '@testing-library/jest-dom';
 
 describe('GradeCard Component', () => {
   const defaultProps = {
     grade: 5,
-    emoji: '📝',
+    Icon: Pencil,
     iconBgColor: 'bg-emerald-500',
     onClick: jest.fn(),
   };
 
-  test('renders grade level, emoji and subtexts correctly', () => {
+  test('renders grade level, icon and subtexts correctly', () => {
     render(<GradeCard {...defaultProps} />);
-    
+
     expect(screen.getByText('Grade 5')).toBeInTheDocument();
-    expect(screen.getByText('📝')).toBeInTheDocument();
+    expect(document.querySelector('svg')).toBeInTheDocument();
     expect(screen.getByText('Click to start')).toBeInTheDocument();
-    expect(screen.getByText('Pindutin para magsimula')).toBeInTheDocument();
   });
 
   test('calls onClick when clicked', () => {

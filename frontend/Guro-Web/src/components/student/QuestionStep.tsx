@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Volume2, Square } from 'lucide-react';
 import { QuizOption } from './QuizOption';
 import { QuizExplanation } from './QuizExplanation';
 
@@ -11,7 +11,6 @@ interface QuestionStepProps {
     options: string[];
     correctOption: string;
     explanationEn: string;
-    explanationFil: string;
     onBack: () => void;
     onNextOrFinish: (isCorrect: boolean) => void;
 }
@@ -24,7 +23,6 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
     options,
     correctOption,
     explanationEn,
-    explanationFil,
     onBack,
     onNextOrFinish,
 }) => {
@@ -34,6 +32,99 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
     const isCorrect = selectedOption === correctOption;
     const isLastQuestion = currentQuestionIndex === totalQuestions;
     const progressPercentage = (currentQuestionIndex / totalQuestions) * 100;
+
+    const [confettiParticles, setConfettiParticles] = useState<{
+        id: number;
+        left: number;
+        color: string;
+        delay: number;
+        duration: number;
+        angle: number;
+        size: number;
+    }[]>([]);
+
+    useEffect(() => {
+        if (isSubmitted) {
+            // Play correct chime or incorrect buzz sound via Web Audio API
+            try {
+                const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+                if (AudioContextClass) {
+                    const ctx = new AudioContextClass();
+                    if (isCorrect) {
+                        // Ascending high-pitch notes for correct answer
+                        const playNote = (freq: number, startTime: number, duration: number) => {
+                            const osc = ctx.createOscillator();
+                            const gain = ctx.createGain();
+                            
+                            osc.type = 'sine';
+                            osc.frequency.setValueAtTime(freq, startTime);
+                            
+                            gain.gain.setValueAtTime(0, startTime);
+                            gain.gain.linearRampToValueAtTime(0.15, startTime + 0.05);
+                            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+                            
+                            osc.connect(gain);
+                            gain.connect(ctx.destination);
+                            
+                            osc.start(startTime);
+                            osc.stop(startTime + duration);
+                        };
+                        
+                        const now = ctx.currentTime;
+                        playNote(523.25, now, 0.3); // C5
+                        playNote(659.25, now + 0.08, 0.4); // E5
+                        playNote(783.99, now + 0.16, 0.5); // G5
+                    } else {
+                        // Descending buzz for incorrect answer
+                        const playBuzz = (startFreq: number, endFreq: number, startTime: number, duration: number) => {
+                            const osc = ctx.createOscillator();
+                            const gain = ctx.createGain();
+                            
+                            osc.type = 'sawtooth';
+                            osc.frequency.setValueAtTime(startFreq, startTime);
+                            osc.frequency.exponentialRampToValueAtTime(endFreq, startTime + duration);
+                            
+                            gain.gain.setValueAtTime(0, startTime);
+                            gain.gain.linearRampToValueAtTime(0.12, startTime + 0.05);
+                            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+                            
+                            const filter = ctx.createBiquadFilter();
+                            filter.type = 'lowpass';
+                            filter.frequency.setValueAtTime(400, startTime);
+                            
+                            osc.connect(filter);
+                            filter.connect(gain);
+                            gain.connect(ctx.destination);
+                            
+                            osc.start(startTime);
+                            osc.stop(startTime + duration);
+                        };
+                        
+                        const now = ctx.currentTime;
+                        playBuzz(150, 100, now, 0.4);
+                    }
+                }
+            } catch (e) {
+                console.error('AudioContext failed:', e);
+            }
+
+            if (isCorrect) {
+                const colors = ['#3b82f6', '#a855f7', '#ec4899', '#eab308', '#22c55e', '#f97316', '#06b6d4'];
+                const particles = Array.from({ length: 40 }).map((_, idx) => ({
+                    id: idx,
+                    left: Math.random() * 100,
+                    color: colors[idx % colors.length],
+                    delay: Math.random() * 0.5,
+                    duration: 2.5 + Math.random() * 2,
+                    angle: Math.random() * 360,
+                    size: 6 + Math.random() * 8,
+                }));
+                setConfettiParticles(particles);
+            }
+        } else {
+            setConfettiParticles([]);
+        }
+    }, [isSubmitted, isCorrect]);
 
     const [isSpeaking, setIsSpeaking] = useState(false);
 
@@ -87,19 +178,37 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
     return (
         <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 md:p-8 bg-zinc-50 relative overflow-hidden select-none">
             {/* Visual Confetti Particle Layer */}
-            {isSubmitted && isCorrect && (
-                <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden opacity-70">
-                    {[...Array(24)].map((_, idx) => (
+            {confettiParticles.length > 0 && (
+                <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+                    <style>{`
+                        @keyframes confetti-fall {
+                            0% {
+                                transform: translateY(-20px) rotate(0deg);
+                                opacity: 1;
+                            }
+                            100% {
+                                transform: translateY(105vh) rotate(720deg);
+                                opacity: 0;
+                            }
+                        }
+                    `}</style>
+                    {confettiParticles.map((p) => (
                         <div
-                            key={idx}
-                            className="absolute size-2 rounded-sm animate-bounce"
+                            key={p.id}
+                            className="absolute"
                             style={{
-                                top: `${Math.random() * 60}%`,
-                                left: `${Math.random() * 100}%`,
-                                backgroundColor: ['#3b82f6', '#a855f7', '#ec4899', '#eab308', '#22c55e'][idx % 5],
-                                transform: `rotate(${Math.random() * 360}deg)`,
-                                animationDelay: `${Math.random() * 0.5}s`,
-                                animationDuration: `${1.5 + Math.random() * 2}s`
+                                top: -20,
+                                left: `${p.left}%`,
+                                width: p.size,
+                                height: p.size,
+                                backgroundColor: p.color,
+                                borderRadius: p.id % 2 === 0 ? '50%' : '2px',
+                                transform: `rotate(${p.angle}deg)`,
+                                animationName: 'confetti-fall',
+                                animationDuration: `${p.duration}s`,
+                                animationDelay: `${p.delay}s`,
+                                animationTimingFunction: 'linear',
+                                animationFillMode: 'forwards',
                             }}
                         />
                     ))}
@@ -147,16 +256,17 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
             >
                 <div className="flex items-center gap-3">
                     <div className="px-5 py-1.5 bg-purple-50 rounded-full text-xs font-bold text-purple-600 tracking-wide border border-purple-100/40">
-                        Multiple Choice • Maraming Pagpipilian
+                        Multiple Choice
                     </div>
                     <button
                         type="button"
                         onClick={toggleSpeech}
-                        className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all cursor-pointer ${isSpeaking 
+                        className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all cursor-pointer flex items-center gap-1.5 ${isSpeaking 
                             ? 'bg-purple-100 border-purple-300 text-purple-700 font-bold' 
                             : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-zinc-100'}`}
                     >
-                        {isSpeaking ? '🛑 Stop' : '🔊 Listen'}
+                        {isSpeaking ? <Square className="size-3 fill-current" /> : <Volume2 className="size-3" />}
+                        <span>{isSpeaking ? 'Stop' : 'Listen'}</span>
                     </button>
                 </div>
 
@@ -183,7 +293,6 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                     <QuizExplanation
                         isCorrect={isCorrect}
                         explanationEn={explanationEn}
-                        explanationFil={explanationFil}
                     />
                 )}
 

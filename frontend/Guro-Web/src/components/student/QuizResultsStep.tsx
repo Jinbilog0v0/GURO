@@ -1,4 +1,5 @@
 import React from 'react';
+import { Trophy, Award } from 'lucide-react';
 
 interface QuizResultsStepProps {
     correctAnswersCount: number;
@@ -14,20 +15,42 @@ export const QuizResultsStep: React.FC<QuizResultsStepProps> = ({
     onTryAgain,
 }) => {
     const successPercentage = Math.round((correctAnswersCount / totalQuestionsCount) * 100);
+    const isExcellent = successPercentage >= 80;
+    const isPassed = successPercentage >= 75;
+
+    const primaryButton = (text: string, onClick: () => void) => (
+        <button
+            onClick={onClick}
+            className="w-full py-4 text-base font-bold text-white bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-90 rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+        >
+            {text}
+        </button>
+    );
+
+    const secondaryButton = (text: string, onClick: () => void) => (
+        <button
+            onClick={onClick}
+            className="w-full py-4 text-base font-bold text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 rounded-2xl transition-all active:scale-[0.99] cursor-pointer"
+        >
+            {text}
+        </button>
+    );
 
     return (
         <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 md:p-8 bg-zinc-50 relative overflow-hidden select-none">
             {/* Background ambient blurs */}
             <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 bg-purple-100 rounded-full blur-[160px]" />
             <div className="absolute -bottom-48 left-1/4 -translate-x-1/2 size-96 bg-blue-100 rounded-full blur-[160px]" />
-
+ 
             {/* Main Results Showcase Card */}
             <div className="w-full max-w-md bg-white rounded-[32px] p-8 md:p-10 shadow-2xl shadow-zinc-200/80 border border-zinc-100/50 flex flex-col items-center text-center relative z-10">
 
-                {/* Dynamic celebratory cap emoji */}
-                <span className="text-5xl filter drop-shadow-sm mb-4 animate-bounce">
-                    💪
-                </span>
+                {/* Dynamic celebratory icon */}
+                {isExcellent ? (
+                    <Trophy className="size-16 text-amber-500 animate-bounce mb-4" strokeWidth={1.5} />
+                ) : (
+                    <Award className="size-16 text-blue-500 animate-pulse mb-4" strokeWidth={1.5} />
+                )}
 
                 {/* Motivating Headers */}
                 <h1 className="text-3xl font-black text-zinc-800 tracking-tight">
@@ -63,19 +86,17 @@ export const QuizResultsStep: React.FC<QuizResultsStepProps> = ({
 
                 {/* Bottom Action buttons */}
                 <div className="w-full flex flex-col gap-3">
-                    <button
-                        onClick={onBackToSubjects}
-                        className="w-full py-4 text-base font-bold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
-                    >
-                        Back to Subjects
-                    </button>
-
-                    <button
-                        onClick={onTryAgain}
-                        className="w-full py-4 text-base font-bold text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 rounded-2xl transition-all active:scale-[0.99] cursor-pointer"
-                    >
-                        Try Again
-                    </button>
+                    {isPassed ? (
+                        <>
+                            {primaryButton('Back to Subjects', onBackToSubjects)}
+                            {secondaryButton('Try Again', onTryAgain)}
+                        </>
+                    ) : (
+                        <>
+                            {primaryButton('Try Again', onTryAgain)}
+                            {secondaryButton('Back to Subjects', onBackToSubjects)}
+                        </>
+                    )}
                 </div>
 
             </div>

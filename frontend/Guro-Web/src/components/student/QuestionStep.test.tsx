@@ -11,7 +11,6 @@ describe('QuestionStep Component', () => {
     options: ['7', '8', '9', '10'],
     correctOption: '8',
     explanationEn: '5 plus 3 is equal to 8.',
-    explanationFil: 'Ang 5 plus 3 ay katumbas ng 8.',
     onBack: jest.fn(),
     onNextOrFinish: jest.fn(),
   };
@@ -45,7 +44,7 @@ describe('QuestionStep Component', () => {
     fireEvent.click(submitBtn);
     
     // Check explanation shows up
-    expect(screen.getByText('✓ Correct!')).toBeInTheDocument();
+    expect(screen.getByText('Correct!')).toBeInTheDocument();
     expect(screen.getByText('5 plus 3 is equal to 8.')).toBeInTheDocument();
     
     // Button label transitions to 'Next Question →' since it's index 1 of 2
@@ -59,7 +58,7 @@ describe('QuestionStep Component', () => {
     fireEvent.click(screen.getByRole('button', { name: '7' }));
     fireEvent.click(screen.getByRole('button', { name: 'Submit Answer' }));
     
-    expect(screen.getByText('✕ Not quite right')).toBeInTheDocument();
+    expect(screen.getByText('Not quite right')).toBeInTheDocument();
   });
 
   test('calls onNextOrFinish with boolean representing correctness when next button is clicked', () => {

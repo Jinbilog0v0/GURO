@@ -4,7 +4,6 @@ import type { LucideIcon } from 'lucide-react';
 interface StatCardProps {
     value: string | number;
     labelEn: string;
-    labelFil: string;
     Icon: LucideIcon;
     iconColor: string; // Tailwind text utility class
 }
@@ -12,7 +11,6 @@ interface StatCardProps {
 export const StatCard: React.FC<StatCardProps> = ({
     value,
     labelEn,
-    labelFil,
     Icon,
     iconColor,
 }) => {
@@ -29,7 +27,6 @@ export const StatCard: React.FC<StatCardProps> = ({
             {/* Regionalized Explanatory Label Pack */}
             <div className="mt-1 flex flex-col">
                 <span className="text-xs font-bold text-zinc-500">{labelEn}</span>
-                <span className="text-[11px] font-medium text-zinc-400">{labelFil}</span>
             </div>
         </div>
     );

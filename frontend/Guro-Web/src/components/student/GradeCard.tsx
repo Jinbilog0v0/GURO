@@ -1,15 +1,16 @@
 import React from 'react';
+import type { LucideIcon } from 'lucide-react';
 
 export interface GradeCardProps {
     grade: number;
-    emoji: string;
+    Icon: LucideIcon;
     iconBgColor: string; // Tailwind bg utility class
     onClick: () => void;
 }
 
 export const GradeCard: React.FC<GradeCardProps> = ({
     grade,
-    emoji,
+    Icon,
     iconBgColor,
     onClick,
 }) => {
@@ -20,7 +21,7 @@ export const GradeCard: React.FC<GradeCardProps> = ({
         >
             {/* Icon Capsule Squircle */}
             <div className={`flex size-24 items-center justify-center rounded-[28px] ${iconBgColor} shadow-md transition-transform group-hover:scale-105 duration-300`}>
-                <span className="text-4xl filter drop-shadow-sm">{emoji}</span>
+                <Icon className="size-12 text-white" strokeWidth={1.5} />
             </div>
 
             {/* Grade Level Headings */}
@@ -32,9 +33,6 @@ export const GradeCard: React.FC<GradeCardProps> = ({
             <div className="mt-2 flex flex-col gap-0.5">
                 <p className="text-sm font-semibold text-zinc-500 group-hover:text-zinc-600 transition-colors">
                     Click to start
-                </p>
-                <p className="text-xs font-medium text-zinc-400/90">
-                    Pindutin para magsimula
                 </p>
             </div>
         </button>

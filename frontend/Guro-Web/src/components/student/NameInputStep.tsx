@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Sparkles } from 'lucide-react';
 
 interface NameInputStepProps {
     onBack: () => void;
@@ -11,7 +12,7 @@ const GuroLogoGraphic: React.FC = () => {
             <div className="absolute size-10 rounded-t-lg border-[3px] border-blue-600 bg-white" />
             <div className="absolute h-8 w-px bg-zinc-300" />
             <div className="absolute top-1 right-2">
-                <span className="text-sm">✨</span>
+                <Sparkles className="size-4 text-amber-500 animate-pulse" />
             </div>
         </div>
     );

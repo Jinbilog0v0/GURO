@@ -37,7 +37,7 @@ describe('QuizOption Component', () => {
 
   test('renders error icon when submitted, selected, and incorrect', () => {
     render(<QuizOption {...defaultProps} isSubmitted={true} isSelected={true} isCorrectAnswer={false} />);
-    expect(buttonHasClass(screen.getByRole('button'), 'border-red-500')).toBe(true);
+    expect(buttonHasClass(screen.getByRole('button'), 'border-[#A01322]')).toBe(true);
   });
 
   function buttonHasClass(element: HTMLElement, cls: string) {

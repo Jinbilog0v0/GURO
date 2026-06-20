@@ -4,7 +4,8 @@ import { GradeSelectionStep } from '../components/student/GradeSelectionStep';
 import { DashboardStep } from '../components/student/DashboardStep';
 import { QuestionStep } from '../components/student/QuestionStep';
 import { QuizResultsStep } from '../components/student/QuizResultsStep';
-import { ArrowLeft, BookOpen, Calculator, Award } from 'lucide-react';
+import { StudentProfile } from '../components/student/StudentProfile';
+import { ArrowLeft, BookOpen, Calculator, Award, Inbox } from 'lucide-react';
 import { getParentAccessCode } from '../utils/security';
 import { LogoutConfirmModal } from '../components/shared/LogoutConfirmModal';
 import { toast } from 'react-hot-toast';
@@ -45,7 +46,7 @@ const FALLBACK_ITEM_BANK: ItemBank = {
                             "correctAnswer": "3/4",
                             "feedback": {
                                 "en": "Since the denominators are the same, simply add the numerators: 1 + 2 = 3. Keep the denominator: 3/4.",
-                                "fil": "Dahil pareho ang denominator, idagdag lamang ang mga numerator: 1 + 2 = 3. Panatilihin ang denominator: 3/4."
+                                "fil": "Since the denominators are the same, simply add the numerators: 1 + 2 = 3. Keep the denominator: 3/4."
                             }
                         }
                     ]
@@ -63,7 +64,7 @@ const FALLBACK_ITEM_BANK: ItemBank = {
                             "correctAnswer": "0.1",
                             "feedback": {
                                 "en": "Multiplying 5 by 2 gives 10. Since there are two decimal places in total in the factors, place the decimal point two spaces left: 0.10 or 0.1.",
-                                "fil": "Ang pag-multiply ng 5 sa 2 ay nagbibigay ng 10. Dahil may dalawang decimal places sa kabuuan, ilagay ang decimal point dalawang puwang pakaliwa: 0.10 o 0.1."
+                                "fil": "Multiplying 5 by 2 gives 10. Since there are two decimal places in total in the factors, place the decimal point two spaces left: 0.10 or 0.1."
                             }
                         }
                     ]
@@ -81,7 +82,7 @@ const FALLBACK_ITEM_BANK: ItemBank = {
                             "correctAnswer": "x = 7",
                             "feedback": {
                                 "en": "Add 5 to both sides to get 3x = 21, then divide by 3 to find x = 7.",
-                                "fil": "Idagdag ang 5 sa magkabilang panig upang makuha ang 3x = 21, pagkatapos ay i-divide sa 3 upang makuha ang x = 7."
+                                "fil": "Add 5 to both sides to get 3x = 21, then divide by 3 to find x = 7."
                             }
                         }
                     ]
@@ -106,7 +107,7 @@ const FALLBACK_ITEM_BANK: ItemBank = {
                             "correctAnswer": "Her cheeks are like red roses.",
                             "feedback": {
                                 "en": "A simile compares two things using \"like\" or \"as\". Here, cheeks are compared to roses using \"like\".",
-                                "fil": "Ang simile ay naghahambing ng dalawang bagay gamit ang \"like\" o \"as\" (tulad ng/parang). Dito, inihambing ang pisngi sa rosas gamit ang \"like\"."
+                                "fil": "A simile compares two things using \"like\" or \"as\". Here, cheeks are compared to roses using \"like\"."
                             }
                         }
                     ]
@@ -129,7 +130,7 @@ const FALLBACK_ITEM_BANK: ItemBank = {
                             "correctAnswer": "Hard work leads to success.",
                             "feedback": {
                                 "en": "The paragraph shows how Maria worked hard (\"diligently every night\") and was rewarded with success (\"won first place\").",
-                                "fil": "Ipinapakita ng talata kung paano nagsumikap si Maria (\"masigasig gabi-gabi\") at nagbunga ito ng tagumpay (\"nanalo ng unang puwesto\")."
+                                "fil": "The paragraph shows how Maria worked hard (\"diligently every night\") and was rewarded with success (\"won first place\")."
                             }
                         }
                     ]
@@ -152,7 +153,7 @@ const FALLBACK_ITEM_BANK: ItemBank = {
                             "correctAnswer": "To work or study late into the night.",
                             "feedback": {
                                 "en": "The idiom refers to staying awake late into the night working or studying, historically by the light of an oil lamp.",
-                                "fil": "Ang idyomang ito ay tumutukoy sa pagpupuyat sa gabi para magtrabaho o mag-aral, na hango sa paggamit ng ilawan noon."
+                                "fil": "The idiom refers to staying awake late into the night working or studying, historically by the light of an oil lamp."
                             }
                         }
                     ]
@@ -414,9 +415,9 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
             {step === 'grade' && (
                 <GradeSelectionStep
                     userName={userName}
+                    email={currentUser?.email}
                     onBack={() => setStep('name')}
                     onLogout={handleLogout}
-                    isLoggedIn={!!currentUser}
                     onSelectGrade={(grade) => {
                         setSelectedGrade(grade);
                         setStep('dashboard');
@@ -427,10 +428,10 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
             {step === 'dashboard' && (
                 <DashboardStep
                     userName={userName}
+                    email={currentUser?.email}
                     selectedGrade={selectedGrade}
                     onBack={() => setStep('grade')}
                     onLogout={handleLogout}
-                    isLoggedIn={!!currentUser}
                     onSelectSubject={handleSelectSubject}
                     mathTopics={mathTopicsList.length > 0 ? mathTopicsList : ['Fractions']}
                     englishTopics={englishTopicsList.length > 0 ? englishTopicsList : ['Short Stories']}
@@ -460,25 +461,47 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
                             <ArrowLeft className="size-4 text-zinc-600" strokeWidth={2.5} />
                             Dashboard
                         </button>
-                        <div className="px-5 py-2.5 bg-white border border-zinc-200/60 rounded-full shadow-md text-zinc-700 font-bold text-sm">
-                            Grade {selectedGrade} • {selectedSubject}
+                        <div className="flex items-center gap-3">
+                            <div className={`px-5 py-2.5 rounded-full shadow-md font-bold text-sm border ${
+                                selectedGrade === 4 ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' :
+                                selectedGrade === 5 ? 'bg-blue-50 text-blue-700 border-blue-200/60' :
+                                selectedGrade === 6 ? 'bg-purple-50 text-purple-700 border-purple-200/60' :
+                                'bg-white text-zinc-700 border-zinc-200/60'
+                            }`}>
+                                Grade {selectedGrade} • {selectedSubject}
+                            </div>
+                            <StudentProfile
+                                userName={userName}
+                                email={currentUser?.email}
+                                onLogout={handleLogout}
+                            />
                         </div>
                     </div>
 
                     <div className="flex w-full max-w-4xl flex-col items-center gap-10 mt-20 relative z-10">
                         <div className="flex flex-col items-center text-center">
-                            <h1 className="text-3xl md:text-4xl font-extrabold text-zinc-800 flex items-center justify-center gap-2 tracking-tight">
-                                {selectedSubject === 'Mathematics' ? '🧮 Math' : '📚 English'} Practice Topics
+                            <h1 className="text-3xl md:text-4xl font-extrabold text-zinc-800 flex items-center justify-center gap-2.5 tracking-tight">
+                                {selectedSubject === 'Mathematics' ? (
+                                    <>
+                                        <Calculator className="size-8 text-blue-500 shrink-0" />
+                                        <span>Math</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <BookOpen className="size-8 text-purple-500 shrink-0" />
+                                        <span>English</span>
+                                    </>
+                                )}
+                                <span>Practice Topics</span>
                             </h1>
                             <p className="text-lg font-medium text-zinc-600 mt-2">Select a topic below to start your diagnostic quest!</p>
-                            <p className="text-sm font-medium text-zinc-400">Pumili ng paksa sa ibaba para magsimula ng iyong pagsasanay!</p>
                         </div>
 
                         {/* Topics grid list */}
                         <div className="grid w-full grid-cols-1 md:grid-cols-2 gap-6 px-4">
                             {getTopicsForCurrentSelection(selectedSubject).length === 0 ? (
-                                <div className="col-span-full bg-white rounded-3xl p-12 text-center border border-dashed border-zinc-300">
-                                    <span className="text-4xl">📭</span>
+                                <div className="col-span-full bg-white rounded-3xl p-12 text-center border border-dashed border-zinc-300 flex flex-col items-center justify-center">
+                                    <Inbox className="size-10 text-slate-400 shrink-0" />
                                     <h3 className="text-lg font-bold text-zinc-700 mt-4">No topics found in the local repository</h3>
                                     <p className="text-zinc-500 text-sm mt-1">Staged lessons will appear here once loaded by the teacher workspace.</p>
                                 </div>
@@ -516,7 +539,6 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
                     options={questions[currentQuestionIndex].options}
                     correctOption={questions[currentQuestionIndex].correctAnswer}
                     explanationEn={questions[currentQuestionIndex].feedback.en}
-                    explanationFil={questions[currentQuestionIndex].feedback.fil}
                     onBack={() => setStep('topics')}
                     onNextOrFinish={handleQuestionNext}
                 />

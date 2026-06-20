@@ -1,15 +1,16 @@
 import React from 'react';
-import { ArrowLeft, Calculator, BookOpen, Trophy, TrendingUp, Flame, LogOut } from 'lucide-react';
+import { ArrowLeft, Calculator, BookOpen, Trophy, TrendingUp, Flame, Hand, Key } from 'lucide-react';
 import { SubjectCard } from './SubjectCard';
 import { StatCard } from './StatCard';
+import { StudentProfile } from './StudentProfile';
 
 interface DashboardStepProps {
     userName: string;
+    email?: string;
     selectedGrade: number;
     onBack: () => void;
     onSelectSubject: (subject: string) => void;
     onLogout?: () => void;
-    isLoggedIn?: boolean;
     mathTopics?: string[];
     englishTopics?: string[];
     mathProgress?: number;
@@ -24,11 +25,11 @@ interface DashboardStepProps {
 
 export const DashboardStep: React.FC<DashboardStepProps> = ({
     userName = 'NJ',
+    email,
     selectedGrade = 4,
     onBack,
     onSelectSubject,
     onLogout,
-    isLoggedIn = false,
     mathTopics = ['Whole Numbers', 'Fractions', 'Geometry'],
     englishTopics = ['Reading', 'Grammar', 'Figures of Speech'],
     mathProgress = 65,
@@ -56,20 +57,23 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                         <ArrowLeft className="size-4 text-zinc-600" strokeWidth={2.5} />
                         Back
                     </button>
-
-                    {isLoggedIn && onLogout && (
-                        <button
-                            onClick={onLogout}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-red-50 border border-red-200/60 rounded-full shadow-md text-red-600 hover:bg-red-100/50 transition-all hover:scale-[1.02] active:scale-[0.98] font-semibold text-sm cursor-pointer"
-                        >
-                            <LogOut className="size-4 text-red-600" strokeWidth={2.5} />
-                            Log Out
-                        </button>
-                    )}
                 </div>
 
-                <div className="px-5 py-2.5 bg-white border border-zinc-200/60 rounded-full shadow-md text-zinc-700 font-bold text-sm tracking-tight">
-                    Grade {selectedGrade}
+                {/* Grade Badge & Student Profile Grouped (Top Right) */}
+                <div className="flex items-center gap-3">
+                    <div className={`px-5 py-2.5 rounded-full shadow-md font-bold text-sm tracking-tight border ${
+                        selectedGrade === 4 ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' :
+                        selectedGrade === 5 ? 'bg-blue-50 text-blue-700 border-blue-200/60' :
+                        selectedGrade === 6 ? 'bg-purple-50 text-purple-700 border-purple-200/60' :
+                        'bg-white text-zinc-700 border-zinc-200/60'
+                    }`}>
+                        Grade {selectedGrade}
+                    </div>
+                    <StudentProfile
+                        userName={userName}
+                        email={email}
+                        onLogout={onLogout}
+                    />
                 </div>
             </div>
 
@@ -78,15 +82,16 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
 
                 {/* Welcome Banner Header */}
                 <div className="flex flex-col items-center text-center">
-                    <h1 className="text-3xl md:text-4xl font-extrabold text-zinc-800 flex items-center justify-center gap-2 tracking-tight">
-                        Welcome back, {userName}! <span className="animate-pulse">👋</span>
+                    <h1 className="text-3xl md:text-4xl font-extrabold text-zinc-800 flex items-center justify-center gap-2.5 tracking-tight">
+                        Welcome back, {userName}! <Hand className="size-8 text-amber-500 animate-bounce inline-block shrink-0" />
                     </h1>
                     <div className="mt-3 flex flex-col gap-0.5">
                         <p className="text-lg font-medium text-zinc-600">Choose a subject to continue learning</p>
-                        <p className="text-sm font-medium text-zinc-400">Pumili ng paksa para magpatuloy sa pag-aaral</p>
                         {parentAccessCode && (
-                            <p className="text-sm font-semibold text-zinc-600 mt-2 bg-zinc-100 px-4 py-1.5 rounded-full border border-zinc-200/60 inline-block mx-auto">
-                                🔑 Parent Access Code: <span className="text-blue-600 font-extrabold select-all">{parentAccessCode}</span>
+                            <p className="text-sm font-semibold text-zinc-600 mt-2 bg-zinc-100 px-4 py-1.5 rounded-full border border-zinc-200/60 inline-flex items-center gap-1.5 justify-center mx-auto">
+                                <Key className="size-4 text-amber-500 shrink-0" />
+                                <span>Parent Access Code:</span>
+                                <span className="text-blue-600 font-extrabold select-all ml-0.5">{parentAccessCode}</span>
                             </p>
                         )}
                     </div>
@@ -119,21 +124,18 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                     <StatCard
                         value={stats.lessonsCompleted}
                         labelEn="Lessons Completed"
-                        labelFil="Natapos na Aralin"
                         Icon={Trophy}
                         iconColor="text-amber-500"
                     />
                     <StatCard
                         value={`${stats.averageScore}%`}
                         labelEn="Average Score"
-                        labelFil="Average na Iskor"
                         Icon={TrendingUp}
                         iconColor="text-emerald-500"
                     />
                     <StatCard
                         value={stats.streak}
                         labelEn="Day Streak"
-                        labelFil="Sunod-sunod na Araw"
                         Icon={Flame}
                         iconColor="text-orange-500"
                     />

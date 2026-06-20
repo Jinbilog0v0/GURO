@@ -37,4 +37,18 @@ describe('QuizResultsStep Component', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Try Again' }));
     expect(defaultProps.onTryAgain).toHaveBeenCalledTimes(1);
   });
+
+  test('renders buttons in correct order when score is 75% or above', () => {
+    render(<QuizResultsStep {...defaultProps} correctAnswersCount={3} totalQuestionsCount={4} />);
+    const buttons = screen.getAllByRole('button');
+    expect(buttons[0]).toHaveTextContent('Back to Subjects');
+    expect(buttons[1]).toHaveTextContent('Try Again');
+  });
+
+  test('renders buttons in correct order when score is below 75%', () => {
+    render(<QuizResultsStep {...defaultProps} correctAnswersCount={2} totalQuestionsCount={4} />);
+    const buttons = screen.getAllByRole('button');
+    expect(buttons[0]).toHaveTextContent('Try Again');
+    expect(buttons[1]).toHaveTextContent('Back to Subjects');
+  });
 });
