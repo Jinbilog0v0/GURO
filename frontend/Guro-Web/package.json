@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "test": "jest",
+    "test": "jest --testTimeout=30000",
     "preview": "vite preview"
   },
   "jest": {

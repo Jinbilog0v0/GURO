@@ -1,12 +1,13 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { LessonSpace } from './LessonSpace';
 import '@testing-library/jest-dom';
-import { toast } from 'react-hot-toast';
+import { toast } from '../utils/toast';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
-// Mock react-hot-toast
-jest.mock('react-hot-toast', () => ({
+// Mock toast utility
+jest.mock('../utils/toast', () => ({
+  __esModule: true,
   toast: {
     success: jest.fn(),
     error: jest.fn(),

@@ -1,5 +1,5 @@
-import React from 'react';
-import { AlertCircle, Lightbulb, TrendingDown, BookOpen, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { AlertCircle, Lightbulb, TrendingDown, BookOpen, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface SyncedEvent {
   studentId: string;
@@ -17,9 +17,6 @@ interface DiagnosticAlertsProps {
 }
 
 export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs }) => {
-
-
-  // 2. Identify topics where overall average accuracy is low (< 65%)
   const topicStats: { [topic: string]: { sum: number; count: number; subject: string; grade: number } } = {};
   progressLogs.forEach((log) => {
     const pct = (log.score / log.totalQuestions) * 100;
@@ -39,74 +36,99 @@ export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs
     }))
     .filter((stat) => stat.average < 65);
 
-  return (
-    <div className="grid grid-cols-2 gap-5 w-full">
-      {/* Commonly Struggling Topics */}
-      <div className="glass-panel p-6 flex flex-col gap-4 h-full">
-        <div className="flex items-center gap-2.5">
-          <TrendingDown size={20} className="text-[#A01322]" />
-          <h3 className="text-[15px] font-bold text-[var(--text-main)]">Struggling Topics (Class Average &lt; 65%)</h3>
-        </div>
-        <div className="flex flex-col gap-3 overflow-y-auto max-h-[220px]">
-          {lowAverageTopics.length === 0 ? (
-            <div className="p-4 text-[#10B981] text-[13px] font-semibold flex items-center gap-1.5">
-              <CheckCircle size={16} className="text-[#10B981] shrink-0" />
-              <span>No topic averages fall below mastery thresholds currently.</span>
-            </div>
-          ) : (
-            lowAverageTopics.map((item) => (
-              <div key={item.topic} className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
-                <AlertCircle size={16} className="text-[#A01322] mt-0.5" />
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-bold text-[var(--text-main)]">
-                    {item.topic} (Grade {item.grade} {item.subject})
-                  </span>
-                  <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
-                    The class has an average accuracy of only{' '}
-                    <strong className="text-[#A01322] font-extrabold">{item.average}%</strong> on this topic.
-                    Remediation exercises are recommended.
-                  </p>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+  const hasAlerts = lowAverageTopics.length > 0;
+  const [isOpen, setIsOpen] = useState(hasAlerts);
 
-      {/* AI Lesson Recommendations */}
-      <div className="glass-panel p-6 flex flex-col gap-4 h-full">
+  return (
+    <div className="glass-panel overflow-hidden w-full">
+      {/* Accordion header */}
+      <button
+        onClick={() => setIsOpen((p) => !p)}
+        className="w-full flex items-center justify-between px-6 py-4 text-left border-b border-[var(--border-color)] cursor-pointer hover:bg-white/[0.02] transition-colors"
+        aria-expanded={isOpen}
+      >
         <div className="flex items-center gap-2.5">
-          <Lightbulb size={20} className="text-[#F59E0B]" />
-          <h3 className="text-[15px] font-bold text-[var(--text-main)]">AI Curriculum Recommendations</h3>
-        </div>
-        <div className="flex flex-col gap-3 overflow-y-auto max-h-[220px]">
-          {lowAverageTopics.length === 0 ? (
-            <div className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
-              <BookOpen size={16} className="text-[#10B981]" />
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[13px] font-bold text-[var(--text-main)]">Keep building standard lessons!</span>
-                <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
-                  Everything looks stable. Consider creating a new Grade 5 Decimals or Fractions lesson to extend the curriculum bank.
-                </p>
-              </div>
-            </div>
+          <TrendingDown size={18} className={hasAlerts ? 'text-[#A01322]' : 'text-[var(--text-muted)]'} aria-hidden="true" />
+          <span className="text-[14.5px] font-bold text-[var(--text-main)]">Diagnostic Alerts &amp; Recommendations</span>
+          {hasAlerts ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[var(--danger-glow)] text-[var(--danger)] border border-[var(--danger)]/20">
+              {lowAverageTopics.length} alert{lowAverageTopics.length > 1 ? 's' : ''}
+            </span>
           ) : (
-            lowAverageTopics.map((item) => (
-              <div key={item.topic} className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
-                <Lightbulb size={16} className="text-[#F59E0B] mt-0.5" />
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-bold text-[var(--text-main)]">Targeted Lesson Boost: {item.topic}</span>
-                  <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
-                    Go to the <strong>Lesson Ingestor</strong> tab, set Grade to <strong>{item.grade}</strong>, Subject to <strong>{item.subject}</strong>, and parse an extension lesson about <em>"{item.topic}"</em> with more simplified questions and detailed step-by-step explanations.
-                  </p>
-                </div>
-              </div>
-            ))
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[var(--success-glow)] text-[var(--success)] border border-[var(--success)]/20">
+              <CheckCircle size={10} /> All clear
+            </span>
           )}
         </div>
-      </div>
+        {isOpen ? <ChevronUp size={16} className="text-[var(--text-muted)] shrink-0" /> : <ChevronDown size={16} className="text-[var(--text-muted)] shrink-0" />}
+      </button>
+
+      {isOpen && (
+        <div className="grid grid-cols-2 gap-5 p-5">
+          {/* Struggling Topics */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <TrendingDown size={16} className="text-[#A01322]" aria-hidden="true" />
+              <h4 className="text-[13.5px] font-bold text-[var(--text-main)]">Struggling Topics (avg &lt; 65%)</h4>
+            </div>
+            <div className="flex flex-col gap-2.5 overflow-y-auto max-h-[220px]">
+              {lowAverageTopics.length === 0 ? (
+                <div className="p-4 bg-[var(--success-glow)] border border-[var(--success)]/20 rounded-xl text-[#10B981] text-[13px] font-semibold flex items-center gap-1.5">
+                  <CheckCircle size={15} className="shrink-0" />
+                  <span>No topic averages fall below mastery thresholds currently.</span>
+                </div>
+              ) : (
+                lowAverageTopics.map((item) => (
+                  <div key={item.topic} className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
+                    <AlertCircle size={15} className="text-[#A01322] mt-0.5 shrink-0" aria-hidden="true" />
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[13px] font-bold text-[var(--text-main)]">
+                        {item.topic} (Grade {item.grade} {item.subject})
+                      </span>
+                      <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
+                        Class average: <strong className="text-[#A01322] font-extrabold">{item.average}%</strong>. Remediation recommended.
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* AI Recommendations */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Lightbulb size={16} className="text-[#F59E0B]" aria-hidden="true" />
+              <h4 className="text-[13.5px] font-bold text-[var(--text-main)]">AI Curriculum Recommendations</h4>
+            </div>
+            <div className="flex flex-col gap-2.5 overflow-y-auto max-h-[220px]">
+              {lowAverageTopics.length === 0 ? (
+                <div className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
+                  <BookOpen size={15} className="text-[#10B981] shrink-0 mt-0.5" aria-hidden="true" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[13px] font-bold text-[var(--text-main)]">Keep building standard lessons!</span>
+                    <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
+                      Everything looks stable. Consider creating a Grade 5 Decimals or Fractions lesson to extend the curriculum bank.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                lowAverageTopics.map((item) => (
+                  <div key={item.topic} className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
+                    <Lightbulb size={15} className="text-[#F59E0B] mt-0.5 shrink-0" aria-hidden="true" />
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[13px] font-bold text-[var(--text-main)]">Targeted Boost: {item.topic}</span>
+                      <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
+                        Go to <strong>Lesson Ingestor</strong> → Grade <strong>{item.grade}</strong> → <strong>{item.subject}</strong> → parse an extension lesson for <em>"{item.topic}"</em> with simplified Q&amp;A.
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
-

@@ -42,6 +42,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [authError, setAuthError] = useState('');
 
+    // Inline field validation errors
+    const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; name?: string }>({});
+
+    const validateEmail = (val: string) => !val.includes('@') || val.length < 5 ? 'Enter a valid email address.' : '';
+    const validatePassword = (val: string) => val.length < 6 ? 'Password must be at least 6 characters.' : '';
+    const validateName = (val: string) => val.trim().length < 2 ? 'Full name is required.' : '';
+
+    const handleFieldBlur = (field: 'email' | 'password' | 'name', val: string) => {
+        const error = field === 'email' ? validateEmail(val) : field === 'password' ? validatePassword(val) : validateName(val);
+        setFieldErrors((prev) => ({ ...prev, [field]: error }));
+    };
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email.trim() || !password.trim()) return;
@@ -138,6 +150,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
     // ── Input field helper ────────────────────────────────────────────────────
 
     const inputCls = "w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all";
+    const inputErrCls = "w-full pl-10 pr-4 py-3 bg-slate-50 border border-[#A01322] rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#A01322] focus:ring-2 focus:ring-[#A01322]/20 focus:bg-white transition-all";
     const labelCls = "text-[11px] font-bold text-slate-400 uppercase tracking-wider";
 
     // ── Views ─────────────────────────────────────────────────────────────────
@@ -184,33 +197,41 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
                         <form onSubmit={handleLogin} className="flex flex-col gap-4">
                             <div className="flex flex-col gap-1.5">
-                                <label className={labelCls}>Email address</label>
+                                <label className={labelCls} htmlFor="login-email">Email address</label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
                                     <input
+                                        id="login-email"
                                         type="email"
                                         placeholder="you@school.edu"
-                                        className={inputCls}
+                                        className={fieldErrors.email ? inputErrCls : inputCls}
                                         value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
+                                        onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: '' })); }}
+                                        onBlur={(e) => handleFieldBlur('email', e.target.value)}
                                         required
+                                        aria-describedby={fieldErrors.email ? 'login-email-err' : undefined}
                                     />
                                 </div>
+                                {fieldErrors.email && <p id="login-email-err" className="text-[11px] text-[#A01322] font-semibold pl-1">{fieldErrors.email}</p>}
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <label className={labelCls}>Password</label>
+                                <label className={labelCls} htmlFor="login-password">Password</label>
                                 <div className="relative">
-                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
                                     <input
+                                        id="login-password"
                                         type="password"
                                         placeholder="••••••••"
-                                        className={inputCls}
+                                        className={fieldErrors.password ? inputErrCls : inputCls}
                                         value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
+                                        onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: '' })); }}
+                                        onBlur={(e) => handleFieldBlur('password', e.target.value)}
                                         required
+                                        aria-describedby={fieldErrors.password ? 'login-pw-err' : undefined}
                                     />
                                 </div>
+                                {fieldErrors.password && <p id="login-pw-err" className="text-[11px] text-[#A01322] font-semibold pl-1">{fieldErrors.password}</p>}
                             </div>
 
                             <button
@@ -261,48 +282,63 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
                         <form onSubmit={handleRegister} className="flex flex-col gap-4">
                             <div className="flex flex-col gap-1.5">
-                                <label className={labelCls}>Full name</label>
+                                <label className={labelCls} htmlFor="reg-name">Full name</label>
                                 <div className="relative">
-                                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
                                     <input
+                                        id="reg-name"
                                         type="text"
                                         placeholder="Teacher Maria / Juan Dela Cruz"
-                                        className={inputCls}
+                                        className={fieldErrors.name ? inputErrCls : inputCls}
                                         value={name}
-                                        onChange={(e) => setName(e.target.value)}
+                                        onChange={(e) => { setName(e.target.value); setFieldErrors((p) => ({ ...p, name: '' })); }}
+                                        onBlur={(e) => handleFieldBlur('name', e.target.value)}
                                         required
+                                        aria-describedby={fieldErrors.name ? 'reg-name-err' : undefined}
                                     />
                                 </div>
+                                {fieldErrors.name && <p id="reg-name-err" className="text-[11px] text-[#A01322] font-semibold pl-1">{fieldErrors.name}</p>}
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <label className={labelCls}>Email address</label>
+                                <label className={labelCls} htmlFor="reg-email">Email address</label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
                                     <input
+                                        id="reg-email"
                                         type="email"
                                         placeholder="you@school.edu"
-                                        className={inputCls}
+                                        className={fieldErrors.email ? inputErrCls : inputCls}
                                         value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
+                                        onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: '' })); }}
+                                        onBlur={(e) => handleFieldBlur('email', e.target.value)}
                                         required
+                                        aria-describedby={fieldErrors.email ? 'reg-email-err' : undefined}
                                     />
                                 </div>
+                                {fieldErrors.email && <p id="reg-email-err" className="text-[11px] text-[#A01322] font-semibold pl-1">{fieldErrors.email}</p>}
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <label className={labelCls}>Password</label>
+                                <label className={labelCls} htmlFor="reg-password">Password</label>
                                 <div className="relative">
-                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
                                     <input
+                                        id="reg-password"
                                         type="password"
                                         placeholder="Minimum 6 characters"
-                                        className={inputCls}
+                                        className={fieldErrors.password ? inputErrCls : inputCls}
                                         value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
+                                        onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: '' })); }}
+                                        onBlur={(e) => handleFieldBlur('password', e.target.value)}
                                         required
+                                        aria-describedby={fieldErrors.password ? 'reg-pw-err' : undefined}
                                     />
                                 </div>
+                                {fieldErrors.password && <p id="reg-pw-err" className="text-[11px] text-[#A01322] font-semibold pl-1">{fieldErrors.password}</p>}
+                                {password.length > 0 && password.length < 6 && !fieldErrors.password && (
+                                    <p className="text-[11px] text-slate-400 pl-1">{password.length}/6 characters minimum</p>
+                                )}
                             </div>
 
                             <div className="flex flex-col gap-1.5">

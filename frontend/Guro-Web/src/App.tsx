@@ -1,7 +1,10 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { Toaster, toast } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
+import { toast } from './utils/toast';
 import { LandingPage } from './pages/LandingPage';
 import { LogoutConfirmModal } from './components/shared/LogoutConfirmModal';
+import { ErrorBoundary } from './components/shared/ErrorBoundary';
+import { SkeletonCard, SkeletonTable, SkeletonStatCards, PageLoadingSpinner } from './components/shared/SkeletonLoader';
 import type { Question } from './pages/LessonSpace';
 import { LiveActivityTicker } from './components/teacher/LiveActivityTicker';
 import './App.css';
@@ -23,7 +26,9 @@ import {
   Sun,
   Moon,
   GraduationCap,
-  Shield
+  Shield,
+  Menu,
+  X
 } from 'lucide-react';
 
 interface SyncedEvent {
@@ -59,6 +64,10 @@ function App() {
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     return localStorage.getItem('guro_theme') !== 'light';
+  });
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    return localStorage.getItem('guro_sidebar') !== 'collapsed';
   });
 
   useEffect(() => {
@@ -168,7 +177,7 @@ function App() {
 
   if (activeTab === 'student') {
     return (
-      <Suspense fallback={<div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#94a3b8' }}>Loading Student Space...</div>}>
+      <Suspense fallback={<PageLoadingSpinner message="Loading Student Space…" />}>
         <StudentSpace onExit={handleExitToLanding} currentUser={currentUser} />
       </Suspense>
     );
@@ -226,6 +235,14 @@ function App() {
   const isAdmin = currentUser?.role === 'admin';
   const isTeacherView = ['teacher', 'dashboard', 'lesson-builder'].includes(activeTab);
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prev) => {
+      const next = !prev;
+      localStorage.setItem('guro_sidebar', next ? 'open' : 'collapsed');
+      return next;
+    });
+  };
+
   const navBtn = (active: boolean) =>
     `flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-[14.5px] text-left transition-all duration-200 w-full ${
       active
@@ -233,149 +250,224 @@ function App() {
         : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-[var(--bg-main)]'
     }`;
 
+  const navBtnIcon = (active: boolean) =>
+    `flex items-center justify-center border-none p-[10px] rounded-[11px] cursor-pointer transition-all duration-200 w-full ${
+      active
+        ? 'bg-[var(--nav-active-bg)] text-[var(--accent-primary)]'
+        : 'bg-transparent text-[var(--text-muted)] hover:bg-[var(--bg-main)]'
+    }`;
+
+  const isTeacher = !isAdmin && (!currentUser || currentUser.role === 'teacher');
+  const isBuilderOrDev = !isAdmin && (!currentUser || currentUser.role === 'lesson-builder' || currentUser.role === 'developer' || currentUser.role === 'teacher');
+  const isParent = !isAdmin && (!currentUser || currentUser.role === 'parent');
+
   return (
     <div className={`flex h-screen w-screen bg-[var(--bg-main)] overflow-hidden${isTeacherView ? ' teacher-portal' : ''}`}>
       {/* Sidebar Navigation */}
-      <aside className="w-64 shrink-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col px-4 py-5">
+      <aside
+        className={`shrink-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col py-5 transition-all duration-300 ${
+          isSidebarOpen ? 'w-64 px-4' : 'w-[60px] px-2'
+        }`}
+        aria-label="Main navigation"
+      >
         {/* Logo */}
-        <div className="flex items-center gap-[11px] px-1.5 pb-5 mb-1">
+        <div className={`flex items-center pb-5 mb-1 ${isSidebarOpen ? 'gap-[11px] px-1.5' : 'justify-center'}`}>
           <div className="w-[42px] h-[42px] shrink-0 rounded-[12px] bg-gradient-to-br from-[#11428E] to-[#1C5BC0] flex items-center justify-center text-white font-extrabold text-sm shadow-[0_6px_16px_rgba(17,66,142,0.34)]">GU</div>
-          <div className="leading-tight">
-            <div className="font-['Space_Grotesk',sans-serif] text-[18px] font-extrabold text-[var(--text-main)]">GURO</div>
-            <div className={`text-[12px] font-semibold ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--text-muted)]'}`}>
-              {isAdmin ? 'Admin Console' : 'Teacher Portal'}
+          {isSidebarOpen && (
+            <div className="leading-tight overflow-hidden">
+              <div className="font-['Space_Grotesk',sans-serif] text-[18px] font-extrabold text-[var(--text-main)]">GURO</div>
+              <div className={`text-[12px] font-semibold ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--text-muted)]'}`}>
+                {isAdmin ? 'Admin Console' : 'Teacher Portal'}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
           {/* ── Admin nav ── */}
           {isAdmin && (
             <>
-              <button onClick={() => setActiveTab('dashboard')} className={navBtn(activeTab === 'dashboard')}>
-                <LayoutDashboard size={18} className="shrink-0" />
-                <span>Main Dashboard</span>
-              </button>
-              <button onClick={() => setActiveTab('lesson-builder')} className={navBtn(activeTab === 'lesson-builder')}>
-                <Zap size={18} className="shrink-0" />
-                <span>Lesson Ingestor</span>
-              </button>
+              {isSidebarOpen ? (
+                <>
+                  <button onClick={() => setActiveTab('dashboard')} className={navBtn(activeTab === 'dashboard')} aria-current={activeTab === 'dashboard' ? 'page' : undefined}>
+                    <LayoutDashboard size={18} className="shrink-0" /><span>Main Dashboard</span>
+                  </button>
+                  <button onClick={() => setActiveTab('lesson-builder')} className={navBtn(activeTab === 'lesson-builder')} aria-current={activeTab === 'lesson-builder' ? 'page' : undefined}>
+                    <Zap size={18} className="shrink-0" /><span>Lesson Ingestor</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setActiveTab('dashboard')} className={navBtnIcon(activeTab === 'dashboard')} title="Main Dashboard" aria-label="Main Dashboard"><LayoutDashboard size={18} /></button>
+                  <button onClick={() => setActiveTab('lesson-builder')} className={navBtnIcon(activeTab === 'lesson-builder')} title="Lesson Ingestor" aria-label="Lesson Ingestor"><Zap size={18} /></button>
+                </>
+              )}
             </>
           )}
 
           {/* ── Teacher / builder nav ── */}
-          {!isAdmin && (!currentUser || currentUser.role === 'lesson-builder' || currentUser.role === 'developer' || currentUser.role === 'teacher') && (
-            <button onClick={() => setActiveTab('dashboard')} className={navBtn(activeTab === 'dashboard')}>
-              <LayoutDashboard size={18} className="shrink-0" />
-              <span>System Dashboard</span>
-            </button>
+          {isBuilderOrDev && (
+            isSidebarOpen ? (
+              <button onClick={() => setActiveTab('dashboard')} className={navBtn(activeTab === 'dashboard')} aria-current={activeTab === 'dashboard' ? 'page' : undefined}>
+                <LayoutDashboard size={18} className="shrink-0" /><span>System Dashboard</span>
+              </button>
+            ) : (
+              <button onClick={() => setActiveTab('dashboard')} className={navBtnIcon(activeTab === 'dashboard')} title="System Dashboard" aria-label="System Dashboard"><LayoutDashboard size={18} /></button>
+            )
           )}
 
-          {!isAdmin && (!currentUser || currentUser.role === 'teacher') && (
-            <div className="flex flex-col">
-              <div className="px-[14px] pt-4 pb-1.5 text-[10.5px] font-extrabold tracking-[0.1em] uppercase text-[var(--text-dark)]">
-                Teacher Console
+          {isTeacher && (
+            isSidebarOpen ? (
+              <div className="flex flex-col">
+                <div className="px-[14px] pt-4 pb-1.5 text-[10.5px] font-extrabold tracking-[0.1em] uppercase text-[var(--text-dark)]">
+                  Teacher Console
+                </div>
+                <div className="flex flex-col gap-[3px] pl-2 border-l-[1.5px] border-[var(--border-color)] ml-[14px]">
+                  <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'analytics')} aria-current={activeTab === 'teacher' && activeSubTab === 'analytics' ? 'page' : undefined}>
+                    <TrendingUp size={17} className="shrink-0" /><span>Classroom Analytics</span>
+                  </button>
+                  <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('classroom-pairing'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'classroom-pairing')} aria-current={activeTab === 'teacher' && activeSubTab === 'classroom-pairing' ? 'page' : undefined}>
+                    <Key size={17} className="shrink-0" /><span>Classroom Setup</span>
+                  </button>
+                  <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('manual-lesson'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'manual-lesson')} aria-current={activeTab === 'teacher' && activeSubTab === 'manual-lesson' ? 'page' : undefined}>
+                    <PlusCircle size={17} className="shrink-0" /><span>Create Lesson Manually</span>
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-col gap-[3px] pl-2 border-l-[1.5px] border-[var(--border-color)] ml-[14px]">
-                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'analytics')}>
-                  <TrendingUp size={17} className="shrink-0" /><span>Classroom Analytics</span>
-                </button>
-                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('classroom-pairing'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'classroom-pairing')}>
-                  <Key size={17} className="shrink-0" /><span>Classroom Setup</span>
-                </button>
-                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('manual-lesson'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'manual-lesson')}>
-                  <PlusCircle size={17} className="shrink-0" /><span>Create Lesson Manually</span>
-                </button>
-              </div>
-            </div>
+            ) : (
+              <>
+                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'analytics')} title="Classroom Analytics" aria-label="Classroom Analytics"><TrendingUp size={18} /></button>
+                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('classroom-pairing'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'classroom-pairing')} title="Classroom Setup" aria-label="Classroom Setup"><Key size={18} /></button>
+                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('manual-lesson'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'manual-lesson')} title="Create Lesson Manually" aria-label="Create Lesson Manually"><PlusCircle size={18} /></button>
+              </>
+            )
           )}
 
-          {!isAdmin && (!currentUser || currentUser.role === 'parent') && (
-            <button onClick={() => setActiveTab('parent')} className={`flex items-center gap-3 border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-sm text-left transition-all duration-200 w-full ${activeTab === 'parent' ? 'bg-[#11428E]/10 text-[var(--text-main)] font-bold' : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-white/5'}`}>
-              <Users size={18} className="shrink-0" /><span>Parent Explorer</span>
-            </button>
+          {isParent && (
+            isSidebarOpen ? (
+              <button onClick={() => setActiveTab('parent')} className={navBtn(activeTab === 'parent')} aria-current={activeTab === 'parent' ? 'page' : undefined}>
+                <Users size={18} className="shrink-0" /><span>Parent Explorer</span>
+              </button>
+            ) : (
+              <button onClick={() => setActiveTab('parent')} className={navBtnIcon(activeTab === 'parent')} title="Parent Explorer" aria-label="Parent Explorer"><Users size={18} /></button>
+            )
           )}
 
-          {!isAdmin && (!currentUser || currentUser.role === 'lesson-builder' || currentUser.role === 'developer' || currentUser.role === 'teacher') && (
-            <button onClick={() => setActiveTab('lesson-builder')} className={navBtn(activeTab === 'lesson-builder')}>
-              <Zap size={18} className="shrink-0" /><span>Lesson Ingestor</span>
-            </button>
+          {isBuilderOrDev && (
+            isSidebarOpen ? (
+              <button onClick={() => setActiveTab('lesson-builder')} className={navBtn(activeTab === 'lesson-builder')} aria-current={activeTab === 'lesson-builder' ? 'page' : undefined}>
+                <Zap size={18} className="shrink-0" /><span>Lesson Ingestor</span>
+              </button>
+            ) : (
+              <button onClick={() => setActiveTab('lesson-builder')} className={navBtnIcon(activeTab === 'lesson-builder')} title="Lesson Ingestor" aria-label="Lesson Ingestor"><Zap size={18} /></button>
+            )
           )}
 
           <div className="flex-1" />
 
-          <button
-            onClick={() => currentUser ? setIsLogoutModalOpen(true) : handleExitToLanding()}
-            className="flex items-center gap-3 bg-[var(--danger)]/10 border border-[var(--danger)]/20 text-[var(--danger)] px-[14px] py-[10px] rounded-[11px] cursor-pointer font-semibold text-sm text-left transition-all duration-200 w-full mb-4 hover:bg-[var(--danger)]/20"
-          >
-            <LogOut size={18} className="shrink-0" />
-            <span>{currentUser ? 'Log Out' : 'Exit Workspace'}</span>
-          </button>
+          {isSidebarOpen ? (
+            <button
+              onClick={() => currentUser ? setIsLogoutModalOpen(true) : handleExitToLanding()}
+              className="flex items-center gap-3 bg-[var(--danger)]/10 border border-[var(--danger)]/20 text-[var(--danger)] px-[14px] py-[10px] rounded-[11px] cursor-pointer font-semibold text-sm text-left transition-all duration-200 w-full mb-4 hover:bg-[var(--danger)]/20"
+              aria-label={currentUser ? 'Log Out' : 'Exit Workspace'}
+            >
+              <LogOut size={18} className="shrink-0" />
+              <span>{currentUser ? 'Log Out' : 'Exit Workspace'}</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => currentUser ? setIsLogoutModalOpen(true) : handleExitToLanding()}
+              className="flex items-center justify-center bg-[var(--danger)]/10 border border-[var(--danger)]/20 text-[var(--danger)] p-[10px] rounded-[11px] cursor-pointer transition-all duration-200 w-full mb-4 hover:bg-[var(--danger)]/20"
+              aria-label={currentUser ? 'Log Out' : 'Exit Workspace'}
+              title={currentUser ? 'Log Out' : 'Exit Workspace'}
+            >
+              <LogOut size={18} />
+            </button>
+          )}
         </nav>
 
         {/* User footer */}
-        <div className="border-t border-[var(--border-color)] pt-[14px] flex items-center gap-[11px]">
-          <div className={`w-[38px] h-[38px] rounded-full border border-[var(--border-color)] flex items-center justify-center shrink-0 ${isAdmin ? 'bg-[#FBECEE]' : 'bg-[var(--bg-main)]'}`}>
-            {isAdmin
-              ? <Shield size={18} className="text-[#CE1126]" />
-              : <GraduationCap size={18} className="text-[var(--text-muted)]" />
-            }
+        {isSidebarOpen ? (
+          <div className="border-t border-[var(--border-color)] pt-[14px] flex items-center gap-[11px]">
+            <div className={`w-[38px] h-[38px] rounded-full border border-[var(--border-color)] flex items-center justify-center shrink-0 ${isAdmin ? 'bg-[#FBECEE]' : 'bg-[var(--bg-main)]'}`}>
+              {isAdmin ? <Shield size={18} className="text-[#CE1126]" /> : <GraduationCap size={18} className="text-[var(--text-muted)]" />}
+            </div>
+            <div className="flex flex-col flex-1 min-w-0 leading-[1.15]">
+              <span className="text-sm font-bold text-[var(--text-main)] truncate">
+                {currentUser ? currentUser.name : 'Guest Workspace'}
+              </span>
+              <span className={`text-[11.5px] font-semibold truncate ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--success)]'}`}>
+                {isAdmin ? 'ADMIN · Division Office' : currentUser ? `${currentUser.role.toUpperCase()} · Sync'd` : 'Local Session'}
+              </span>
+            </div>
+            <button
+              onClick={toggleTheme}
+              aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--bg-main)] active:scale-[0.93] shrink-0"
+            >
+              {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
           </div>
-          <div className="flex flex-col flex-1 min-w-0 leading-[1.15]">
-            <span className="text-sm font-bold text-[var(--text-main)] truncate">
-              {currentUser ? currentUser.name : 'Guest Workspace'}
-            </span>
-            <span className={`text-[11.5px] font-semibold truncate ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--success)]'}`}>
-              {isAdmin ? 'ADMIN · Division Office' : currentUser ? `${currentUser.role.toUpperCase()} · Sync'd` : 'Local Session'}
-            </span>
+        ) : (
+          <div className="border-t border-[var(--border-color)] pt-[14px] flex flex-col items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--bg-main)] active:scale-[0.93]"
+            >
+              {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
           </div>
-          <button
-            onClick={toggleTheme}
-            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--bg-main)] active:scale-[0.93] shrink-0"
-          >
-            {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
-        </div>
+        )}
       </aside>
 
       {/* Main Panel Content Area */}
       <main className="flex-1 flex flex-col h-full min-w-0">
         {/* Top Header */}
         <header className="h-[62px] border-b border-[var(--border-color)] flex justify-between items-center px-[30px] bg-[var(--bg-sidebar)]">
-          <div className="flex items-center gap-1.5 text-xs font-medium">
-            <span className="text-[var(--text-muted)] font-bold">{isAdmin ? 'GURO Admin' : 'GURO'}</span>
-            <span className="text-[var(--border-color)]">/</span>
-            {activeTab === 'teacher' ? (
-              <>
-                <span className="text-[var(--text-muted)]">Teacher Console</span>
-                <span className="text-[var(--border-color)]">/</span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleSidebar}
+              aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+              className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--bg-main)] active:scale-[0.93] shrink-0"
+            >
+              {isSidebarOpen ? <X size={15} /> : <Menu size={15} />}
+            </button>
+            <div className="flex items-center gap-1.5 text-xs font-medium">
+              <span className="text-[var(--text-muted)] font-bold">{isAdmin ? 'GURO Admin' : 'GURO'}</span>
+              <span className="text-[var(--border-color)]">/</span>
+              {activeTab === 'teacher' ? (
+                <>
+                  <span className="text-[var(--text-muted)]">Teacher Console</span>
+                  <span className="text-[var(--border-color)]">/</span>
+                  <span className="text-[var(--text-main)] font-bold">
+                    {activeSubTab === 'analytics' && 'Classroom Analytics'}
+                    {activeSubTab === 'classroom-pairing' && 'Classroom Setup'}
+                    {activeSubTab === 'manual-lesson' && 'Create Lesson Manually'}
+                  </span>
+                </>
+              ) : (
                 <span className="text-[var(--text-main)] font-bold">
-                  {activeSubTab === 'analytics' && 'Classroom Analytics'}
-                  {activeSubTab === 'classroom-pairing' && 'Classroom Setup'}
-                  {activeSubTab === 'manual-lesson' && 'Create Lesson Manually'}
+                  {activeTab === 'parent' ? 'Parent Explorer'
+                    : activeTab === 'dashboard' ? (isAdmin ? 'Main Dashboard' : 'System Dashboard')
+                    : 'Lesson Ingestor'}
                 </span>
-              </>
-            ) : (
-              <span className="text-[var(--text-main)] font-bold">
-                {activeTab === 'parent' ? 'Parent Explorer'
-                  : activeTab === 'dashboard' ? (isAdmin ? 'Main Dashboard' : 'System Dashboard')
-                  : 'Lesson Ingestor'}
-              </span>
-            )}
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
             {activeTab === 'teacher' && activeSubTab === 'analytics' && (
               <button
                 onClick={() => fetchLogs(false)}
+                aria-label="Refresh sync logs"
                 className="bg-white/4 border border-[var(--border-color)] text-[var(--text-main)] px-3 py-1.5 rounded-md cursor-pointer text-xs font-semibold transition-all duration-200 hover:bg-white/10 flex items-center gap-1.5"
               >
                 <RotateCw size={13} /><span>Refresh Logs</span>
               </button>
             )}
             <div className="flex items-center gap-1.5 bg-[#10B981]/8 border border-[#10B981]/20 px-2.5 py-1 rounded-full">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]" aria-hidden="true"></div>
               <span className="text-[11px] font-bold text-[#10B981] tracking-[0.5px]">Sync Server Active</span>
             </div>
           </div>
@@ -385,10 +477,18 @@ function App() {
         <LiveActivityTicker events={progressLogs} />
 
         {/* View Component Wrapper */}
-        <div className="flex-1 overflow-y-auto p-[28px_30px_40px]">
-          <Suspense fallback={<div className="p-6 text-[#94a3b8]">Loading Workspace...</div>}>
-            {renderContent()}
-          </Suspense>
+        <div key={activeTab} className="flex-1 overflow-y-auto p-[28px_30px_40px] fade-in">
+          <ErrorBoundary>
+            <Suspense fallback={
+              <div className="flex flex-col gap-5">
+                <SkeletonStatCards count={4} />
+                <SkeletonCard rows={4} />
+                <SkeletonTable rows={5} cols={5} />
+              </div>
+            }>
+              {renderContent()}
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </main>
       <LogoutConfirmModal

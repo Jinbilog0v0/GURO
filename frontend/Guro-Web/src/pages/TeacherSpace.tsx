@@ -3,7 +3,9 @@ import { MasteryMatrix } from '../components/teacher/MasteryMatrix';
 import { StudentTile } from '../components/teacher/StudentTile';
 import { DiagnosticAlerts } from '../components/teacher/DiagnosticAlerts';
 import { ManualLessonBuilder } from '../components/teacher/ManualLessonBuilder';
+import { SkeletonStatCards, SkeletonCard, SkeletonTable } from '../components/shared/SkeletonLoader';
 import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock } from 'lucide-react';
+import { toast } from '../utils/toast';
 
 interface SyncedEvent {
   studentId: string;
@@ -391,7 +393,7 @@ export function TeacherSpace({
                 disabled={isCreatingClass}
                 onClick={async () => {
                   if (!setupName.trim()) {
-                    alert('Please enter your name.');
+                    toast.error('Please enter your name.');
                     return;
                   }
                   setIsCreatingClass(true);
@@ -430,7 +432,7 @@ export function TeacherSpace({
                       throw new Error('Failed to create classroom.');
                     }
                   } catch (e: any) {
-                    alert(e.message || 'Error occurred.');
+                    toast.error(e.message || 'Error occurred.');
                   } finally {
                     setIsCreatingClass(false);
                   }
@@ -579,7 +581,7 @@ export function TeacherSpace({
                         disabled={isClaiming || allClaimed || newClaims.length === 0}
                         onClick={async () => {
                           if (newClaims.length === 0) {
-                            alert('Please select at least one new module to claim.');
+                            toast.error('Please select at least one new module to claim.');
                             return;
                           }
                           setIsClaiming(true);
@@ -594,7 +596,7 @@ export function TeacherSpace({
                             });
                             if (res.ok) {
                               const data = await res.json();
-                              alert(`Successfully claimed ${newClaims.length} curriculum template(s)!`);
+                              toast.success(`Successfully claimed ${newClaims.length} curriculum template(s)!`);
                               setClassroomData(prev => prev ? {
                                 ...prev,
                                 customItemBank: data.customItemBank
@@ -603,7 +605,7 @@ export function TeacherSpace({
                               throw new Error('Failed to claim template.');
                             }
                           } catch (e: any) {
-                            alert(e.message || 'Error claiming template.');
+                            toast.error(e.message || 'Error claiming template.');
                           } finally {
                             setIsClaiming(false);
                           }
@@ -659,22 +661,34 @@ export function TeacherSpace({
               </span>
             </div>
           )}
-          {/* Analytics Summary Row */}
-          <div className="grid grid-cols-4 gap-4">
-            <StatCard label="Total Sync Reports" value={progressLogs.length} accentColor="#11428E" />
-            <StatCard label="Filtered Logs" value={filteredLogs.length} accentColor="#CE1126" />
-            <StatCard label="Classroom Accuracy" value={`${getAverageAccuracy()}%`} accentColor="#16A34A" valueColor="#16A34A" />
-            <StatCard label="Active Devices" value={uniqueStudents.length} accentColor="#11428E" valueColor="#11428E" />
-          </div>
+          {loading && progressLogs.length === 0 ? (
+            <div className="flex flex-col gap-5">
+              <SkeletonStatCards count={4} />
+              <SkeletonCard rows={3} />
+              <SkeletonTable rows={4} cols={5} />
+            </div>
+          ) : (
+            <>
+              {/* Analytics Summary Row */}
+              <div className="grid grid-cols-4 gap-4">
+                <StatCard label="Total Sync Reports" value={progressLogs.length} accentColor="#11428E" />
+                <StatCard label="Filtered Logs" value={filteredLogs.length} accentColor="#CE1126" />
+                <StatCard label="Classroom Accuracy" value={`${getAverageAccuracy()}%`} accentColor="#16A34A" valueColor="#16A34A" />
+                <StatCard label="Active Devices" value={uniqueStudents.length} accentColor="#11428E" valueColor="#11428E" />
+              </div>
 
-          {/* Diagnostics Alerts Row */}
-          {!loading && progressLogs.length > 0 && (
-            <DiagnosticAlerts progressLogs={progressLogs} />
-          )}
+              {/* Diagnostics Alerts Row */}
+              {progressLogs.length > 0 && (
+                <DiagnosticAlerts progressLogs={progressLogs} />
+              )}
 
-          {/* Classroom Mastery Matrix */}
-          {!loading && progressLogs.length > 0 && (
-            <MasteryMatrix progressLogs={progressLogs} lastUpdatedCell={lastUpdatedCell} />
+              {/* Classroom Mastery Matrix */}
+              <MasteryMatrix
+                progressLogs={progressLogs}
+                lastUpdatedCell={lastUpdatedCell}
+                onGoToClassroomSetup={() => setActiveSubTab('classroom-pairing')}
+              />
+            </>
           )}
 
           {/* Interactive Student profile cards grid */}

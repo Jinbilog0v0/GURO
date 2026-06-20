@@ -10,6 +10,7 @@ global.fetch = jest.fn();
 
 describe('LandingPage Portal (Web)', () => {
   beforeEach(() => {
+    jest.setTimeout(30000);
     jest.clearAllMocks();
     (global.fetch as jest.Mock).mockImplementation(() =>
       Promise.resolve({

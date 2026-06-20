@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { DiagnosticAlerts } from './DiagnosticAlerts';
 import '@testing-library/jest-dom';
 
@@ -40,12 +40,12 @@ describe('DiagnosticAlerts Component', () => {
     render(<DiagnosticAlerts progressLogs={mockLogs} />);
 
     // Adjectives average is 37.5% -> rounded to 38%
-    expect(screen.getByText('Struggling Topics (Class Average < 65%)')).toBeInTheDocument();
+    expect(screen.getByText('Struggling Topics (avg < 65%)')).toBeInTheDocument();
     expect(screen.getByText('Adjectives (Grade 5 English)')).toBeInTheDocument();
     expect(screen.getByText('38%')).toBeInTheDocument();
 
     // Recommendation card should target Adjectives
-    expect(screen.getByText('Targeted Lesson Boost: Adjectives')).toBeInTheDocument();
+    expect(screen.getByText('Targeted Boost: Adjectives')).toBeInTheDocument();
   });
 
   test('renders stable message if no topic averages are below 65%', () => {
@@ -63,6 +63,10 @@ describe('DiagnosticAlerts Component', () => {
     ];
 
     render(<DiagnosticAlerts progressLogs={highScoresOnly} />);
+
+    // Open the collapsed panel
+    const toggleBtn = screen.getByRole('button', { name: /Diagnostic Alerts/i });
+    fireEvent.click(toggleBtn);
 
     expect(screen.getByText('No topic averages fall below mastery thresholds currently.')).toBeInTheDocument();
     expect(screen.getByText('Keep building standard lessons!')).toBeInTheDocument();
