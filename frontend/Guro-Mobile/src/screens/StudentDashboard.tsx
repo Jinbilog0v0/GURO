@@ -15,12 +15,35 @@ import {
   Alert,
   Platform,
   BackHandler,
+  Animated,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppStore } from '../store/useAppStore';
 import { getParentAccessCode } from '../utils/security';
+import {
+  Hand,
+  Settings,
+  School,
+  Link,
+  Users,
+  Rocket,
+  Hourglass,
+  Trophy,
+  Flame,
+  Footprints,
+  Award,
+  Calculator,
+  BookOpen,
+  Globe,
+  Lock,
+  Inbox,
+  LogOut,
+  Menu,
+  X,
+} from 'lucide-react-native';
 
 // ── Design System ──────────────────────────────────────────────────────────────
 import { Colors } from '../theme/colors';
@@ -44,11 +67,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'StudentDashboard'>;
 const GRADES = [4, 5, 6] as const;
 type Grade = (typeof GRADES)[number];
 
-const SUBJECTS: { key: string; emoji: string }[] = [
-  { key: 'Mathematics', emoji: '📐' },
-  { key: 'English', emoji: '📖' },
-  { key: 'Science', emoji: '🔬' },
-  { key: 'Filipino', emoji: '🏝️' },
+const SUBJECTS = [
+  { key: 'Mathematics', icon: Calculator },
+  { key: 'English', icon: BookOpen },
 ];
 
 type PinTarget = 'teacher' | 'parent' | 'parent-setup';
@@ -73,6 +94,15 @@ export function StudentDashboard({ navigation }: Props) {
   const logoutFromCloud = useAppStore((state) => state.logoutFromCloud);
   const appMode = useAppStore((state) => state.appMode);
   const studentId = useAppStore((state) => state.studentId);
+  const avatarEmoji = useAppStore((state) => state.avatarEmoji);
+  const setAvatarEmoji = useAppStore((state) => state.setAvatarEmoji);
+  const soundEffectsEnabled = useAppStore((state) => state.soundEffectsEnabled);
+  const setSoundEffectsEnabled = useAppStore((state) => state.setSoundEffectsEnabled);
+  const speechRate = useAppStore((state) => state.speechRate);
+  const setSpeechRate = useAppStore((state) => state.setSpeechRate);
+  const colorTheme = useAppStore((state) => state.colorTheme);
+  const setColorTheme = useAppStore((state) => state.setColorTheme);
+  const logs = useAppStore((state) => state.logs);
 
   // ── Selection state ──────────────────────────────────────────────────────
   const [selectedGrade, setSelectedGrade] = useState<Grade>(4);
@@ -87,8 +117,19 @@ export function StudentDashboard({ navigation }: Props) {
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [pinTarget, setPinTarget] = useState<PinTarget>('teacher');
 
-  // ── Settings modal state ──────────────────────────────────────────────────
-  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+
+
+  // ── Drawer state & animation ────────────────────────────────────────────────
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [slideAnim] = useState(() => new Animated.Value(-280));
+
+  useEffect(() => {
+    Animated.timing(slideAnim, {
+      toValue: drawerOpen ? 0 : -280,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+  }, [drawerOpen, slideAnim]);
 
   // ── Active Screen Time Tracking ──────────────────────────────────────────
   useEffect(() => {
@@ -139,16 +180,16 @@ export function StudentDashboard({ navigation }: Props) {
 
   const topics = getTopicsList();
 
-  const getBadgeInfo = (key: string): { label: string; icon: string } => {
-    const map: Record<string, { label: string; icon: string }> = {
-      first_step: { label: 'First Step', icon: '👣' },
-      perfect_score: { label: 'Perfect 100%', icon: '💯' },
-      math_wizard: { label: 'Math Wizard', icon: '📐' },
-      english_champion: { label: 'English Champ', icon: '📖' },
-      streak_starter: { label: 'Streak Starter', icon: '🥉' },
-      streak_master: { label: 'Streak Master', icon: '🥇' },
+  const getBadgeInfo = (key: string): { label: string; icon: React.ReactNode } => {
+    const map: Record<string, { label: string; icon: React.ReactNode }> = {
+      first_step: { label: 'First Step', icon: <Footprints size={16} color={Colors.accentPrimary} /> },
+      perfect_score: { label: 'Perfect 100%', icon: <Award size={16} color={Colors.accentSecondary} /> },
+      math_wizard: { label: 'Math Wizard', icon: <Calculator size={16} color={Colors.accentPrimary} /> },
+      english_champion: { label: 'English Champ', icon: <BookOpen size={16} color={Colors.accentPrimary} /> },
+      streak_starter: { label: 'Streak Starter', icon: <Flame size={16} color={Colors.accentSecondary} /> },
+      streak_master: { label: 'Streak Master', icon: <Flame size={16} color={Colors.accentPrimary} /> },
     };
-    return map[key] || { label: 'Achievement', icon: '🏆' };
+    return map[key] || { label: 'Achievement', icon: <Trophy size={16} color={Colors.accentSecondary} /> };
   };
 
   // ─── PIN handlers ──────────────────────────────────────────────────────────
@@ -211,7 +252,7 @@ export function StudentDashboard({ navigation }: Props) {
         setClassroomId(code);
         setClassModalVisible(false);
         setClassCodeInput('');
-        Alert.alert('Linked! 🎉', `Classroom "${code}" connected successfully.`);
+        Alert.alert('Linked!', `Classroom "${code}" connected successfully.`);
       } else {
         Alert.alert('Failed', 'Could not connect. Check the code and try again.');
       }
@@ -236,19 +277,21 @@ export function StudentDashboard({ navigation }: Props) {
     ]);
   };
 
+
+
   // ─── Topic press ───────────────────────────────────────────────────────────
 
   const handleTopicPress = (topic: string) => {
     if (isTimeLimitExceeded) {
       Alert.alert(
-        "Time's Up! ⏰",
+        "Time's Up!",
         "You've reached your daily screen time limit. Come back tomorrow!",
       );
       return;
     }
     if (isEnglishLocked) {
       Alert.alert(
-        'Keep Practising Maths! 📐',
+        'Keep Practising Maths!',
         `Score at least 80% in Grade ${selectedGrade} Mathematics to unlock English. Current score: ${mathScore}%`,
       );
       return;
@@ -264,15 +307,15 @@ export function StudentDashboard({ navigation }: Props) {
 
   const pinConfig: Record<PinTarget, { title: string; subtitle: string }> = {
     teacher: {
-      title: '👩‍🏫 Teacher Access',
+      title: 'Teacher Access',
       subtitle: 'Enter the teacher PIN to continue.',
     },
     parent: {
-      title: '👨‍👩‍👧 Parent Portal',
+      title: 'Parent Portal',
       subtitle: 'Enter your parent PIN to continue.',
     },
     'parent-setup': {
-      title: '🔐 Create Parent PIN',
+      title: 'Create Parent PIN',
       subtitle: 'Set a 4-digit PIN to protect the parent portal.',
     },
   };
@@ -281,58 +324,184 @@ export function StudentDashboard({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.screen}>
+      {/* ── Menu Drawer Overlay ─────────────────────────────────────────────── */}
+      {drawerOpen && (
+        <TouchableWithoutFeedback onPress={() => setDrawerOpen(false)}>
+          <View style={styles.drawerOverlay} />
+        </TouchableWithoutFeedback>
+      )}
+
+      {/* ── Menu Drawer Panel ────────────────────────────────────────────────── */}
+      <Animated.View
+        style={[
+          styles.drawerContainer,
+          {
+            transform: [{ translateX: slideAnim }],
+          },
+        ]}
+      >
+        <View style={styles.drawerHeader}>
+          <Text style={styles.drawerBrandText}>GURO Kid Zone</Text>
+          <TouchableOpacity
+            onPress={() => setDrawerOpen(false)}
+            style={styles.drawerCloseBtn}
+            accessibilityLabel="Close Menu"
+          >
+            <X size={24} color={Colors.textMain} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.drawerContent} bounces={false}>
+          {/* Student Profile Info */}
+          <View style={styles.drawerProfileCard}>
+            <Text style={styles.drawerProfileTitle}>Student Explorer</Text>
+            <Text style={styles.drawerProfileName}>{avatarEmoji} {guestName ?? currentUser?.name ?? 'Explorer'}</Text>
+            
+            <View style={styles.drawerStatsContainer}>
+              <View style={styles.drawerStatBadge}>
+                <Trophy size={14} color={Colors.accentSecondary} />
+                <Text style={styles.drawerStatText}>{studentProgress.length} Lessons</Text>
+              </View>
+              {(streakCount || 0) > 0 && (
+                <View style={styles.drawerStatBadge}>
+                  <Flame size={14} color={Colors.accentSecondary} />
+                  <Text style={styles.drawerStatText}>{streakCount}d Streak</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.drawerMenuDivider} />
+
+          {/* Classroom Connection Option */}
+          <TouchableOpacity
+            style={styles.drawerMenuItem}
+            onPress={() => {
+              setDrawerOpen(false);
+              if (classroomId) {
+                handleUnlinkClassroom();
+              } else {
+                setClassModalVisible(true);
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            {classroomId ? (
+              <School size={20} color={Colors.accentPrimary} />
+            ) : (
+              <Link size={20} color={Colors.textMain} />
+            )}
+            <Text style={styles.drawerMenuItemText}>
+              {classroomId ? `Classroom: ${classroomId}` : 'Link Classroom'}
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.drawerMenuDivider} />
+
+          {/* Adult Portals Section */}
+          <View style={{ paddingHorizontal: Spacing.lg, paddingVertical: Spacing.xs }}>
+            <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 10, color: Colors.textDark, textTransform: 'uppercase', letterSpacing: 1.2 }}>
+              Adult Portals
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.drawerMenuItem}
+            onPress={() => {
+              setDrawerOpen(false);
+              openParentPin();
+            }}
+            activeOpacity={0.7}
+          >
+            <Users size={20} color={Colors.textMain} />
+            <Text style={styles.drawerMenuItemText}>Parent Portal</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.drawerMenuItem}
+            onLongPress={() => {
+              setDrawerOpen(false);
+              openTeacherPin();
+            }}
+            delayLongPress={600}
+            activeOpacity={0.7}
+          >
+            <Rocket size={20} color={Colors.accentPrimary} />
+            <Text style={styles.drawerMenuItemText}>Teacher Console (Hold)</Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Drawer Bottom Footer - Pinned Settings (top) and Logout (below) if online */}
+        <View style={styles.drawerFooter}>
+          <TouchableOpacity
+            style={styles.drawerFooterItem}
+            onPress={() => {
+              setDrawerOpen(false);
+              navigation.navigate('Settings');
+            }}
+            activeOpacity={0.7}
+          >
+            <Settings size={18} color={Colors.textMuted} />
+            <Text style={styles.drawerFooterItemText}>Settings & Profile</Text>
+          </TouchableOpacity>
+
+          {appMode !== 'offline' && (
+            <>
+              <View style={styles.drawerFooterDivider} />
+
+              <TouchableOpacity
+                style={styles.drawerFooterItem}
+                onPress={() => {
+                  setDrawerOpen(false);
+                  Alert.alert(
+                    'Confirm Logout',
+                    'Are you sure you want to log out? You will need to sign in again to access your session.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Logout',
+                        style: 'destructive',
+                        onPress: () => {
+                          logoutFromCloud();
+                          navigation.replace('Login');
+                        },
+                      },
+                    ]
+                  );
+                }}
+                activeOpacity={0.7}
+              >
+                <LogOut size={18} color={Colors.dangerText} />
+                <Text style={[styles.drawerFooterItemText, { color: Colors.dangerText }]}>Log Out</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </Animated.View>
+
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <View style={styles.headerBar}>
+        <TouchableOpacity
+          onPress={() => setDrawerOpen(true)}
+          style={styles.menuBtn}
+          activeOpacity={0.75}
+          accessibilityLabel="Open menu drawer"
+        >
+          <Menu size={24} color={Colors.textMain} />
+        </TouchableOpacity>
+
         <View style={Layout.flex1}>
-          <Text style={styles.welcomeText}>
-            Hello, {guestName ?? currentUser?.name ?? 'Explorer'}! 👋
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flexWrap: 'wrap' }}>
+            <Text style={styles.welcomeText}>
+              Hello, {guestName ?? currentUser?.name ?? 'Explorer'}!
+            </Text>
+            <Hand size={18} color={Colors.accentPrimary} />
+          </View>
           <Text style={styles.subWelcomeText}>Pick an activity below to start learning.</Text>
         </View>
 
         <View style={styles.headerRight}>
           <SyncBadge />
-
-          {/* Settings & Profile */}
-          <TouchableOpacity
-            onPress={() => setSettingsModalVisible(true)}
-            style={styles.headerIconBtn}
-            activeOpacity={0.75}
-            accessibilityLabel="Settings and Profile"
-          >
-            <Text style={styles.headerIcon}>⚙️</Text>
-          </TouchableOpacity>
-
-          {/* Classroom link / unlink */}
-          <TouchableOpacity
-            onPress={() => (classroomId ? handleUnlinkClassroom() : setClassModalVisible(true))}
-            style={styles.headerIconBtn}
-            activeOpacity={0.75}
-            accessibilityLabel="Classroom"
-          >
-            <Text style={styles.headerIcon}>{classroomId ? '🏫' : '🔗'}</Text>
-          </TouchableOpacity>
-
-          {/* Parent portal */}
-          <TouchableOpacity
-            onPress={openParentPin}
-            style={styles.headerIconBtn}
-            activeOpacity={0.75}
-            accessibilityLabel="Parent portal"
-          >
-            <Text style={styles.headerIcon}>👨‍👩‍👧</Text>
-          </TouchableOpacity>
-
-          {/* Rocket avatar — long-press opens teacher PIN */}
-          <TouchableOpacity
-            onLongPress={openTeacherPin}
-            delayLongPress={600}
-            style={styles.avatarBtn}
-            activeOpacity={0.8}
-            accessibilityLabel="Teacher portal (long press)"
-          >
-            <Text style={styles.avatarEmoji}>🚀</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -343,8 +512,9 @@ export function StudentDashboard({ navigation }: Props) {
         {/* ── Time-limit banner ─────────────────────────────────────────────── */}
         {isTimeLimitExceeded && (
           <GlassCard style={styles.timeBanner} padding={Spacing.md}>
-            <View style={[Badges.base, Badges.danger, styles.bannerBadge]}>
-              <Text style={[Badges.text, Badges.dangerText]}>⏰ Time Limit Reached</Text>
+            <View style={[Badges.base, Badges.danger, styles.bannerBadge, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+              <Hourglass size={12} color={Colors.dangerText} />
+              <Text style={[Badges.text, Badges.dangerText]}>Time Limit Reached</Text>
             </View>
             <Text style={styles.timeBannerText}>
               You've used {Math.round(dailyMinutesUsed)} / {parentalControls.dailyTimeLimit} min
@@ -356,19 +526,23 @@ export function StudentDashboard({ navigation }: Props) {
         {/* ── Badges & Streak Panel ─────────────────────────────────────────── */}
         <GlassCard padding={Spacing.md} style={{ gap: Spacing.sm }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
-              🏆 My Achievements
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Trophy size={18} color={Colors.accentSecondary} />
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
+                My Achievements
+              </Text>
+            </View>
             {(streakCount || 0) > 0 && (
-              <View style={[Badges.base, Badges.indigo]}>
-                <Text style={[Badges.text, Badges.indigoText]}>🔥 {streakCount} Day Streak</Text>
+              <View style={[Badges.base, Badges.indigo, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                <Flame size={12} color={Colors.indigoText} />
+                <Text style={[Badges.text, Badges.indigoText]}>{streakCount} Day Streak</Text>
               </View>
             )}
           </View>
           <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', marginTop: Spacing.xs }}>
             {(!unlockedBadges || unlockedBadges.length === 0) ? (
               <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, fontStyle: 'italic' }}>
-                No badges unlocked yet. Finish quizzes with perfect scores to earn them! 🌟
+                No badges unlocked yet. Finish quizzes with perfect scores to earn them!
               </Text>
             ) : (
               unlockedBadges.map((badgeKey) => {
@@ -388,7 +562,7 @@ export function StudentDashboard({ navigation }: Props) {
                       gap: Spacing.xs,
                     }}
                   >
-                    <Text style={{ fontSize: 16 }}>{badgeInfo.icon}</Text>
+                    {badgeInfo.icon}
                     <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMain }}>
                       {badgeInfo.label}
                     </Text>
@@ -427,7 +601,7 @@ export function StudentDashboard({ navigation }: Props) {
         <View style={styles.section}>
           <SectionHeader title="Subject" subtitle="Pick what you'd like to practise today." />
           <View style={styles.subjectGrid}>
-            {SUBJECTS.map(({ key, emoji }) => {
+            {SUBJECTS.map(({ key, icon: IconComponent }) => {
               const active = key === selectedSubject;
               return (
                 <GlassCard
@@ -443,7 +617,7 @@ export function StudentDashboard({ navigation }: Props) {
                     accessibilityLabel={key}
                     accessibilityState={{ selected: active }}
                   >
-                    <Text style={styles.subjectEmoji}>{emoji}</Text>
+                    <IconComponent size={28} color={active ? Colors.accentPrimary : Colors.textMuted} />
                     <Text style={[styles.subjectLabel, active && styles.subjectLabelActive]}>
                       {key}
                     </Text>
@@ -457,8 +631,9 @@ export function StudentDashboard({ navigation }: Props) {
         {/* ── English-locked warning ────────────────────────────────────────── */}
         {isEnglishLocked && (
           <GlassCard style={styles.lockBanner} padding={Spacing.md}>
-            <View style={[Badges.base, Badges.warning, styles.bannerBadge]}>
-              <Text style={[Badges.text, Badges.warningText]}>🔒 Locked</Text>
+            <View style={[Badges.base, Badges.warning, styles.bannerBadge, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+              <Lock size={12} color={Colors.warningText} />
+              <Text style={[Badges.text, Badges.warningText]}>Locked</Text>
             </View>
             <Text style={styles.lockBannerText}>
               Score 80%+ in Grade {selectedGrade} Mathematics to unlock English.{'\n'}
@@ -476,7 +651,7 @@ export function StudentDashboard({ navigation }: Props) {
 
           {topics.length === 0 ? (
             <GlassCard variant="subtle" padding={Spacing.xl} style={styles.emptyCard}>
-              <Text style={styles.emptyIcon}>📭</Text>
+              <Inbox size={40} color={Colors.textMuted} />
               <Text style={styles.emptyTitle}>No Topics Yet</Text>
               <Text style={styles.emptySubtitle}>
                 {classroomId
@@ -518,62 +693,7 @@ export function StudentDashboard({ navigation }: Props) {
         <View style={{ height: Spacing['3xl'] }} />
       </ScrollView>
 
-      {/* ── Settings & Profile Modal ───────────────────────────────────────────── */}
-      {settingsModalVisible && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalWrapper}>
-            <GlassCard padding={Spacing['2xl']} style={styles.classModal}>
-              <SectionHeader
-                title="⚙️ Settings & Profile"
-                subtitle="View your profile and app settings"
-              />
 
-              <View style={styles.profileBox}>
-                <Text style={styles.profileLabel}>STUDENT EXPLORER</Text>
-                <Text style={styles.profileName}>{guestName ?? currentUser?.name ?? 'Explorer'}</Text>
-                {currentUser && <Text style={styles.profileEmail}>{currentUser.email}</Text>}
-              </View>
-
-              <View style={styles.statsBox}>
-                <Text style={styles.statsLabel}>🎯 Telemetry Stats:</Text>
-                <Text style={styles.statsText}>Lessons Completed: {studentProgress.length}</Text>
-                <Text style={styles.statsText}>Current Streak: {streakCount ?? 0} days</Text>
-                <Text style={styles.statsText}>App Mode: {appMode === 'online' ? '🌐 Connected' : '🔌 Offline (Local)'}</Text>
-                <Text style={styles.statsText}>🔑 Parent Access Code: {getParentAccessCode(studentId)}</Text>
-              </View>
-
-              <PrimaryButton
-                label="Close Settings"
-                onPress={() => setSettingsModalVisible(false)}
-                style={styles.classBtn}
-              />
-
-              <DangerButton
-                label="🚪 Log Out / Exit Portal"
-                onPress={() => {
-                  Alert.alert(
-                    'Confirm Logout',
-                    'Are you sure you want to log out? You will need to sign in again to access your session.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Logout',
-                        style: 'destructive',
-                        onPress: () => {
-                          setSettingsModalVisible(false);
-                          logoutFromCloud();
-                          navigation.replace('Login');
-                        },
-                      },
-                    ]
-                  );
-                }}
-                style={styles.classBtn}
-              />
-            </GlassCard>
-          </View>
-        </View>
-      )}
 
       {/* ── PIN Modal ─────────────────────────────────────────────────────────── */}
       <PinPad
@@ -590,7 +710,12 @@ export function StudentDashboard({ navigation }: Props) {
           <View style={styles.modalWrapper}>
             <GlassCard padding={Spacing['2xl']} style={styles.classModal}>
               <SectionHeader
-                title="🏫 Link Classroom"
+                title={
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                    <School size={20} color={Colors.accentPrimary} />
+                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Link Classroom</Text>
+                  </View>
+                }
                 subtitle="Enter the invite code your teacher shared."
               />
 

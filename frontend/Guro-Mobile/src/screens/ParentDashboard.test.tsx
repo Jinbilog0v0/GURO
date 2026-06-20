@@ -89,7 +89,7 @@ describe('ParentDashboard', () => {
 
     // Find the switches
     const switches = root.root.findAllByType('RCTSwitch');
-    expect(switches.length).toBeGreaterThanOrEqual(2);
+    expect(switches.length).toBeGreaterThanOrEqual(1);
 
     // Toggle the first switch (mathBeforeEnglish)
     act(() => {

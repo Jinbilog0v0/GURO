@@ -18,6 +18,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppStore, Question } from '../store/useAppStore';
 import { shuffle } from '../utils/engine';
+import { Trophy, Square, Volume2, Check, X, Inbox } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 
 // ── Design System ──────────────────────────────────────────────────────────────
@@ -39,14 +40,6 @@ export function AssessmentScreen({ route, navigation }: Props) {
   const itemBank = useAppStore((state) => state.itemBank);
   const addLog = useAppStore((state) => state.addLog);
   const recordProgress = useAppStore((state) => state.recordProgress);
-  const forcedBilingual = useAppStore(
-    (state) => state.parentalControls.forcedBilingual,
-  );
-
-  // ── Feedback language state ────────────────────────────────────────────────
-  const [feedbackLang, setFeedbackLang] = useState<'en' | 'fil'>(
-    forcedBilingual ? 'fil' : 'en',
-  );
 
   // ── Active-minutes tracker ─────────────────────────────────────────────────
   useEffect(() => {
@@ -105,7 +98,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
       <SafeAreaView style={styles.screen}>
         <View style={styles.centeredContainer}>
           <GlassCard style={styles.errorCard}>
-            <Text style={styles.errorEmoji}>📭</Text>
+            <Inbox size={32} color="#94A3B8" style={{ marginBottom: 12, alignSelf: 'center' }} />
             <Text style={styles.errorTitle}>No Questions Found</Text>
             <Text style={styles.errorBody}>
               There are no questions available for{' '}
@@ -151,8 +144,10 @@ export function AssessmentScreen({ route, navigation }: Props) {
       const optionsText = currentQuestion.options
         .map((opt, idx) => `Option ${String.fromCharCode(65 + idx)}: ${opt}`)
         .join('. ');
-      const textToSpeak = `${currentQuestion.questionText}. ${optionsText}`;
+      const textToSpeak = `${currentQuestion.questionText}. ${optionsText}`.replace(/_+/g, ' blank ');
+      const rate = useAppStore.getState().speechRate || 1.0;
       Speech.speak(textToSpeak, {
+        rate,
         onDone: () => setIsSpeaking(false),
         onError: () => setIsSpeaking(false),
         onStopped: () => setIsSpeaking(false),
@@ -202,7 +197,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
           showsVerticalScrollIndicator={false}
         >
           <GlassCard style={styles.finishedCard}>
-            <Text style={styles.trophyEmoji}>🏆</Text>
+            <Trophy size={48} color="#EAB308" style={{ marginBottom: 12, alignSelf: 'center' }} />
 
             <Badge
               label={passed ? 'Passed' : 'Keep Practicing'}
@@ -286,9 +281,9 @@ export function AssessmentScreen({ route, navigation }: Props) {
 
   // ── Feedback text ──────────────────────────────────────────────────────────
   const feedbackText =
-    feedbackLang === 'fil'
-      ? currentQuestion.feedback.fil
-      : currentQuestion.feedback.en;
+    typeof currentQuestion?.feedback === 'object' && currentQuestion?.feedback !== null
+      ? currentQuestion.feedback.en
+      : currentQuestion?.feedback || '';
 
   // ── Main render ────────────────────────────────────────────────────────────
   return (
@@ -342,11 +337,16 @@ export function AssessmentScreen({ route, navigation }: Props) {
               ]}
               accessibilityLabel="Listen to question"
             >
+              {isSpeaking ? (
+                <Square size={14} color={Colors.accentPrimary} fill={Colors.accentPrimary} />
+              ) : (
+                <Volume2 size={14} color={Colors.textMuted} />
+              )}
               <Text style={[
                 styles.listenButtonText,
-                { color: isSpeaking ? Colors.accentPrimary : Colors.textMuted }
+                { color: isSpeaking ? Colors.accentPrimary : Colors.textMuted, marginLeft: 4 }
               ]}>
-                {isSpeaking ? '🛑 Stop' : '🔊 Listen'}
+                {isSpeaking ? 'Stop' : 'Listen'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -381,78 +381,17 @@ export function AssessmentScreen({ route, navigation }: Props) {
         {/* ── Feedback card (shown after submit) ── */}
         {isAnswered && (
           <GlassCard style={styles.feedbackCard}>
-            {/* Language toggle — hidden when forcedBilingual */}
-            {!forcedBilingual && (
-              <View style={styles.langToggleRow}>
-                <TouchableOpacity
-                  onPress={() => setFeedbackLang('en')}
-                  style={[
-                    styles.langPill,
-                    feedbackLang === 'en' && styles.langPillActive,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Switch to English feedback"
-                >
-                  <Text
-                    style={[
-                      styles.langPillText,
-                      feedbackLang === 'en' && styles.langPillTextActive,
-                    ]}
-                  >
-                    EN
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setFeedbackLang('fil')}
-                  style={[
-                    styles.langPill,
-                    feedbackLang === 'fil' && styles.langPillActive,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Switch to Filipino feedback"
-                >
-                  <Text
-                    style={[
-                      styles.langPillText,
-                      feedbackLang === 'fil' && styles.langPillTextActive,
-                    ]}
-                  >
-                    FIL
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Bilingual: forced shows both */}
-            {forcedBilingual ? (
-              <>
-                <Text style={styles.feedbackResultTitle}>
-                  {isCorrect ? '✅ Correct!' : '❌ Incorrect'}
-                </Text>
-                <Text style={styles.feedbackSectionLabel}>English</Text>
-                <Text style={styles.feedbackText}>
-                  {currentQuestion.feedback.en}
-                </Text>
-                <Text
-                  style={[
-                    styles.feedbackSectionLabel,
-                    styles.feedbackSectionGap,
-                  ]}
-                >
-                  Filipino
-                </Text>
-                <Text style={styles.feedbackText}>
-                  {currentQuestion.feedback.fil}
-                </Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.feedbackResultTitle}>
-                  {isCorrect ? '✅ Correct!' : '❌ Incorrect'}
-                </Text>
-                <Text style={styles.feedbackText}>{feedbackText}</Text>
-              </>
-            )}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              {isCorrect ? (
+                <Check size={18} color={Colors.success} strokeWidth={3} />
+              ) : (
+                <X size={18} color={Colors.danger} strokeWidth={3} />
+              )}
+              <Text style={[styles.feedbackResultTitle, { marginBottom: 0 }]}>
+                {isCorrect ? 'Correct!' : 'Incorrect'}
+              </Text>
+            </View>
+            <Text style={styles.feedbackText}>{feedbackText}</Text>
           </GlassCard>
         )}
 
@@ -467,7 +406,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
             />
           ) : (
             <PrimaryButton
-              label={isLastQuestion ? 'Finish Quiz 🎉' : 'Next Question →'}
+              label={isLastQuestion ? 'Finish Quiz' : 'Next Question'}
               onPress={handleNext}
               style={styles.actionBtn}
             />

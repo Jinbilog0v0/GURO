@@ -24,6 +24,7 @@ import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { Badge } from '../components/ui/Badge';
 import { SyncBadge } from '../components/shared/SyncBadge';
 import { styles } from '../styles/ParentDashboard.styles';
+import { ClipboardList, Target, Cloud, Shield, Hourglass, Lock, Globe, RefreshCw, Folder, Users, Settings, LogOut, Trash2 } from 'lucide-react-native';
 
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ParentDashboard'>;
@@ -65,7 +66,7 @@ export function ParentDashboard({ navigation }: Props) {
   }, [isPinMode]);
 
   const [studentIdInput, setStudentIdInput] = useState(studentId);
-  const [serverUrl, setServerUrl] = useState('http://localhost:3000');
+  const [serverUrl, setServerUrl] = useState(process.env.EXPO_PUBLIC_API_URL || 'http://192.168.254.125:8000');
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Auth states
@@ -159,34 +160,45 @@ export function ParentDashboard({ navigation }: Props) {
     <View style={{ gap: Spacing.lg }}>
       {/* ── Stats Row ── */}
       <View style={styles.statsRow}>
-        <StatCard label="Quizzes Done" value={totalCompleted} icon="📋" />
+        <StatCard label="Quizzes Done" value={totalCompleted} icon={ClipboardList} />
         <StatCard
           label="Avg Accuracy"
           value={`${averageScore}%`}
           valueColor={scoreColor}
-          icon="🎯"
+          icon={Target}
         />
         <StatCard
           label="Unsynced"
           value={unsyncedCount}
           valueColor={unsyncedCount > 0 ? Colors.warning : Colors.textDark}
-          icon="☁️"
+          icon={Cloud}
         />
       </View>
 
       {/* ── Parental Controls ── */}
       <GlassCard style={styles.section}>
-        <SectionHeader title="🛡️ Parental Controls" subtitle="Screen time, gates & language" />
+        <SectionHeader
+          title={
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Shield size={18} color={Colors.accentPrimary} />
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Parental Controls</Text>
+            </View>
+          }
+          subtitle="Screen time, gates & language"
+        />
 
         {/* Screen time limit */}
-        <Text style={styles.controlLabel}>
-          ⏳ Daily Screen Time Limit:{' '}
-          <Text style={{ color: Colors.textMain }}>
-            {parentalControls.dailyTimeLimit === 0
-              ? 'Unlimited'
-              : `${parentalControls.dailyTimeLimit} min`}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.xs }}>
+          <Hourglass size={14} color="#94A3B8" />
+          <Text style={[styles.controlLabel, { marginBottom: 0 }]}>
+            Daily Screen Time Limit:{' '}
+            <Text style={{ color: Colors.textMain }}>
+              {parentalControls.dailyTimeLimit === 0
+                ? 'Unlimited'
+                : `${parentalControls.dailyTimeLimit} min`}
+            </Text>
           </Text>
-        </Text>
+        </View>
 
         {/* Today's usage */}
         <View style={styles.usageRow}>
@@ -231,7 +243,10 @@ export function ParentDashboard({ navigation }: Props) {
         {/* Math Gate toggle */}
         <View style={styles.toggleRow}>
           <View style={styles.toggleInfo}>
-            <Text style={styles.toggleTitle}>🔒 Math Progression Gate</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Lock size={14} color="#94A3B8" />
+              <Text style={styles.toggleTitle}>Math Progression Gate</Text>
+            </View>
             <Text style={styles.toggleSub}>Lock English until Math scores ≥ 80%</Text>
           </View>
           <Switch
@@ -242,23 +257,11 @@ export function ParentDashboard({ navigation }: Props) {
           />
         </View>
 
-        {/* Bilingual toggle */}
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleInfo}>
-            <Text style={styles.toggleTitle}>🇵🇭 Force Bilingual Feedback</Text>
-            <Text style={styles.toggleSub}>Show EN + Filipino explanations in quests</Text>
-          </View>
-          <Switch
-            value={parentalControls.forcedBilingual}
-            onValueChange={(v) => updateParentalControls({ forcedBilingual: v })}
-            trackColor={{ false: Colors.textDark, true: Colors.accentPrimary }}
-            thumbColor={Colors.white}
-          />
-        </View>
+
 
         {/* Priority topic */}
         <ThemedTextInput
-          label="🎯 Priority Target Topic"
+          label="Priority Target Topic"
           placeholder="e.g. Fractions (leave blank for none)"
           value={parentalControls.priorityTopic || ''}
           onChangeText={(text) => updateParentalControls({ priorityTopic: text || null })}
@@ -268,10 +271,18 @@ export function ParentDashboard({ navigation }: Props) {
 
       {/* ── Cloud Sync ── */}
       <GlassCard style={styles.section}>
-        <SectionHeader title="🌐 Cloud Sync" subtitle="Upload progress to teacher's server" />
+        <SectionHeader
+          title={
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Globe size={18} color={Colors.accentPrimary} />
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Cloud Sync</Text>
+            </View>
+          }
+          subtitle="Upload progress to teacher's server"
+        />
         <ThemedTextInput
           label="Server URL"
-          placeholder="http://10.0.2.2:3000"
+          placeholder="http://192.168.254.125:8000"
           value={serverUrl}
           onChangeText={setServerUrl}
           editable={!isSyncing}
@@ -279,7 +290,7 @@ export function ParentDashboard({ navigation }: Props) {
           autoCapitalize="none"
         />
         <PrimaryButton
-          label={`🚀 Sync Now (${unsyncedCount} staged)`}
+          label={`Sync Now (${unsyncedCount} staged)`}
           onPress={handleSync}
           loading={isSyncing}
           style={{ marginTop: Spacing.md }}
@@ -289,7 +300,12 @@ export function ParentDashboard({ navigation }: Props) {
       {!isPinMode && (
         <GlassCard style={styles.section}>
           <SectionHeader
-            title="🔑 Device Profile ID"
+            title={
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Key size={18} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Device Profile ID</Text>
+              </View>
+            }
             subtitle="Matches teacher/parent web dashboards"
           />
           <ThemedTextInput
@@ -299,9 +315,12 @@ export function ParentDashboard({ navigation }: Props) {
             onChangeText={setStudentIdInput}
             autoCapitalize="characters"
           />
-          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMuted, marginTop: Spacing.sm }}>
-            🔑 Parent Access Code: {getParentAccessCode(studentId)}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.sm }}>
+            <Key size={14} color="#94A3B8" />
+            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMuted }}>
+              Parent Access Code: {getParentAccessCode(studentId)}
+            </Text>
+          </View>
           <PrimaryButton
             label="Save Device ID"
             onPress={() => {
@@ -318,7 +337,15 @@ export function ParentDashboard({ navigation }: Props) {
       )}
 
       {/* ── Practice Log ── */}
-      <SectionHeader title="📋 Practice Log" subtitle={`${totalCompleted} sessions recorded`} />
+      <SectionHeader
+        title={
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <ClipboardList size={18} color={Colors.accentPrimary} />
+            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Practice Log</Text>
+          </View>
+        }
+        subtitle={`${totalCompleted} sessions recorded`}
+      />
       {studentProgress.length === 0 && (
         <Text style={styles.emptyText}>No practice logs yet.</Text>
       )}
@@ -331,14 +358,21 @@ export function ParentDashboard({ navigation }: Props) {
       {!isPinMode && (
         currentUser ? (
           <GlassCard style={styles.section}>
-            <SectionHeader title="👤 Cloud Account" />
+            <SectionHeader
+              title={
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Users size={18} color={Colors.accentPrimary} />
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Cloud Account</Text>
+                </View>
+              }
+            />
             <GlassCard variant="subtle" padding={Spacing.md} style={{ marginBottom: Spacing.md }}>
               <Badge label="Linked" variant="success" style={{ marginBottom: Spacing.sm }} />
               <Text style={styles.accountName}>{currentUser.name}</Text>
               <Text style={styles.accountEmail}>{currentUser.email}</Text>
             </GlassCard>
             <DangerButton
-              label="🚪 Log Out of Cloud Account"
+              label="Log Out of Cloud Account"
               onPress={() => {
                 Alert.alert(
                   'Confirm Logout',

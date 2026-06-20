@@ -143,7 +143,7 @@ export const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: Radius.full,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: Colors.bgInput,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

@@ -19,16 +19,17 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
 import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { styles } from '../styles/LoginScreen.styles';
+import { School, Users, GraduationCap, Cloud, WifiOff } from 'lucide-react-native';
 
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 type Role = 'student' | 'teacher' | 'parent';
 
-const ROLES: { id: Role; title: string; emoji: string }[] = [
-  { id: 'teacher', title: 'Teacher', emoji: '🏫' },
-  { id: 'parent', title: 'Parent', emoji: '👪' },
-  { id: 'student', title: 'Student', emoji: '🎓' },
+const ROLES: { id: Role; title: string; icon: React.ComponentType<any> }[] = [
+  { id: 'teacher', title: 'Teacher', icon: School },
+  { id: 'parent', title: 'Parent', icon: Users },
+  { id: 'student', title: 'Student', icon: GraduationCap },
 ];
 
 export function LoginScreen({ navigation }: Props) {
@@ -149,11 +150,15 @@ export function LoginScreen({ navigation }: Props) {
 
           {/* ── Section A: Sign In ── */}
           <GlassCard padding={Spacing['2xl']} style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>☁️ Sign In with Account</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: Spacing.md }}>
+              <Cloud size={20} color="#94A3B8" />
+              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Sign In with Account</Text>
+            </View>
             
             <View style={styles.rolesRow}>
               {ROLES.map((role) => {
                 const isSelected = selectedRole === role.id;
+                const IconComponent = role.icon;
                 return (
                   <TouchableOpacity
                     key={role.id}
@@ -161,10 +166,11 @@ export function LoginScreen({ navigation }: Props) {
                     activeOpacity={0.8}
                     style={[
                       styles.rolePill,
-                      isSelected && styles.rolePillSelected
+                      isSelected && styles.rolePillSelected,
+                      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }
                     ]}
                   >
-                     <Text style={styles.rolePillEmoji}>{role.emoji}</Text>
+                     <IconComponent size={16} color={isSelected ? Colors.accentSecondary || '#0EA5E9' : '#94A3B8'} />
                      <Text style={[styles.rolePillText, isSelected && styles.rolePillTextSelected]}>{role.title}</Text>
                   </TouchableOpacity>
                 );
@@ -211,7 +217,10 @@ export function LoginScreen({ navigation }: Props) {
 
           {/* ── Section B: Start Offline ── */}
           <GlassCard padding={Spacing['2xl']} style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>📴 Start Offline</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: Spacing.md }}>
+              <WifiOff size={20} color="#94A3B8" />
+              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Start Offline</Text>
+            </View>
             <Text style={styles.sectionSubtitle}>No account needed</Text>
 
             <View style={styles.formGroup}>

@@ -21,6 +21,7 @@ import { FileService } from '../services/fileService';
 // ── Design system ──────────────────────────────────────────────────────────
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
+import { Fonts, FontSizes } from '../theme/typography';
 import { GlassCard } from '../components/ui/GlassCard';
 import { PrimaryButton, SecondaryButton, DangerButton } from '../components/ui/Buttons';
 import { SectionHeader } from '../components/ui/SectionHeader';
@@ -29,6 +30,22 @@ import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { Badge } from '../components/ui/Badge';
 import { SyncBadge } from '../components/shared/SyncBadge';
 import { styles } from '../styles/TeacherDashboard.styles';
+import {
+  LogOut,
+  ClipboardList,
+  Target,
+  Cloud,
+  BookOpen,
+  HelpCircle,
+  Tag,
+  Edit,
+  FileText,
+  Save,
+  Folder,
+  RefreshCw,
+  CheckCircle,
+  AlertTriangle,
+} from 'lucide-react-native';
 
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TeacherDashboard'>;
@@ -47,7 +64,7 @@ export function TeacherDashboard({ navigation }: Props) {
   const [files, setFiles] = useState<string[]>([]);
   const [newReportName, setNewReportName] = useState('');
   const [newReportContent, setNewReportContent] = useState('');
-  const [serverUrl, setServerUrl] = useState('http://localhost:3000');
+  const [serverUrl, setServerUrl] = useState(process.env.EXPO_PUBLIC_API_URL || 'http://192.168.254.125:8000');
   const [isSyncing, setIsSyncing] = useState(false);
 
   const isPinMode = appMode === 'offline' || currentUser?.role === 'student';
@@ -203,7 +220,8 @@ export function TeacherDashboard({ navigation }: Props) {
           />
         ) : (
           <DangerButton
-            label="🚪 Log Out of Teacher Account"
+            label="Log Out of Teacher Account"
+            icon={<LogOut size={16} color={Colors.dangerText} style={{ marginRight: 6 }} />}
             onPress={() => {
               Alert.alert(
                 'Confirm Logout',
@@ -229,9 +247,9 @@ export function TeacherDashboard({ navigation }: Props) {
           <>
             <SectionHeader title="📊 This Student's Performance" subtitle="Local device statistics" />
             <View style={styles.statsRow}>
-              <StatCard icon="📋" label="Sessions" value={totalCompleted} />
-              <StatCard icon="🎯" label="Avg Score" value={`${averageScore}%`} valueColor={averageScore >= 80 ? Colors.success : averageScore >= 60 ? Colors.warning : Colors.danger} />
-              <StatCard icon="☁️" label="Unsynced" value={unsyncedCount} valueColor={unsyncedCount > 0 ? Colors.warning : Colors.textDark} />
+              <StatCard icon={ClipboardList} label="Sessions" value={totalCompleted} />
+              <StatCard icon={Target} label="Avg Score" value={`${averageScore}%`} valueColor={averageScore >= 80 ? Colors.success : averageScore >= 60 ? Colors.warning : Colors.danger} />
+              <StatCard icon={Cloud} label="Unsynced" value={unsyncedCount} valueColor={unsyncedCount > 0 ? Colors.warning : Colors.textDark} />
             </View>
 
             <GlassCard style={styles.section}>
@@ -245,7 +263,11 @@ export function TeacherDashboard({ navigation }: Props) {
                   return (
                     <GlassCard key={evt.eventId} variant="subtle" padding={Spacing.md} style={styles.fileRow}>
                       <View style={styles.fileInfo}>
-                        <Text style={styles.fileIcon}>{isSuccess ? '✅' : '⚠️'}</Text>
+                        {isSuccess ? (
+                          <CheckCircle size={18} color={Colors.success} style={{ marginRight: 8 }} />
+                        ) : (
+                          <AlertTriangle size={18} color={Colors.warning} style={{ marginRight: 8 }} />
+                        )}
                         <Text style={styles.fileName}>{evt.topic}</Text>
                         <Text style={[styles.fileName, {color: Colors.textMuted, flex: 0.5}]}>G{evt.gradeLevel} {evt.subject}</Text>
                         <Text style={[styles.fileName, {textAlign: 'right', flex: 0.5}]}>{evt.score}/{evt.totalQuestions}</Text>
@@ -264,19 +286,19 @@ export function TeacherDashboard({ navigation }: Props) {
             />
             <View style={styles.statsRow}>
               <StatCard
-                icon="📚"
+                icon={BookOpen}
                 label="Subjects"
                 value={stats.subjectCount}
                 valueColor={Colors.accentPrimary}
               />
               <StatCard
-                icon="❓"
+                icon={HelpCircle}
                 label="Questions"
                 value={stats.totalQuestions}
                 valueColor={Colors.accentSecondary}
               />
               <StatCard
-                icon="🏷️"
+                icon={Tag}
                 label="Topics"
                 value={stats.topicCount}
                 valueColor={Colors.success}
@@ -288,7 +310,14 @@ export function TeacherDashboard({ navigation }: Props) {
         {/* ── Create Report ── */}
         <GlassCard style={styles.section}>
           <SectionHeader
-            title={isPinMode ? "✍️ Quick Evaluation Note" : "New Diagnostic Report"}
+            title={
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                {isPinMode ? <Edit size={20} color={Colors.textMain} /> : <FileText size={20} color={Colors.textMain} />}
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
+                  {isPinMode ? "Quick Evaluation Note" : "New Diagnostic Report"}
+                </Text>
+              </View>
+            }
             subtitle="Save a student diagnostic to the local file system"
           />
           <ThemedTextInput
@@ -309,7 +338,8 @@ export function TeacherDashboard({ navigation }: Props) {
             style={styles.textArea}
           />
           <PrimaryButton
-            label="💾  Save to Device"
+            label="Save to Device"
+            icon={<Save size={16} color={Colors.white} style={{ marginRight: 6 }} />}
             onPress={handleCreateReport}
             style={styles.actionBtn}
           />
@@ -318,7 +348,12 @@ export function TeacherDashboard({ navigation }: Props) {
         {/* ── Saved Reports ── */}
         <GlassCard style={styles.section}>
           <SectionHeader
-            title="📁 Saved Reports"
+            title={
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                <Folder size={20} color={Colors.textMain} />
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Saved Reports</Text>
+              </View>
+            }
             subtitle={`${files.length} file${files.length !== 1 ? 's' : ''} on device`}
           />
           {files.length === 0 ? (
@@ -332,7 +367,7 @@ export function TeacherDashboard({ navigation }: Props) {
                 style={styles.fileRow}
               >
                 <View style={styles.fileInfo}>
-                  <Text style={styles.fileIcon}>📄</Text>
+                  <FileText size={18} color={Colors.textMuted} style={{ marginRight: 8 }} />
                   <Text style={styles.fileName} numberOfLines={1}>
                     {fileName}
                   </Text>
@@ -356,10 +391,18 @@ export function TeacherDashboard({ navigation }: Props) {
 
         {isPinMode && (
           <GlassCard style={styles.section}>
-            <SectionHeader title="🚀 Push to Classroom Server" subtitle="Sync local progress to cloud" />
+            <SectionHeader
+              title={
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                  <Cloud size={20} color={Colors.textMain} />
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Push to Classroom Server</Text>
+                </View>
+              }
+              subtitle="Sync local progress to cloud"
+            />
             <ThemedTextInput
               label="Server URL"
-              placeholder="http://10.0.2.2:3000"
+              placeholder="http://192.168.254.125:8000"
               value={serverUrl}
               onChangeText={setServerUrl}
               editable={!isSyncing}
@@ -369,6 +412,7 @@ export function TeacherDashboard({ navigation }: Props) {
             />
             <PrimaryButton
               label={`Sync Now (${unsyncedCount} pending)`}
+              icon={<RefreshCw size={16} color={Colors.white} style={{ marginRight: 6 }} />}
               onPress={handleSync}
               loading={isSyncing}
             />

@@ -32,7 +32,7 @@ export const styles = StyleSheet.create({
   progressBackground: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: Colors.bgInput,
     overflow: 'hidden',
   },
   progressIndicator: {
@@ -56,12 +56,12 @@ export const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   ttsIconBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: Colors.bgInput,
     paddingVertical: Spacing.xs,
     paddingHorizontal: Spacing.sm,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: Colors.border,
   },
   ttsIcon: {
     color: Colors.accentSecondary,
@@ -113,7 +113,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Spacing.lg,
-    backgroundColor: 'rgba(255, 255, 255, 0.01)',
+    backgroundColor: Colors.bgCard,
   },
   defTitleRow: {
     flexDirection: 'row',
@@ -139,7 +139,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+    borderTopColor: Colors.border,
     paddingTop: Spacing.md,
   },
   defText: {
@@ -150,12 +150,12 @@ export const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   examplesContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    backgroundColor: Colors.bgInput,
     borderRadius: Radius.md,
     padding: Spacing.md,
     gap: Spacing.xs,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.03)',
+    borderColor: Colors.border,
     marginBottom: Spacing.md,
   },
   examplesLabel: {

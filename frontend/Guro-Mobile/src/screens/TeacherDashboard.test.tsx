@@ -88,7 +88,7 @@ describe('TeacherDashboard', () => {
       root = renderer.create(<TeacherDashboard navigation={mockNavigation as any} route={{} as any} />);
     });
 
-    const submitBtn = root.root.findByProps({ label: '💾  Save to Device' });
+    const submitBtn = root.root.findByProps({ label: 'Save to Device' });
     act(() => {
       submitBtn.props.onPress();
     });
@@ -114,7 +114,7 @@ describe('TeacherDashboard', () => {
       contentInput.props.onChangeText('Student got 80% correct.');
     });
 
-    const submitBtn = root.root.findByProps({ label: '💾  Save to Device' });
+    const submitBtn = root.root.findByProps({ label: 'Save to Device' });
     await act(async () => {
       submitBtn.props.onPress();
     });

@@ -15,7 +15,19 @@ import * as Speech from 'expo-speech';
 import { GlassCard } from '../components/ui/GlassCard';
 import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
 import { Badge } from '../components/ui/Badge';
+import { Colors } from '../theme/colors';
 import { styles } from '../styles/StudyScreen.styles';
+import {
+  Rocket,
+  BookOpen,
+  Lightbulb,
+  Square,
+  Volume2,
+  ChevronUp,
+  ChevronDown,
+  Sparkles,
+  CheckCircle,
+} from 'lucide-react-native';
 
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Study'>;
@@ -84,7 +96,9 @@ export function StudyScreen({ route, navigation }: Props) {
     }
 
     setIsSpeaking(true);
-    Speech.speak(textToSpeak, {
+    const rate = useAppStore.getState().speechRate || 1.0;
+    Speech.speak(textToSpeak.replace(/_+/g, ' blank '), {
+      rate,
       onDone: () => setIsSpeaking(false),
       onError: () => setIsSpeaking(false),
       onStopped: () => setIsSpeaking(false),
@@ -99,7 +113,9 @@ export function StudyScreen({ route, navigation }: Props) {
       ? `For example: ${examples.join(', ')}.`
       : '';
     const text = `${term}. ${definition}. ${examplesText}`;
-    Speech.speak(text, {
+    const rate = useAppStore.getState().speechRate || 1.0;
+    Speech.speak(text.replace(/_+/g, ' blank '), {
+      rate,
       onDone: () => setIsSpeaking(false),
       onError: () => setIsSpeaking(false),
       onStopped: () => setIsSpeaking(false),
@@ -125,13 +141,14 @@ export function StudyScreen({ route, navigation }: Props) {
           </View>
           
           <GlassCard style={styles.fallbackCard}>
-            <Text style={styles.fallbackEmoji}>🚀</Text>
+            <Rocket size={48} color={Colors.accentPrimary} style={{ marginBottom: 16 }} />
             <Text style={styles.fallbackTitle}>Ready for the Quiz!</Text>
             <Text style={styles.fallbackText}>
               There is no reading material for this topic yet, but you are ready to jump straight into practice!
             </Text>
             <PrimaryButton
-              label="Start Practice Quiz 🚀"
+              label="Start Practice Quiz"
+              icon={<Rocket size={16} color={Colors.white} style={{ marginRight: 6 }} />}
               onPress={handleStartQuiz}
               style={styles.fallbackButton}
             />
@@ -155,9 +172,18 @@ export function StudyScreen({ route, navigation }: Props) {
       <View style={styles.progressContainer}>
         <View style={styles.progressLabelRow}>
           <Text style={styles.progressText}>Step {currentSlide + 1} of 3</Text>
-          <Text style={styles.stepTitleText}>
-            {currentSlide === 0 ? '📖 Introduction' : currentSlide === 1 ? '💡 Key Terms' : '🚀 Recap Summary'}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {currentSlide === 0 ? (
+              <BookOpen size={16} color={Colors.accentPrimary} />
+            ) : currentSlide === 1 ? (
+              <Lightbulb size={16} color={Colors.accentPrimary} />
+            ) : (
+              <Rocket size={16} color={Colors.accentPrimary} />
+            )}
+            <Text style={styles.stepTitleText}>
+              {currentSlide === 0 ? 'Introduction' : currentSlide === 1 ? 'Key Terms' : 'Recap Summary'}
+            </Text>
+          </View>
         </View>
         <View style={styles.progressBackground}>
           <View style={[styles.progressIndicator, { width: `${progressPercent}%` }]} />
@@ -169,8 +195,13 @@ export function StudyScreen({ route, navigation }: Props) {
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <Badge label={subject} variant="indigo" style={styles.badge} />
-            <TouchableOpacity onPress={toggleSpeech} style={styles.ttsIconBtn}>
-              <Text style={styles.ttsIcon}>{isSpeaking ? '⏹️ Stop' : '🔊 Listen'}</Text>
+            <TouchableOpacity onPress={toggleSpeech} style={[styles.ttsIconBtn, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+              {isSpeaking ? (
+                <Square size={14} color={Colors.accentSecondary} />
+              ) : (
+                <Volume2 size={14} color={Colors.accentSecondary} />
+              )}
+              <Text style={styles.ttsIcon}>{isSpeaking ? 'Stop' : 'Listen'}</Text>
             </TouchableOpacity>
           </View>
           <Text style={styles.title}>{topic}</Text>
@@ -179,7 +210,10 @@ export function StudyScreen({ route, navigation }: Props) {
         {/* ── SLIDE 1: INTRODUCTION ─────────────────────────────────────────── */}
         {currentSlide === 0 && (
           <GlassCard style={styles.card}>
-            <Text style={styles.cardLabel}>LET'S READ 📖</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <BookOpen size={14} color={Colors.accentPrimary} />
+              <Text style={[styles.cardLabel, { marginBottom: 0 }]}>LET'S READ</Text>
+            </View>
             <Text style={styles.introText}>{studyContent.introduction}</Text>
           </GlassCard>
         )}
@@ -187,7 +221,7 @@ export function StudyScreen({ route, navigation }: Props) {
         {/* ── SLIDE 2: DEFINITIONS & EXAMPLES ───────────────────────────────── */}
         {currentSlide === 1 && (
           <View style={styles.definitionsWrapper}>
-            <Text style={styles.instructionText}>👇 Tap cards to show examples and explanations!</Text>
+            <Text style={styles.instructionText}>Tap cards to show examples and explanations!</Text>
             {studyContent.definitions.map((def, idx) => {
               const isExpanded = !!expandedDefinitions[idx];
               return (
@@ -198,10 +232,14 @@ export function StudyScreen({ route, navigation }: Props) {
                     style={styles.defHeader}
                   >
                     <View style={styles.defTitleRow}>
-                      <Text style={styles.defEmoji}>{isExpanded ? '📖' : '📘'}</Text>
+                      <BookOpen size={20} color={isExpanded ? Colors.accentPrimary : Colors.textMuted} style={{ marginRight: 8 }} />
                       <Text style={styles.defTerm}>{def.term}</Text>
                     </View>
-                    <Text style={styles.expandChevron}>{isExpanded ? '▲' : '▼'}</Text>
+                    {isExpanded ? (
+                      <ChevronUp size={16} color={Colors.textMuted} />
+                    ) : (
+                      <ChevronDown size={16} color={Colors.textMuted} />
+                    )}
                   </TouchableOpacity>
 
                   {isExpanded && (
@@ -210,10 +248,13 @@ export function StudyScreen({ route, navigation }: Props) {
                       
                       {def.examples && def.examples.length > 0 && (
                         <View style={styles.examplesContainer}>
-                          <Text style={styles.examplesLabel}>🌟 Examples:</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                            <Sparkles size={14} color={Colors.accentSecondary} />
+                            <Text style={[styles.examplesLabel, { marginBottom: 0 }]}>Examples:</Text>
+                          </View>
                           {def.examples.map((ex, exIdx) => (
                             <View key={exIdx} style={styles.exampleRow}>
-                              <Text style={styles.exampleBullet}>✨</Text>
+                              <Sparkles size={12} color={Colors.accentSecondary} style={{ marginRight: 6, marginTop: 4 }} />
                               <Text style={styles.exampleText}>{ex}</Text>
                             </View>
                           ))}
@@ -222,9 +263,10 @@ export function StudyScreen({ route, navigation }: Props) {
 
                       <TouchableOpacity 
                         onPress={() => speakSingleTerm(def.term, def.definition, def.examples)} 
-                        style={styles.speakerBtn}
+                        style={[styles.speakerBtn, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}
                       >
-                        <Text style={styles.speakerBtnText}>🔊 Read This Aloud</Text>
+                        <Volume2 size={14} color={Colors.accentPrimary} />
+                        <Text style={styles.speakerBtnText}>Read This Aloud</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -237,11 +279,14 @@ export function StudyScreen({ route, navigation }: Props) {
         {/* ── SLIDE 3: SUMMARY & RECAP ─────────────────────────────────────── */}
         {currentSlide === 2 && (
           <GlassCard style={styles.card}>
-            <Text style={styles.cardLabel}>QUICK SUMMARY 🚀</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <Rocket size={14} color={Colors.accentPrimary} />
+              <Text style={[styles.cardLabel, { marginBottom: 0 }]}>QUICK SUMMARY</Text>
+            </View>
             <Text style={styles.summaryIntro}>Before taking the quiz, remember these key points:</Text>
             {studyContent.summary.map((point, idx) => (
               <View key={idx} style={styles.summaryRow}>
-                <Text style={styles.summaryBullet}>✅</Text>
+                <CheckCircle size={18} color={Colors.accentPrimary} style={{ marginRight: 8, marginTop: 4 }} />
                 <Text style={styles.summaryText}>{point}</Text>
               </View>
             ))}
@@ -275,7 +320,8 @@ export function StudyScreen({ route, navigation }: Props) {
           />
         ) : (
           <PrimaryButton
-            label="Start Quiz! 🚀"
+            label="Start Quiz!"
+            icon={<Rocket size={16} color={Colors.white} style={{ marginRight: 6 }} />}
             onPress={handleStartQuiz}
             style={styles.navBtnHalf}
           />

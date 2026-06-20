@@ -47,7 +47,7 @@ const mockState = {
                 questionText: 'What is 1/2 + 1/2?',
                 options: ['1/2', '1', '2', '0'],
                 correctAnswer: '1',
-                feedback: { en: 'Correct!', fil: 'Tama!' }
+                feedback: { en: 'Correct!', fil: 'Correct!' }
               }
             ]
           }
@@ -156,7 +156,7 @@ describe('Student Lifecycle Integration Flow', () => {
     });
 
     // Slide 2: Press Start Quiz
-    const startQuizBtn = studyRoot.root.findByProps({ label: 'Start Quiz! 🚀' });
+    const startQuizBtn = studyRoot.root.findByProps({ label: 'Start Quiz!' });
     act(() => {
       startQuizBtn.props.onPress();
     });
@@ -207,7 +207,7 @@ describe('Student Lifecycle Integration Flow', () => {
     expect(mockAddLog).toHaveBeenCalledWith(expect.stringContaining('Submitted answer'));
     
     // 6. FINISH QUIZ
-    const finishBtn = assessmentRoot.root.findByProps({ label: 'Finish Quiz 🎉' });
+    const finishBtn = assessmentRoot.root.findByProps({ label: 'Finish Quiz' });
     act(() => {
       finishBtn.props.onPress();
     });

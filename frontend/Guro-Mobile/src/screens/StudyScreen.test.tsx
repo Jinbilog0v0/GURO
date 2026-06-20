@@ -121,7 +121,7 @@ describe('StudyScreen', () => {
     expect(stringified).toContain('Fractions are parts.');
 
     // Step 3: Click Start Quiz
-    const startQuizBtn = root.root.findByProps({ label: 'Start Quiz! 🚀' });
+    const startQuizBtn = root.root.findByProps({ label: 'Start Quiz!' });
     act(() => {
       startQuizBtn.props.onPress();
     });

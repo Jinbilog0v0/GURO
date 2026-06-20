@@ -90,7 +90,7 @@ describe('StudentDashboard (Parental Controls)', () => {
     act(() => { topicButton.props.onPress(); });
 
     expect(Alert.alert).toHaveBeenCalledWith(
-      "Time's Up! ⏰",
+      "Time's Up!",
       expect.stringContaining("reached your daily screen time limit")
     );
     expect(mockNavigation.navigate).not.toHaveBeenCalled();
@@ -121,7 +121,7 @@ describe('StudentDashboard (Parental Controls)', () => {
     act(() => { topicButton.props.onPress(); });
 
     expect(Alert.alert).toHaveBeenCalledWith(
-      'Keep Practising Maths! 📐',
+      'Keep Practising Maths!',
       expect.stringContaining("Score at least 80%")
     );
     expect(mockNavigation.navigate).not.toHaveBeenCalled();

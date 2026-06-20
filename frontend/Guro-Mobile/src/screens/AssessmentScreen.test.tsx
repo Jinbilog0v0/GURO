@@ -43,7 +43,7 @@ jest.mock('../store/useAppStore', () => ({
                     questionText: 'What is 1/2 + 1/2?',
                     options: ['1/2', '1', '2', '0'],
                     correctAnswer: '1',
-                    feedback: { en: 'Correct!', fil: 'Tama!' }
+                    feedback: { en: 'Correct!', fil: 'Correct!' }
                   }
                 ]
               }

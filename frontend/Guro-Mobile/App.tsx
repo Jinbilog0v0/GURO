@@ -21,7 +21,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from './src/theme/colors';
 import { Fonts, FontSizes } from './src/theme/typography';
 
-const SERVER_URL = 'http://localhost:3000';
+const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.254.125:8000';
 
 export default function App() {
   const initializeLocalStore = useAppStore((state) => state.initializeLocalStore);
@@ -78,7 +78,7 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <AppNavigator />
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
       </NavigationContainer>
     </SafeAreaProvider>
   );
