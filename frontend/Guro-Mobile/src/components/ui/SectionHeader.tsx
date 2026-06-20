@@ -10,7 +10,7 @@ import { Fonts, FontSizes, LetterSpacing } from '../../theme/typography';
 import { Spacing } from '../../theme/spacing';
 
 interface SectionHeaderProps {
-  title: string;
+  title: React.ReactNode;
   subtitle?: string;
   /** Optional right-side element (e.g., a badge or button) */
   right?: React.ReactNode;
@@ -20,7 +20,11 @@ export function SectionHeader({ title, subtitle, right }: SectionHeaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.textGroup}>
-        <Text style={styles.title}>{title}</Text>
+        {typeof title === 'string' ? (
+          <Text style={styles.title}>{title}</Text>
+        ) : (
+          title
+        )}
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
       {right ? <View>{right}</View> : null}

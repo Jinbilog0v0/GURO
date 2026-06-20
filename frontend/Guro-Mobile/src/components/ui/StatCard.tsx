@@ -17,14 +17,21 @@ interface StatCardProps {
   unit?: string;
   /** Optional accent color for the value text */
   valueColor?: string;
-  /** Optional icon/emoji shown at the top */
-  icon?: string;
+  /** Optional icon/emoji component or string */
+  icon?: React.ComponentType<any> | string;
 }
 
-export function StatCard({ label, value, unit, valueColor, icon }: StatCardProps) {
+export function StatCard({ label, value, unit, valueColor, icon: IconOrEmoji }: StatCardProps) {
+  const isComponent = typeof IconOrEmoji === 'function' || (typeof IconOrEmoji === 'object' && IconOrEmoji !== null);
   return (
     <GlassCard style={styles.card} padding={Spacing.lg}>
-      {icon ? <Text style={styles.icon}>{icon}</Text> : null}
+      {isComponent ? (
+        <View style={{ marginBottom: Spacing.xs }}>
+          {React.createElement(IconOrEmoji as any, { size: 22, color: Colors.textDark })}
+        </View>
+      ) : IconOrEmoji ? (
+        <Text style={styles.icon}>{IconOrEmoji as string}</Text>
+      ) : null}
       <Text style={[styles.value, valueColor ? { color: valueColor } : {}]}>
         {value}
       </Text>

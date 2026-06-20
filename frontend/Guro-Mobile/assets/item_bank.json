@@ -16,7 +16,7 @@
               "correctAnswer": "3/4",
               "feedback": {
                 "en": "Since the denominators are the same, simply add the numerators: 1 + 2 = 3. Keep the denominator: 3/4.",
-                "fil": "Dahil pareho ang denominator, idagdag lamang ang mga numerator: 1 + 2 = 3. Panatilihin ang denominator: 3/4."
+                "fil": "Since the denominators are the same, simply add the numerators: 1 + 2 = 3. Keep the denominator: 3/4."
               }
             }
           ]
@@ -39,7 +39,7 @@
               "correctAnswer": "0.1",
               "feedback": {
                 "en": "Multiplying 5 by 2 gives 10. Since there are two decimal places in total in the factors, place the decimal point two spaces left: 0.10 or 0.1.",
-                "fil": "Ang pag-multiply ng 5 sa 2 ay nagbibigay ng 10. Dahil may dalawang decimal places sa kabuuan, ilagay ang decimal point dalawang puwang pakaliwa: 0.10 o 0.1."
+                "fil": "Multiplying 5 by 2 gives 10. Since there are two decimal places in total in the factors, place the decimal point two spaces left: 0.10 or 0.1."
               }
             }
           ]
@@ -62,7 +62,7 @@
               "correctAnswer": "x = 7",
               "feedback": {
                 "en": "Add 5 to both sides to get 3x = 21, then divide by 3 to find x = 7.",
-                "fil": "Idagdag ang 5 sa magkabilang panig upang makuha ang 3x = 21, pagkatapos ay i-divide sa 3 upang makuha ang x = 7."
+                "fil": "Add 5 to both sides to get 3x = 21, then divide by 3 to find x = 7."
               }
             }
           ]
@@ -87,7 +87,7 @@
               "correctAnswer": "Her cheeks are like red roses.",
               "feedback": {
                 "en": "A simile compares two things using \"like\" or \"as\". Here, cheeks are compared to roses using \"like\".",
-                "fil": "Ang simile ay naghahambing ng dalawang bagay gamit ang \"like\" o \"as\" (tulad ng/parang). Dito, inihambing ang pisngi sa rosas gamit ang \"like\"."
+                "fil": "A simile compares two things using \"like\" or \"as\". Here, cheeks are compared to roses using \"like\"."
               }
             }
           ]
@@ -110,7 +110,7 @@
               "correctAnswer": "Hard work leads to success.",
               "feedback": {
                 "en": "The paragraph shows how Maria worked hard (\"diligently every night\") and was rewarded with success (\"won first place\").",
-                "fil": "Ipinapakita ng talata kung paano nagsumikap si Maria (\"masigasig gabi-gabi\") at nagbunga ito ng tagumpay (\"nanalo ng unang puwesto\")."
+                "fil": "The paragraph shows how Maria worked hard (\"diligently every night\") and was rewarded with success (\"won first place\")."
               }
             }
           ]
@@ -131,7 +131,7 @@
               "correctAnswer": "big",
               "feedback": {
                 "en": "An adjective describes a noun or pronoun. In this sentence, \"big\" describes the noun \"dog\".",
-                "fil": "Ang pang-uri ay naglalarawan ng pangngalan o panghalip. Sa pangungusap na ito, inilalarawan ng \"big\" ang pangngalang \"dog\"."
+                "fil": "An adjective describes a noun or pronoun. In this sentence, \"big\" describes the noun \"dog\"."
               }
             }
           ]
@@ -150,7 +150,7 @@
               "correctAnswer": "faster",
               "feedback": {
                 "en": "\"Faster\" is the comparative form of \"fast\" and is used when comparing exactly two things, like \"my cat\" and \"your cat\".",
-                "fil": "Ang \"faster\" ay ang comparative form ng \"fast\" at ginagamit kapag naghahambing ng eksaktong dalawang bagay, tulad ng \"my cat\" at \"your cat\"."
+                "fil": "\"Faster\" is the comparative form of \"fast\" and is used when comparing exactly two things, like \"my cat\" and \"your cat\"."
               }
             },
             {
@@ -165,7 +165,7 @@
               "correctAnswer": "tallest",
               "feedback": {
                 "en": "\"Tallest\" is the superlative form of \"tall\" and is used when comparing three or more things, or when describing the upper limit of a quality among many, like all mountains in the world.",
-                "fil": "Ang \"tallest\" ay ang superlative form ng \"tall\" at ginagamit kapag naghahambing ng tatlo o higit pang bagay, o kapag inilalarawan ang pinakamataas na antas ng isang kalidad sa marami, tulad ng lahat ng bundok sa mundo."
+                "fil": "\"Tallest\" is the superlative form of \"tall\" and is used when comparing three or more things, or when describing the upper limit of a quality among many, like all mountains in the world."
               }
             }
           ]
@@ -184,7 +184,7 @@
               "correctAnswer": "quickest",
               "feedback": {
                 "en": "Since the sentence compares \"three runners,\" the superlative form \"quickest\" is required to describe the one at the upper limit of speed.",
-                "fil": "Dahil ang pangungusap ay naghahambing ng \"tatlong mananakbo,\" ang superlative form na \"quickest\" ang kinakailangan upang ilarawan ang isa na nasa pinakamataas na antas ng bilis."
+                "fil": "Since the sentence compares \"three runners,\" the superlative form \"quickest\" is required to describe the one at the upper limit of speed."
               }
             },
             {
@@ -199,7 +199,7 @@
               "correctAnswer": "There is no adjective in this phrase.",
               "feedback": {
                 "en": "An adjective modifies a noun or pronoun. \"Beautifully\" is an adverb because it describes how she sings (a verb). There is no word describing a noun or pronoun in this specific phrase.",
-                "fil": "Ang pang-uri ay naglalarawan ng pangngalan o panghalip. Ang \"beautifully\" ay isang pang-abay dahil inilalarawan nito kung paano siya kumanta (isang pandiwa). Walang salitang naglalarawan ng pangngalan o panghalip sa partikular na pariralang ito."
+                "fil": "An adjective modifies a noun or pronoun. \"Beautifully\" is an adverb because it describes how she sings (a verb). There is no word describing a noun or pronoun in this specific phrase."
               }
             }
           ]
@@ -222,7 +222,7 @@
               "correctAnswer": "To work or study late into the night.",
               "feedback": {
                 "en": "The idiom refers to staying awake late into the night working or studying, historically by the light of an oil lamp.",
-                "fil": "Ang idyomang ito ay tumutukoy sa pagpupuyat sa gabi para magtrabaho o mag-aral, na hango sa paggamit ng ilawan noon."
+                "fil": "The idiom refers to staying awake late into the night working or studying, historically by the light of an oil lamp."
               }
             }
           ]

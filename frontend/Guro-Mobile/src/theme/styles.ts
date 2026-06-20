@@ -45,7 +45,7 @@ export const Cards = StyleSheet.create({
     // Shadows applied per-platform via Shadow constants in component code
   },
   glassSubtle: {
-    backgroundColor: 'rgba(16, 22, 42, 0.6)',
+    backgroundColor: Colors.bgInput,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.md,
@@ -78,7 +78,7 @@ export const Buttons = StyleSheet.create({
   },
   // .btn-secondary
   secondary: {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: Colors.bgInput,
     borderWidth: 1,
     borderColor: Colors.border,
   },
