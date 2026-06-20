@@ -72,7 +72,7 @@ describe('AppStore (Mobile Online Flows)', () => {
         json: async () => ({ success: true })
       });
 
-      const result = await store.syncProgressNow('http://localhost:3000');
+      const result = await store.syncProgressNow('http://192.168.254.125:8000');
 
       expect(result.success).toBe(true);
       expect(result.syncedCount).toBe(1);
@@ -93,7 +93,7 @@ describe('AppStore (Mobile Online Flows)', () => {
         json: async () => mockCustomBank
       });
 
-      const success = await store.fetchItemBankFromServer('http://localhost:3000', 'MATH-G4-TEST');
+      const success = await store.fetchItemBankFromServer('http://192.168.254.125:8000', 'MATH-G4-TEST');
 
       expect(success).toBe(true);
       expect(useAppStore.getState().itemBank).toEqual(mockCustomBank);

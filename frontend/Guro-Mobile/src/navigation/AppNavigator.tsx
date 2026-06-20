@@ -9,6 +9,7 @@ import { ParentDashboard } from '../screens/ParentDashboard';
 import { AssessmentScreen } from '../screens/AssessmentScreen';
 import { StudyScreen } from '../screens/StudyScreen';
 import { DetailsScreen } from '../screens/DetailsScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/typography';
 import { useAppStore } from '../store/useAppStore';
@@ -21,6 +22,7 @@ export type RootStackParamList = {
   Assessment: { subject: string; gradeLevel: number; topic: string };
   Study: { subject: string; gradeLevel: number; topic: string };
   Details: { fileName: string; content: string };
+  Settings: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -49,8 +51,9 @@ export function AppNavigator() {
         headerTitleStyle: {
           fontFamily: Fonts.display,
           fontSize: 16,
+          color: Colors.textMain,
         },
-        headerShadowVisible: false,
+        headerShadowVisible: true,
         contentStyle: {
           backgroundColor: Colors.bgMain,
         },
@@ -65,7 +68,12 @@ export function AppNavigator() {
       <Stack.Screen
         name="StudentDashboard"
         component={StudentDashboard}
-        options={{ title: 'GURO · Kid Zone', headerBackVisible: false, gestureEnabled: false }}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="TeacherDashboard"
@@ -90,7 +98,7 @@ export function AppNavigator() {
       <Stack.Screen
         name="Study"
         component={StudyScreen}
-        options={{ title: 'Learning Lab 📖' }}
+        options={{ title: 'Learning Lab' }}
       />
       <Stack.Screen
         name="Assessment"

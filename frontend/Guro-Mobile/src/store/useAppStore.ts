@@ -87,6 +87,14 @@ interface AppState {
   guestName: string | null;
   dailyMinutesUsed: number;
   lastActiveDay: string | null;
+  avatarEmoji: string;
+  soundEffectsEnabled: boolean;
+  speechRate: number;
+  colorTheme: string;
+  setAvatarEmoji: (emoji: string) => void;
+  setSoundEffectsEnabled: (enabled: boolean) => void;
+  setSpeechRate: (rate: number) => void;
+  setColorTheme: (theme: string) => void;
   addLog: (message: string) => void;
   clearLogs: () => void;
   loadItemBankSync: () => Promise<void>;
@@ -130,8 +138,16 @@ export const useAppStore = create<AppState>()(
       guestName: null,
       dailyMinutesUsed: 0,
       lastActiveDay: null,
+      avatarEmoji: '🚀',
+      soundEffectsEnabled: true,
+      speechRate: 1.0,
+      colorTheme: 'blue',
       setAppMode: (mode) => set({ appMode: mode }),
       setGuestName: (name) => set({ guestName: name }),
+      setAvatarEmoji: (emoji) => set({ avatarEmoji: emoji }),
+      setSoundEffectsEnabled: (enabled) => set({ soundEffectsEnabled: enabled }),
+      setSpeechRate: (rate) => set({ speechRate: rate }),
+      setColorTheme: (theme) => set({ colorTheme: theme }),
       trackActiveMinutes: (minutes) => {
         const today = new Date().toISOString().split('T')[0];
         const state = get();
@@ -152,7 +168,7 @@ export const useAppStore = create<AppState>()(
       },
       registerAndPromote: async (email, password, name) => {
         const anonymousStudentId = get().studentId;
-        const serverUrl = 'http://localhost:3000'; // Default serverUrl
+        const serverUrl = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.254.125:8000'; // Default serverUrl
         try {
           const res = await fetch(`${serverUrl}/api/auth/promote`, {
             method: 'POST',
@@ -176,7 +192,7 @@ export const useAppStore = create<AppState>()(
         }
       },
       loginToCloud: async (email, password) => {
-        const serverUrl = 'http://localhost:3000';
+        const serverUrl = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.254.125:8000';
         try {
           const res = await fetch(`${serverUrl}/api/auth/login`, {
             method: 'POST',
