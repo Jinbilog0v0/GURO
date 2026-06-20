@@ -45,7 +45,7 @@ class GeminiService
                   '- Grade Level: '.$grade."\n".
                   '- Topic: '.$topic."\n\n".
                   "Ensure the studyContent uses simple, engaging, age-appropriate language for Grade {$grade} students.\n".
-                  "The questions should span Easy, Average, and Difficult tiers, and enforce bilingual feedback explaining the answer (one in English, one in Filipino).";
+                  "The questions should span Easy, Average, and Difficult tiers, and enforce feedback explaining the answer in English (both en and fil feedback fields must be populated with the English explanation).";
 
         $parts[] = ['text' => $prompt];
 
@@ -110,8 +110,8 @@ class GeminiService
                             'feedback' => [
                                 'type' => 'OBJECT',
                                 'properties' => [
-                                    'en' => ['type' => 'STRING', 'description' => 'Bilingual feedback in English explaining the answer.'],
-                                    'fil' => ['type' => 'STRING', 'description' => 'Bilingual feedback in Filipino explaining the answer.'],
+                                    'en' => ['type' => 'STRING', 'description' => 'Feedback in English explaining the answer.'],
+                                    'fil' => ['type' => 'STRING', 'description' => 'Feedback in English explaining the answer (duplicate of en).'],
                                 ],
                                 'required' => ['en', 'fil'],
                             ],
