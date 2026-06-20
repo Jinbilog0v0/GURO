@@ -3,7 +3,7 @@ import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { LoginScreen } from '../screens/LoginScreen';
-import { StudentDashboard } from '../screens/StudentDashboard';
+import { StudentTabNavigator } from './StudentTabNavigator';
 import { TeacherDashboard } from '../screens/TeacherDashboard';
 import { ParentDashboard } from '../screens/ParentDashboard';
 import { AssessmentScreen } from '../screens/AssessmentScreen';
@@ -12,7 +12,6 @@ import { DetailsScreen } from '../screens/DetailsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/typography';
-import { useAppStore } from '../store/useAppStore';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -37,16 +36,11 @@ function ReturnToStudentButton() {
 }
 
 export function AppNavigator() {
-  const { appMode, currentUser } = useAppStore();
-  const isPinMode = appMode === 'offline' || currentUser?.role === 'student';
-
   return (
     <Stack.Navigator
       initialRouteName="Login"
       screenOptions={{
-        headerStyle: {
-          backgroundColor: Colors.bgSidebar,
-        },
+        headerStyle: { backgroundColor: Colors.bgSidebar },
         headerTintColor: Colors.textMain,
         headerTitleStyle: {
           fontFamily: Fonts.display,
@@ -54,20 +48,19 @@ export function AppNavigator() {
           color: Colors.textMain,
         },
         headerShadowVisible: true,
-        contentStyle: {
-          backgroundColor: Colors.bgMain,
-        },
+        contentStyle: { backgroundColor: Colors.bgMain },
         animation: 'fade_from_bottom',
       }}
     >
       <Stack.Screen
         name="Login"
         component={LoginScreen}
-        options={{ headerShown: false }} // Full-screen branding — no header
+        options={{ headerShown: false }}
       />
+      {/* StudentDashboard route now renders the bottom tab navigator */}
       <Stack.Screen
         name="StudentDashboard"
-        component={StudentDashboard}
+        component={StudentTabNavigator}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -78,22 +71,12 @@ export function AppNavigator() {
       <Stack.Screen
         name="TeacherDashboard"
         component={TeacherDashboard}
-        options={({ navigation }) => ({
-          title: 'Teacher Console',
-          headerBackVisible: !isPinMode,
-          headerLeft: isPinMode ? () => <ReturnToStudentButton /> : undefined,
-          gestureEnabled: !isPinMode,
-        })}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="ParentDashboard"
         component={ParentDashboard}
-        options={({ navigation }) => ({
-          title: 'Parent Portal',
-          headerBackVisible: !isPinMode,
-          headerLeft: isPinMode ? () => <ReturnToStudentButton /> : undefined,
-          gestureEnabled: !isPinMode,
-        })}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Study"
@@ -115,9 +98,7 @@ export function AppNavigator() {
 }
 
 const styles = StyleSheet.create({
-  backButton: {
-    paddingRight: 16,
-  },
+  backButton: { paddingRight: 16 },
   backButtonText: {
     color: Colors.accentPrimary,
     fontFamily: Fonts.bodyMedium,

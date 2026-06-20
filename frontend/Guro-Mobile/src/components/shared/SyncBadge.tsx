@@ -1,10 +1,12 @@
 /**
  * SyncBadge — Network + sync status indicator for dashboard headers.
- * Shows online/offline state and pending unsynced progress count.
+ * Uses expo-network for real-time LAN-aware connectivity detection,
+ * not a google.com ping which breaks on airgapped classroom networks.
  */
 
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import * as Network from 'expo-network';
 import { Colors } from '../../theme/colors';
 import { Fonts, FontSizes } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
@@ -18,18 +20,11 @@ export function SyncBadge() {
 
   const pendingCount = studentProgress.filter((e) => !e.synced).length;
 
-  useEffect(() => {
-    checkNetworkStatus();
-  }, [pendingCount]);
-
   const checkNetworkStatus = async () => {
     try {
-      // Simple reachability check — expo-network is imported in syncService
-      const response = await fetch('https://www.google.com', {
-        method: 'HEAD',
-        cache: 'no-cache',
-      });
-      if (response.ok) {
+      const state = await Network.getNetworkStateAsync();
+      const isConnected = state.isConnected && state.isInternetReachable !== false;
+      if (isConnected) {
         setStatus(pendingCount > 0 ? 'pending' : 'synced');
       } else {
         setStatus('offline');
@@ -38,6 +33,13 @@ export function SyncBadge() {
       setStatus('offline');
     }
   };
+
+  useEffect(() => {
+    checkNetworkStatus();
+    // Re-check every 10 s so the badge stays accurate when network drops/restores
+    const timer = setInterval(checkNetworkStatus, 10_000);
+    return () => clearInterval(timer);
+  }, [pendingCount]);
 
   const config: Record<SyncState, { color: string; label: string; dot: string }> = {
     synced: { color: Colors.success, label: 'Synced', dot: Colors.success },

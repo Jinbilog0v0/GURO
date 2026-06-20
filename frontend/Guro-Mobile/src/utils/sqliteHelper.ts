@@ -53,6 +53,9 @@ export async function getLocalDb(): Promise<SQLite.SQLiteDatabase> {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    CREATE INDEX IF NOT EXISTS idx_student_progress_synced ON student_progress (synced);
+    CREATE INDEX IF NOT EXISTS idx_local_item_bank_search ON local_item_bank (subject, grade_level, topic);
   `);
 
   dbInstance = db;

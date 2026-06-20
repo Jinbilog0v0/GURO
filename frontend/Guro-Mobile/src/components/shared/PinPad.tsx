@@ -21,12 +21,13 @@ interface PinPadProps {
   visible: boolean;
   title: string;
   subtitle?: string;
+  onForgotPin?: () => void;
   /** Called when user submits a PIN. Return true if correct, false if wrong. */
   onSubmit: (pin: string) => Promise<boolean> | boolean;
   onCancel: () => void;
 }
 
-export function PinPad({ visible, title, subtitle, onSubmit, onCancel }: PinPadProps) {
+export function PinPad({ visible, title, subtitle, onForgotPin, onSubmit, onCancel }: PinPadProps) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -109,6 +110,14 @@ export function PinPad({ visible, title, subtitle, onSubmit, onCancel }: PinPadP
                 );
               })}
             </View>
+
+            {onForgotPin ? (
+              <TouchableOpacity onPress={onForgotPin} style={{ alignSelf: 'center', marginTop: Spacing.sm }}>
+                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                  Forgot PIN?
+                </Text>
+              </TouchableOpacity>
+            ) : null}
 
             {/* Cancel */}
             <TouchableOpacity onPress={handleClose} style={styles.cancelBtn}>

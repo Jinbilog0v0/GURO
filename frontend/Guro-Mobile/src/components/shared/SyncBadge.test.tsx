@@ -2,8 +2,10 @@ import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { SyncBadge } from './SyncBadge';
 import { useAppStore } from '../../store/useAppStore';
+import * as Network from 'expo-network';
 
-// Mock useAppStore
+// ── Mocks ──────────────────────────────────────────────────────────────────
+
 const mockProgress = [
   { eventId: 'evt1', synced: true },
   { eventId: 'evt2', synced: false }, // 1 pending
@@ -14,22 +16,29 @@ const mockState = {
 };
 
 jest.mock('../../store/useAppStore', () => {
-  const hook = jest.fn((selector: any) => selector ? selector(mockState) : mockState);
+  const hook = jest.fn((selector: any) => (selector ? selector(mockState) : mockState));
   (hook as any).getState = () => mockState;
-  return {
-    useAppStore: hook,
-  };
+  return { useAppStore: hook };
 });
+
+// SyncBadge uses expo-network — mock it so tests don't hit real networking
+jest.mock('expo-network', () => ({
+  getNetworkStateAsync: jest.fn(),
+}));
+
+// ── Tests ──────────────────────────────────────────────────────────────────
 
 describe('SyncBadge Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    global.fetch = jest.fn();
   });
 
-  test('should display offline status when fetch fails', async () => {
-    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
-    
+  test('should display offline status when network is unavailable', async () => {
+    (Network.getNetworkStateAsync as jest.Mock).mockResolvedValueOnce({
+      isConnected: false,
+      isInternetReachable: false,
+    });
+
     let root: any;
     await act(async () => {
       root = renderer.create(<SyncBadge />);
@@ -40,7 +49,10 @@ describe('SyncBadge Component', () => {
   });
 
   test('should display pending count when online and pending items exist', async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true });
+    (Network.getNetworkStateAsync as jest.Mock).mockResolvedValueOnce({
+      isConnected: true,
+      isInternetReachable: true,
+    });
 
     let root: any;
     await act(async () => {
