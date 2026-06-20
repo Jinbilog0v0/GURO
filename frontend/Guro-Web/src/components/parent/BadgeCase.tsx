@@ -1,5 +1,5 @@
 import React from 'react';
-import { Award, Lock, CheckCircle2 } from 'lucide-react';
+import { Award, Lock, CheckCircle2, Medal, Pizza, Target, Coins, Shield, Theater, Zap, Ruler } from 'lucide-react';
 
 interface SyncedEvent {
   studentId: string;
@@ -20,7 +20,7 @@ interface BadgeDef {
   name: string;
   topicName: string;
   subject: string;
-  icon: string;
+  icon: React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>;
   color: string;
   description: string;
 }
@@ -29,37 +29,37 @@ export const BadgeCase: React.FC<BadgeCaseProps> = ({ logs }) => {
   const badgeDefinitions: BadgeDef[] = [
     {
       id: 'fraction-cadet',
-      name: 'Fraction Cadet 🎖️',
+      name: 'Fraction Cadet',
       topicName: 'Fractions',
       subject: 'Mathematics',
-      icon: '🍕',
+      icon: Pizza,
       color: '#3B82F6',
       description: 'Achieve 80%+ accuracy on Grade 4 Fractions.',
     },
     {
       id: 'decimal-scout',
-      name: 'Decimal Scout 🎯',
+      name: 'Decimal Scout',
       topicName: 'Decimals',
       subject: 'Mathematics',
-      icon: '🪙',
+      icon: Coins,
       color: '#0EA5E9',
       description: 'Achieve 80%+ accuracy on Grade 5 Decimals.',
     },
     {
       id: 'simile-pioneer',
-      name: 'Simile Pioneer 🛡️',
+      name: 'Simile Pioneer',
       topicName: 'Figurative Language',
       subject: 'English',
-      icon: '🎭',
+      icon: Theater,
       color: '#8B5CF6',
       description: 'Achieve 80%+ accuracy on Grade 4 Figurative Language.',
     },
     {
       id: 'equation-master',
-      name: 'Algebra Algebrator ⚡',
+      name: 'Algebra Algebrator',
       topicName: 'Algebraic Equations',
       subject: 'Mathematics',
-      icon: '📐',
+      icon: Ruler,
       color: '#F59E0B',
       description: 'Achieve 80%+ accuracy on Grade 6 Algebraic Equations.',
     },
@@ -103,14 +103,13 @@ export const BadgeCase: React.FC<BadgeCaseProps> = ({ logs }) => {
                   backgroundColor: unlocked ? `${badge.color}15` : 'rgba(255, 255, 255, 0.02)',
                 }}
               >
-                <span
-                  className="text-[28px]"
+                <badge.icon
+                  size={28}
                   style={{
-                    filter: unlocked ? 'none' : 'grayscale(100%) opacity(40%)',
+                    color: unlocked ? badge.color : '#64748B',
+                    opacity: unlocked ? 1 : 0.4,
                   }}
-                >
-                  {badge.icon}
-                </span>
+                />
                 {unlocked ? (
                   <CheckCircle2 size={14} className="absolute -bottom-[3px] -right-[3px] text-[#10B981] fill-[#060913]" />
                 ) : (
@@ -119,8 +118,12 @@ export const BadgeCase: React.FC<BadgeCaseProps> = ({ logs }) => {
               </div>
               
               <div className="flex flex-col gap-[3px] flex-1">
-                <h4 className={`text-[13px] font-bold ${unlocked ? 'text-[#F8FAFC]' : 'text-[#64748B]'}`}>
-                  {badge.name}
+                <h4 className={`text-[13px] font-bold ${unlocked ? 'text-[#F8FAFC]' : 'text-[#64748B]'} flex items-center gap-1.5`}>
+                  <span>{badge.name}</span>
+                  {badge.id === 'fraction-cadet' && <Medal size={14} className="text-[#F59E0B] shrink-0" />}
+                  {badge.id === 'decimal-scout' && <Target size={14} className="text-[#A01322] shrink-0" />}
+                  {badge.id === 'simile-pioneer' && <Shield size={14} className="text-[#8B5CF6] shrink-0" />}
+                  {badge.id === 'equation-master' && <Zap size={14} className="text-[#F59E0B] shrink-0" />}
                 </h4>
                 <p className="text-[11px] text-[#94A3B8] leading-[15px]">{badge.description}</p>
                 <span

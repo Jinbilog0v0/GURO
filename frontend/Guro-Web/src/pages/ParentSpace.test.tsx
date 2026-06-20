@@ -46,7 +46,7 @@ describe('ParentSpace Page', () => {
 
   test('renders the Parent Progress Explorer header', () => {
     render(<ParentSpace progressLogs={mockProgressLogs} lastUpdatedCell={null} />);
-    expect(screen.getByText('👪 Parent Progress Explorer')).toBeInTheDocument();
+    expect(screen.getByText(/Parent Progress Explorer/)).toBeInTheDocument();
   });
 
   test('prompts to search when no student is searched', () => {
@@ -67,7 +67,7 @@ describe('ParentSpace Page', () => {
     
     const idInput = screen.getByPlaceholderText('e.g. GURO-STUDENT-LOCAL');
     const codeInput = screen.getByPlaceholderText('e.g. 123456');
-    const searchBtn = screen.getByText('🔍 Search Reports');
+    const searchBtn = screen.getByRole('button', { name: /Search Reports/i });
 
     fireEvent.change(idInput, { target: { value: 'STUDENT-1' } });
     fireEvent.change(codeInput, { target: { value: '123456' } });
@@ -82,7 +82,7 @@ describe('ParentSpace Page', () => {
 
     expect(screen.getByText('2')).toBeInTheDocument(); // 2 quests
     expect(screen.getByText('85%')).toBeInTheDocument(); // Avg of 80 and 90
-    expect(screen.getByText('⭐ Advanced')).toBeInTheDocument();
+    expect(screen.getByText('Advanced')).toBeInTheDocument();
     expect(mockFetch).toHaveBeenCalledWith('/api/progress?studentId=STUDENT-1&accessCode=123456');
   });
 
@@ -99,7 +99,7 @@ describe('ParentSpace Page', () => {
     
     const idInput = screen.getByPlaceholderText('e.g. GURO-STUDENT-LOCAL');
     const codeInput = screen.getByPlaceholderText('e.g. 123456');
-    const searchBtn = screen.getByText('🔍 Search Reports');
+    const searchBtn = screen.getByRole('button', { name: /Search Reports/i });
 
     fireEvent.change(idInput, { target: { value: 'UNKNOWN-STUDENT' } });
     fireEvent.change(codeInput, { target: { value: '123456' } });

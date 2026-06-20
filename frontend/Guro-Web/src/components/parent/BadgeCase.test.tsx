@@ -32,11 +32,11 @@ describe('BadgeCase Component', () => {
     expect(screen.getByText("Child's Milestone Badge Case")).toBeInTheDocument();
 
     // Fraction Cadet should be unlocked (score 9/10 = 90% >= 80%)
-    expect(screen.getByText('Fraction Cadet 🎖️')).toBeInTheDocument();
+    expect(screen.getByText('Fraction Cadet')).toBeInTheDocument();
     expect(screen.getByText('✓ Completed')).toBeInTheDocument();
 
     // Decimal Scout should be locked (score 5/10 = 50% < 80%)
-    expect(screen.getByText('Decimal Scout 🎯')).toBeInTheDocument();
+    expect(screen.getByText('Decimal Scout')).toBeInTheDocument();
     
     // There are 3 locked badges and 1 unlocked badge.
     // 'Locked' text should appear 3 times in the document

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { List } from 'react-window';
+import { Search, AlertCircle, Inbox, BarChart3, Calculator, BookOpen, Users, Star, TrendingUp, AlertTriangle, Calendar } from 'lucide-react';
 import { ActivityHeatmap } from '../components/parent/ActivityHeatmap';
 import { TutorReport } from '../components/parent/TutorReport';
 import { BadgeCase } from '../components/parent/BadgeCase';
@@ -76,21 +77,25 @@ const RowRenderer = ({
               ? 'bg-[#064E3B] border-[#10B981]' 
               : percentage >= 50 
                 ? 'bg-[#78350F] border-[#F59E0B]' 
-                : 'bg-[#7F1D1D] border-[#EF4444]'
+                 : 'bg-[#7F1D1D] border-[#A01322]'
           }`} 
         />
 
         <div className="flex-1 bg-white/1 border border-[var(--border-color)] rounded-[12px] flex flex-col justify-center h-full box-border px-4 py-3">
           <div className="flex justify-between items-center mb-1.5">
             <h4 className="text-sm font-extrabold text-[var(--text-main)]">
-              {log.subject === 'Mathematics' ? '🧮' : '📚'} {log.topic}
+             {log.subject === 'Mathematics' ? (
+               <Calculator className="size-4 text-[#11428E]" />
+             ) : (
+              <BookOpen className="size-4 text-emerald-500" />
+            )}{' '}{log.topic}
             </h4>
             <span className={
               percentage >= 80 
                 ? "px-2 py-0.75 rounded-md text-[10px] font-bold bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20" 
                 : percentage >= 50 
                   ? "px-2 py-0.75 rounded-md text-[10px] font-bold bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20" 
-                  : "px-2 py-0.75 rounded-md text-[10px] font-bold bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20"
+                  : "px-2 py-0.75 rounded-md text-[10px] font-bold bg-[#A01322]/10 text-[#A01322] border border-[#A01322]/20"
             }>
               Score: {log.score} / {log.totalQuestions} ({percentage}%)
             </span>
@@ -151,7 +156,9 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
   return (
     <div className="fade-in flex flex-col gap-6 w-full">
       <div className="mb-2">
-        <h2 style={{ color: 'var(--text-main)' }}>👪 Parent Progress Explorer</h2>
+        <h2 style={{ color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Users className="size-6 text-pink-500" /> Parent Progress Explorer
+        </h2>
         <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
           Enter your child's unique mobile identifier and 6-digit access code to view practice results and telemetry synced from their device.
         </p>
@@ -190,14 +197,14 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
             />
           </div>
           <div style={{ minWidth: '150px' }}>
-            <button type="submit" className="btn btn-primary px-6" style={{ width: '100%', height: '42px' }}>
-              🔍 Search Reports
+            <button type="submit" className="btn btn-primary px-6 cursor-pointer" style={{ width: '100%', height: '42px' }}>
+              <span className="flex items-center justify-center gap-1.5"><Search className="size-4" /> Search Reports</span>
             </button>
           </div>
         </div>
         {errorMsg && (
-          <div style={{ marginTop: '12px', color: '#EF4444', fontSize: '13px', fontWeight: 600 }}>
-            ❌ {errorMsg}
+          <div style={{ marginTop: '12px', color: '#A01322', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <AlertCircle className="size-4" /> {errorMsg}
           </div>
         )}
       </form>
@@ -205,12 +212,12 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
       {loading ? (
         <div className="text-center px-10 py-15 flex flex-col items-center gap-3">
           <div className="spinner"></div>
-          <p className="text-[#6366F1] font-semibold text-sm">Retrieving learning curves...</p>
+          <p className="text-[#11428E] font-semibold text-sm">Retrieving learning curves...</p>
         </div>
       ) : searched ? (
         studentLogs.length === 0 ? (
           <div className="glass-panel text-center px-10 py-15 flex flex-col items-center gap-3">
-            <TextEmoji>☁️</TextEmoji>
+            <Inbox className="size-12 text-slate-500 opacity-40" />
             <p className="text-[15px] font-bold text-[var(--text-main)]">
               No reports registered for device ID <strong>"{studentIdInput}"</strong>.
             </p>
@@ -232,8 +239,15 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
               </div>
               <div className="glass-panel p-5 flex flex-col gap-1.5 items-center">
                 <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.5px]">Learning Status</span>
-                <span className="font-['Space_Grotesk',sans-serif] text-[26px] font-bold" style={{ color: avgScore >= 80 ? '#10B981' : avgScore >= 50 ? '#F59E0B' : '#EF4444', fontFamily: 'sans-serif', fontSize: 22 }}>
-                  {avgScore >= 80 ? '⭐ Advanced' : avgScore >= 50 ? '📈 Progressing' : '⚠️ Remedial'}
+                <span className="font-['Space_Grotesk',sans-serif] font-bold flex items-center justify-center gap-1.5" style={{ color: avgScore >= 80 ? '#10B981' : avgScore >= 50 ? '#F59E0B' : '#A01322', fontFamily: 'sans-serif', fontSize: 22 }}>
+                  <span>{avgScore >= 80 ? 'Advanced' : avgScore >= 50 ? 'Progressing' : 'Remedial'}</span>
+                  {avgScore >= 80 ? (
+                    <Star size={18} className="text-[#10B981] fill-[#10B981] shrink-0" />
+                  ) : avgScore >= 50 ? (
+                    <TrendingUp size={18} className="text-[#F59E0B] shrink-0" />
+                  ) : (
+                    <AlertTriangle size={18} className="text-[#A01322] shrink-0" />
+                  )}
                 </span>
               </div>
             </div>
@@ -251,7 +265,10 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
               <div className="flex flex-col">
                 {/* Performance Timeline feed */}
                 <div className="glass-panel p-6">
-                  <h3 className="text-base mb-5">📅 Practice Timeline History</h3>
+                  <h3 className="text-base mb-5 flex items-center gap-2">
+                    <Calendar size={18} className="text-[#11428E] shrink-0" />
+                    <span>Practice Timeline History</span>
+                  </h3>
                     <List<{ studentLogs: SyncedEvent[]; lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null }>
                       style={{ overflowX: 'hidden', height: 500, width: '100%' }}
                       rowCount={studentLogs.length}
@@ -267,7 +284,7 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
       ) : (
         /* Prompt to search */
         <div className="glass-panel text-center px-10 py-15 flex flex-col items-center gap-3">
-          <TextEmoji>📊</TextEmoji>
+          <BarChart3 className="size-12 text-blue-500 opacity-60" />
           <p className="text-[15px] font-bold text-[var(--text-main)]">Enter a Student ID and Access Code to query performance history</p>
           <p className="text-xs text-[var(--text-muted)] max-w-[450px] leading-[18px]">
             You can find the Student ID and the 6-Digit Parent Access Code on the home dashboard settings modal of the child's mobile app.
@@ -276,8 +293,4 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
       )}
     </div>
   );
-}
-
-function TextEmoji({ children }: { children: React.ReactNode }) {
-  return <span className="text-[44px] opacity-50">{children}</span>;
 }
