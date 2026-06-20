@@ -22,14 +22,21 @@ class SyncController extends Controller
         $classroomId = $request->input('classroomId');
 
         $newEventsAppended = [];
+        $eventIds = array_column($events, 'eventId');
+
+        // Query all existing event IDs in a single query
+        $existingEventIds = ProgressLog::whereIn('event_id', $eventIds)->pluck('event_id')->toArray();
+        $existingLookup = array_flip($existingEventIds);
+
+        $recordsToInsert = [];
+        $now = now();
 
         foreach ($events as $evt) {
             $eventId = $evt['eventId'];
 
             // Prevent duplicate insertion
-            $exists = ProgressLog::where('event_id', $eventId)->exists();
-            if (! $exists) {
-                $log = ProgressLog::create([
+            if (!isset($existingLookup[$eventId])) {
+                $recordsToInsert[] = [
                     'event_id' => $eventId,
                     'student_id' => $studentId,
                     'classroom_id' => $classroomId ?: null,
@@ -39,20 +46,26 @@ class SyncController extends Controller
                     'score' => (int) $evt['score'],
                     'total_questions' => (int) $evt['totalQuestions'],
                     'timestamp' => $evt['timestamp'],
-                ]);
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
 
                 $newEventsAppended[] = [
-                    'eventId' => $log->event_id,
-                    'studentId' => $log->student_id,
-                    'classroomId' => $log->classroom_id,
-                    'subject' => $log->subject,
-                    'gradeLevel' => $log->grade_level,
-                    'topic' => $log->topic,
-                    'score' => $log->score,
-                    'totalQuestions' => $log->total_questions,
-                    'timestamp' => $log->timestamp,
+                    'eventId' => $eventId,
+                    'studentId' => $studentId,
+                    'classroomId' => $classroomId ?: null,
+                    'subject' => $evt['subject'],
+                    'gradeLevel' => (int) $evt['gradeLevel'],
+                    'topic' => $evt['topic'],
+                    'score' => (int) $evt['score'],
+                    'totalQuestions' => (int) $evt['totalQuestions'],
+                    'timestamp' => $evt['timestamp'],
                 ];
             }
+        }
+
+        if (!empty($recordsToInsert)) {
+            ProgressLog::insert($recordsToInsert);
         }
 
         return response()->json([
@@ -90,10 +103,10 @@ class SyncController extends Controller
         try {
             $query = ProgressLog::query();
             if ($hasClassroom) {
-                $query->whereRaw('UPPER(classroom_id) = ?', [strtoupper($classroomId)]);
+                $query->where('classroom_id', strtoupper($classroomId));
             }
             if ($hasStudentAndCode) {
-                $query->whereRaw('UPPER(student_id) = ?', [strtoupper($studentId)]);
+                $query->where('student_id', strtoupper($studentId));
             }
 
             $logs = $query->orderBy('timestamp', 'desc')->limit(100)->get();

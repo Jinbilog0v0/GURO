@@ -29,7 +29,7 @@ class ClassroomController extends Controller
         try {
             if ($classroomId) {
                 $data = \Illuminate\Support\Facades\Cache::remember("classroom_bank_" . strtoupper($classroomId), 3600, function () use ($classroomId) {
-                    $classroom = Classroom::whereRaw('UPPER(classroom_id) = ?', [strtoupper($classroomId)])->first();
+                    $classroom = Classroom::where('classroom_id', strtoupper($classroomId))->first();
                     return $classroom && ! empty($classroom->custom_item_bank) ? $classroom->custom_item_bank : [];
                 });
                 return response()->json($data);
@@ -153,7 +153,7 @@ class ClassroomController extends Controller
             return response()->json(['error' => 'Missing code parameter.'], 400);
         }
 
-        $classroom = Classroom::whereRaw('UPPER(classroom_id) = ?', [strtoupper($code)])->first();
+        $classroom = Classroom::where('classroom_id', strtoupper($code))->first();
         if (! $classroom) {
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
@@ -224,7 +224,7 @@ class ClassroomController extends Controller
             return response()->json(['error' => 'Missing classroomId.'], 400);
         }
 
-        $classroom = Classroom::whereRaw('UPPER(classroom_id) = ?', [strtoupper($classroomId)])->first();
+        $classroom = Classroom::where('classroom_id', strtoupper($classroomId))->first();
         if (! $classroom) {
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
@@ -254,7 +254,7 @@ class ClassroomController extends Controller
 
         $globalBank = json_decode(file_get_contents($path), true) ?: [];
 
-        $classroom = Classroom::whereRaw('UPPER(classroom_id) = ?', [strtoupper($classroomId)])->first();
+        $classroom = Classroom::where('classroom_id', strtoupper($classroomId))->first();
         if (! $classroom) {
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
@@ -309,7 +309,7 @@ class ClassroomController extends Controller
         $questions = $request->input('questions');
         $studyContent = $request->input('studyContent');
 
-        $classroom = Classroom::whereRaw('UPPER(classroom_id) = ?', [strtoupper($classroomId)])->first();
+        $classroom = Classroom::where('classroom_id', strtoupper($classroomId))->first();
         if (! $classroom) {
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
