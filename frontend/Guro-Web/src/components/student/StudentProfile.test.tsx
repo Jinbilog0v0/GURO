@@ -6,7 +6,6 @@ describe('StudentProfile Component', () => {
   const defaultProps = {
     userName: 'NJ',
     email: 'nj@guro.app',
-    onLogout: jest.fn(),
   };
 
   beforeEach(() => {
@@ -20,23 +19,17 @@ describe('StudentProfile Component', () => {
     expect(screen.queryByText('nj@guro.app')).not.toBeInTheDocument();
   });
 
-  test('toggles dropdown popover on click and shows email and logout button', () => {
+  test('toggles dropdown popover on click and shows email', () => {
     render(<StudentProfile {...defaultProps} />);
     
     const triggerBtn = screen.getByRole('button', { name: /NJ/i });
     fireEvent.click(triggerBtn);
     
-    // Check that email and logout button are now visible
+    // Check that email is now visible
     expect(screen.getByText('nj@guro.app')).toBeInTheDocument();
     
-    const logoutBtn = screen.getByRole('button', { name: /Log Out/i });
-    expect(logoutBtn).toBeInTheDocument();
-    
-    // Click logout and verify it is triggered
-    fireEvent.click(logoutBtn);
-    expect(defaultProps.onLogout).toHaveBeenCalledTimes(1);
-    
-    // Check that dropdown closes after logout click
+    // Click again to close dropdown
+    fireEvent.click(triggerBtn);
     expect(screen.queryByText('nj@guro.app')).not.toBeInTheDocument();
   });
 

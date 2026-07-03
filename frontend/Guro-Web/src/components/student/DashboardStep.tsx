@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, BookOpen, Trophy, TrendingUp, Hand, Lock, Play, Rocket, ShoppingBag, Sparkles, X, Clock, ArrowLeft, Flame } from 'lucide-react';
+import { Calculator, BookOpen, Trophy, TrendingUp, Hand, Lock, Play, Rocket, ShoppingBag, Sparkles, X, Clock, ArrowLeft, Flame, GraduationCap, Star } from 'lucide-react';
 import { SubjectCard } from './SubjectCard';
 import { StatCard } from './StatCard';
 import { StudentProfile } from './StudentProfile';
@@ -10,7 +10,6 @@ interface DashboardStepProps {
     selectedGrade: number;
     onBack: () => void;
     onSelectSubject: (subject: string) => void;
-    onLogout?: () => void;
     mathTopics?: string[];
     englishTopics?: string[];
     mathProgress?: number;
@@ -44,6 +43,12 @@ interface DashboardStepProps {
     dailyMinutesUsed: number;
     dailyTimeLimit: number;
     isTimeLimitExceeded: boolean;
+
+    // Classroom Connection
+    classroomCode?: string;
+    teacherName?: string;
+    onJoinClassroom?: (code: string) => Promise<boolean>;
+    onLeaveClassroom?: () => void;
 }
 
 const OUTFIT_OPTIONS = [
@@ -62,7 +67,6 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
     selectedGrade = 4,
     onBack,
     onSelectSubject,
-    onLogout,
     mathTopics = ['Whole Numbers', 'Fractions', 'Geometry'],
     englishTopics = ['Reading', 'Grammar', 'Figures of Speech'],
     mathProgress = 65,
@@ -96,9 +100,28 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
     dailyMinutesUsed = 0,
     dailyTimeLimit = 0,
     isTimeLimitExceeded = false,
+
+    // Classroom Connection
+    classroomCode = '',
+    teacherName = '',
+    onJoinClassroom,
+    onLeaveClassroom,
 }) => {
     const [isShopOpen, setIsShopOpen] = useState(false);
     const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+    const [joinCodeInput, setJoinCodeInput] = useState('');
+    const [isJoining, setIsJoining] = useState(false);
+
+    const handleJoinSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!joinCodeInput.trim() || !onJoinClassroom) return;
+        setIsJoining(true);
+        const success = await onJoinClassroom(joinCodeInput);
+        setIsJoining(false);
+        if (success) {
+            setJoinCodeInput('');
+        }
+    };
 
     // Levels
     const level = Math.floor(xpPoints / 100) + 1;
@@ -136,7 +159,6 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                         <StudentProfile
                             userName={userName}
                             email={email}
-                            onLogout={onLogout}
                             parentAccessCode={parentAccessCode}
                         />
                     </div>
@@ -201,6 +223,52 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                         <ShoppingBag className="size-4 shrink-0" />
                         <span>Mascot Shop</span>
                     </button>
+                </div>
+
+                {/* Classroom Pairing Card */}
+                <div className="w-full glass-panel rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between border border-[var(--border-color)] shadow-sm gap-4">
+                    <div className="flex flex-col gap-1.5 flex-1">
+                        <h3 className="text-lg font-black text-[var(--text-main)] flex items-center gap-2">
+                            <GraduationCap className="size-5 text-[#11428E] shrink-0" />
+                            <span>My Classroom Connection</span>
+                        </h3>
+                        <p className="text-xs font-semibold text-[var(--text-muted)]">
+                            {classroomCode ? (
+                                <>Paired with Classroom: <strong className="text-[#11428E]">{classroomCode}</strong> {teacherName ? `(Teacher: ${teacherName})` : ''}</>
+                            ) : (
+                                "Not connected to any classroom. Enter your teacher's code to sync practice lessons."
+                            )}
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+                        {classroomCode ? (
+                            <button
+                                onClick={onLeaveClassroom}
+                                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs rounded-2xl shadow-md transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                            >
+                                Leave Class
+                            </button>
+                        ) : (
+                            <form onSubmit={handleJoinSubmit} className="flex gap-2.5 w-full md:w-auto">
+                                <input
+                                    type="text"
+                                    placeholder="Enter Classroom Code"
+                                    value={joinCodeInput}
+                                    onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
+                                    className="bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-main)] px-4 py-2.5 rounded-2xl font-bold text-xs focus:outline-none w-full md:w-[180px]"
+                                    required
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={isJoining}
+                                    className="px-5 py-2.5 bg-[#11428E] hover:bg-[#0c316b] text-white font-extrabold text-xs rounded-2xl shadow-md transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] shrink-0 disabled:opacity-50"
+                                >
+                                    {isJoining ? 'Joining...' : 'Join Class'}
+                                </button>
+                            </form>
+                        )}
+                    </div>
                 </div>
 
                 {/* Main Welcome row */}
@@ -329,7 +397,7 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                             <span className="text-xs font-extrabold text-[var(--text-muted)]">Stars Collected</span>
                         </div>
                         <div className="size-10 bg-amber-500/10 rounded-xl flex items-center justify-center shrink-0">
-                            <span className="text-xl animate-pulse">⭐</span>
+                            <Star className="size-5 text-amber-500 fill-amber-500 animate-pulse shrink-0" />
                         </div>
                     </div>
                 </div>
@@ -388,8 +456,8 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
 
                         <div className="flex items-center justify-between px-4 py-3 bg-[var(--bg-input)] rounded-2xl border border-[var(--border-color)]">
                             <span className="text-sm font-extrabold text-[var(--text-muted)]">Your Balance</span>
-                            <span className="text-base font-black text-amber-600 flex items-center gap-1">
-                                <span>⭐</span> {stars}
+                            <span className="text-base font-black text-amber-600 flex items-center gap-1.5">
+                                <Star className="size-4 text-amber-500 fill-amber-500 shrink-0" /> {stars}
                             </span>
                         </div>
 
@@ -404,8 +472,16 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                                             <span className="text-3xl shrink-0">{outfit.emoji}</span>
                                             <div className="min-w-0">
                                                 <h4 className="text-sm font-extrabold text-[var(--text-main)] truncate">{outfit.label}</h4>
-                                                <p className="text-xs font-bold text-[var(--text-muted)]">
-                                                    {isOwned ? 'Purchased' : `${outfit.cost} ⭐ Stars`}
+                                                <p className="text-xs font-bold text-[var(--text-muted)] flex items-center gap-1">
+                                                    {isOwned ? (
+                                                        'Purchased'
+                                                    ) : (
+                                                        <>
+                                                            <span>{outfit.cost}</span>
+                                                            <Star className="size-3.5 text-amber-500 fill-amber-500 shrink-0" />
+                                                            <span>Stars</span>
+                                                        </>
+                                                    )}
                                                 </p>
                                             </div>
                                         </div>

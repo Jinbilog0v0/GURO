@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { apiFetch, clearAuthToken } from './utils/api';
 import { Toaster } from 'react-hot-toast';
 import { toast } from './utils/toast';
 import { LandingPage } from './pages/LandingPage';
@@ -19,7 +20,7 @@ import {
   TrendingUp,
   Key,
   PlusCircle,
-  Users,
+  User,
   Zap,
   LogOut,
   RotateCw,
@@ -53,11 +54,27 @@ function App() {
     classroomId?: string | null;
   } | null>(() => {
     const cached = localStorage.getItem('guro_user_session');
-    return cached ? JSON.parse(cached) : null;
+    if (!cached) return null;
+    try {
+      return JSON.parse(cached);
+    } catch {
+      localStorage.removeItem('guro_user_session');
+      return null;
+    }
   });
 
-  const [activeTab, setActiveTab] = useState<TabType>('landing');
-  const [activeSubTab, setActiveSubTab] = useState<'analytics' | 'manual-lesson' | 'classroom-pairing'>('analytics');
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const cachedUser = localStorage.getItem('guro_user_session');
+    if (!cachedUser) return 'landing';
+    const stored = localStorage.getItem('guro_active_tab');
+    if (stored) return stored as TabType;
+    return 'landing';
+  });
+  const [activeSubTab, setActiveSubTab] = useState<'analytics' | 'manual-lesson' | 'classroom-pairing'>(() => {
+    const stored = localStorage.getItem('guro_active_sub_tab');
+    if (stored) return stored as 'analytics' | 'manual-lesson' | 'classroom-pairing';
+    return 'analytics';
+  });
   const [progressLogs, setProgressLogs] = useState<SyncedEvent[]>([]);
   const [stagedQuestions, setStagedQuestions] = useState<Question[]>([]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -69,6 +86,14 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
     return localStorage.getItem('guro_sidebar') !== 'collapsed';
   });
+
+  useEffect(() => {
+    localStorage.setItem('guro_active_tab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('guro_active_sub_tab', activeSubTab);
+  }, [activeSubTab]);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -87,21 +112,28 @@ function App() {
   };
 
   useEffect(() => {
-    if (currentUser) {
-      if (currentUser.role === 'teacher') setActiveTab('teacher');
+    if (currentUser && activeTab === 'landing') {
+      if (currentUser.role === 'teacher') setActiveTab('dashboard');
       else if (currentUser.role === 'parent') setActiveTab('parent');
       else if (currentUser.role === 'student') setActiveTab('student');
       else if (currentUser.role === 'admin') setActiveTab('dashboard');
       else if (currentUser.role === 'lesson-builder' || currentUser.role === 'developer') setActiveTab('lesson-builder');
     }
-  }, []);
+  }, [currentUser, activeTab]);
   const [lastUpdatedCell, setLastUpdatedCell] = useState<{ studentId: string; topic: string; timestamp: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchLogs = async (isBackground = false) => {
+    const classCode = currentUser?.classroomId || localStorage.getItem('guro_teacher_classroom_code');
+    if (!classCode) {
+      setProgressLogs([]);
+      setLoading(false);
+      return;
+    }
+
     if (!isBackground) setLoading(true);
     try {
-      const response = await fetch('/api/progress');
+      const response = await apiFetch(`/api/progress?classroomId=${encodeURIComponent(classCode)}`);
       if (!response.ok) throw new Error('Failed to load logs');
       const data = await response.json();
       
@@ -145,7 +177,7 @@ function App() {
     return () => {
       clearInterval(interval);
     };
-  }, [activeTab]);
+  }, [activeTab, currentUser]);
 
   // Handle exiting out of specialized sub-spaces back to the landing gate
   const handleExitToLanding = () => {
@@ -156,8 +188,11 @@ function App() {
   if (activeTab === 'landing') {
     return (
       <LandingPage 
-        onSelectRole={(role) => {
+        onSelectRole={(role, grade) => {
           setCurrentUser(null);
+          if (grade) {
+            localStorage.setItem('guro_student_grade', String(grade));
+          }
           setActiveTab(role);
         }} 
         onLoginSuccess={(user) => {
@@ -165,7 +200,7 @@ function App() {
           localStorage.setItem('guro_user_session', JSON.stringify(user));
           toast.success(`Welcome back, ${user.name}!`);
           
-          if (user.role === 'teacher') setActiveTab('teacher');
+          if (user.role === 'teacher') setActiveTab('dashboard');
           else if (user.role === 'parent') setActiveTab('parent');
           else if (user.role === 'student') setActiveTab('student');
           else if (user.role === 'admin') setActiveTab('dashboard');
@@ -178,7 +213,17 @@ function App() {
   if (activeTab === 'student') {
     return (
       <Suspense fallback={<PageLoadingSpinner message="Loading Student Space…" />}>
-        <StudentSpace onExit={handleExitToLanding} currentUser={currentUser} />
+        <StudentSpace 
+          onExit={handleExitToLanding} 
+          onLogout={() => {
+            setCurrentUser(null);
+            clearAuthToken();
+            handleExitToLanding();
+          }}
+          currentUser={currentUser} 
+          isDarkMode={isDarkMode}
+          onToggleTheme={toggleTheme}
+        />
       </Suspense>
     );
   }
@@ -216,6 +261,12 @@ function App() {
           <DashboardSpace
             currentUser={currentUser}
             stagedQuestionsCount={stagedQuestions.length}
+            progressLogs={progressLogs}
+            progressLoading={loading}
+            onNavigate={(tab, subTab) => {
+              setActiveTab(tab);
+              if (subTab) setActiveSubTab(subTab);
+            }}
           />
         );
       default:
@@ -346,10 +397,10 @@ function App() {
           {isParent && (
             isSidebarOpen ? (
               <button onClick={() => setActiveTab('parent')} className={navBtn(activeTab === 'parent')} aria-current={activeTab === 'parent' ? 'page' : undefined}>
-                <Users size={18} className="shrink-0" /><span>Parent Explorer</span>
+                <User size={18} className="shrink-0" /><span>Parent Explorer</span>
               </button>
             ) : (
-              <button onClick={() => setActiveTab('parent')} className={navBtnIcon(activeTab === 'parent')} title="Parent Explorer" aria-label="Parent Explorer"><Users size={18} /></button>
+              <button onClick={() => setActiveTab('parent')} className={navBtnIcon(activeTab === 'parent')} title="Parent Explorer" aria-label="Parent Explorer"><User size={18} /></button>
             )
           )}
 
@@ -390,7 +441,13 @@ function App() {
         {isSidebarOpen ? (
           <div className="border-t border-[var(--border-color)] pt-[14px] flex items-center gap-[11px]">
             <div className={`w-[38px] h-[38px] rounded-full border border-[var(--border-color)] flex items-center justify-center shrink-0 ${isAdmin ? 'bg-[#FBECEE]' : 'bg-[var(--bg-main)]'}`}>
-              {isAdmin ? <Shield size={18} className="text-[#CE1126]" /> : <GraduationCap size={18} className="text-[var(--text-muted)]" />}
+              {isAdmin ? (
+                <Shield size={18} className="text-[#CE1126]" />
+              ) : currentUser?.role === 'parent' ? (
+                <User size={18} className="text-[var(--text-muted)]" />
+              ) : (
+                <GraduationCap size={18} className="text-[var(--text-muted)]" />
+              )}
             </div>
             <div className="flex flex-col flex-1 min-w-0 leading-[1.15]">
               <span className="text-sm font-bold text-[var(--text-main)] truncate">
@@ -497,6 +554,12 @@ function App() {
         onConfirm={() => {
           setIsLogoutModalOpen(false);
           localStorage.removeItem('guro_user_session');
+          localStorage.removeItem('guro_active_tab');
+          localStorage.removeItem('guro_active_sub_tab');
+          localStorage.removeItem('guro_student_step');
+          localStorage.removeItem('guro_student_subject');
+          localStorage.removeItem('guro_student_topic');
+          clearAuthToken();
           setCurrentUser(null);
           handleExitToLanding();
           toast.success('Logged out successfully.');

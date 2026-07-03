@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, LogOut, ChevronDown, Mail, Key } from 'lucide-react';
+import { User, ChevronDown, Mail, Key } from 'lucide-react';
 
 interface StudentProfileProps {
     userName: string;
     email?: string;
-    onLogout?: () => void;
     parentAccessCode?: string;
 }
 
 export const StudentProfile: React.FC<StudentProfileProps> = ({
     userName = 'Student',
     email,
-    onLogout,
     parentAccessCode,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -76,19 +74,6 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
                                 {parentAccessCode}
                             </p>
                         </div>
-                    )}
-
-                    {onLogout && (
-                        <button
-                            onClick={() => {
-                                setIsOpen(false);
-                                onLogout();
-                            }}
-                            className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#A01322]/10 hover:bg-[#A01322]/20 border border-[#A01322]/20 rounded-full text-[#A01322] font-bold text-sm transition-colors cursor-pointer"
-                        >
-                            <LogOut className="size-4" />
-                            <span>Log Out</span>
-                        </button>
                     )}
                 </div>
             )}

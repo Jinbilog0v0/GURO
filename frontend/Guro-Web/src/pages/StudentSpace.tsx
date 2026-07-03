@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { NameInputStep } from '../components/student/NameInputStep';
-import { GradeSelectionStep } from '../components/student/GradeSelectionStep';
 import { DashboardStep } from '../components/student/DashboardStep';
 import { QuestionStep } from '../components/student/QuestionStep';
 import { QuizResultsStep } from '../components/student/QuizResultsStep';
 import { StudyContentStep } from '../components/student/StudyContentStep';
-import { StepProgressBar } from '../components/student/StepProgressBar';
 import { StudentShell, type ShellView } from '../components/student/StudentShell';
 import { ProgressView } from '../components/student/ProgressView';
-import { BookOpen, Calculator, Inbox, CheckCircle2, Circle, TrendingUp } from 'lucide-react';
+import { BookOpen, Calculator, Inbox, CheckCircle2, Circle, TrendingUp, GraduationCap } from 'lucide-react';
 import { getParentAccessCode } from '../utils/security';
 import { LogoutConfirmModal } from '../components/shared/LogoutConfirmModal';
+import { ClassroomStep } from '../components/student/ClassroomStep';
 import { toast } from '../utils/toast';
+import { apiFetch } from '../utils/api';
 
 interface QuestionItem {
     id: string;
@@ -168,10 +168,13 @@ const FALLBACK_ITEM_BANK: ItemBank = {
 
 interface StudentSpaceProps {
     onExit: () => void;
+    onLogout: () => void;
     currentUser?: { name: string; email: string; userId: string } | null;
+    isDarkMode: boolean;
+    onToggleTheme: () => void;
 }
 
-type StepType = 'name' | 'grade' | 'dashboard' | 'topics' | 'progress' | 'study' | 'quiz' | 'results';
+type StepType = 'name' | 'grade' | 'dashboard' | 'topics' | 'progress' | 'study' | 'quiz' | 'results' | 'classroom';
 
 interface AnsweredQuestion {
     questionText: string;
@@ -190,19 +193,35 @@ interface TopicStat {
 const STORAGE_KEY_NAME = 'guro_student_name';
 const STORAGE_KEY_GRADE = 'guro_student_grade';
 
-export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser }) => {
+export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, currentUser, isDarkMode, onToggleTheme }) => {
     const savedName = !currentUser ? (localStorage.getItem(STORAGE_KEY_NAME) ?? '') : '';
     const savedGrade = parseInt(localStorage.getItem(STORAGE_KEY_GRADE) ?? '4', 10) || 4;
 
     const [step, setStep] = useState<StepType>(() => {
-        if (currentUser) return 'grade';
-        if (savedName) return 'grade'; // skip name step if name is saved
+        const storedStep = localStorage.getItem('guro_student_step') as StepType;
+        if (storedStep && ['dashboard', 'topics', 'progress'].includes(storedStep)) {
+            return storedStep;
+        }
+        if (currentUser) return 'dashboard';
+        if (savedName) return 'dashboard'; // skip name step if name is saved
         return 'name';
     });
     const [userName, setUserName] = useState(currentUser ? currentUser.name : savedName);
     const [selectedGrade, setSelectedGrade] = useState<number>(savedGrade);
-    const [selectedSubject, setSelectedSubject] = useState<'Mathematics' | 'English'>('Mathematics');
-    const [selectedTopic, setSelectedTopic] = useState('');
+    const [selectedSubject, setSelectedSubject] = useState<'Mathematics' | 'English'>(() => {
+        const stored = localStorage.getItem('guro_student_subject');
+        if (stored === 'Mathematics' || stored === 'English') return stored;
+        return 'Mathematics';
+    });
+    const [selectedTopic, setSelectedTopic] = useState(() => {
+        return localStorage.getItem('guro_student_topic') ?? '';
+    });
+    const [classroomCode, setClassroomCode] = useState(() => {
+        return localStorage.getItem('guro_student_classroom_id') ?? '';
+    });
+    const [teacherName, setTeacherName] = useState(() => {
+        return localStorage.getItem('guro_student_teacher_name') ?? '';
+    });
 
     // Quiz execution state
     const [questions, setQuestions] = useState<QuestionItem[]>([]);
@@ -249,6 +268,18 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
 
     const [dailyTimeLimit] = useState<number>(() => parseInt(localStorage.getItem('guro_parent_time_limit') ?? '0', 10) || 0);
     const isTimeLimitExceeded = dailyTimeLimit > 0 && dailyMinutesUsed >= dailyTimeLimit;
+
+    useEffect(() => {
+        localStorage.setItem('guro_student_step', step);
+    }, [step]);
+
+    useEffect(() => {
+        localStorage.setItem('guro_student_subject', selectedSubject);
+    }, [selectedSubject]);
+
+    useEffect(() => {
+        localStorage.setItem('guro_student_topic', selectedTopic);
+    }, [selectedTopic]);
 
     // Active screen time tracker using focus and active interaction deltas
     useEffect(() => {
@@ -397,14 +428,18 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
         }
     }, []);
 
-    const fetchItemBank = async () => {
+    const fetchItemBank = async (forceCode?: string) => {
         setItemBankLoading(true);
+        const activeCode = forceCode !== undefined ? forceCode : (localStorage.getItem('guro_student_classroom_id') || classroomCode);
+        const url = activeCode ? `/api/item-bank?classroomId=${encodeURIComponent(activeCode)}` : '/api/item-bank';
         try {
-            const res = await fetch('/api/item-bank');
+            const res = await apiFetch(url);
             if (res.ok) {
                 const data = await res.json();
                 if (Object.keys(data).length > 0) {
                     setItemBank(data);
+                } else if (activeCode) {
+                    setItemBank(FALLBACK_ITEM_BANK);
                 }
             }
         } catch (error) {
@@ -412,6 +447,38 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
         } finally {
             setItemBankLoading(false);
         }
+    };
+
+    const handleJoinClassroom = async (code: string): Promise<boolean> => {
+        try {
+            const res = await apiFetch(`/api/classroom/verify?code=${encodeURIComponent(code.trim().toUpperCase())}`);
+            if (res.ok) {
+                const data = await res.json();
+                setClassroomCode(data.classroomId);
+                setTeacherName(data.teacherName || '');
+                localStorage.setItem('guro_student_classroom_id', data.classroomId);
+                localStorage.setItem('guro_student_teacher_name', data.teacherName || '');
+                toast.success(`Successfully joined ${data.teacherName ? `${data.teacherName}'s ` : ''}classroom!`);
+                fetchItemBank(data.classroomId);
+                return true;
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                toast.error(errData.error || 'Invalid classroom code.');
+                return false;
+            }
+        } catch (error) {
+            toast.error('Network error. Failed to join classroom.');
+            return false;
+        }
+    };
+
+    const handleLeaveClassroom = () => {
+        setClassroomCode('');
+        setTeacherName('');
+        localStorage.removeItem('guro_student_classroom_id');
+        localStorage.removeItem('guro_student_teacher_name');
+        toast.success('Successfully left classroom.');
+        fetchItemBank('');
     };
 
     const flushSyncQueue = async () => {
@@ -423,42 +490,56 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
 
             console.log(`[Sync] Attempting to sync ${queue.length} queued progress reports...`);
 
-            // Group queue items by studentId to send batched payloads
-            const grouped: { [studentId: string]: any[] } = {};
+            // Group queue items by studentId and classroomId to send batched payloads
+            const grouped: { [key: string]: { studentId: string; classroomId: string; events: any[] } } = {};
             queue.forEach((item: any) => {
-                if (!grouped[item.studentId]) grouped[item.studentId] = [];
-                grouped[item.studentId].push(item.event);
+                const cId = item.classroomId || localStorage.getItem('guro_student_classroom_id') || '';
+                const key = `${item.studentId}_${cId}`;
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        studentId: item.studentId,
+                        classroomId: cId,
+                        events: []
+                    };
+                }
+                grouped[key].events.push(item.event);
             });
 
-            const studentIds = Object.keys(grouped);
-            const successfullySyncedIds: string[] = [];
+            const keys = Object.keys(grouped);
+            const successfullySyncedKeys: string[] = [];
 
-            for (const studentId of studentIds) {
+            for (const key of keys) {
+                const { studentId, classroomId, events } = grouped[key];
                 try {
-                    const response = await fetch('/api/sync', {
+                    const response = await apiFetch('/api/sync', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             studentId,
-                            events: grouped[studentId]
+                            classroomId: classroomId || undefined,
+                            events
                         })
                     });
                     if (response.ok) {
-                        successfullySyncedIds.push(studentId);
+                        successfullySyncedKeys.push(key);
                     }
                 } catch (err) {
-                    console.warn(`[Sync] Failed to upload telemetry for student "${studentId}". Will retry when online.`);
+                    console.warn(`[Sync] Failed to upload telemetry for student "${studentId}" under classroom "${classroomId}". Will retry when online.`);
                 }
             }
 
-            if (successfullySyncedIds.length > 0) {
-                const remainingQueue = queue.filter((item: any) => !successfullySyncedIds.includes(item.studentId));
+            if (successfullySyncedKeys.length > 0) {
+                const remainingQueue = queue.filter((item: any) => {
+                    const cId = item.classroomId || localStorage.getItem('guro_student_classroom_id') || '';
+                    const key = `${item.studentId}_${cId}`;
+                    return !successfullySyncedKeys.includes(key);
+                });
                 if (remainingQueue.length > 0) {
                     localStorage.setItem('guro_sync_queue', JSON.stringify(remainingQueue));
                 } else {
                     localStorage.removeItem('guro_sync_queue');
                 }
-                console.log(`[Sync] Successfully uploaded telemetry for ${successfullySyncedIds.length} student profiles.`);
+                console.log(`[Sync] Successfully uploaded telemetry batches.`);
             }
         } catch (e) {
             console.error('[Sync] Error parsing sync queue from local storage', e);
@@ -500,9 +581,10 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
     };
 
     // Collect and shuffle questions for a topic, return the slice ready for quiz
-    const prepareQuestions = (topicName: string): QuestionItem[] | null => {
+    const prepareQuestions = (topicName: string, subjectName?: string): QuestionItem[] | null => {
         const gradeStr = selectedGrade.toString();
-        const topicNode = itemBank[selectedSubject]?.[gradeStr]?.[topicName];
+        const subject = subjectName || selectedSubject;
+        const topicNode = itemBank[subject]?.[gradeStr]?.[topicName];
         if (!topicNode) return null;
 
         const allQuestions: QuestionItem[] = [];
@@ -530,12 +612,19 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
     };
 
     // Select a topic — show study content first, then quiz
-    const handleSelectTopic = (topicName: string) => {
-        if (selectedSubject === 'English' && isEnglishLocked) {
+    const handleSelectTopic = (topicName: string, subjectName?: string) => {
+        const subject = subjectName || selectedSubject;
+        if (subject === 'English' && isEnglishLocked) {
             toast.error(englishLockReason ?? 'Unlock English by scoring 80%+ in Mathematics first.');
             return;
         }
-        const quizSlice = prepareQuestions(topicName);
+
+        // If a specific subject is passed, update selection state
+        if (subjectName && subjectName !== selectedSubject) {
+            setSelectedSubject(subjectName as 'Mathematics' | 'English');
+        }
+
+        const quizSlice = prepareQuestions(topicName, subject);
         if (!quizSlice) {
             toast.error('No questions staged in this topic yet. Check back soon!');
             return;
@@ -548,7 +637,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
 
         // Check for study content
         const gradeStr = selectedGrade.toString();
-        const topicNode = itemBank[selectedSubject]?.[gradeStr]?.[topicName] as any;
+        const topicNode = itemBank[subject]?.[gradeStr]?.[topicName] as any;
         const hasStudyContent =
             topicNode?.studyContent &&
             (topicNode.studyContent.introduction || topicNode.studyContent.definitions?.length > 0);
@@ -636,7 +725,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
             } catch (e) {
                 currentQueue = [];
             }
-            currentQueue.push({ studentId, event: newEvent });
+            currentQueue.push({ studentId, classroomId: classroomCode || '', event: newEvent });
             localStorage.setItem('guro_sync_queue', JSON.stringify(currentQueue));
 
             // Attempt immediate telemetry upload
@@ -699,29 +788,40 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
     const confirmLogout = () => {
         setIsLogoutModalOpen(false);
         localStorage.removeItem('guro_user_session');
+        localStorage.removeItem('guro_auth_token');
         localStorage.removeItem(STORAGE_KEY_NAME);
         localStorage.removeItem(STORAGE_KEY_GRADE);
-        onExit();
+        localStorage.removeItem('guro_student_step');
+        localStorage.removeItem('guro_student_subject');
+        localStorage.removeItem('guro_student_topic');
+        localStorage.removeItem('guro_student_classroom_id');
+        localStorage.removeItem('guro_student_teacher_name');
+        localStorage.removeItem('guro_student_stars');
+        localStorage.removeItem('guro_student_avatar');
+        localStorage.removeItem('guro_student_outfit');
+        localStorage.removeItem('guro_student_owned_outfits');
+        localStorage.removeItem('guro_student_xp');
+        localStorage.removeItem('guro_student_last_active_day');
+        localStorage.removeItem('guro_student_minutes_used');
+        localStorage.removeItem('guro_parent_time_limit');
+        localStorage.removeItem('guro_active_tab');
+        localStorage.removeItem('guro_active_sub_tab');
+        onLogout();
         toast.success('Logged out successfully.');
     };
 
-    // Onboarding-only steps that bypass the shell
-    const isOnboardingStep = step === 'name' || step === 'grade';
+
 
     const handleShellViewChange = (view: ShellView) => {
         if (view === 'dashboard') setStep('dashboard');
         else if (view === 'lessons') setStep('topics');
         else if (view === 'progress') setStep('progress');
+        else if (view === 'classroom') setStep('classroom');
     };
 
     return (
         <div style={{ minHeight: '100vh', width: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-            {/* Step progress bar — only shown during onboarding/quiz flow */}
-            {isOnboardingStep && step !== 'name' && (
-                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 glass-panel shadow-lg w-full max-w-lg mx-auto">
-                    <StepProgressBar currentStep={step} />
-                </div>
-            )}
+
 
             {step === 'name' && (
                 <NameInputStep
@@ -729,27 +829,13 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
                     onStartLearning={(name) => {
                         setUserName(name);
                         localStorage.setItem(STORAGE_KEY_NAME, name);
-                        setStep('grade');
-                    }}
-                />
-            )}
-
-            {step === 'grade' && (
-                <GradeSelectionStep
-                    userName={userName}
-                    email={currentUser?.email}
-                    onBack={() => currentUser ? handleLogout() : setStep('name')}
-                    onLogout={handleLogout}
-                    onSelectGrade={(grade) => {
-                        setSelectedGrade(grade);
-                        localStorage.setItem(STORAGE_KEY_GRADE, String(grade));
                         setStep('dashboard');
                     }}
                 />
             )}
 
             {/* ── Shell — wraps dashboard, topics, and progress views ── */}
-            {(step === 'dashboard' || step === 'topics' || step === 'progress') && (
+            {(step === 'dashboard' || step === 'topics' || step === 'progress' || step === 'classroom') && (
                 <StudentShell
                     userName={userName}
                     email={currentUser?.email}
@@ -757,17 +843,18 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
                     onGradeChange={(grade) => { setSelectedGrade(grade); localStorage.setItem(STORAGE_KEY_GRADE, String(grade)); setStep('dashboard'); }}
                     onLogout={handleLogout}
                     isOnline={isOnline}
-                    currentView={step === 'dashboard' ? 'dashboard' : step === 'topics' ? 'lessons' : 'progress'}
+                    currentView={step === 'dashboard' ? 'dashboard' : step === 'topics' ? 'lessons' : step === 'progress' ? 'progress' : 'classroom'}
                     onViewChange={handleShellViewChange}
                     parentAccessCode={getParentAccessCode(userName.replace(/\s+/g, '-').toUpperCase() || 'STUDENT-WEB-USER')}
+                    isDarkMode={isDarkMode}
+                    onToggleTheme={onToggleTheme}
                 >
                     {step === 'dashboard' && (
                         <DashboardStep
                             userName={userName}
                             email={currentUser?.email}
                             selectedGrade={selectedGrade}
-                            onBack={() => setStep('grade')}
-                            onLogout={handleLogout}
+                            onBack={() => currentUser ? handleLogout() : setStep('name')}
                             onSelectSubject={handleSelectSubject}
                             mathTopics={mathTopicsList.length > 0 ? mathTopicsList : ['Fractions']}
                             englishTopics={englishTopicsList.length > 0 ? englishTopicsList : ['Short Stories']}
@@ -796,12 +883,18 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
                             // Recommendation
                             recommendedLesson={getRecommendedLesson()}
                             lastActivity={getLastActivity()}
-                            onResumeQuiz={handleSelectTopic}
+                            onResumeQuiz={(subject, topic) => handleSelectTopic(topic, subject)}
 
                             // Time Limits
                             dailyMinutesUsed={dailyMinutesUsed}
                             dailyTimeLimit={dailyTimeLimit}
                             isTimeLimitExceeded={isTimeLimitExceeded}
+
+                            // Classroom Connection
+                            classroomCode={classroomCode}
+                            teacherName={teacherName}
+                            onJoinClassroom={handleJoinClassroom}
+                            onLeaveClassroom={handleLeaveClassroom}
                         />
                     )}
 
@@ -851,11 +944,28 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
                                             </div>
                                         ))
                                     ) : getTopicsForCurrentSelection(selectedSubject).length === 0 ? (
-                                        <div className="col-span-full glass-panel rounded-3xl p-12 text-center border border-dashed border-[var(--border-color)] flex flex-col items-center justify-center gap-3">
-                                            <Inbox className="size-10 text-[var(--text-dark)] shrink-0" />
-                                            <h3 className="text-base font-bold text-[var(--text-main)]">No topics available yet</h3>
-                                            <p className="text-[var(--text-muted)] text-sm">Staged lessons will appear here once loaded by the teacher workspace.</p>
-                                        </div>
+                                        !classroomCode ? (
+                                            <div className="col-span-full glass-panel rounded-3xl p-12 text-center border border-dashed border-[var(--border-color)] flex flex-col items-center justify-center gap-4">
+                                                <GraduationCap className="size-12 text-zinc-400 shrink-0" />
+                                                <h3 className="text-base font-bold text-[var(--text-main)]">Not Connected to a Classroom</h3>
+                                                <p className="text-[var(--text-muted)] text-sm max-w-sm mx-auto leading-relaxed">
+                                                    Join a classroom using your teacher's code to get custom practice topics and interactive lessons!
+                                                </p>
+                                                <button
+                                                    onClick={() => setStep('classroom')}
+                                                    className="px-6 py-2.5 bg-[#11428E] hover:bg-[#0c316b] text-white font-extrabold text-xs rounded-2xl shadow-md transition-all cursor-pointer hover:scale-102 flex items-center gap-1.5"
+                                                >
+                                                    <GraduationCap className="size-4" />
+                                                    <span>Connect to Class</span>
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="col-span-full glass-panel rounded-3xl p-12 text-center border border-dashed border-[var(--border-color)] flex flex-col items-center justify-center gap-3">
+                                                <Inbox className="size-10 text-[var(--text-dark)] shrink-0" />
+                                                <h3 className="text-base font-bold text-[var(--text-main)]">No topics available yet</h3>
+                                                <p className="text-[var(--text-muted)] text-sm">Staged lessons will appear here once loaded by the teacher workspace.</p>
+                                            </div>
+                                        )
                                     ) : (
                                         getTopicsForCurrentSelection(selectedSubject).map((topicName) => {
                                             const topicKey = `${selectedSubject}-${selectedGrade}-${topicName}`;
@@ -925,6 +1035,15 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, currentUser 
                             })()}
                             streakCount={lessonsCompleted > 0 ? 1 : 0}
                             xpPoints={totalScoreSum * 10}
+                        />
+                    )}
+
+                    {step === 'classroom' && (
+                        <ClassroomStep
+                            classroomCode={classroomCode}
+                            teacherName={teacherName}
+                            onJoinClassroom={handleJoinClassroom}
+                            onLeaveClassroom={handleLeaveClassroom}
                         />
                     )}
                 </StudentShell>

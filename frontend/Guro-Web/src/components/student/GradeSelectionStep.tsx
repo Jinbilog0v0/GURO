@@ -8,7 +8,6 @@ interface GradeSelectionStepProps {
     email?: string;
     onBack: () => void;
     onSelectGrade: (grade: number) => void;
-    onLogout?: () => void;
 }
 
 export const GradeSelectionStep: React.FC<GradeSelectionStepProps> = ({
@@ -16,7 +15,6 @@ export const GradeSelectionStep: React.FC<GradeSelectionStepProps> = ({
     email,
     onBack,
     onSelectGrade,
-    onLogout,
 }) => {
     const gradeLevels: GradeCardProps[] = [
         {
@@ -59,7 +57,6 @@ export const GradeSelectionStep: React.FC<GradeSelectionStepProps> = ({
                 <StudentProfile
                     userName={userName}
                     email={email}
-                    onLogout={onLogout}
                 />
             </div>
 
