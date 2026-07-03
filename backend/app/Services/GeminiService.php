@@ -125,7 +125,7 @@ class GeminiService
 
         Log::info("[GeminiService] Triggering Gemini generation for {$subject} Grade {$grade} - Topic: {$topic}");
 
-        $response = Http::withHeaders([
+        $response = Http::withoutVerifying()->withHeaders([
             'Content-Type' => 'application/json',
         ])->timeout(120)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={$apiKey}", [
             'contents' => [

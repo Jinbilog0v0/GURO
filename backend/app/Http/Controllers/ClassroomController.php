@@ -28,9 +28,21 @@ class ClassroomController extends Controller
 
         try {
             if ($classroomId) {
-                $data = \Illuminate\Support\Facades\Cache::remember("classroom_bank_" . strtoupper($classroomId), 3600, function () use ($classroomId) {
-                    $classroom = Classroom::where('classroom_id', strtoupper($classroomId))->first();
-                    return $classroom && ! empty($classroom->custom_item_bank) ? $classroom->custom_item_bank : [];
+                $classroom = Classroom::where('classroom_id', strtoupper($classroomId))->first();
+                if (!$classroom) {
+                    return response()->json(['error' => 'Classroom not found.'], 404);
+                }
+
+                $data = \Illuminate\Support\Facades\Cache::remember("classroom_bank_" . strtoupper($classroomId), 3600, function () use ($classroom) {
+                    if (! empty($classroom->custom_item_bank) && count($classroom->custom_item_bank) > 0) {
+                        return $classroom->custom_item_bank;
+                    }
+                    // Fallback to global bank if custom bank is empty
+                    $path = $this->getItemBankPath();
+                    if (! file_exists($path)) {
+                        return [];
+                    }
+                    return json_decode(file_get_contents($path), true) ?: [];
                 });
                 return response()->json($data);
             }
@@ -105,9 +117,7 @@ class ClassroomController extends Controller
             if (! isset($bank[$subject][$grade])) {
                 $bank[$subject][$grade] = [];
             }
-            if (! isset($bank[$subject][$grade][$topic])) {
-                $bank[$subject][$grade][$topic] = [];
-            }
+            $bank[$subject][$grade][$topic] = [];
 
             // Grab a reference
             $topicNode = &$bank[$subject][$grade][$topic];
@@ -199,6 +209,7 @@ class ClassroomController extends Controller
 
         $classroom = Classroom::create([
             'classroom_id' => $classroomId,
+            'teacher_user_id' => $request->user()->id,
             'teacher_name' => $teacherName,
             'subject' => $subject,
             'grade_level' => (int) $gradeLevel,
@@ -229,6 +240,10 @@ class ClassroomController extends Controller
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
 
+        if ($classroom->teacher_user_id !== $request->user()->id) {
+            return response()->json(['error' => 'Forbidden.'], 403);
+        }
+
         $classroom->expires_at = now();
         $classroom->save();
 
@@ -257,6 +272,10 @@ class ClassroomController extends Controller
         $classroom = Classroom::where('classroom_id', strtoupper($classroomId))->first();
         if (! $classroom) {
             return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        if ($classroom->teacher_user_id !== $request->user()->id) {
+            return response()->json(['error' => 'Forbidden.'], 403);
         }
 
         $selections = $request->input('selections');
@@ -314,6 +333,10 @@ class ClassroomController extends Controller
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
 
+        if ($classroom->teacher_user_id !== $request->user()->id) {
+            return response()->json(['error' => 'Forbidden.'], 403);
+        }
+
         $bank = $classroom->custom_item_bank ?: [];
         if (empty($bank)) {
             $path = $this->getItemBankPath();
@@ -328,9 +351,7 @@ class ClassroomController extends Controller
         if (! isset($bank[$subject][$grade])) {
             $bank[$subject][$grade] = [];
         }
-        if (! isset($bank[$subject][$grade][$topic])) {
-            $bank[$subject][$grade][$topic] = [];
-        }
+        $bank[$subject][$grade][$topic] = [];
 
         $topicNode = &$bank[$subject][$grade][$topic];
 
@@ -363,5 +384,49 @@ class ClassroomController extends Controller
         \Illuminate\Support\Facades\Cache::forget("classroom_bank_" . strtoupper($classroomId));
 
         return response()->json(['success' => true, 'count' => count($questions)]);
+    }
+
+    // POST /api/classroom/delete-lesson
+    public function deleteClassroomLesson(Request $request)
+    {
+        $request->validate([
+            'classroomId' => 'required|string',
+            'subject' => 'required|string',
+            'grade' => 'required',
+            'topic' => 'required|string',
+        ]);
+
+        $classroomId = $request->input('classroomId');
+        $subject = $request->input('subject');
+        $grade = (string) $request->input('grade');
+        $topic = $request->input('topic');
+
+        $classroom = Classroom::where('classroom_id', strtoupper($classroomId))->first();
+        if (! $classroom) {
+            return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        if ($classroom->teacher_user_id !== $request->user()->id) {
+            return response()->json(['error' => 'Forbidden.'], 403);
+        }
+
+        $bank = $classroom->custom_item_bank ?: [];
+        if (isset($bank[$subject][$grade][$topic])) {
+            unset($bank[$subject][$grade][$topic]);
+            
+            // Clean up empty arrays to keep it clean
+            if (empty($bank[$subject][$grade])) {
+                unset($bank[$subject][$grade]);
+            }
+            if (empty($bank[$subject])) {
+                unset($bank[$subject]);
+            }
+            
+            $classroom->custom_item_bank = $bank;
+            $classroom->save();
+            \Illuminate\Support\Facades\Cache::forget("classroom_bank_" . strtoupper($classroomId));
+        }
+
+        return response()->json(['success' => true, 'customItemBank' => $classroom->custom_item_bank]);
     }
 }

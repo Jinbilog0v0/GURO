@@ -89,7 +89,15 @@ it('can promote a guest student to a registered account and migrate logs', funct
 });
 
 it('can create a classroom and verify its invite code', function () {
-    $response = $this->postJson('/api/classroom/create', [
+    $user = User::create([
+        'user_id' => 'USR-TEACH1',
+        'email' => 'teacher@example.com',
+        'password_hash' => 'somehash',
+        'name' => 'Mrs. Davis',
+        'role' => 'teacher'
+    ]);
+
+    $response = $this->actingAs($user, 'sanctum')->postJson('/api/classroom/create', [
         'teacherName' => 'Mrs. Davis',
         'subject' => 'English',
         'gradeLevel' => 5
@@ -179,6 +187,14 @@ it('can sync telemetry progress logs and retrieve them', function () {
 });
 
 it('can generate a lesson from text', function () {
+    $user = User::create([
+        'user_id' => 'USR-TEACH1',
+        'email' => 'teacher@example.com',
+        'password_hash' => 'somehash',
+        'name' => 'Mrs. Davis',
+        'role' => 'teacher'
+    ]);
+
     $this->mock(App\Services\GeminiService::class, function ($mock) {
         $mock->shouldReceive('generateQuestions')
             ->once()
@@ -193,7 +209,7 @@ it('can generate a lesson from text', function () {
             ]);
     });
 
-    $response = $this->postJson('/api/generate', [
+    $response = $this->actingAs($user, 'sanctum')->postJson('/api/generate', [
         'subject' => 'English',
         'grade' => 5,
         'topic' => 'Nouns',
@@ -210,6 +226,14 @@ it('can generate a lesson from text', function () {
 });
 
 it('can generate a lesson from PDF base64', function () {
+    $user = User::create([
+        'user_id' => 'USR-TEACH1',
+        'email' => 'teacher@example.com',
+        'password_hash' => 'somehash',
+        'name' => 'Mrs. Davis',
+        'role' => 'teacher'
+    ]);
+
     $this->mock(App\Services\GeminiService::class, function ($mock) {
         $mock->shouldReceive('generateQuestions')
             ->once()
@@ -224,7 +248,7 @@ it('can generate a lesson from PDF base64', function () {
             ]);
     });
 
-    $response = $this->postJson('/api/generate', [
+    $response = $this->actingAs($user, 'sanctum')->postJson('/api/generate', [
         'subject' => 'English',
         'grade' => 5,
         'topic' => 'Nouns',

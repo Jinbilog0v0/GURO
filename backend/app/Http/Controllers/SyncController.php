@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProgressLog;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SyncController extends Controller
 {
@@ -80,23 +80,25 @@ class SyncController extends Controller
     {
         $classroomId = $request->query('classroomId');
         $studentId = $request->query('studentId');
-        $accessCode = $request->query('accessCode');
+        $accessToken = $request->query('accessCode');
+
+        if ($studentId) {
+            $studentId = strtoupper(preg_replace('/\s+/', '-', trim($studentId)));
+        }
 
         $hasClassroom = !empty($classroomId);
-        $hasStudentAndCode = !empty($studentId) && !empty($accessCode);
+        $hasStudentAndToken = !empty($studentId) && !empty($accessToken);
 
-        if (!$hasClassroom && !$hasStudentAndCode) {
+        if (!$hasClassroom && !$hasStudentAndToken) {
             return response()->json([
                 'error' => 'Missing required filters. Provide classroomId or both studentId and accessCode.'
             ], 400);
         }
 
-        if ($hasStudentAndCode) {
+        if ($hasStudentAndToken) {
             $expectedCode = $this->getParentAccessCode($studentId);
-            if ($accessCode !== $expectedCode) {
-                return response()->json([
-                    'error' => 'Invalid parent access code.'
-                ], 403);
+            if ($accessToken !== $expectedCode) {
+                return response()->json(['error' => 'Invalid parent access code.'], 403);
             }
         }
 
@@ -105,8 +107,8 @@ class SyncController extends Controller
             if ($hasClassroom) {
                 $query->where('classroom_id', strtoupper($classroomId));
             }
-            if ($hasStudentAndCode) {
-                $query->where('student_id', strtoupper($studentId));
+            if ($hasStudentAndToken) {
+                $query->where('student_id', $studentId);
             }
 
             $logs = $query->orderBy('timestamp', 'desc')->limit(100)->get();
@@ -131,73 +133,14 @@ class SyncController extends Controller
 
     private function getParentAccessCode(string $studentId): string
     {
+        $normalized = strtoupper(preg_replace('/\s+/', '-', trim($studentId)));
         $salt = "GURO_PARENT_SALT";
-        $combined = $studentId . $salt;
+        $combined = $normalized . $salt;
         $sum = 0;
         $len = strlen($combined);
         for ($i = 0; $i < $len; $i++) {
             $sum += ord($combined[$i]) * ($i + 1);
         }
         return (string) (100000 + ($sum % 900000));
-    }
-
-    // GET /api/sync-stream
-    public function syncStream()
-    {
-        $response = new StreamedResponse(function () {
-            // Keep track of the last processed primary key id to stream new records only
-            $lastSeenId = ProgressLog::max('id') ?: 0;
-
-            // Enforce connection retry parameter for EventSource client
-            echo "retry: 10000\n\n";
-            ob_flush();
-            flush();
-
-            while (true) {
-                // Check if connection is aborted by client
-                if (connection_aborted()) {
-                    break;
-                }
-
-                // Query for new progress logs
-                $newLogs = ProgressLog::where('id', '>', $lastSeenId)
-                    ->orderBy('id', 'asc')
-                    ->get();
-
-                if ($newLogs->isNotEmpty()) {
-                    $lastSeenId = $newLogs->last()->id;
-
-                    $eventsPayload = $newLogs->map(fn ($log) => [
-                        'eventId' => $log->event_id,
-                        'studentId' => $log->student_id,
-                        'classroomId' => $log->classroom_id,
-                        'subject' => $log->subject,
-                        'gradeLevel' => $log->grade_level,
-                        'topic' => $log->topic,
-                        'score' => $log->score,
-                        'totalQuestions' => $log->total_questions,
-                        'timestamp' => $log->timestamp,
-                    ])->toArray();
-
-                    echo 'data: '.json_encode($eventsPayload)."\n\n";
-                    ob_flush();
-                    flush();
-                }
-
-                // Heartbeat keepalive format
-                echo ": heartbeat\n\n";
-                ob_flush();
-                flush();
-
-                sleep(2);
-            }
-        });
-
-        $response->headers->set('Content-Type', 'text/event-stream');
-        $response->headers->set('Cache-Control', 'no-cache');
-        $response->headers->set('Connection', 'keep-alive');
-        $response->headers->set('X-Accel-Buffering', 'no'); // Prevent Nginx buffering
-
-        return $response;
     }
 }

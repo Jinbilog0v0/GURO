@@ -37,7 +37,7 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required|string',
             'name' => 'required|string',
-            'role' => 'required|string',
+            'role' => 'required|in:student,teacher,parent',
         ]);
 
         $email = strtolower(trim($request->input('email')));
@@ -62,8 +62,11 @@ class AuthController extends Controller
             'classroom_id' => null,
         ]);
 
+        $token = $user->createToken('app')->plainTextToken;
+
         return response()->json([
             'success' => true,
+            'token' => $token,
             'user' => [
                 'userId' => $user->user_id,
                 'email' => $user->email,
@@ -91,8 +94,11 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid email or password.'], 401);
         }
 
+        $token = $user->createToken('app')->plainTextToken;
+
         return response()->json([
             'success' => true,
+            'token' => $token,
             'user' => [
                 'userId' => $user->user_id,
                 'email' => $user->email,
@@ -128,7 +134,7 @@ class AuthController extends Controller
         $newStudentId = strtoupper(str_replace(' ', '-', $name));
 
         return DB::transaction(function () use ($userId, $email, $passwordHash, $name, $anonymousStudentId, $newStudentId) {
-            // Create user
+            // Create user with a random parent access token
             $user = User::create([
                 'user_id' => $userId,
                 'email' => $email,
@@ -136,14 +142,18 @@ class AuthController extends Controller
                 'name' => $name,
                 'role' => 'student',
                 'classroom_id' => null,
+                'parent_access_token' => Str::random(32),
             ]);
 
             // Migrate student progress events
-            $updatedLogsCount = ProgressLog::where('student_id', $anonymousStudentId)
+            ProgressLog::where('student_id', $anonymousStudentId)
                 ->update(['student_id' => $newStudentId]);
+
+            $token = $user->createToken('app')->plainTextToken;
 
             return response()->json([
                 'success' => true,
+                'token' => $token,
                 'user' => [
                     'userId' => $user->user_id,
                     'email' => $user->email,
