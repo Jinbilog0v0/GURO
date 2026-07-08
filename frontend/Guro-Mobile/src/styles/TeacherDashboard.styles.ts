@@ -28,7 +28,9 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   headerRight: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: Spacing.xs,
   },
   screenTitle: {
@@ -44,7 +46,7 @@ export const styles = StyleSheet.create({
     marginTop: 2,
   },
   roleBadge: {
-    marginTop: Spacing.xs,
+    marginTop: 0,
   },
 
   // Back button
