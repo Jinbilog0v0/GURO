@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { MasteryMatrix } from '../components/teacher/MasteryMatrix';
 import { StudentTile } from '../components/teacher/StudentTile';
 import { DiagnosticAlerts } from '../components/teacher/DiagnosticAlerts';
 import { ManualLessonBuilder } from '../components/teacher/ManualLessonBuilder';
 import { SkeletonStatCards, SkeletonCard, SkeletonTable } from '../components/shared/SkeletonLoader';
-import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock } from 'lucide-react';
+import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock, Search, User, Trash2 } from 'lucide-react';
 import { toast } from '../utils/toast';
+import { apiFetch } from '../utils/api';
 
 interface SyncedEvent {
   studentId: string;
@@ -37,6 +39,7 @@ export function TeacherSpace({
   setActiveSubTab: propSetActiveSubTab
 }: TeacherSpaceProps) {
   const [filterText, setFilterText] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   
@@ -82,7 +85,7 @@ export function TeacherSpace({
 
   const fetchClassroomData = async (code: string) => {
     try {
-      const res = await fetch(`/api/classroom/verify?code=${code}`);
+      const res = await apiFetch(`/api/classroom/verify?code=${code}`);
       if (res.ok) {
         const data = await res.json();
         setClassroomData(data);
@@ -122,12 +125,166 @@ export function TeacherSpace({
     }
   }, [classroomCode]);
 
+  // Auto-refresh telemetry every 45 seconds so teachers see live student progress without a manual reload
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshLogs();
+    }, 45000);
+    return () => clearInterval(interval);
+  }, [refreshLogs]);
+
+  const [editingLesson, setEditingLesson] = useState<{
+    subject: string;
+    grade: string;
+    topic: string;
+    studyContent: {
+      introduction: string;
+      definitions: { term: string; definition: string; examples: string[] }[];
+      summary: string[];
+    };
+    questions: any[];
+  } | null>(null);
+  const [activeEditTab, setActiveEditTab] = useState<'study' | 'questions'>('study');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const getActiveClassroomTopics = () => {
+    if (!classroomData || !classroomData.customItemBank) return [];
+    const activeList: { subject: string; grade: string; topic: string; data: any }[] = [];
+    const bank = classroomData.customItemBank as any;
+    Object.keys(bank).forEach(subject => {
+      Object.keys(bank[subject] || {}).forEach(grade => {
+        Object.keys(bank[subject][grade] || {}).forEach(topic => {
+          activeList.push({
+            subject,
+            grade,
+            topic,
+            data: bank[subject][grade][topic]
+          });
+        });
+      });
+    });
+    return activeList;
+  };
+
+  const handleDeleteTopic = async (subject: string, grade: string, topic: string) => {
+    if (!classroomCode) return;
+    if (!window.confirm(`Are you sure you want to delete the lesson "${topic}" from your classroom? Students will no longer see it.`)) {
+      return;
+    }
+
+    try {
+      const res = await apiFetch('/api/classroom/delete-lesson', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          classroomId: classroomCode,
+          subject,
+          grade,
+          topic
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`Successfully deleted lesson "${topic}"!`);
+        setClassroomData(prev => prev ? {
+          ...prev,
+          customItemBank: data.customItemBank
+        } : null);
+      } else {
+        const err = await res.json().catch(() => ({ error: 'Failed to delete lesson' }));
+        throw new Error(err.error || 'Failed to delete lesson');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Error deleting lesson');
+    }
+  };
+
+  const handleStartEdit = (subject: string, grade: string, topic: string, topicNode: any) => {
+    const flatQuestions: any[] = [];
+    if (topicNode) {
+      ['Easy', 'Average', 'Difficult'].forEach(difficulty => {
+        const diffNode = topicNode[difficulty];
+        if (diffNode) {
+          Object.keys(diffNode).forEach(category => {
+            const list = diffNode[category];
+            if (Array.isArray(list)) {
+              list.forEach(q => {
+                flatQuestions.push({
+                  ...q,
+                  difficulty,
+                  category
+                });
+              });
+            }
+          });
+        }
+      });
+    }
+
+    const studyContent = topicNode?.studyContent || {
+      introduction: '',
+      definitions: [],
+      summary: []
+    };
+
+    setEditingLesson({
+      subject,
+      grade,
+      topic,
+      studyContent: {
+        introduction: studyContent.introduction || '',
+        definitions: studyContent.definitions || [],
+        summary: studyContent.summary || []
+      },
+      questions: flatQuestions
+    });
+    setActiveEditTab('study');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingLesson || !classroomCode) return;
+    if (editingLesson.questions.length === 0) {
+      toast.error('At least one question is required.');
+      return;
+    }
+
+    setIsSavingEdit(true);
+    try {
+      const res = await apiFetch('/api/classroom/update-lesson', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          classroomId: classroomCode,
+          subject: editingLesson.subject,
+          grade: editingLesson.grade,
+          topic: editingLesson.topic,
+          questions: editingLesson.questions,
+          studyContent: editingLesson.studyContent
+        })
+      });
+
+      if (res.ok) {
+        toast.success(`Successfully updated lesson "${editingLesson.topic}"!`);
+        await fetchClassroomData(classroomCode);
+        setEditingLesson(null);
+      } else {
+        const err = await res.json().catch(() => ({ error: 'Failed to update lesson' }));
+        throw new Error(err.error || 'Failed to update lesson');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Error updating lesson');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const [globalBank, setGlobalBank] = useState<any>(null);
   const [selectedModules, setSelectedModules] = useState<{subject: string; grade: string; topic: string}[]>([]);
 
   useEffect(() => {
     if (activeSubTab === 'classroom-pairing' && !globalBank) {
-      fetch('/api/item-bank')
+      apiFetch('/api/item-bank')
         .then(res => res.json())
         .then(data => setGlobalBank(data))
         .catch(err => console.error('Error loading global templates:', err));
@@ -195,10 +352,16 @@ export function TeacherSpace({
     return Math.round(totalPercentage / filteredLogs.length);
   };
 
-  // Get unique students list (filtered by classroom if active)
+  // Get unique students list (filtered by classroom and search query if active)
   const uniqueStudents = Array.from(new Set(
     progressLogs
-      .filter((log) => !classroomCode || log.classroomId === classroomCode)
+      .filter((log) => {
+        const matchesClassroom = !classroomCode || log.classroomId === classroomCode;
+        const matchesSearch = !filterText || 
+          log.studentId.toLowerCase().includes(filterText.toLowerCase()) ||
+          log.topic.toLowerCase().includes(filterText.toLowerCase());
+        return matchesClassroom && matchesSearch;
+      })
       .map(l => l.studentId)
   ));
 
@@ -208,6 +371,539 @@ export function TeacherSpace({
     } else {
       setSelectedStudentId(studentId);
     }
+  };
+
+  const renderEditModal = () => {
+    if (!editingLesson) return null;
+
+    const updateIntro = (val: string) => {
+      setEditingLesson(prev => prev ? {
+        ...prev,
+        studyContent: { ...prev.studyContent, introduction: val }
+      } : null);
+    };
+
+    const updateDefinitionTerm = (idx: number, termVal: string) => {
+      setEditingLesson(prev => {
+        if (!prev) return null;
+        const defs = [...prev.studyContent.definitions];
+        defs[idx] = { ...defs[idx], term: termVal };
+        return { ...prev, studyContent: { ...prev.studyContent, definitions: defs } };
+      });
+    };
+
+    const updateDefinitionText = (idx: number, defVal: string) => {
+      setEditingLesson(prev => {
+        if (!prev) return null;
+        const defs = [...prev.studyContent.definitions];
+        defs[idx] = { ...defs[idx], definition: defVal };
+        return { ...prev, studyContent: { ...prev.studyContent, definitions: defs } };
+      });
+    };
+
+    const updateDefinitionExample = (defIdx: number, exIdx: number, val: string) => {
+      setEditingLesson(prev => {
+        if (!prev) return null;
+        const defs = [...prev.studyContent.definitions];
+        const examples = [...defs[defIdx].examples];
+        examples[exIdx] = val;
+        defs[defIdx] = { ...defs[defIdx], examples };
+        return { ...prev, studyContent: { ...prev.studyContent, definitions: defs } };
+      });
+    };
+
+    const addDefinition = () => {
+      setEditingLesson(prev => {
+        if (!prev) return null;
+        const defs = [...prev.studyContent.definitions, { term: '', definition: '', examples: ['', '', ''] }];
+        return { ...prev, studyContent: { ...prev.studyContent, definitions: defs } };
+      });
+    };
+
+    const removeDefinition = (idx: number) => {
+      setEditingLesson(prev => {
+        if (!prev) return null;
+        const defs = prev.studyContent.definitions.filter((_, i) => i !== idx);
+        return { ...prev, studyContent: { ...prev.studyContent, definitions: defs } };
+      });
+    };
+
+    const updateSummaryItem = (idx: number, val: string) => {
+      setEditingLesson(prev => {
+        if (!prev) return null;
+        const summary = [...prev.studyContent.summary];
+        summary[idx] = val;
+        return { ...prev, studyContent: { ...prev.studyContent, summary } };
+      });
+    };
+
+    const addSummaryItem = () => {
+      setEditingLesson(prev => {
+        if (!prev) return null;
+        const summary = [...prev.studyContent.summary, ''];
+        return { ...prev, studyContent: { ...prev.studyContent, summary } };
+      });
+    };
+
+    const removeSummaryItem = (idx: number) => {
+      setEditingLesson(prev => {
+        if (!prev) return null;
+        const summary = prev.studyContent.summary.filter((_, i) => i !== idx);
+        return { ...prev, studyContent: { ...prev.studyContent, summary } };
+      });
+    };
+
+    const updateQuestionField = (qIdx: number, field: string, val: any) => {
+      setEditingLesson(prev => {
+        if (!prev) return null;
+        const questions = [...prev.questions];
+        questions[qIdx] = { ...questions[qIdx], [field]: val };
+        return { ...prev, questions };
+      });
+    };
+
+    const updateQuestionOption = (qIdx: number, optIdx: number, val: string) => {
+      setEditingLesson(prev => {
+        if (!prev) return null;
+        const questions = [...prev.questions];
+        const oldVal = questions[qIdx].options[optIdx];
+        const options = [...questions[qIdx].options];
+        options[optIdx] = val;
+        
+        let correctAnswer = questions[qIdx].correctAnswer;
+        if (correctAnswer === oldVal) {
+          correctAnswer = val;
+        }
+        questions[qIdx] = { ...questions[qIdx], options, correctAnswer };
+        return { ...prev, questions };
+      });
+    };
+
+    const setCorrectOption = (qIdx: number, optIdx: number) => {
+      setEditingLesson(prev => {
+        if (!prev) return null;
+        const questions = [...prev.questions];
+        questions[qIdx] = { ...questions[qIdx], correctAnswer: questions[qIdx].options[optIdx] };
+        return { ...prev, questions };
+      });
+    };
+
+    const addQuestion = () => {
+      setEditingLesson(prev => {
+        if (!prev) return null;
+        const id = `${prev.subject.toUpperCase().slice(0, 3)}-G${prev.grade}-${prev.topic.toUpperCase().slice(0, 3).replace(/\s/g, '')}-${Date.now().toString().slice(-3)}`;
+        const newQ = {
+          id,
+          difficulty: 'Easy',
+          category: 'Multiple-Choice',
+          questionText: '',
+          options: ['', '', '', ''],
+          correctAnswer: '',
+          feedback: { en: '', fil: '' }
+        };
+        return { ...prev, questions: [...prev.questions, newQ] };
+      });
+    };
+
+    const removeQuestion = (idx: number) => {
+      setEditingLesson(prev => {
+        if (!prev) return null;
+        return { ...prev, questions: prev.questions.filter((_, i) => i !== idx) };
+      });
+    };
+
+    return createPortal(
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          padding: '20px'
+        }}
+      >
+        <div
+          className="glass-panel"
+          style={{
+            width: '90%',
+            maxWidth: '900px',
+            height: '85vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            padding: '24px',
+            backgroundColor: 'var(--bg-main)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '16px'
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '14px', marginBottom: '20px' }}>
+            <div>
+              <h3 style={{ fontSize: '18px', color: 'var(--text-main)', margin: 0 }}>
+                Edit Custom Lesson: {editingLesson.topic}
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+                Subject: {editingLesson.subject} • Grade {editingLesson.grade}
+              </p>
+            </div>
+            <button 
+              type="button" 
+              onClick={() => setEditingLesson(null)}
+              className="bg-transparent border-none text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '20px', gap: '16px' }}>
+            <button
+              type="button"
+              onClick={() => setActiveEditTab('study')}
+              style={{
+                padding: '10px 16px',
+                background: 'none',
+                border: 'none',
+                borderBottom: activeEditTab === 'study' ? '2px solid var(--accent-primary-text)' : '2px solid transparent',
+                color: activeEditTab === 'study' ? 'var(--accent-primary-text)' : 'var(--text-muted)',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Study Guide Content
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveEditTab('questions')}
+              style={{
+                padding: '10px 16px',
+                background: 'none',
+                border: 'none',
+                borderBottom: activeEditTab === 'questions' ? '2px solid var(--accent-primary-text)' : '2px solid transparent',
+                color: activeEditTab === 'questions' ? 'var(--accent-primary-text)' : 'var(--text-muted)',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Question Bank ({editingLesson.questions.length})
+            </button>
+          </div>
+
+          {/* Modal Content Scroll Area */}
+          <div style={{ flex: 1, overflowY: 'auto', paddingRight: '6px', display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
+            {activeEditTab === 'study' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Introduction */}
+                <div style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'var(--text-main)', fontWeight: 600 }}>
+                    Lesson Introduction
+                  </h4>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <textarea
+                      value={editingLesson.studyContent.introduction}
+                      onChange={(e) => updateIntro(e.target.value)}
+                      rows={4}
+                      style={{ width: '100%', minHeight: '80px', resize: 'vertical' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Vocabulary */}
+                <div style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                    <h4 style={{ margin: 0, fontSize: '14px', color: 'var(--text-main)', fontWeight: 600 }}>
+                      Vocabulary & Definitions
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={addDefinition}
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 10px', fontSize: '11px' }}
+                    >
+                      + Add Term
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {editingLesson.studyContent.definitions.map((def, defIdx) => (
+                      <div 
+                        key={defIdx} 
+                        style={{ 
+                          borderBottom: defIdx === editingLesson.studyContent.definitions.length - 1 ? 'none' : '1px solid var(--border-color)', 
+                          paddingBottom: defIdx === editingLesson.studyContent.definitions.length - 1 ? 0 : '16px',
+                          position: 'relative'
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => removeDefinition(defIdx)}
+                          style={{
+                            position: 'absolute',
+                            right: 0,
+                            top: 0,
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--accent-secondary)',
+                            cursor: 'pointer',
+                            padding: '4px'
+                          }}
+                        >
+                          <X size={14} />
+                        </button>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ marginBottom: '12px', paddingRight: '24px' }}>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label style={{ fontSize: '10px' }}>Term</label>
+                            <input
+                              type="text"
+                              value={def.term}
+                              onChange={(e) => updateDefinitionTerm(defIdx, e.target.value)}
+                              style={{ width: '100%', marginTop: '4px', padding: '8px 12px' }}
+                            />
+                          </div>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label style={{ fontSize: '10px' }}>Simple Definition</label>
+                            <input
+                              type="text"
+                              value={def.definition}
+                              onChange={(e) => updateDefinitionText(defIdx, e.target.value)}
+                              style={{ width: '100%', marginTop: '4px', padding: '8px 12px' }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ paddingLeft: '12px', borderLeft: '2px solid rgba(59, 130, 246, 0.3)' }}>
+                          <label style={{ fontSize: '10px', color: 'var(--text-dark)', textTransform: 'uppercase', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Examples</label>
+                          {def.examples.map((ex, exIdx) => (
+                            <input
+                              key={exIdx}
+                              type="text"
+                              value={ex}
+                              onChange={(e) => updateDefinitionExample(defIdx, exIdx, e.target.value)}
+                              placeholder={`Example ${exIdx + 1}`}
+                              style={{ width: '100%', padding: '6px 10px', fontSize: '12.5px', marginBottom: '6px' }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {editingLesson.studyContent.definitions.length === 0 && (
+                      <p style={{ color: 'var(--text-muted)', fontSize: '12px', textAlign: 'center', margin: 0 }}>No vocabulary terms defined.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h4 style={{ margin: 0, fontSize: '14px', color: 'var(--text-main)', fontWeight: 600 }}>
+                      Key Takeaways & Summary Points
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={addSummaryItem}
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 10px', fontSize: '11px' }}
+                    >
+                      + Add Point
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {editingLesson.studyContent.summary.map((sumItem, sumIdx) => (
+                      <div key={sumIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ color: '#8b5cf6', fontSize: '16px' }}>•</span>
+                        <input
+                          type="text"
+                          value={sumItem}
+                          onChange={(e) => updateSummaryItem(sumIdx, e.target.value)}
+                          style={{ flex: 1, padding: '8px 12px' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeSummaryItem(sumIdx)}
+                          style={{ background: 'none', border: 'none', color: 'var(--accent-secondary)', cursor: 'pointer', padding: '6px' }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                    {editingLesson.studyContent.summary.length === 0 && (
+                      <p style={{ color: 'var(--text-muted)', fontSize: '12px', textAlign: 'center', margin: 0 }}>No summary points defined.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={addQuestion}
+                    className="btn btn-secondary flex items-center gap-1"
+                    style={{ padding: '6px 12px', fontSize: '12px' }}
+                  >
+                    <Plus size={12} /> Add Question Slot
+                  </button>
+                </div>
+
+                {editingLesson.questions.map((q, idx) => (
+                  <div key={idx} style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', position: 'relative' }}>
+                    <button
+                      type="button"
+                      onClick={() => removeQuestion(idx)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '12px',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--accent-secondary)',
+                        cursor: 'pointer',
+                        padding: '6px'
+                      }}
+                      title="Delete Question"
+                    >
+                      <X size={16} />
+                    </button>
+
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '14px', flexWrap: 'wrap', paddingRight: '24px' }}>
+                      <div className="form-group" style={{ margin: 0, width: '110px' }}>
+                        <label style={{ fontSize: '10px' }}>Difficulty</label>
+                        <select
+                          value={q.difficulty}
+                          onChange={(e) => updateQuestionField(idx, 'difficulty', e.target.value)}
+                          style={{ padding: '6px 10px', fontSize: '12px', marginTop: '4px' }}
+                        >
+                          <option value="Easy">Easy</option>
+                          <option value="Average">Average</option>
+                          <option value="Difficult">Difficult</option>
+                        </select>
+                      </div>
+                      <div className="form-group" style={{ margin: 0, width: '180px' }}>
+                        <label style={{ fontSize: '10px' }}>Category</label>
+                        <select
+                          value={q.category}
+                          onChange={(e) => updateQuestionField(idx, 'category', e.target.value)}
+                          style={{ padding: '6px 10px', fontSize: '12px', marginTop: '4px' }}
+                        >
+                          <option value="Multiple-Choice">Multiple-Choice</option>
+                          <option value="Paragraph Comprehension">Paragraph Comprehension</option>
+                          <option value="Figures of Speech">Figures of Speech</option>
+                        </select>
+                      </div>
+                      <div className="form-group" style={{ margin: 0, flex: 1, minWidth: '150px' }}>
+                        <label style={{ fontSize: '10px' }}>Question ID</label>
+                        <input
+                          type="text"
+                          value={q.id}
+                          onChange={(e) => updateQuestionField(idx, 'id', e.target.value)}
+                          style={{ marginTop: '4px', padding: '6px 10px', fontSize: '12px' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: '14px' }}>
+                      <label style={{ fontSize: '10px' }}>Question Text</label>
+                      <input
+                        type="text"
+                        value={q.questionText}
+                        onChange={(e) => updateQuestionField(idx, 'questionText', e.target.value)}
+                        style={{ marginTop: '4px', padding: '8px 12px', fontSize: '13px' }}
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <label style={{ fontSize: '10px' }}>Options (Check correct answer)</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
+                        {q.options.map((opt: string, optIdx: number) => {
+                          const isCorrect = opt === q.correctAnswer;
+                          return (
+                            <div key={optIdx} className="flex items-center gap-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-2" style={{ padding: '2px 8px' }}>
+                              <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', backgroundColor: 'var(--border-color)', width: '18px', height: '18px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {String.fromCharCode(65 + optIdx)}
+                              </span>
+                              <input
+                                type="text"
+                                value={opt}
+                                onChange={(e) => updateQuestionOption(idx, optIdx, e.target.value)}
+                                style={{ flex: 1, background: 'transparent', border: 'none', padding: '6px 4px', fontSize: '12px' }}
+                              />
+                              <input
+                                type="radio"
+                                name={`correct-edit-${idx}`}
+                                checked={isCorrect}
+                                onChange={() => setCorrectOption(idx, optIdx)}
+                                style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="form-group mt-3">
+                      <label style={{ fontSize: '10px' }}>Explanation</label>
+                      <input
+                        type="text"
+                        value={q.feedback?.en || ''}
+                        onChange={(e) => {
+                          const feedbackVal = e.target.value;
+                          setEditingLesson(prev => {
+                            if (!prev) return null;
+                            const questions = [...prev.questions];
+                            questions[idx] = {
+                              ...questions[idx],
+                              feedback: { en: feedbackVal, fil: feedbackVal }
+                            };
+                            return { ...prev, questions };
+                          });
+                        }}
+                        style={{ marginTop: '4px', padding: '8px 12px', fontSize: '12.5px' }}
+                      />
+                    </div>
+                  </div>
+                ))}
+                {editingLesson.questions.length === 0 && (
+                  <p style={{ color: 'var(--text-muted)', fontSize: '12px', textAlign: 'center' }}>No questions in this lesson. Add one above!</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Footer Actions */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setEditingLesson(null)}
+              disabled={isSavingEdit}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleSaveEdit}
+              disabled={isSavingEdit}
+            >
+              {isSavingEdit ? 'Saving Changes...' : 'Save & Overwrite Lesson'}
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
   };
 
   return (
@@ -303,6 +999,7 @@ export function TeacherSpace({
                             expiresAt: c.expiresAt
                           });
                           setSelectedModules([]);
+                          refreshLogs();
                         }}
                         className="btn btn-secondary"
                         style={{
@@ -398,7 +1095,7 @@ export function TeacherSpace({
                   }
                   setIsCreatingClass(true);
                   try {
-                    const res = await fetch('/api/classroom/create', {
+                    const res = await apiFetch('/api/classroom/create', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
@@ -414,6 +1111,7 @@ export function TeacherSpace({
                       setClassroomCode(data.classroomId);
                       setClassroomData(data);
                       setSetupName('');
+                      refreshLogs();
                       
                       // Add to history
                       setClassroomHistory((prev) => {
@@ -464,6 +1162,7 @@ export function TeacherSpace({
                       setClassroomCode(null);
                       setClassroomData(null);
                       setSelectedModules([]);
+                      refreshLogs();
                     }}
                     className="btn btn-secondary flex items-center gap-1.5"
                     style={{ padding: '6px 12px', fontSize: '12px' }}
@@ -586,7 +1285,7 @@ export function TeacherSpace({
                           }
                           setIsClaiming(true);
                           try {
-                            const res = await fetch('/api/classroom/claim', {
+                            const res = await apiFetch('/api/classroom/claim', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ 
@@ -632,6 +1331,65 @@ export function TeacherSpace({
                       </button>
                     );
                   })()}
+                </div>
+
+                {/* Active Classroom Lessons (Edit & Delete) */}
+                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Active Classroom Lessons ({getActiveClassroomTopics().length}):
+                  </span>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
+                    {getActiveClassroomTopics().map((mod) => (
+                      <div 
+                        key={`${mod.subject}-${mod.grade}-${mod.topic}`}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '8px 12px',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '8px',
+                          backgroundColor: 'var(--bg-main)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                          {mod.subject === 'Mathematics' ? (
+                            <Calculator size={14} className="text-[#3b82f6] shrink-0" />
+                          ) : (
+                            <BookOpen size={14} className="text-emerald-500 shrink-0" />
+                          )}
+                          <span style={{ fontSize: '13px', color: 'var(--text-main)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                            <strong>{mod.topic}</strong> (G{mod.grade})
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleStartEdit(mod.subject, mod.grade, mod.topic, mod.data)}
+                            className="bg-transparent border-none text-[var(--accent-primary-text)] hover:opacity-80 cursor-pointer p-1"
+                            title="Edit Lesson"
+                          >
+                            <Edit3 size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTopic(mod.subject, mod.grade, mod.topic)}
+                            className="bg-transparent border-none text-[var(--accent-secondary)] hover:opacity-80 cursor-pointer p-1"
+                            title="Delete Lesson"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {getActiveClassroomTopics().length === 0 && (
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center', padding: '10px' }}>
+                        No lessons claimed yet.
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -714,15 +1472,53 @@ export function TeacherSpace({
 
           {/* Filters Area */}
           <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[18px] px-6 py-[22px] flex items-end gap-5 shadow-sm">
-            <div className="form-group" style={{ flex: 2 }}>
-              <label>Search Student or Topic</label>
-              <input
-                type="text"
-                placeholder="Search by student identifier or topic..."
-                value={filterText}
-                onChange={(e) => setFilterText(e.target.value)}
-              />
-            </div>
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                setFilterText(searchInput);
+              }}
+              className="flex items-end gap-3"
+              style={{ flex: 2 }}
+            >
+              <div className="form-group flex-1">
+                <label>Search Student or Topic</label>
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    placeholder="Search by student identifier or topic..."
+                    value={searchInput}
+                    onChange={(e) => {
+                      setSearchInput(e.target.value);
+                      if (e.target.value === '') {
+                        setFilterText('');
+                      }
+                    }}
+                    className="w-full pr-10"
+                    style={{ padding: '10px 14px' }}
+                  />
+                  {searchInput && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchInput('');
+                        setFilterText('');
+                      }}
+                      className="absolute right-3 p-1 rounded-full hover:bg-white/10 text-[var(--text-muted)] cursor-pointer flex items-center justify-center border-none bg-transparent"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary flex items-center gap-1.5 shrink-0"
+                style={{ height: '42px', padding: '0 20px', borderRadius: '10px' }}
+              >
+                <Search size={14} />
+                <span>Search</span>
+              </button>
+            </form>
             <div className="form-group" style={{ flex: 1 }}>
               <label>Filter by Subject</label>
               <select value={selectedSubject} onChange={(e) => setSelectedSubject(e.target.value)}>
@@ -738,7 +1534,7 @@ export function TeacherSpace({
                   onClick={() => setSelectedStudentId(null)}
                   className="btn btn-secondary px-3.5 py-2 text-xs font-bold text-[var(--accent-primary)] border border-[var(--accent-primary-glow)] bg-[var(--accent-primary-glow)] flex items-center justify-center gap-1.5"
                 >
-                  <Key size={12} className="shrink-0" />
+                  <User size={12} className="shrink-0" />
                   <span>{selectedStudentId}</span>
                   <X size={12} className="shrink-0 ml-0.5" />
                 </button>
@@ -779,7 +1575,7 @@ export function TeacherSpace({
                       <tr key={log.eventId} className="border-b border-[var(--border-color)]">
                         <td className="px-5 py-4 text-[var(--text-main)]">
                           <span className="bg-[var(--border-color)] px-2 py-1 rounded-md font-mono text-xs border border-[var(--border-color)] flex items-center gap-1.5 w-fit">
-                            <Key size={12} className="text-[#F59E0B] shrink-0" />
+                            <User size={12} className="text-[#11428E] shrink-0" />
                             <span>{log.studentId}</span>
                           </span>
                         </td>
@@ -829,6 +1625,7 @@ export function TeacherSpace({
           </div>
         </>
       )}
+      {editingLesson && renderEditModal()}
     </div>
   );
 }
@@ -865,16 +1662,19 @@ function InviteExpirationTimer({
       return;
     }
 
+    let intervalId: ReturnType<typeof setInterval>;
+
     const checkExpiry = () => {
       const expiryTime = new Date(expiresAt).getTime();
       const diff = expiryTime - Date.now();
       if (diff <= 0) {
         setTimeLeft('Expired / Locked');
         setIsExpired(true);
+        clearInterval(intervalId);
         onExpired();
         return true;
       }
-      
+
       const mins = Math.floor(diff / 60000);
       const secs = Math.floor((diff % 60000) / 1000);
       setTimeLeft(`Expires in ${mins}m ${secs}s`);
@@ -885,14 +1685,14 @@ function InviteExpirationTimer({
     const expired = checkExpiry();
     if (expired) return;
 
-    const interval = setInterval(checkExpiry, 1000);
-    return () => clearInterval(interval);
+    intervalId = setInterval(checkExpiry, 1000);
+    return () => clearInterval(intervalId);
   }, [expiresAt, classroomCode]);
 
   const handleLockNow = async () => {
     setIsLocking(true);
     try {
-      const res = await fetch('/api/classroom/lock', {
+      const res = await apiFetch('/api/classroom/lock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ classroomId: classroomCode })

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from '../utils/toast';
+import { apiFetch } from '../utils/api';
 import { BookOpenText, Wrench, FolderOpen, Folder, FileText, Star, BookOpen, FileCheck, Loader2, X, Zap, Briefcase, Check, AlertTriangle, Hourglass, Languages } from 'lucide-react';
 
 export interface Question {
@@ -137,17 +139,13 @@ export function LessonSpace({
       toast.error('Please provide either lesson text or upload a PDF file.');
       return;
     }
-    if (isMissingClassroom) {
-      toast.error('Classroom Code Required. Please setup a classroom code in Setup first.');
-      return;
-    }
 
     setLoading(true);
     setStagedQuestions([]);
     setStagedStudyContent(null);
     const loadingToastId = toast.loading('Parsing lesson content & generating items...');
     try {
-      const response = await fetch('/api/generate', {
+      const response = await apiFetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -214,9 +212,8 @@ export function LessonSpace({
         studyContent: stagedStudyContent,
       };
 
-      const response = await fetch(endpoint, {
+      const response = await apiFetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
@@ -316,86 +313,86 @@ export function LessonSpace({
 
   const renderFloatingBubble = () => {
     if (!loading || !isMinimized) return null;
-    return (
+    return createPortal(
       <div
         onClick={() => setIsMinimized(false)}
         style={{
           position: 'fixed',
           bottom: '24px',
           right: '24px',
-          backgroundColor: '#1e293b',
-          border: '1px solid rgba(59, 130, 246, 0.4)',
+          backgroundColor: 'var(--bg-card)',
+          border: '1px solid var(--border-color)',
           borderRadius: '12px',
           padding: '12px 16px',
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
           cursor: 'pointer',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(59, 130, 246, 0.2)',
+          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
           zIndex: 9999,
           transition: 'transform 0.2s ease',
         }}
         onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
         onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
       >
-        <div className="spinner" style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#3b82f6', margin: 0 }}></div>
+        <div className="spinner" style={{ width: '16px', height: '16px', border: '2px solid var(--border-color)', borderTopColor: 'var(--accent-primary-text)', margin: 0 }}></div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: 1.2 }}>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: 1.2 }}>
             Generating Items
           </span>
-          <span style={{ fontSize: '12px', color: '#3b82f6', fontWeight: 700, marginTop: '2px', lineHeight: 1.2 }}>
+          <span style={{ fontSize: '12px', color: 'var(--accent-primary-text)', fontWeight: 700, marginTop: '2px', lineHeight: 1.2 }}>
             {progressPercent}% completed (Click to view)
           </span>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   };
 
   const renderProgressModal = () => {
     if (!showProgressModal || isMinimized) return null;
-    return (
+    return createPortal(
       <div
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
-          width: '100vw',
-          height: '100vh',
+          right: 0,
+          bottom: 0,
           backgroundColor: 'rgba(15, 23, 42, 0.75)',
           backdropFilter: 'blur(8px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 9998,
+          zIndex: 10000,
         }}
       >
         <div
           style={{
-            backgroundColor: '#1e293b',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            backgroundColor: 'var(--bg-main)',
+            border: '1px solid var(--border-color)',
             borderRadius: '16px',
             padding: '24px',
             width: '90%',
             maxWidth: '450px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
             textAlign: 'center',
           }}
         >
-          <h4 style={{ fontSize: '18px', fontWeight: 700, color: '#f8fafc', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: 0 }}>
-            <Zap className="size-4.5 text-[#3b82f6] shrink-0" /> Ingestion Pipeline Active
+          <h4 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: 0 }}>
+            <Zap className="size-4.5 text-[var(--accent-primary-text)] shrink-0" /> Ingestion Pipeline Active
           </h4>
-          <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '20px' }}>
-            Topic: <strong style={{ color: '#3b82f6' }}>{topic || 'Untitled Lesson'}</strong>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>
+            Topic: <strong style={{ color: 'var(--accent-primary-text)' }}>{topic || 'Untitled Lesson'}</strong>
           </p>
 
           {/* Progress Bar Container */}
-          <div style={{ width: '100%', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '9999px', height: '10px', marginBottom: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '9999px', height: '10px', marginBottom: '12px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
             <div
               style={{
                 width: `${progressPercent}%`,
                 height: '100%',
-                background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
-                boxShadow: '0 0 10px rgba(139, 92, 246, 0.5)',
+                background: 'linear-gradient(90deg, var(--accent-primary), #8b5cf6)',
                 borderRadius: '9999px',
                 transition: 'width 0.1s ease',
               }}
@@ -403,10 +400,10 @@ export function LessonSpace({
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-dark)', fontWeight: 500 }}>
               {progressStage}
             </span>
-            <span style={{ fontSize: '14px', color: '#8b5cf6', fontWeight: 700 }}>
+            <span style={{ fontSize: '14px', color: 'var(--accent-primary-text)', fontWeight: 700 }}>
               {progressPercent}%
             </span>
           </div>
@@ -415,17 +412,11 @@ export function LessonSpace({
             <button
               type="button"
               onClick={() => setIsMinimized(true)}
+              className="btn btn-secondary w-full"
               style={{
-                width: '100%',
                 padding: '10px',
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                color: '#e2e8f0',
                 fontSize: '13px',
                 fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -435,12 +426,13 @@ export function LessonSpace({
               <Briefcase size={14} className="shrink-0" /> Run in Background (Minimize)
             </button>
           ) : (
-            <div style={{ fontSize: '13px', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+            <div style={{ fontSize: '13px', color: 'var(--success)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
               <Check size={14} className="shrink-0" /> Ingestion Complete!
             </div>
           )}
         </div>
-      </div>
+      </div>,
+      document.body
     );
   };
 
@@ -524,12 +516,12 @@ export function LessonSpace({
             {!pdfFileName ? (
               <div 
                 style={{
-                  border: '2px dashed rgba(255, 255, 255, 0.15)',
+                  border: '2px dashed var(--border-color)',
                   borderRadius: '8px',
                   padding: '20px',
                   textAlign: 'center',
                   cursor: 'pointer',
-                  backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                  backgroundColor: 'var(--bg-main)',
                   transition: 'all 0.2s ease',
                   position: 'relative'
                 }}
@@ -551,10 +543,10 @@ export function LessonSpace({
                 <span style={{ display: 'block', marginBottom: '8px' }}>
                   <Folder className="size-8 text-slate-400 mx-auto" />
                 </span>
-                <span style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                   Drag & drop or click to upload PDF
                 </span>
-                <span style={{ fontSize: '11px', display: 'block', color: 'rgba(255, 255, 255, 0.4)', marginTop: '4px' }}>
+                <span style={{ fontSize: '11px', display: 'block', color: 'var(--text-dark)', marginTop: '4px' }}>
                   Max size: 10MB
                 </span>
               </div>
@@ -605,7 +597,7 @@ export function LessonSpace({
             )}
           </div>
 
-          <button type="submit" className="btn btn-primary flex items-center justify-center gap-2" style={{ marginTop: '8px' }} disabled={loading || isMissingClassroom}>
+          <button type="submit" className="btn btn-primary flex items-center justify-center gap-2" style={{ marginTop: '8px' }} disabled={loading}>
             {loading ? (
               <>
                 <Hourglass className="size-4 animate-spin shrink-0" />
@@ -647,8 +639,8 @@ export function LessonSpace({
           <div className="flex-1 flex flex-col">
             {loading ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 p-10">
-                <Loader2 className="size-8 text-[#11428E] animate-spin" />
-                <p className="text-[13px] font-bold text-[#11428E] tracking-[0.5px]">GEMINI FRAGMENTING LESSON MATRIX</p>
+                <Loader2 className="size-8 text-[var(--accent-primary-text)] animate-spin" />
+                <p className="text-[13px] font-bold text-[var(--accent-primary-text)] tracking-[0.5px]">GEMINI FRAGMENTING LESSON MATRIX</p>
                 <p className="text-xs text-[var(--text-muted)] text-center">Synthesizing questions and writing explanations...</p>
               </div>
             ) : (!stagedStudyContent && stagedQuestions.length === 0) ? (
@@ -660,7 +652,7 @@ export function LessonSpace({
             ) : (
               <div className="flex flex-col gap-5">
                 {/* Tabs Header */}
-                <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '20px', gap: '16px' }}>
+                <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '20px', gap: '16px' }}>
                   <button
                     type="button"
                     onClick={() => setActiveWorkspaceTab('study')}
@@ -668,8 +660,8 @@ export function LessonSpace({
                       padding: '10px 16px',
                       background: 'none',
                       border: 'none',
-                      borderBottom: activeWorkspaceTab === 'study' ? '2px solid #3b82f6' : '2px solid transparent',
-                      color: activeWorkspaceTab === 'study' ? '#3b82f6' : 'rgba(255,255,255,0.6)',
+                      borderBottom: activeWorkspaceTab === 'study' ? '2px solid var(--accent-primary-text)' : '2px solid transparent',
+                      color: activeWorkspaceTab === 'study' ? 'var(--accent-primary-text)' : 'var(--text-muted)',
                       fontWeight: 600,
                       cursor: 'pointer',
                       fontSize: '14px',
@@ -687,8 +679,8 @@ export function LessonSpace({
                       padding: '10px 16px',
                       background: 'none',
                       border: 'none',
-                      borderBottom: activeWorkspaceTab === 'questions' ? '2px solid #3b82f6' : '2px solid transparent',
-                      color: activeWorkspaceTab === 'questions' ? '#3b82f6' : 'rgba(255,255,255,0.6)',
+                      borderBottom: activeWorkspaceTab === 'questions' ? '2px solid var(--accent-primary-text)' : '2px solid transparent',
+                      color: activeWorkspaceTab === 'questions' ? 'var(--accent-primary-text)' : 'var(--text-muted)',
                       fontWeight: 600,
                       cursor: 'pointer',
                       fontSize: '14px',
@@ -707,51 +699,51 @@ export function LessonSpace({
                     {stagedStudyContent ? (
                       <>
                         {/* Introduction Card */}
-                        <div style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px' }}>
-                          <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#93C5FD', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Star className="size-4" /> Lesson Introduction
+                        <div style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+                          <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: 'var(--text-main)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Star className="size-4 text-amber-500" /> Lesson Introduction
                           </h4>
                           <div className="form-group" style={{ margin: 0 }}>
                             <textarea
                               value={stagedStudyContent.introduction}
                               onChange={(e) => updateIntro(e.target.value)}
                               rows={4}
-                              style={{ width: '100%', minHeight: '80px', backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#f8fafc', padding: '10px', borderRadius: '8px', fontSize: '13px', fontFamily: 'inherit', resize: 'vertical' }}
+                              style={{ width: '100%', minHeight: '80px', resize: 'vertical' }}
                             />
                           </div>
                         </div>
 
                         {/* Definitions Card */}
-                        <div style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px' }}>
-                          <h4 style={{ margin: '0 0 16px 0', fontSize: '15px', color: '#93C5FD', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <BookOpenText className="size-4" /> Key Vocabulary & Definitions
+                        <div style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+                          <h4 style={{ margin: '0 0 16px 0', fontSize: '15px', color: 'var(--text-main)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <BookOpenText className="size-4 text-blue-500" /> Key Vocabulary & Definitions
                           </h4>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             {stagedStudyContent.definitions.map((def, defIdx) => (
-                              <div key={defIdx} style={{ borderBottom: defIdx === stagedStudyContent.definitions.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)', paddingBottom: defIdx === stagedStudyContent.definitions.length - 1 ? 0 : '16px' }}>
+                              <div key={defIdx} style={{ borderBottom: defIdx === stagedStudyContent.definitions.length - 1 ? 'none' : '1px solid var(--border-color)', paddingBottom: defIdx === stagedStudyContent.definitions.length - 1 ? 0 : '16px' }}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ marginBottom: '12px' }}>
                                   <div className="form-group" style={{ margin: 0 }}>
-                                    <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', fontWeight: 600 }}>Term</label>
+                                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Term</label>
                                     <input
                                       type="text"
                                       value={def.term}
                                       onChange={(e) => updateDefinitionTerm(defIdx, e.target.value)}
-                                      style={{ width: '100%', backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#f8fafc', padding: '8px 10px', borderRadius: '6px', fontSize: '13px', marginTop: '4px' }}
+                                      style={{ width: '100%', marginTop: '4px', padding: '8px 12px' }}
                                     />
                                   </div>
                                   <div className="form-group" style={{ margin: 0 }}>
-                                    <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', fontWeight: 600 }}>Simple Definition</label>
+                                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Simple Definition</label>
                                     <input
                                       type="text"
                                       value={def.definition}
                                       onChange={(e) => updateDefinitionText(defIdx, e.target.value)}
-                                      style={{ width: '100%', backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#f8fafc', padding: '8px 10px', borderRadius: '6px', fontSize: '13px', marginTop: '4px' }}
+                                      style={{ width: '100%', marginTop: '4px', padding: '8px 12px' }}
                                     />
                                   </div>
                                 </div>
                                 
                                 <div style={{ paddingLeft: '12px', borderLeft: '2px solid rgba(59, 130, 246, 0.3)' }}>
-                                  <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Examples</label>
+                                  <label style={{ fontSize: '11px', color: 'var(--text-dark)', textTransform: 'uppercase', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Examples</label>
                                   {def.examples.map((ex, exIdx) => (
                                     <input
                                       key={exIdx}
@@ -759,7 +751,7 @@ export function LessonSpace({
                                       value={ex}
                                       onChange={(e) => updateDefinitionExample(defIdx, exIdx, e.target.value)}
                                       placeholder={`Example ${exIdx + 1}`}
-                                      style={{ width: '100%', backgroundColor: 'rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.8)', padding: '6px 8px', borderRadius: '4px', fontSize: '12px', marginBottom: '6px' }}
+                                      style={{ width: '100%', padding: '6px 10px', fontSize: '13px', marginBottom: '6px' }}
                                     />
                                   ))}
                                 </div>
@@ -769,9 +761,9 @@ export function LessonSpace({
                         </div>
 
                         {/* Summary Card */}
-                        <div style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px' }}>
-                          <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#93C5FD', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <FileText className="size-4" /> Key Takeaways & Summary
+                        <div style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+                          <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', color: 'var(--text-main)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <FileText className="size-4 text-purple-500" /> Key Takeaways & Summary
                           </h4>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {stagedStudyContent.summary.map((sumItem, sumIdx) => (
@@ -781,7 +773,7 @@ export function LessonSpace({
                                   type="text"
                                   value={sumItem}
                                   onChange={(e) => updateSummaryItem(sumIdx, e.target.value)}
-                                  style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#f8fafc', padding: '8px 10px', borderRadius: '6px', fontSize: '13px' }}
+                                  style={{ flex: 1, padding: '8px 12px' }}
                                 />
                               </div>
                             ))}
@@ -789,7 +781,7 @@ export function LessonSpace({
                         </div>
                       </>
                     ) : (
-                      <p style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontSize: '13px' }}>No study content structure generated.</p>
+                      <p style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '13px' }}>No study content structure generated.</p>
                     )}
                   </div>
                 ) : (
@@ -810,7 +802,7 @@ export function LessonSpace({
                               }`}>
                                 {q.difficulty}
                               </span>
-                              <span className="px-2 py-0.75 rounded-md text-[10px] font-bold uppercase bg-[#11428E]/10 text-[var(--accent-primary)] border border-[#11428E]/20">
+                              <span className="px-2 py-0.75 rounded-md text-[10px] font-bold uppercase bg-[var(--accent-primary-glow)] text-[var(--accent-primary-text)] border border-[var(--accent-primary-glow)]">
                                 {q.category}
                               </span>
                             </div>

@@ -2,7 +2,7 @@ import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface RoleCardProps {
-    role: 'Student' | 'Teacher' | 'Parent' | 'Lesson Developer';
+    role: string;
     description: string;
     Icon: LucideIcon;
     bgColor: string; // Tailwind bg color class

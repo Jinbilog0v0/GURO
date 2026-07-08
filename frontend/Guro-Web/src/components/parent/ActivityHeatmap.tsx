@@ -53,9 +53,9 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ logs }) => {
     <div className="glass-panel p-6 flex flex-col gap-3 w-full">
       <div className="flex items-center gap-2">
         <Calendar size={18} className="text-[#8B5CF6]" />
-        <h3 className="text-[15px] font-bold text-[#F8FAFC]">Practice Consistency Tracker</h3>
+        <h3 className="text-[15px] font-bold text-[var(--text-main)]">Practice Consistency Tracker</h3>
       </div>
-      <p className="text-xs text-[#94A3B8] mb-2">Daily activity calendar (past 4 weeks) tracking synced study quests.</p>
+      <p className="text-xs text-[var(--text-muted)] mb-2">Daily activity calendar (past 4 weeks) tracking synced study quests.</p>
       
       <div className="flex justify-center py-2">
         <div className="grid grid-cols-7 gap-2 max-w-[220px]">
@@ -77,12 +77,12 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ logs }) => {
       </div>
 
       <div className="flex items-center justify-end gap-1.5 mt-2">
-        <span className="text-[10px] text-[#64748B] mx-1">Less consistency</span>
+        <span className="text-[10px] text-[var(--text-dark)] mx-1">Less consistency</span>
         <div className="w-6 h-6 rounded-[6px] border border-white/5 transition-transform duration-100 ease-in-out cursor-pointer hover:scale-110" style={{ backgroundColor: getHeatmapColor(0) }} />
         <div className="w-6 h-6 rounded-[6px] border border-white/5 transition-transform duration-100 ease-in-out cursor-pointer hover:scale-110" style={{ backgroundColor: getHeatmapColor(1) }} />
         <div className="w-6 h-6 rounded-[6px] border border-white/5 transition-transform duration-100 ease-in-out cursor-pointer hover:scale-110" style={{ backgroundColor: getHeatmapColor(2) }} />
         <div className="w-6 h-6 rounded-[6px] border border-white/5 transition-transform duration-100 ease-in-out cursor-pointer hover:scale-110" style={{ backgroundColor: getHeatmapColor(3) }} />
-        <span className="text-[10px] text-[#64748B] mx-1">More practice</span>
+        <span className="text-[10px] text-[var(--text-dark)] mx-1">More practice</span>
       </div>
     </div>
   );

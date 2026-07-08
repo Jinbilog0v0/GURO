@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Save, BookOpen, Languages } from 'lucide-react';
+import { toast } from '../../utils/toast';
 
 interface Question {
   id: string;
@@ -87,7 +88,7 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
   // Remove a question slot
   const handleRemoveQuestion = (indexToRemove: number) => {
     if (questions.length === 1) {
-      alert('A lesson must have at least one question.');
+      toast.error('A lesson must have at least one question.');
       return;
     }
     const filtered = questions.filter((_, idx) => idx !== indexToRemove);
@@ -137,12 +138,12 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
     e.preventDefault();
 
     if (!topic.trim()) {
-      alert('Please provide a Topic Title.');
+      toast.error('Please provide a Topic Title.');
       return;
     }
 
     if (!lessonText.trim()) {
-      alert('Please write the Lesson Summary Content.');
+      toast.error('Please write the Lesson Summary Content.');
       return;
     }
 
@@ -150,21 +151,21 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
       if (!q.questionText.trim()) {
-        alert(`Question #${i + 1} prompt cannot be empty.`);
+        toast.error(`Question #${i + 1} prompt cannot be empty.`);
         return;
       }
       for (let j = 0; j < 4; j++) {
         if (!q.options[j].trim()) {
-          alert(`Option ${String.fromCharCode(65 + j)} for Question #${i + 1} cannot be empty.`);
+          toast.error(`Option ${String.fromCharCode(65 + j)} for Question #${i + 1} cannot be empty.`);
           return;
         }
       }
       if (!q.correctAnswer) {
-        alert(`Please select the correct answer option for Question #${i + 1}.`);
+        toast.error(`Please select the correct answer option for Question #${i + 1}.`);
         return;
       }
       if (!q.feedback.en.trim()) {
-        alert(`Explanation for Question #${i + 1} is required.`);
+        toast.error(`Explanation for Question #${i + 1} is required.`);
         return;
       }
     }
@@ -172,22 +173,20 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
     setIsSubmitting(true);
     try {
       const endpoint = classroomId ? '/api/classroom/update-lesson' : '/api/save';
-      const payload = classroomId ? {
-        classroomId,
-        subject,
-        grade: parseInt(grade),
-        topic: topic.trim(),
-        questions
-      } : {
-        subject,
-        grade: parseInt(grade),
-        topic: topic.trim(),
-        questions
-      };
+      const studyContent = lessonText.trim()
+        ? { introduction: lessonText.trim(), vocabulary: [], summary: [] }
+        : null;
+      const payload = classroomId
+        ? { classroomId, subject, grade: parseInt(grade), topic: topic.trim(), studyContent, questions }
+        : { subject, grade: parseInt(grade), topic: topic.trim(), studyContent, questions };
 
+      const token = localStorage.getItem('guro_auth_token');
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload)
       });
 
@@ -196,7 +195,7 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
         throw new Error(err.error || 'Failed to save lesson');
       }
 
-      alert(`Successfully saved "${topic.trim()}" lesson with ${questions.length} questions manually!`);
+      toast.success(`Successfully saved "${topic.trim()}" lesson with ${questions.length} questions manually!`);
       // Reset forms
       setTopic('');
       setLessonText('');
@@ -212,7 +211,7 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
         }
       ]);
     } catch (err: any) {
-      alert(err.message || 'Error occurred while saving lesson.');
+      toast.error(err.message || 'Error occurred while saving lesson.');
     } finally {
       setIsSubmitting(false);
     }
@@ -295,7 +294,7 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
             {questions.map((q, idx) => (
               <div key={idx} className="bg-[var(--bg-sidebar)] border border-[var(--border-color)] rounded-2xl p-5 flex flex-col gap-4">
                 <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-2.5">
-                  <span className="text-[13px] font-extrabold text-[var(--accent-primary)] uppercase tracking-[0.5px]">Question #{idx + 1}</span>
+                  <span className="text-[13px] font-extrabold text-[var(--accent-primary-text)] uppercase tracking-[0.5px]">Question #{idx + 1}</span>
                   <input
                     type="text"
                     value={q.id}

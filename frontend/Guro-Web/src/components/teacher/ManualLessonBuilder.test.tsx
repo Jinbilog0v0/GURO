@@ -1,6 +1,14 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ManualLessonBuilder } from './ManualLessonBuilder';
 import '@testing-library/jest-dom';
+import { toast } from '../../utils/toast';
+
+jest.mock('../../utils/toast', () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+  }
+}));
 
 describe('ManualLessonBuilder Component', () => {
   beforeEach(() => {
@@ -50,25 +58,25 @@ describe('ManualLessonBuilder Component', () => {
 
     // Try submitting empty form (using fireEvent.submit to bypass JSDOM HTML5 required blocks)
     fireEvent.submit(form);
-    expect(global.alert).toHaveBeenCalledWith('Please provide a Topic Title.');
+    expect(toast.error).toHaveBeenCalledWith('Please provide a Topic Title.');
 
     // Fill in topic
     const topicInput = screen.getByPlaceholderText('e.g. Adjectives, Metric Systems');
     fireEvent.change(topicInput, { target: { value: 'Nouns' } });
     fireEvent.submit(form);
-    expect(global.alert).toHaveBeenCalledWith('Please write the Lesson Summary Content.');
+    expect(toast.error).toHaveBeenCalledWith('Please write the Lesson Summary Content.');
 
     // Fill in lesson content
     const summaryInput = screen.getByPlaceholderText('Write the summarized explanation or key rules that the students will learn...');
     fireEvent.change(summaryInput, { target: { value: 'Nouns are naming words.' } });
     fireEvent.submit(form);
-    expect(global.alert).toHaveBeenCalledWith('Question #1 prompt cannot be empty.');
+    expect(toast.error).toHaveBeenCalledWith('Question #1 prompt cannot be empty.');
 
     // Fill in question prompt
     const promptInput = screen.getByPlaceholderText('e.g. Which of the following is an adjective?');
     fireEvent.change(promptInput, { target: { value: 'Identify the noun in "The dog barked".' } });
     fireEvent.submit(form);
-    expect(global.alert).toHaveBeenCalledWith('Option A for Question #1 cannot be empty.');
+    expect(toast.error).toHaveBeenCalledWith('Option A for Question #1 cannot be empty.');
 
     // Fill options
     const optionInputs = screen.getAllByPlaceholderText('Option value...');
@@ -81,7 +89,7 @@ describe('ManualLessonBuilder Component', () => {
     fireEvent.click(screen.getAllByRole('radio')[0]);
 
     fireEvent.submit(form);
-    expect(global.alert).toHaveBeenCalledWith('Explanation for Question #1 is required.');
+    expect(toast.error).toHaveBeenCalledWith('Explanation for Question #1 is required.');
 
     // Fill English explanation
     const explanationEn = screen.getByPlaceholderText('Explain why this option is correct...');
@@ -101,6 +109,6 @@ describe('ManualLessonBuilder Component', () => {
       );
     });
 
-    expect(global.alert).toHaveBeenCalledWith('Successfully saved "Nouns" lesson with 1 questions manually!');
+    expect(toast.success).toHaveBeenCalledWith('Successfully saved "Nouns" lesson with 1 questions manually!');
   });
 });

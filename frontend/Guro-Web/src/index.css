@@ -8,6 +8,7 @@
   --accent-primary: #11428e;
   /* DepEd Blue */
   --accent-primary-glow: rgba(17, 66, 142, 0.25);
+  --accent-primary-text: #3b82f6; /* Readable light blue in dark mode */
   --accent-secondary: #a01322;
   /* DepEd Red */
   --accent-secondary-glow: rgba(160, 19, 34, 0.2);
@@ -22,8 +23,8 @@
   --danger: #a01322;
   --danger-glow: rgba(160, 19, 34, 0.15);
 
-  --font-body: "Plus Jakarta Sans", sans-serif;
-  --font-display: "Space Grotesk", sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 @layer base {
@@ -387,6 +388,7 @@
   --text-muted: #475569;
   --text-dark: #94a3b8;
   --accent-primary: #11428e; /* DepEd Blue for better light theme contrast */
+  --accent-primary-text: #11428e; /* High-contrast blue in light mode */
 }
 
 .light-mode input,
@@ -440,6 +442,7 @@ body.light-mode .teacher-portal {
   --text-muted: #5B6170;
   --text-dark: #9AA0AD;
   --accent-primary-glow: rgba(17, 66, 142, 0.08);
+  --accent-primary-text: #11428e; /* High-contrast blue in light mode */
   --success: #16A34A;
   --success-glow: rgba(22, 163, 74, 0.12);
   --warning: #E8890C;

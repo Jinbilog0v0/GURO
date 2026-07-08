@@ -57,58 +57,64 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                 const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
                 if (AudioContextClass) {
                     const ctx = new AudioContextClass();
+                    const cleanupDelay = isCorrect ? 4.0 : 3.8;
+                    setTimeout(() => ctx.close(), cleanupDelay * 1000);
+
                     if (isCorrect) {
-                        // Ascending high-pitch notes for correct answer
+                        // Ascending high-pitch arpeggio for correct answer (about 3.7s total)
                         const playNote = (freq: number, startTime: number, duration: number) => {
                             const osc = ctx.createOscillator();
                             const gain = ctx.createGain();
-                            
+
                             osc.type = 'sine';
                             osc.frequency.setValueAtTime(freq, startTime);
-                            
+
                             gain.gain.setValueAtTime(0, startTime);
-                            gain.gain.linearRampToValueAtTime(0.15, startTime + 0.05);
+                            gain.gain.linearRampToValueAtTime(0.15, startTime + 0.1);
                             gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-                            
+
                             osc.connect(gain);
                             gain.connect(ctx.destination);
-                            
+
                             osc.start(startTime);
                             osc.stop(startTime + duration);
                         };
-                        
+
                         const now = ctx.currentTime;
-                        playNote(523.25, now, 0.3); // C5
-                        playNote(659.25, now + 0.08, 0.4); // E5
-                        playNote(783.99, now + 0.16, 0.5); // G5
+                        playNote(523.25, now, 2.5);        // C5
+                        playNote(659.25, now + 0.3, 2.5);  // E5
+                        playNote(783.99, now + 0.6, 2.5);  // G5
+                        playNote(987.77, now + 0.9, 2.5);  // B5
+                        playNote(1046.50, now + 1.2, 2.5); // C6
                     } else {
-                        // Descending buzz for incorrect answer
+                        // Descending slow buzz for incorrect answer (3.5s total)
                         const playBuzz = (startFreq: number, endFreq: number, startTime: number, duration: number) => {
                             const osc = ctx.createOscillator();
                             const gain = ctx.createGain();
-                            
+
                             osc.type = 'sawtooth';
                             osc.frequency.setValueAtTime(startFreq, startTime);
                             osc.frequency.exponentialRampToValueAtTime(endFreq, startTime + duration);
-                            
+
                             gain.gain.setValueAtTime(0, startTime);
-                            gain.gain.linearRampToValueAtTime(0.12, startTime + 0.05);
+                            gain.gain.linearRampToValueAtTime(0.10, startTime + 0.1);
                             gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-                            
+
                             const filter = ctx.createBiquadFilter();
                             filter.type = 'lowpass';
-                            filter.frequency.setValueAtTime(400, startTime);
-                            
+                            filter.frequency.setValueAtTime(300, startTime);
+                            filter.frequency.exponentialRampToValueAtTime(120, startTime + duration);
+
                             osc.connect(filter);
                             filter.connect(gain);
                             gain.connect(ctx.destination);
-                            
+
                             osc.start(startTime);
                             osc.stop(startTime + duration);
                         };
-                        
+
                         const now = ctx.currentTime;
-                        playBuzz(150, 100, now, 0.4);
+                        playBuzz(130, 60, now, 3.5);
                     }
                 }
             } catch (e) {
