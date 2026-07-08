@@ -127,7 +127,8 @@ class SyncController extends Controller
 
             return response()->json($formatted);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to read synced progress database.'], 500);
+            \Log::error('GetProgress error: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json(['error' => 'Failed to read synced progress database: ' . $e->getMessage()], 500);
         }
     }
 
