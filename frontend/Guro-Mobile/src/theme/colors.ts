@@ -20,9 +20,13 @@ export const Colors = {
   accentPrimaryGlow: 'rgba(17,66,142,0.25)',
   accentPrimaryDeep: 'rgba(17,66,142,0.12)',
 
-  // Accent — Blue (primary-2 / secondary)
-  accentSecondary: '#1C5BC0',
-  accentSecondaryGlow: 'rgba(28,91,192,0.20)',
+  // Accent — Red (secondary / DepEd Red)
+  accentSecondary: '#A01322',
+  accentSecondaryGlow: 'rgba(160,19,34,0.20)',
+
+  // Accent — Blue (friendly student/blue accent)
+  accentBlue: '#1C5BC0',
+  accentBlueGlow: 'rgba(28,91,192,0.20)',
 
   // Text
   textMain: '#191C24',
@@ -38,10 +42,10 @@ export const Colors = {
   warningGlow: 'rgba(232,137,12,0.12)',
   warningBorder: 'rgba(232,137,12,0.25)',
 
-  danger: '#CE1126',
-  dangerGlow: 'rgba(206,17,38,0.10)',
-  dangerBorder: 'rgba(206,17,38,0.25)',
-  dangerText: '#a01322',
+  danger: '#A01322',
+  dangerGlow: 'rgba(160,19,34,0.15)',
+  dangerBorder: 'rgba(160,19,34,0.25)',
+  dangerText: '#A01322',
 
   // Misc
   white: '#ffffff',

@@ -13,6 +13,7 @@ import {
   StyleProp,
   ActivityIndicator,
 } from 'react-native';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { Buttons, Text as TextStyles } from '../../theme/styles';
 import { Colors } from '../../theme/colors';
 
@@ -26,18 +27,29 @@ interface ButtonProps {
 }
 
 export function PrimaryButton({ label, onPress, disabled, loading, style, icon }: ButtonProps) {
+  const isInactive = disabled || loading;
   return (
     <TouchableOpacity
       onPress={onPress}
-      disabled={disabled || loading}
+      disabled={isInactive}
       activeOpacity={0.8}
       style={[
         Buttons.base,
         Buttons.primary,
-        (disabled || loading) && Buttons.disabled,
+        isInactive && Buttons.disabled,
+        { overflow: 'hidden', position: 'relative' },
         style,
       ]}
     >
+      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+        <Defs>
+          <SvgLinearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={Colors.accentPrimary} />
+            <Stop offset="100%" stopColor={Colors.accentBlue} />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect width="100%" height="100%" fill="url(#primaryGrad)" />
+      </Svg>
       {loading ? (
         <ActivityIndicator size="small" color={Colors.white} />
       ) : (

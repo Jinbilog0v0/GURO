@@ -40,7 +40,7 @@ export function LessonCard({
     : isCompleted
     ? Colors.success
     : completionPercent > 0
-    ? Colors.accentSecondary
+    ? Colors.accentBlue
     : Colors.textMuted;
 
   const statusLabel = isLocked

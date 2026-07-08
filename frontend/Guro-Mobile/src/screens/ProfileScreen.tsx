@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
+import * as Network from 'expo-network';
 import { getTeacherDerivedPin } from '../utils/security';
 import {
   Settings,
@@ -26,6 +27,7 @@ import {
   School,
   Volume2,
   ChevronRight,
+  Star,
 } from 'lucide-react-native';
 
 import { Colors } from '../theme/colors';
@@ -70,6 +72,7 @@ export function ProfileScreen() {
   const logoutFromCloud     = useAppStore((s) => s.logoutFromCloud);
   const setMascotOutfit     = useAppStore((s) => s.setMascotOutfit);
   const purchaseOutfit      = useAppStore((s) => s.purchaseOutfit);
+  const serverUrlFromStore  = useAppStore((s) => s.serverUrl);
 
   const [pinVisible,  setPinVisible]  = useState(false);
   const [pinTarget,   setPinTarget]   = useState<PinTarget>('teacher');
@@ -110,13 +113,13 @@ export function ProfileScreen() {
         'Teacher Security Challenge',
         'Solve to verify you are a teacher:\n\nWhat is 14 × 13?',
         [
-          { text: '172', onPress: () => Alert.alert('Wrong Answer', 'Please try again!') },
-          { text: '194', onPress: () => Alert.alert('Wrong Answer', 'Please try again!') },
+          { text: '172', onPress: () => toast.error('Wrong Answer. Please try again!') },
+          { text: '194', onPress: () => toast.error('Wrong Answer. Please try again!') },
           {
             text: '182',
             onPress: () => {
               const pin = getTeacherDerivedPin(classroomId, studentId);
-              Alert.alert('Access Granted 🔑', `Your Teacher PIN is: ${pin}`);
+              toast.success(`Access Granted 🔑 Your Teacher PIN is: ${pin}`, 5000);
             },
           },
         ],
@@ -127,14 +130,14 @@ export function ProfileScreen() {
         'Parent PIN Reset',
         'Solve to reset your PIN:\n\nWhat is 15 × 16?',
         [
-          { text: '230', onPress: () => Alert.alert('Wrong Answer', 'Please try again!') },
-          { text: '250', onPress: () => Alert.alert('Wrong Answer', 'Please try again!') },
+          { text: '230', onPress: () => toast.error('Wrong Answer. Please try again!') },
+          { text: '250', onPress: () => toast.error('Wrong Answer. Please try again!') },
           {
             text: '240',
             onPress: () => {
               setParentPin(null);
               setPinVisible(false);
-              Alert.alert('PIN Reset', 'Tap Parent Portal again to set a new one!');
+              toast.success('PIN Reset! Tap Parent Portal again to set a new one.');
             },
           },
         ],
@@ -153,11 +156,34 @@ export function ProfileScreen() {
   const handleLinkClassroom = async () => {
     const trimmed = classCode.trim();
     if (!trimmed) { toast.error('Please type a classroom invite code first.'); return; }
+
+    // O10: Pre-check connectivity before attempting server fetch
+    try {
+      const netState = await Network.getNetworkStateAsync();
+      const isOnline = netState.isConnected && netState.isInternetReachable !== false;
+      if (!isOnline) {
+        toast.error("You're offline. Connect to the internet to link a classroom.");
+        return;
+      }
+    } catch {
+      // Proceed and let fetch handle it
+    }
+
     setIsLinking(true);
     try {
-      const parts = trimmed.split('@');
-      if (parts.length !== 2) throw new Error('Invalid format. Use CODE@server-url');
-      const [code, serverUrl] = parts;
+      let code = trimmed;
+      let serverUrl = serverUrlFromStore || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+      
+      const firstAtIndex = trimmed.indexOf('@');
+      if (firstAtIndex !== -1) {
+        code = trimmed.substring(0, firstAtIndex);
+        serverUrl = trimmed.substring(firstAtIndex + 1);
+      }
+
+      const codeRegex = /^[A-Z]{3,4}-G[4-6]-[A-Z0-9]{3}$/i;
+      if (!codeRegex.test(code)) {
+        throw new Error('Invalid classroom code format. Use format like ENG-G6-ZE3');
+      }
       const ok = await fetchItemBankFromServer(serverUrl, code);
       if (ok) {
         setClassroomId(code);
@@ -165,7 +191,7 @@ export function ProfileScreen() {
         setClassCode('');
         toast.success(`Classroom "${code}" connected successfully.`);
       } else {
-        toast.error('Could not connect. Check the code and try again.');
+        toast.error('Could not connect. Check the code and your internet connection.');
       }
     } catch (e: any) {
       toast.error(e.message ?? 'Something went wrong.');
@@ -186,10 +212,10 @@ export function ProfileScreen() {
     const owned = ownedOutfits.includes(key);
     if (owned) { setMascotOutfit(key); return; }
     if (virtualStars < cost) {
-      toast.error(`You need ${cost} ⭐ stars to unlock this.`);
+      toast.error(`You need ${cost} stars to unlock this.`);
       return;
     }
-    Alert.alert(`Buy outfit?`, `Cost: ${cost} ⭐ stars`, [
+    Alert.alert(`Buy outfit?`, `Cost: ${cost} stars`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Buy', onPress: () => { if (!purchaseOutfit(key, cost)) toast.error('Not enough stars!'); } },
     ]);
@@ -219,9 +245,12 @@ export function ProfileScreen() {
             )}
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap', justifyContent: 'center' }}>
-            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: '#F59E0B' }}>
-              ⭐ {virtualStars} Stars
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Star size={14} color="#F59E0B" fill="#F59E0B" />
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: '#F59E0B' }}>
+                {virtualStars} Stars
+              </Text>
+            </View>
             {classroomId && (
               <View style={{
                 flexDirection: 'row', alignItems: 'center', gap: 4,
@@ -261,9 +290,12 @@ export function ProfileScreen() {
                   {label}
                 </Text>
                 {!owned && (
-                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                    {cost} ⭐
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                      {cost}
+                    </Text>
+                    <Star size={10} color={Colors.textMuted} fill={Colors.textMuted} />
+                  </View>
                 )}
                 {owned && active && (
                   <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.success }}>
@@ -378,32 +410,34 @@ export function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Logout (online only) */}
-        {appMode !== 'offline' && (
-          <TouchableOpacity
-            onPress={() =>
-              Alert.alert('Confirm Logout', 'Are you sure you want to log out?', [
+        {/* Logout — U6: Specific confirmation copy + always navigate to Login */}
+        <TouchableOpacity
+          onPress={() =>
+            Alert.alert(
+              'Log out from GURO?',
+              'Your progress is saved on this device and will sync when you reconnect.',
+              [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                  text: 'Logout',
+                  text: 'Log Out',
                   style: 'destructive',
                   onPress: () => { logoutFromCloud(); navigation.replace('Login'); },
                 },
-              ])
-            }
-            activeOpacity={0.75}
+              ]
+            )
+          }
+          activeOpacity={0.75}
+        >
+          <GlassCard
+            padding={Spacing.lg}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, borderColor: Colors.dangerBorder }}
           >
-            <GlassCard
-              padding={Spacing.lg}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, borderColor: Colors.dangerBorder }}
-            >
-              <LogOut size={22} color={Colors.dangerText} />
-              <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.md, color: Colors.dangerText }}>
-                Log Out
-              </Text>
-            </GlassCard>
-          </TouchableOpacity>
-        )}
+            <LogOut size={22} color={Colors.dangerText} />
+            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.md, color: Colors.dangerText }}>
+              Log Out
+            </Text>
+          </GlassCard>
+        </TouchableOpacity>
 
         <View style={{ height: Spacing['3xl'] }} />
       </ScrollView>
@@ -431,7 +465,7 @@ export function ProfileScreen() {
                 label="Classroom Code"
                 value={classCode}
                 onChangeText={setClassCode}
-                placeholder="e.g. ABC123@school.guro.app"
+                placeholder="e.g. ENG-G6-ZE3"
                 autoCapitalize="none"
                 autoCorrect={false}
               />

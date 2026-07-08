@@ -44,7 +44,7 @@ export const FileService = {
     try {
       const files = await FileSystem.readDirectoryAsync(BASE_DIR);
       // Filter out system files if any, only return .txt or user created files
-      return files.filter(f => !f.startsWith('.'));
+      return files.filter(f => !f.startsWith('.') && !f.endsWith('.db'));
     } catch (error) {
       console.error('Error listing files:', error);
       return [];

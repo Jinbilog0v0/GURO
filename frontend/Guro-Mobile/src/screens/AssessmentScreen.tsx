@@ -12,18 +12,21 @@ import {
   View,
   TouchableOpacity,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppStore, Question } from '../store/useAppStore';
-import { shuffle } from '../utils/engine';
-import { Trophy, Square, Volume2, Check, X, Inbox, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { shuffle, MASTERY_THRESHOLD } from '../utils/engine';
+import { Trophy, Square, Volume2, Check, X, Inbox, ChevronDown, ChevronUp, WifiOff } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
 
-// ── Design System ──────────────────────────────────────────────────────────────
+// ── Design System ──────────────────────────────────────────────────────────────────────────────
 import { Colors } from '../theme/colors';
+import { Fonts, FontSizes } from '../theme/typography';
+import { Spacing, Radius } from '../theme/spacing';
 import { GlassCard } from '../components/ui/GlassCard';
 import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
 import { Badge } from '../components/ui/Badge';
@@ -62,8 +65,10 @@ export function AssessmentScreen({ route, navigation }: Props) {
     const list: Question[] = [];
     Object.keys(topicData).forEach((diff) => {
       if (diff === 'studyContent') return;
-      Object.keys(topicData[diff]).forEach((cat) => {
-        list.push(...topicData[diff][cat]);
+      const diffData = topicData[diff] as Record<string, Question[]> | undefined;
+      if (!diffData || typeof diffData !== 'object') return;
+      Object.keys(diffData).forEach((cat) => {
+        list.push(...diffData[cat]);
       });
     });
     return list;
@@ -84,6 +89,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
   const [score, setScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
   const [showAnswerReview, setShowAnswerReview] = useState(false);
+  const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
 
   interface AnswerLogEntry {
     questionText: string;
@@ -100,8 +106,19 @@ export function AssessmentScreen({ route, navigation }: Props) {
     setSelectedOption(option);
   };
 
-  // handleSubmit / handleNext require currentQuestion, so we declare them after
-  // the early-return guards below.
+  // ── Speech State (must be declared before any early-return to satisfy Rules of Hooks) ──
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      Speech.stop();
+    };
+  }, []);
+
+  useEffect(() => {
+    Speech.stop();
+    setIsSpeaking(false);
+  }, [currentIndex]);
 
   // ── Error state: no questions ──────────────────────────────────────────────
   if (questions.length === 0) {
@@ -132,20 +149,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
   const isLastQuestion = currentIndex + 1 === questions.length;
   const isCorrect = selectedOption === currentQuestion.correctAnswer;
 
-  // ── Speech State & Handlers ────────────────────────────────────────────────
-  const [isSpeaking, setIsSpeaking] = useState(false);
-
-  useEffect(() => {
-    return () => {
-      Speech.stop();
-    };
-  }, []);
-
-  useEffect(() => {
-    Speech.stop();
-    setIsSpeaking(false);
-  }, [currentIndex]);
-
+  // ── Speech Handlers ────────────────────────────────────────────────────────
   const toggleSpeech = () => {
     if (isSpeaking) {
       Speech.stop();
@@ -228,6 +232,15 @@ export function AssessmentScreen({ route, navigation }: Props) {
       setIsAnswered(false);
     } else {
       const finalScore = score;
+      const isPerfect = finalScore === questions.length;
+      const earnedXP = finalScore * 10 + (isPerfect ? 50 : 0);
+      const oldXp = useAppStore.getState().xpPoints || 0;
+      const newXp = oldXp + earnedXP;
+      const oldLevel = Math.floor(oldXp / 100) + 1;
+      const newLevel = Math.floor(newXp / 100) + 1;
+      if (newLevel > oldLevel) {
+        setLevelUpLevel(newLevel);
+      }
       recordProgress({
         subject,
         gradeLevel,
@@ -246,7 +259,9 @@ export function AssessmentScreen({ route, navigation }: Props) {
   if (quizFinished) {
     const finalScore = score;
     const percentage = Math.round((finalScore / questions.length) * 100);
-    const passed = percentage >= 75;
+    const passed = percentage >= MASTERY_THRESHOLD;
+    // O2: Check for unsynced progress to show 'not yet sent to teacher' notice
+    const unsyncedCount = (useAppStore.getState().studentProgress || []).filter((p) => !p.synced).length;
 
     return (
       <SafeAreaView style={styles.screen}>
@@ -260,7 +275,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
               <View style={{ alignItems: 'center', gap: 6, marginBottom: 8 }}>
                 <Text style={{ fontSize: 48 }}>🎉</Text>
                 <Badge label="Passed!" variant="success" style={styles.finishedBadge} />
-                <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: Colors.success, textAlign: 'center' }}>
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.success, textAlign: 'center' }}>
                   Amazing work! You passed this topic.
                 </Text>
               </View>
@@ -268,6 +283,26 @@ export function AssessmentScreen({ route, navigation }: Props) {
               <View style={{ alignItems: 'center', gap: 6, marginBottom: 8 }}>
                 <Trophy size={48} color="#EAB308" style={{ marginBottom: 4 }} />
                 <Badge label="Keep Practicing" variant="warning" style={styles.finishedBadge} />
+              </View>
+            )}
+
+            {/* O2: Unsynced score notice — shown when result hasn't reached teacher yet */}
+            {unsyncedCount > 0 && (
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: 'rgba(245,158,11,0.08)',
+                borderWidth: 1,
+                borderColor: 'rgba(245,158,11,0.2)',
+                borderRadius: Radius.md,
+                padding: Spacing.sm,
+                marginBottom: Spacing.sm,
+              }}>
+                <WifiOff size={14} color={Colors.warning} />
+                <Text style={{ flex: 1, fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.warning, lineHeight: 16 }}>
+                  📡 Score saved on your device. It will be sent to your teacher once you're back online.
+                </Text>
               </View>
             )}
 
@@ -324,7 +359,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
                   marginTop: 4,
                 }}
               >
-                <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: Colors.accentPrimary }}>
+                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.accentPrimary }}>
                   {showAnswerReview ? 'Hide' : 'Review My Answers'}
                 </Text>
                 {showAnswerReview
@@ -335,6 +370,65 @@ export function AssessmentScreen({ route, navigation }: Props) {
             )}
           </GlassCard>
 
+          {/* Level-up celebration modal — C2: replaced hardcoded colors/fonts with design tokens */}
+          {levelUpLevel !== null && (
+            <Modal
+              visible={true}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setLevelUpLevel(null)}
+            >
+              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', padding: Spacing.lg }}>
+                <View style={{
+                  width: '100%',
+                  maxWidth: 360,
+                  borderRadius: Radius.xl,
+                  overflow: 'hidden',
+                  backgroundColor: Colors.accentPrimary,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 24,
+                  elevation: 16,
+                }}>
+                  <View style={{ backgroundColor: '#EAB308', paddingVertical: 20, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 48 }}>🎖️</Text>
+                  </View>
+                  <View style={{ padding: Spacing.xl, alignItems: 'center', gap: Spacing.md }}>
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#EAB308', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                      Level Up!
+                    </Text>
+                    <Text style={{ fontFamily: Fonts.display, fontSize: 42, color: Colors.white, lineHeight: 48 }}>
+                      Level {levelUpLevel}
+                    </Text>
+                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: 'rgba(255,255,255,0.80)', textAlign: 'center', lineHeight: 20 }}>
+                      Incredible! You've reached a new level. Keep learning and keep growing!
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setLevelUpLevel(null)}
+                      activeOpacity={0.85}
+                      accessibilityLabel="Continue"
+                      accessibilityRole="button"
+                      style={{
+                        marginTop: Spacing.sm,
+                        backgroundColor: '#EAB308',
+                        paddingVertical: Spacing.md,
+                        paddingHorizontal: 40,
+                        borderRadius: Radius.md,
+                        alignSelf: 'stretch',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.md, color: Colors.accentPrimary }}>
+                        Awesome! 🚀
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+          )}
+
           {/* Answer review list */}
           {showAnswerReview && answerLog.map((entry, idx) => (
             <GlassCard key={idx} padding={14} style={{ gap: 6 }}>
@@ -343,22 +437,22 @@ export function AssessmentScreen({ route, navigation }: Props) {
                   ? <Check size={16} color={Colors.success} strokeWidth={3} style={{ marginTop: 2 }} />
                   : <X size={16} color={Colors.danger} strokeWidth={3} style={{ marginTop: 2 }} />
                 }
-                <Text style={{ flex: 1, fontFamily: 'Inter_600SemiBold', fontSize: 12, color: Colors.textMain, lineHeight: 18 }}>
+                <Text style={{ flex: 1, fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMain, lineHeight: 18 }}>
                   {entry.questionText}
                 </Text>
               </View>
               {!entry.isCorrect && (
                 <View style={{ marginLeft: 24, gap: 2 }}>
-                  <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 11, color: Colors.danger }}>
-                    Your answer: <Text style={{ fontFamily: 'Inter_600SemiBold' }}>{entry.selectedOption}</Text>
+                  <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.danger }}>
+                    Your answer: <Text style={{ fontFamily: Fonts.bodyBold }}>{entry.selectedOption}</Text>
                   </Text>
-                  <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 11, color: Colors.success }}>
-                    Correct: <Text style={{ fontFamily: 'Inter_600SemiBold' }}>{entry.correctAnswer}</Text>
+                  <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.success }}>
+                    Correct: <Text style={{ fontFamily: Fonts.bodyBold }}>{entry.correctAnswer}</Text>
                   </Text>
                 </View>
               )}
               {entry.explanation ? (
-                <Text style={{ marginLeft: 24, fontFamily: 'Inter_400Regular', fontSize: 11, color: Colors.textMuted, lineHeight: 16, fontStyle: 'italic' }}>
+                <Text style={{ marginLeft: 24, fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted, lineHeight: 16, fontStyle: 'italic' }}>
                   {entry.explanation}
                 </Text>
               ) : null}
@@ -518,12 +612,20 @@ export function AssessmentScreen({ route, navigation }: Props) {
         {/* ── Action buttons ── */}
         <View style={styles.actionsRow}>
           {!isAnswered ? (
-            <PrimaryButton
-              label="Submit Answer"
-              onPress={handleSubmit}
-              disabled={!selectedOption}
-              style={styles.actionBtn}
-            />
+            <>
+              <PrimaryButton
+                label="Submit Answer"
+                onPress={handleSubmit}
+                disabled={!selectedOption}
+                style={styles.actionBtn}
+              />
+              {/* U2: Helper text shown when no answer is selected so children understand what to do */}
+              {!selectedOption && (
+                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, textAlign: 'center', marginTop: 6 }}>
+                  Pick an answer above to continue ↑
+                </Text>
+              )}
+            </>
           ) : (
             <PrimaryButton
               label={isLastQuestion ? 'Finish Quiz' : 'Next Question'}

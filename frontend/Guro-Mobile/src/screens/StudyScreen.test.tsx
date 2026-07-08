@@ -33,6 +33,7 @@ const mockState = {
       }
     }
   },
+  studentProgress: [],
   addLog: mockAddLog,
   trackActiveMinutes: mockTrackActiveMinutes,
 };
@@ -46,6 +47,7 @@ jest.mock('../store/useAppStore', () => ({
     {
       getState: () => ({
         trackActiveMinutes: mockTrackActiveMinutes,
+        studentProgress: [],
       }),
     }
   ),
@@ -145,7 +147,7 @@ describe('StudyScreen', () => {
       );
     });
 
-    const closeBtn = root.root.findByProps({ label: 'Close' });
+    const closeBtn = root.root.findByProps({ label: '← Lessons' });
     act(() => {
       closeBtn.props.onPress();
     });

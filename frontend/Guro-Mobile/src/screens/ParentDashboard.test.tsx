@@ -65,6 +65,12 @@ jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock
 describe('ParentDashboard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    global.fetch = jest.fn().mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(mockState.studentProgress),
+      })
+    ) as jest.Mock;
   });
 
   test('should render parental controls and statistics correctly', () => {
@@ -114,7 +120,7 @@ describe('ParentDashboard', () => {
       }
     });
 
-    const deleteBtn = root.root.findByProps({ label: '🗑️ Clear Practice History' });
+    const deleteBtn = root.root.findByProps({ label: 'Clear Practice History' });
     act(() => {
       deleteBtn.props.onPress();
     });

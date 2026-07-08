@@ -3,6 +3,16 @@ import renderer, { act } from 'react-test-renderer';
 import { Alert, TouchableOpacity } from 'react-native';
 import { StudentDashboard } from './StudentDashboard';
 import { useAppStore } from '../store/useAppStore';
+import { toast } from '../components';
+
+jest.mock('../components', () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+    warning: jest.fn(),
+    info: jest.fn(),
+  },
+}));
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -139,8 +149,7 @@ describe('StudentDashboard (Home Tab)', () => {
     const startBtn = root.root.findByProps({ accessibilityLabel: "Start Today's Lesson" });
     act(() => { startBtn.props.onPress(); });
 
-    expect(Alert.alert).toHaveBeenCalledWith(
-      "Time's Up!",
+    expect(toast.warning as jest.Mock).toHaveBeenCalledWith(
       expect.stringContaining("reached your daily screen time limit")
     );
     expect(mockNavigation.navigate).not.toHaveBeenCalledWith('Study', expect.anything());

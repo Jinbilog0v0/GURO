@@ -75,7 +75,7 @@ describe('syncService', () => {
 
       const result = await refreshItemBankIfOnline('CLASS-123');
 
-      expect(mockFetchItemBankFromServer).toHaveBeenCalledWith('http://192.168.254.125:8000', 'CLASS-123');
+      expect(mockFetchItemBankFromServer).toHaveBeenCalledWith('http://localhost:8000', 'CLASS-123');
       expect(result).toBe(true);
     });
 

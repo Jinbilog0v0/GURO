@@ -374,7 +374,7 @@ export const styles = StyleSheet.create({
   },
   closetItemPrice: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSizes.xxs,
+    fontSize: FontSizes.xs,
     color: '#D97706',
   },
   closetItemOwned: {
