@@ -48,7 +48,7 @@ export const LiveActivityTicker: React.FC<LiveActivityTickerProps> = ({ events }
                 ) : (
                   <AlertTriangle className="size-3.5 text-orange-500" />
                 )}{' '}
-                Student <span style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>{evt.studentId}</span> completed{' '}
+                Student <span style={{ color: 'var(--accent-primary-text)', fontWeight: 700 }}>{evt.studentId}</span> completed{' '}
                 <span style={{ fontWeight: 700 }}>{evt.topic}</span> ({evt.subject}) with{' '}
                 <span style={{ color: pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#A01322', fontWeight: 800 }}>
                   {pct}% Accuracy

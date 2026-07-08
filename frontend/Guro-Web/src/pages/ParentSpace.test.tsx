@@ -83,7 +83,10 @@ describe('ParentSpace Page', () => {
     expect(screen.getByText('2')).toBeInTheDocument(); // 2 quests
     expect(screen.getByText('85%')).toBeInTheDocument(); // Avg of 80 and 90
     expect(screen.getByText('Advanced')).toBeInTheDocument();
-    expect(mockFetch).toHaveBeenCalledWith('/api/progress?studentId=STUDENT-1&accessCode=123456');
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/progress?studentId=STUDENT-1&accessCode=123456',
+      expect.any(Object)
+    );
   });
 
   test('shows empty state when student not found', async () => {
@@ -108,5 +111,24 @@ describe('ParentSpace Page', () => {
     await waitFor(() => {
       expect(screen.getByText(/No reports registered for device ID/i)).toBeInTheDocument();
     }, { timeout: 1000 });
+  });
+
+  test('clears inputs when Clear button is clicked', () => {
+    render(<ParentSpace progressLogs={mockProgressLogs} lastUpdatedCell={null} />);
+    
+    const idInput = screen.getByPlaceholderText('e.g. GURO-STUDENT-LOCAL') as HTMLInputElement;
+    const codeInput = screen.getByPlaceholderText('e.g. 123456') as HTMLInputElement;
+    
+    fireEvent.change(idInput, { target: { value: 'STUDENT-1' } });
+    fireEvent.change(codeInput, { target: { value: '123456' } });
+    
+    expect(idInput.value).toBe('STUDENT-1');
+    expect(codeInput.value).toBe('123456');
+
+    const clearBtn = screen.getByRole('button', { name: /Clear Search/i });
+    fireEvent.click(clearBtn);
+
+    expect(idInput.value).toBe('');
+    expect(codeInput.value).toBe('');
   });
 });

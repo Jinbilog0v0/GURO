@@ -40,7 +40,7 @@ describe('DiagnosticAlerts Component', () => {
     render(<DiagnosticAlerts progressLogs={mockLogs} />);
 
     // Adjectives average is 37.5% -> rounded to 38%
-    expect(screen.getByText('Struggling Topics (avg < 65%)')).toBeInTheDocument();
+    expect(screen.getByText('Struggling Topics (avg < 80%)')).toBeInTheDocument();
     expect(screen.getByText('Adjectives (Grade 5 English)')).toBeInTheDocument();
     expect(screen.getByText('38%')).toBeInTheDocument();
 
@@ -48,7 +48,7 @@ describe('DiagnosticAlerts Component', () => {
     expect(screen.getByText('Targeted Boost: Adjectives')).toBeInTheDocument();
   });
 
-  test('renders stable message if no topic averages are below 65%', () => {
+  test('renders stable message if no topic averages are below 80%', () => {
     const highScoresOnly = [
       {
         studentId: 'stud-1',

@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { apiFetch, clearAuthToken } from './utils/api';
 import { Toaster } from 'react-hot-toast';
 import { toast } from './utils/toast';
@@ -123,7 +123,7 @@ function App() {
   const [lastUpdatedCell, setLastUpdatedCell] = useState<{ studentId: string; topic: string; timestamp: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchLogs = async (isBackground = false) => {
+  const fetchLogs = useCallback(async (isBackground = false) => {
     const classCode = currentUser?.classroomId || localStorage.getItem('guro_teacher_classroom_code');
     if (!classCode) {
       setProgressLogs([]);
@@ -159,7 +159,7 @@ function App() {
     } finally {
       if (!isBackground) setLoading(false);
     }
-  };
+  }, [currentUser?.classroomId]);
 
   // Fetch initial progress logs and setup polling interval
   useEffect(() => {
@@ -177,7 +177,7 @@ function App() {
     return () => {
       clearInterval(interval);
     };
-  }, [activeTab, currentUser]);
+  }, [activeTab, currentUser, fetchLogs]);
 
   // Handle exiting out of specialized sub-spaces back to the landing gate
   const handleExitToLanding = () => {

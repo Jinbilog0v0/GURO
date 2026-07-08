@@ -87,6 +87,7 @@ describe('TeacherSpace Page', () => {
 
     const searchInput = screen.getByPlaceholderText('Search by student identifier or topic...');
     fireEvent.change(searchInput, { target: { value: 'STUDENT-1' } });
+    fireEvent.click(screen.getByRole('button', { name: /search/i }));
 
     // Find the progress table and check its rows
     const tables = screen.getAllByRole('table');

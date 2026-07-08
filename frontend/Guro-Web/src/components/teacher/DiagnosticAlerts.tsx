@@ -34,7 +34,7 @@ export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs
       subject: topicStats[topic].subject,
       grade: topicStats[topic].grade,
     }))
-    .filter((stat) => stat.average < 65);
+    .filter((stat) => stat.average < 80);
 
   const hasAlerts = lowAverageTopics.length > 0;
   const [isOpen, setIsOpen] = useState(hasAlerts);
@@ -69,7 +69,7 @@ export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <TrendingDown size={16} className="text-[#A01322]" aria-hidden="true" />
-              <h4 className="text-[13.5px] font-bold text-[var(--text-main)]">Struggling Topics (avg &lt; 65%)</h4>
+              <h4 className="text-[13.5px] font-bold text-[var(--text-main)]">Struggling Topics (avg &lt; 80%)</h4>
             </div>
             <div className="flex flex-col gap-2.5 overflow-y-auto max-h-[220px]">
               {lowAverageTopics.length === 0 ? (

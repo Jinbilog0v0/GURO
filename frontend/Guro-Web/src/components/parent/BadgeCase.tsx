@@ -78,9 +78,9 @@ export const BadgeCase: React.FC<BadgeCaseProps> = ({ logs }) => {
     <div className="glass-panel p-6 flex flex-col gap-4 w-full">
       <div className="flex items-center gap-2.5">
         <Award size={20} className="text-[#F59E0B]" />
-        <h3 className="text-base font-bold text-[#F8FAFC]">Child's Milestone Badge Case</h3>
+        <h3 className="text-base font-bold text-[var(--text-main)]">Child's Milestone Badge Case</h3>
       </div>
-      <p className="text-xs text-[#94A3B8]">Badges unlock when the student completes topics with 80%+ mastery.</p>
+      <p className="text-xs text-[var(--text-muted)]">Badges unlock when the student completes topics with 80%+ mastery.</p>
 
       <div className="grid grid-cols-2 gap-4">
         {badgeDefinitions.map((badge) => {
@@ -90,45 +90,45 @@ export const BadgeCase: React.FC<BadgeCaseProps> = ({ logs }) => {
               key={badge.id}
               className={`flex gap-3.5 p-4 rounded-2xl border transition-all duration-200 ${
                 unlocked
-                  ? 'bg-white/[0.02] shadow-[0_4px_15px_rgba(0,0,0,0.1)]'
-                  : 'bg-white/[0.01] opacity-60'
+                  ? 'bg-[var(--bg-main)]/30 dark:bg-white/[0.02] shadow-[0_4px_15px_rgba(0,0,0,0.1)]'
+                  : 'bg-[var(--bg-main)]/20 dark:bg-white/[0.01] opacity-60'
               }`}
               style={{
-                borderColor: unlocked ? `${badge.color}30` : 'rgba(255, 255, 255, 0.04)',
+                borderColor: unlocked ? `${badge.color}30` : 'var(--border-color)',
               }}
             >
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center relative border border-white/[0.05]"
+                className="w-14 h-14 rounded-2xl flex items-center justify-center relative border border-[var(--border-color)]"
                 style={{
-                  backgroundColor: unlocked ? `${badge.color}15` : 'rgba(255, 255, 255, 0.02)',
+                  backgroundColor: unlocked ? `${badge.color}15` : 'rgba(128, 128, 128, 0.05)',
                 }}
               >
                 <badge.icon
                   size={28}
                   style={{
-                    color: unlocked ? badge.color : '#64748B',
+                    color: unlocked ? badge.color : 'var(--text-dark)',
                     opacity: unlocked ? 1 : 0.4,
                   }}
                 />
                 {unlocked ? (
                   <CheckCircle2 size={14} className="absolute -bottom-[3px] -right-[3px] text-[#10B981] fill-[#060913]" />
                 ) : (
-                  <Lock size={12} className="absolute -bottom-[3px] -right-[3px] text-[#64748B]" />
+                  <Lock size={12} className="absolute -bottom-[3px] -right-[3px] text-[var(--text-dark)]" />
                 )}
               </div>
               
               <div className="flex flex-col gap-[3px] flex-1">
-                <h4 className={`text-[13px] font-bold ${unlocked ? 'text-[#F8FAFC]' : 'text-[#64748B]'} flex items-center gap-1.5`}>
+                <h4 className={`text-[13px] font-bold ${unlocked ? 'text-[var(--text-main)]' : 'text-[var(--text-dark)]'} flex items-center gap-1.5`}>
                   <span>{badge.name}</span>
                   {badge.id === 'fraction-cadet' && <Medal size={14} className="text-[#F59E0B] shrink-0" />}
-                  {badge.id === 'decimal-scout' && <Target size={14} className="text-[#A01322] shrink-0" />}
+                  {badge.id === 'decimal-scout' && <Target size={14} className="text-red-500 shrink-0" />}
                   {badge.id === 'simile-pioneer' && <Shield size={14} className="text-[#8B5CF6] shrink-0" />}
                   {badge.id === 'equation-master' && <Zap size={14} className="text-[#F59E0B] shrink-0" />}
                 </h4>
-                <p className="text-[11px] text-[#94A3B8] leading-[15px]">{badge.description}</p>
+                <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">{badge.description}</p>
                 <span
                   className={`text-[10px] font-bold uppercase tracking-[0.5px] mt-1 ${
-                    unlocked ? 'text-[#10B981]' : 'text-[#64748B]'
+                    unlocked ? 'text-[var(--success)]' : 'text-[var(--text-dark)]'
                   }`}
                 >
                   {unlocked ? '✓ Completed' : 'Locked'}

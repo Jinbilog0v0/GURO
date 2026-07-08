@@ -65,9 +65,9 @@ describe('LandingPage Portal (Web)', () => {
 
     expect(screen.getByText(/Guest session/i)).toBeInTheDocument();
 
-    const studentCard = screen.getByRole('heading', { name: /Student/i }).closest('button');
+    const studentCard = screen.getByRole('heading', { name: /Grade 4 Student/i }).closest('button');
     if (studentCard) fireEvent.click(studentCard);
 
-    expect(mockSelectRole).toHaveBeenCalledWith('student');
+    expect(mockSelectRole).toHaveBeenCalledWith('student', 4);
   });
 });
