@@ -15,6 +15,7 @@ import * as Speech from 'expo-speech';
 import { GlassCard } from '../components/ui/GlassCard';
 import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
 import { Badge } from '../components/ui/Badge';
+import { SyncBadge } from '../components/shared/SyncBadge';
 import { Colors } from '../theme/colors';
 import { styles } from '../styles/StudyScreen.styles';
 import {
@@ -27,6 +28,7 @@ import {
   ChevronDown,
   Sparkles,
   CheckCircle,
+  WifiOff,
 } from 'lucide-react-native';
 
 
@@ -195,14 +197,25 @@ export function StudyScreen({ route, navigation }: Props) {
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <Badge label={subject} variant="indigo" style={styles.badge} />
-            <TouchableOpacity onPress={toggleSpeech} style={[styles.ttsIconBtn, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
-              {isSpeaking ? (
-                <Square size={14} color={Colors.accentSecondary} />
-              ) : (
-                <Volume2 size={14} color={Colors.accentSecondary} />
-              )}
-              <Text style={styles.ttsIcon}>{isSpeaking ? 'Stop' : 'Listen'}</Text>
-            </TouchableOpacity>
+            {/* O1: SyncBadge in study screen header */}
+            <SyncBadge />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {/* O9: Offline-safe reassurance badge */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(16,185,129,0.08)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 }}>
+                <WifiOff size={10} color={Colors.success} />
+                <Text style={{ fontFamily: styles.ttsIcon.fontFamily, fontSize: 10, color: Colors.success }}>Offline ✓</Text>
+              </View>
+              <TouchableOpacity onPress={toggleSpeech} style={[styles.ttsIconBtn, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                {isSpeaking ? (
+                  <Square size={14} color={subject === 'Mathematics' ? Colors.accentPrimary : Colors.accentSecondary} />
+                ) : (
+                  <Volume2 size={14} color={subject === 'Mathematics' ? Colors.accentPrimary : Colors.accentSecondary} />
+                )}
+                <Text style={[styles.ttsIcon, { color: subject === 'Mathematics' ? Colors.accentPrimary : Colors.accentSecondary }]}>
+                  {isSpeaking ? 'Stop' : 'Listen'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <Text style={styles.title}>{topic}</Text>
         </View>
@@ -249,12 +262,12 @@ export function StudyScreen({ route, navigation }: Props) {
                       {def.examples && def.examples.length > 0 && (
                         <View style={styles.examplesContainer}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                            <Sparkles size={14} color={Colors.accentSecondary} />
+                            <Sparkles size={14} color={Colors.warning} />
                             <Text style={[styles.examplesLabel, { marginBottom: 0 }]}>Examples:</Text>
                           </View>
                           {def.examples.map((ex, exIdx) => (
                             <View key={exIdx} style={styles.exampleRow}>
-                              <Sparkles size={12} color={Colors.accentSecondary} style={{ marginRight: 6, marginTop: 4 }} />
+                              <Sparkles size={12} color={Colors.warning} style={{ marginRight: 6, marginTop: 4 }} />
                               <Text style={styles.exampleText}>{ex}</Text>
                             </View>
                           ))}
@@ -296,7 +309,7 @@ export function StudyScreen({ route, navigation }: Props) {
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* ── NAVIGATION BUTTONS BAR ────────────────────────────────────────── */}
+      {/* ── NAVIGATION BUTTONS BAR ────────────────────────────────────────────── */}
       <View style={styles.navBar}>
         {currentSlide > 0 ? (
           <SecondaryButton
@@ -305,8 +318,9 @@ export function StudyScreen({ route, navigation }: Props) {
             style={styles.navBtnHalf}
           />
         ) : (
+          // U3: Renamed from "Close" to "← Lessons" to clarify navigation destination
           <SecondaryButton
-            label="Close"
+            label="← Lessons"
             onPress={() => navigation.goBack()}
             style={styles.navBtnHalf}
           />

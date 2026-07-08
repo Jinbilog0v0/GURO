@@ -82,7 +82,10 @@ jest.mock('../store/useAppStore', () => ({
       return selector(mockState);
     }),
     {
-      getState: () => ({ trackActiveMinutes: mockTrackActiveMinutes }),
+      getState: () => ({
+        trackActiveMinutes: mockTrackActiveMinutes,
+        studentProgress: [],
+      }),
     }
   ),
 }));

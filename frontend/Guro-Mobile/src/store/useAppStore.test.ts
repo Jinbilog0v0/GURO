@@ -72,7 +72,7 @@ describe('AppStore (Mobile Online Flows)', () => {
         json: async () => ({ success: true })
       });
 
-      const result = await store.syncProgressNow('http://192.168.254.125:8000');
+      const result = await store.syncProgressNow('http://localhost:8000');
 
       expect(result.success).toBe(true);
       expect(result.syncedCount).toBe(1);
@@ -93,7 +93,7 @@ describe('AppStore (Mobile Online Flows)', () => {
         json: async () => mockCustomBank
       });
 
-      const success = await store.fetchItemBankFromServer('http://192.168.254.125:8000', 'MATH-G4-TEST');
+      const success = await store.fetchItemBankFromServer('http://localhost:8000', 'MATH-G4-TEST');
 
       expect(success).toBe(true);
       expect(useAppStore.getState().itemBank).toEqual(mockCustomBank);
@@ -155,6 +155,44 @@ describe('AppStore (Mobile Online Flows)', () => {
       expect(useAppStore.getState().virtualStars).toBe(30); // 50 - 20
       expect(useAppStore.getState().ownedOutfits).toContain('detective_hat');
       expect(useAppStore.getState().mascotOutfit).toBe('detective_hat');
+    });
+  });
+
+  describe('Logout Flow', () => {
+    test('logoutFromCloud should clean up cloud states, classroom link, parental controls, and trigger local SQLite load', () => {
+      const store = useAppStore.getState();
+      
+      // Setup logged-in cloud state
+      useAppStore.setState({
+        currentUser: { userId: 'USR-123', email: 'juan@example.com', name: 'Juan', role: 'student' },
+        studentId: 'JUAN-CLOUD',
+        appMode: 'online',
+        guestName: 'Juanito',
+        classroomId: 'CLASS-456',
+        parentalControls: {
+          dailyTimeLimit: 60,
+          mathBeforeEnglish: true,
+          forcedBilingual: true,
+          priorityTopic: 'Fractions',
+        },
+        dailyMinutesUsed: 25,
+        lastActiveDay: '2026-06-22',
+      });
+
+      store.logoutFromCloud();
+
+      const updatedState = useAppStore.getState();
+      expect(updatedState.currentUser).toBeNull();
+      expect(updatedState.studentId).toBe('GURO-STUDENT-LOCAL');
+      expect(updatedState.appMode).toBe('offline');
+      expect(updatedState.guestName).toBeNull();
+      expect(updatedState.classroomId).toBeNull();
+      expect(updatedState.parentalControls.dailyTimeLimit).toBe(0);
+      expect(updatedState.parentalControls.mathBeforeEnglish).toBe(false);
+      expect(updatedState.parentalControls.forcedBilingual).toBe(false);
+      expect(updatedState.parentalControls.priorityTopic).toBeNull();
+      expect(updatedState.dailyMinutesUsed).toBe(0);
+      expect(updatedState.lastActiveDay).toBeNull();
     });
   });
 });

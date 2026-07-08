@@ -14,7 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
-import { Inbox, Lock } from 'lucide-react-native';
+import { Inbox, Lock, WifiOff } from 'lucide-react-native';
+import { isLessonLocked, LESSON_SEQUENCE } from '../utils/engine';
 
 import { Colors } from '../theme/colors';
 import { Fonts, FontSizes } from '../theme/typography';
@@ -22,6 +23,7 @@ import { Spacing } from '../theme/spacing';
 import { GlassCard } from '../components/ui/GlassCard';
 import { LessonCard } from '../components/ui/LessonCard';
 import { SectionHeader } from '../components/ui/SectionHeader';
+import { SyncBadge } from '../components/shared/SyncBadge';
 import { styles } from '../styles/LessonsScreen.styles';
 import { toast } from '../components';
 
@@ -39,11 +41,9 @@ export function LessonsScreen() {
   const parentalControls = useAppStore((s) => s.parentalControls);
   const dailyMinutesUsed = useAppStore((s) => s.dailyMinutesUsed);
   const preferredGrade = useAppStore((s) => s.preferredGrade || 4);
-  const setPreferredGrade = useAppStore((s) => s.setPreferredGrade);
+  const classroomId = useAppStore((s) => s.classroomId);
+  const appMode = useAppStore((s) => s.appMode);
 
-  const [selectedGrade, setSelectedGrade] = useState<Grade>(
-    GRADES.includes(preferredGrade as Grade) ? (preferredGrade as Grade) : 4,
-  );
   const [selectedSubject, setSelectedSubject] = useState<Subject>('Mathematics');
 
   const isTimeLimitExceeded =
@@ -58,19 +58,31 @@ export function LessonsScreen() {
     return Math.round(sum / logs.length);
   };
 
-  const mathScore = getMathAverageScore(selectedGrade);
-  const isEnglishLocked =
-    selectedSubject === 'English' && parentalControls.mathBeforeEnglish && mathScore < 80;
-
-  const getTopics = (): string[] => {
-    const gradeData = itemBank?.[selectedSubject]?.[selectedGrade.toString()];
-    if (!gradeData) return [];
-    return Object.keys(gradeData);
+  const isEnglishLocked = (gradeLevel: number): boolean => {
+    if (selectedSubject !== 'English' || !parentalControls.mathBeforeEnglish) return false;
+    const mathScore = getMathAverageScore(gradeLevel);
+    return mathScore < 80;
   };
 
-  const getTopicStats = (topic: string): { completionPercent: number; bestScore: number | null } => {
+  const getTopics = (): { gradeLevel: number; topic: string }[] => {
+    if (!itemBank || !itemBank[selectedSubject]) return [];
+    const result: { gradeLevel: number; topic: string }[] = [];
+    const grades = ['4', '5', '6'];
+    for (const g of grades) {
+      const gradeData = itemBank[selectedSubject][g];
+      if (gradeData) {
+        for (const topic of Object.keys(gradeData)) {
+          if (topic === 'studyContent') continue;
+          result.push({ gradeLevel: parseInt(g, 10), topic });
+        }
+      }
+    }
+    return result;
+  };
+
+  const getTopicStats = (gradeLevel: number, topic: string): { completionPercent: number; bestScore: number | null } => {
     const logs = studentProgress.filter(
-      (p) => p.subject === selectedSubject && p.gradeLevel === selectedGrade && p.topic === topic,
+      (p) => p.subject === selectedSubject && p.gradeLevel === gradeLevel && p.topic === topic,
     );
     if (logs.length === 0) return { completionPercent: 0, bestScore: null };
     const scores = logs.map((l) => (l.score / l.totalQuestions) * 100);
@@ -78,8 +90,8 @@ export function LessonsScreen() {
     return { completionPercent: best, bestScore: best };
   };
 
-  const getQuestionCount = (topic: string): number => {
-    const topicData = itemBank?.[selectedSubject]?.[selectedGrade.toString()]?.[topic];
+  const getQuestionCount = (gradeLevel: number, topic: string): number => {
+    const topicData = itemBank?.[selectedSubject]?.[gradeLevel.toString()]?.[topic];
     if (!topicData) return 0;
     let count = 0;
     for (const key of Object.keys(topicData)) {
@@ -92,28 +104,43 @@ export function LessonsScreen() {
     return count;
   };
 
-  const handleTopicPress = (topic: string) => {
+  const handleTopicPress = (gradeLevel: number, topic: string) => {
     if (isTimeLimitExceeded) {
       toast.warning("Time's Up! You've reached your daily screen time limit. Come back tomorrow!");
       return;
     }
-    if (isEnglishLocked) {
+    if (isEnglishLocked(gradeLevel)) {
+      const mathScore = getMathAverageScore(gradeLevel);
       toast.warning(
-        `Keep Practising Maths! Score at least 80% in Grade ${selectedGrade} Mathematics to unlock English. Current score: ${mathScore}%`,
+        `Keep Practising Maths! Score at least 80% in Grade ${gradeLevel} Mathematics to unlock English. Current score: ${mathScore}%`,
       );
       return;
     }
-    navigation.navigate('Study', { subject: selectedSubject, gradeLevel: selectedGrade, topic });
+    if (isLessonLocked(selectedSubject, gradeLevel, topic, studentProgress, preferredGrade)) {
+      const seq = LESSON_SEQUENCE[selectedSubject];
+      const index = seq.findIndex((item) => item.grade === gradeLevel && item.topic === topic);
+      if (index > 0) {
+        const prevLesson = seq[index - 1];
+        toast.warning(`Score 80%+ in Grade ${prevLesson.grade} ${prevLesson.topic} first!`);
+      } else {
+        toast.warning("This lesson is locked.");
+      }
+      return;
+    }
+    navigation.navigate('Study', { subject: selectedSubject, gradeLevel, topic });
   };
 
   const topics = getTopics();
 
   return (
     <SafeAreaView style={styles.screen}>
-      {/* Header */}
+      {/* Header — O1: SyncBadge added */}
       <View style={styles.headerBar}>
-        <Text style={styles.headerTitle}>Lessons</Text>
-        <Text style={styles.headerSubtitle}>Select a topic to begin learning.</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Lessons</Text>
+          <Text style={styles.headerSubtitle}>Select a topic to begin learning.</Text>
+        </View>
+        <SyncBadge />
       </View>
 
       {/* Subject tabs */}
@@ -136,29 +163,10 @@ export function LessonsScreen() {
         })}
       </View>
 
-      {/* Grade pills */}
-      <View style={styles.gradePillRow}>
-        {GRADES.map((g) => {
-          const active = g === selectedGrade;
-          return (
-            <TouchableOpacity
-              key={g}
-              onPress={() => { setSelectedGrade(g); setPreferredGrade(g); }}
-              activeOpacity={0.75}
-              style={[styles.gradePill, active && styles.gradePillActive]}
-            >
-              <Text style={[styles.gradePillText, active && styles.gradePillTextActive]}>
-                Grade {g}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* English lock notice */}
-        {isEnglishLocked && (
-          <GlassCard padding={Spacing.md} style={{ borderColor: Colors.warningBorder, gap: Spacing.xs }}>
+        {isEnglishLocked(preferredGrade) && (
+          <GlassCard padding={Spacing.md} style={{ borderColor: Colors.warningBorder, gap: Spacing.xs, marginBottom: Spacing.md }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
               <Lock size={16} color={Colors.warning} />
               <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.warning }}>
@@ -166,42 +174,80 @@ export function LessonsScreen() {
               </Text>
             </View>
             <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
-              Score 80%+ in Grade {selectedGrade} Mathematics to unlock.
-              Your Maths score: {mathScore}%
+              Score 80%+ in Grade {preferredGrade} Mathematics to unlock.
+              Your Maths score: {getMathAverageScore(preferredGrade)}%
             </Text>
           </GlassCard>
         )}
 
         <SectionHeader
           title={`${selectedSubject} Topics`}
-          subtitle={`Grade ${selectedGrade} · ${topics.length} available`}
+          subtitle={`${topics.length} available`}
         />
 
         {topics.length === 0 ? (
-          <GlassCard variant="subtle" padding={Spacing.xl} style={{ alignItems: 'center', gap: Spacing.sm }}>
-            <Inbox size={40} color={Colors.textMuted} />
-            <Text style={styles.emptyTitle}>No Topics Yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Link a classroom from your Profile tab to load activities from your teacher.
-            </Text>
-          </GlassCard>
+          // O3: Differentiated empty states by context
+          !classroomId ? (
+            <GlassCard variant="subtle" padding={Spacing.xl} style={{ alignItems: 'center', gap: Spacing.sm }}>
+              <Inbox size={40} color={Colors.textMuted} />
+              <Text style={styles.emptyTitle}>No Classroom Linked</Text>
+              <Text style={styles.emptySubtitle}>
+                Ask your teacher for an invite code and enter it on the Home tab to load your lessons.
+              </Text>
+            </GlassCard>
+          ) : appMode === 'offline' ? (
+            <GlassCard variant="subtle" padding={Spacing.xl} style={{ alignItems: 'center', gap: Spacing.sm }}>
+              <WifiOff size={40} color={Colors.textMuted} />
+              <Text style={styles.emptyTitle}>No Lessons Available Offline</Text>
+              <Text style={styles.emptySubtitle}>
+                Connect to the internet to download your lessons from your teacher.
+              </Text>
+            </GlassCard>
+          ) : (
+            <GlassCard variant="subtle" padding={Spacing.xl} style={{ alignItems: 'center', gap: Spacing.sm }}>
+              <Inbox size={40} color={Colors.textMuted} />
+              <Text style={styles.emptyTitle}>No Topics Yet</Text>
+              <Text style={styles.emptySubtitle}>
+                Pull down to refresh and load your teacher's activities.
+              </Text>
+            </GlassCard>
+          )
         ) : (
           <View style={{ gap: Spacing.sm }}>
-            {topics.map((topic) => {
-              const { completionPercent, bestScore } = getTopicStats(topic);
-              const questionCount = getQuestionCount(topic);
+            {topics.map(({ gradeLevel, topic }) => {
+              const { completionPercent, bestScore } = getTopicStats(gradeLevel, topic);
+              const questionCount = getQuestionCount(gradeLevel, topic);
+              const isProgLocked = isLessonLocked(selectedSubject, gradeLevel, topic, studentProgress, preferredGrade);
+              const isEngLocked = isEnglishLocked(gradeLevel);
+              const isLocked = isProgLocked || isEngLocked;
+
+              let lockReason = undefined;
+              if (isEngLocked) {
+                const mathScore = getMathAverageScore(gradeLevel);
+                lockReason = `Reach 80% in Math first (${mathScore}% now)`;
+              } else if (isProgLocked) {
+                const seq = LESSON_SEQUENCE[selectedSubject];
+                const index = seq.findIndex((item) => item.grade === gradeLevel && item.topic === topic);
+                if (index > 0) {
+                  const prevLesson = seq[index - 1];
+                  lockReason = `Score 80%+ in Grade ${prevLesson.grade} ${prevLesson.topic} first`;
+                } else {
+                  lockReason = 'Locked';
+                }
+              }
+
               return (
                 <LessonCard
                   key={topic}
                   topic={topic}
                   subject={selectedSubject}
-                  gradeLevel={selectedGrade}
+                  gradeLevel={gradeLevel}
                   completionPercent={completionPercent}
                   bestScore={bestScore}
                   questionCount={questionCount}
-                  isLocked={isEnglishLocked}
-                  lockReason={isEnglishLocked ? `Reach 80% in Math first (${mathScore}% now)` : undefined}
-                  onPress={() => handleTopicPress(topic)}
+                  isLocked={isLocked}
+                  lockReason={lockReason}
+                  onPress={() => handleTopicPress(gradeLevel, topic)}
                   accessibilityLabel={`Start ${topic}`}
                 />
               );

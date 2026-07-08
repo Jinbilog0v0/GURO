@@ -7,7 +7,7 @@ import {
   saveLocalItemBank,
   getLocalItemBank
 } from './sqliteHelper';
-import { ProgressEvent, ItemBank } from '../store/useAppStore';
+import { ProgressEvent, ItemBank, Question } from '../store/useAppStore';
 
 // Access the mocked database instance
 const getMockDb = async () => {
@@ -174,8 +174,9 @@ describe('SQLite Helper (Mobile Offline Persistence)', () => {
 
       const bank = await getLocalItemBank();
       expect(bank).not.toBeNull();
-      expect(bank!['English']['4']['Nouns']['Easy']['Multiple-Choice']).toHaveLength(1);
-      expect(bank!['English']['4']['Nouns']['Easy']['Multiple-Choice'][0].id).toBe('Q-1');
+      const easyData = bank!['English']['4']['Nouns']['Easy'] as Record<string, Question[]>;
+      expect(easyData['Multiple-Choice']).toHaveLength(1);
+      expect(easyData['Multiple-Choice'][0].id).toBe('Q-1');
       expect(bank!['English']['4']['Nouns'].studyContent).toBeDefined();
       expect(bank!['English']['4']['Nouns'].studyContent!.introduction).toBe('Introduction to Nouns');
     });

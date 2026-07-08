@@ -22,12 +22,13 @@ import { Colors } from './src/theme/colors';
 import { Fonts, FontSizes } from './src/theme/typography';
 import { ToastContainer } from './src/components';
 
-const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.254.125:8000';
+const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function App() {
   const initializeLocalStore = useAppStore((state) => state.initializeLocalStore);
   const addLog = useAppStore((state) => state.addLog);
   const syncProgressNow = useAppStore((state) => state.syncProgressNow);
+  const serverUrl = useAppStore((state) => state.serverUrl);
 
   // ── Load Google Fonts ───────────────────────────────────────────────────────
   const [fontsLoaded, fontError] = useFonts({
@@ -44,6 +45,13 @@ export default function App() {
   useEffect(() => {
     initializeLocalStore();
     addLog('Offline SQLite Store successfully initialized.');
+    
+    // Auto-update cached serverUrl if it does not match the active environment variable
+    const envUrl = process.env.EXPO_PUBLIC_API_URL;
+    if (envUrl && useAppStore.getState().serverUrl !== envUrl) {
+      useAppStore.getState().setServerUrl(envUrl);
+      addLog(`[Sync] Updated persisted server URL from env config to: ${envUrl}`);
+    }
   }, []);
 
   // ── Auto-sync when app comes to foreground ──────────────────────────────────
@@ -51,7 +59,7 @@ export default function App() {
     const handleAppStateChange = (nextState: AppStateStatus) => {
       if (nextState === 'active') {
         addLog('[Sync] App foregrounded — attempting auto-sync...');
-        syncProgressNow(SERVER_URL).then((result) => {
+        syncProgressNow(serverUrl).then((result) => {
           if (result.syncedCount > 0) {
             addLog(`[Sync] Auto-synced ${result.syncedCount} events on foreground.`);
           }

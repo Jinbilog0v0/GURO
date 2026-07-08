@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Expo cache
+.expo/
+
+# Build outputs
+dist/
+web-build/
+
+# Test files
+__mocks__/
+jest.setup.js
+*.test.ts
+*.test.tsx
+
+# Local env (never upload secrets)
+.env
+.env.local

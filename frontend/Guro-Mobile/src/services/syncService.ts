@@ -6,7 +6,7 @@
 
 import { useAppStore } from '../store/useAppStore';
 
-const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.254.125:8000';
+const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 
 export interface SyncResult {
   success: boolean;
