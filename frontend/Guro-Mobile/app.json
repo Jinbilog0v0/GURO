@@ -1,28 +1,62 @@
 {
   "expo": {
-    "name": "GURO-App",
+    "name": "GURO",
     "slug": "GURO-App",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "scheme": "guro",
+    "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.guro.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "GURO uses the camera to capture documents for AI-powered analysis.",
+        "NSMicrophoneUsageDescription": "GURO uses the microphone for voice input features.",
+        "NSPhotoLibraryUsageDescription": "GURO accesses your photo library to attach images for AI analysis."
+      }
     },
     "android": {
+      "package": "com.guro.app",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "backgroundColor": "#E6F4FE"
       },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
     "plugins": [
-      "expo-font"
-    ]
+      "expo-font",
+      "expo-sqlite",
+      "expo-document-picker"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "63fc5c91-221c-46ea-80bf-c7b05acc67b0"
+      }
+    },
+    "owner": "njean",
+    "updates": {
+      "url": "https://u.expo.dev/63fc5c91-221c-46ea-80bf-c7b05acc67b0",
+      "fallbackToCacheTimeout": 0
+    }
   }
 }

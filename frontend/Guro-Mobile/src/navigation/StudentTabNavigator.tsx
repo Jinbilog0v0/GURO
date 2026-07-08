@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { BackHandler } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, BookOpen, BarChart2, User2 } from 'lucide-react-native';
 import { StudentDashboard } from '../screens/StudentDashboard';
@@ -18,6 +19,11 @@ export type StudentTabParamList = {
 const Tab = createBottomTabNavigator<StudentTabParamList>();
 
 export function StudentTabNavigator() {
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, []);
+
   return (
     <Tab.Navigator
       screenOptions={{

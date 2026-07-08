@@ -18,7 +18,7 @@ export const Fonts = {
 } as const;
 
 export const FontSizes = {
-  xs: 11,   // badge text
+  xs: 12,   // badge text
   sm: 12,   // labels, captions
   base: 13, // secondary body
   md: 14,   // primary body, buttons

@@ -1,8 +1,3 @@
-/**
- * ThemedTextInput — Styled text input matching the web's input styling.
- * Handles focus state with accentPrimary border glow.
- */
-
 import React, { useState } from 'react';
 import {
   TextInput as RNTextInput,
@@ -12,10 +7,12 @@ import {
   StyleSheet,
   StyleProp,
   ViewStyle,
+  TouchableOpacity,
 } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { Fonts, FontSizes, LetterSpacing } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
+import { Eye, EyeOff } from 'lucide-react-native';
 
 interface ThemedInputProps extends TextInputProps {
   label?: string;
@@ -30,28 +27,51 @@ export function ThemedTextInput({
   ...props
 }: ThemedInputProps) {
   const [focused, setFocused] = useState(false);
+  const [secureTextVisible, setSecureTextVisible] = useState(false);
+
+  const isSecure = props.secureTextEntry;
 
   return (
     <View style={[styles.group, containerStyle]}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
-      <RNTextInput
-        {...props}
+      <View
         style={[
-          styles.input,
+          styles.inputContainer,
           focused && styles.inputFocused,
           error ? styles.inputError : {},
-          props.style,
         ]}
-        placeholderTextColor={Colors.textDark}
-        onFocus={(e) => {
-          setFocused(true);
-          props.onFocus?.(e);
-        }}
-        onBlur={(e) => {
-          setFocused(false);
-          props.onBlur?.(e);
-        }}
-      />
+      >
+        <RNTextInput
+          {...props}
+          secureTextEntry={isSecure && !secureTextVisible}
+          style={[
+            styles.input,
+            props.style,
+          ]}
+          placeholderTextColor={Colors.textDark}
+          onFocus={(e) => {
+            setFocused(true);
+            props.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            props.onBlur?.(e);
+          }}
+        />
+        {isSecure && (
+          <TouchableOpacity
+            onPress={() => setSecureTextVisible(!secureTextVisible)}
+            activeOpacity={0.7}
+            style={styles.toggleButton}
+          >
+            {secureTextVisible ? (
+              <EyeOff size={20} color={Colors.textMuted} />
+            ) : (
+              <Eye size={20} color={Colors.textMuted} />
+            )}
+          </TouchableOpacity>
+        )}
+      </View>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
@@ -68,23 +88,31 @@ const styles = StyleSheet.create({
     letterSpacing: LetterSpacing.wide,
     textTransform: 'uppercase',
   },
-  input: {
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.bgInput,
     borderWidth: 1,
     borderColor: Colors.border,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.lg,
+  },
+  input: {
+    flex: 1,
     color: Colors.textMain,
     paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: Radius.md,
     fontFamily: Fonts.body,
     fontSize: FontSizes.md,
   },
   inputFocused: {
     borderColor: Colors.accentPrimary,
-    // Simulate box-shadow glow with border only (no native box-shadow support)
   },
   inputError: {
     borderColor: Colors.danger,
+  },
+  toggleButton: {
+    padding: Spacing.xs,
+    marginLeft: Spacing.sm,
   },
   errorText: {
     fontFamily: Fonts.body,

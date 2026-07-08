@@ -4,6 +4,9 @@
 export type DifficultyTier = 'Easy' | 'Average' | 'Difficult';
 export type RoutingInstruction = 'advance' | 'repeat' | 'drop';
 
+/** Unified mastery threshold used across mobile quiz results, progress badges, and web dashboard labels. */
+export const MASTERY_THRESHOLD = 80;
+
 /**
  * Robust implementation of the Fisher-Yates (Knuth) Shuffle algorithm.
  * Returns a deeply cloned, shuffled copy of the input array to prevent answer leakage
@@ -69,4 +72,73 @@ export function calculateNextDifficulty(
   } else {
     return 'drop';
   }
+}
+
+/**
+ * 1:1 Strict Lesson Progression Sequence across grades.
+ */
+export interface LessonSequenceItem {
+  grade: number;
+  topic: string;
+}
+
+export const LESSON_SEQUENCE: Record<string, LessonSequenceItem[]> = {
+  Mathematics: [
+    { grade: 4, topic: 'Fractions' },
+    { grade: 5, topic: 'Decimals' },
+    { grade: 6, topic: 'Algebraic Equations' }
+  ],
+  English: [
+    { grade: 4, topic: 'Figurative Language' },
+    { grade: 5, topic: 'Short Story Comprehension' },
+    { grade: 5, topic: 'Adjectives' },
+    { grade: 6, topic: 'Idiomatic Expressions' }
+  ]
+};
+
+export interface ProgressLogItem {
+  subject: string;
+  gradeLevel: number;
+  topic: string;
+  score: number;
+  totalQuestions: number;
+}
+
+/**
+ * Checks if a lesson is locked based on strict 1:1 progression sequence.
+ * A lesson is unlocked if:
+ * 1. It's the first lesson in the subject sequence.
+ * 2. Or, the student passed the previous lesson in the sequence with >= 80% score.
+ * 3. Or, the grade of the lesson is strictly less than the student's specified (preferred) grade.
+ * 4. Or, the grade of the lesson equals the student's specified grade, and the previous lesson is of a lower grade level (bypass lower grade requirements).
+ */
+export function isLessonLocked(
+  subject: string,
+  gradeLevel: number,
+  topic: string,
+  studentProgress: ProgressLogItem[],
+  preferredGrade: number
+): boolean {
+  const seq = LESSON_SEQUENCE[subject];
+  if (!seq) return false;
+
+  const index = seq.findIndex((item) => item.grade === gradeLevel && item.topic === topic);
+  if (index <= 0) return false;
+
+  const prevLesson = seq[index - 1];
+  const hasPassedPrev = studentProgress.some(
+    (p) =>
+      p.subject === subject &&
+      p.gradeLevel === prevLesson.grade &&
+      p.topic === prevLesson.topic &&
+      p.totalQuestions > 0 &&
+      (p.score / p.totalQuestions) >= 0.8
+  );
+  if (hasPassedPrev) return false;
+
+  if (gradeLevel < preferredGrade) return false;
+
+  if (gradeLevel === preferredGrade && prevLesson.grade < preferredGrade) return false;
+
+  return true;
 }

@@ -186,7 +186,8 @@ export async function saveLocalItemBank(itemBank: ItemBank): Promise<void> {
           // Save questions
           for (const difficulty of Object.keys(topicData)) {
             if (difficulty === 'studyContent') continue;
-            const diffData = topicData[difficulty];
+            const diffData = topicData[difficulty] as Record<string, Question[]> | undefined;
+            if (!diffData || typeof diffData !== 'object') continue;
             for (const category of Object.keys(diffData)) {
               const questions = diffData[category];
               if (Array.isArray(questions)) {
@@ -262,12 +263,9 @@ export async function getLocalItemBank(): Promise<ItemBank | null> {
     if (!itemBank[subject]) itemBank[subject] = {};
     if (!itemBank[subject][gradeStr]) itemBank[subject][gradeStr] = {};
     if (!itemBank[subject][gradeStr][topic]) itemBank[subject][gradeStr][topic] = {};
-    if (!itemBank[subject][gradeStr][topic][difficulty]) {
-      itemBank[subject][gradeStr][topic][difficulty] = {};
-    }
-    if (!itemBank[subject][gradeStr][topic][difficulty][category]) {
-      itemBank[subject][gradeStr][topic][difficulty][category] = [];
-    }
+    const topicEntry = itemBank[subject][gradeStr][topic] as Record<string, Record<string, Question[]>>;
+    if (!topicEntry[difficulty]) topicEntry[difficulty] = {};
+    if (!topicEntry[difficulty][category]) topicEntry[difficulty][category] = [];
 
     const q: Question = {
       id: row.id,
@@ -280,7 +278,7 @@ export async function getLocalItemBank(): Promise<ItemBank | null> {
       },
     };
 
-    itemBank[subject][gradeStr][topic][difficulty][category].push(q);
+    topicEntry[difficulty][category].push(q);
   });
 
   // Rebuild study content
