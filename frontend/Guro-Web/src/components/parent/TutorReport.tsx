@@ -79,19 +79,19 @@ export const TutorReport: React.FC<TutorReportProps> = ({ logs }) => {
     <div className="glass-panel p-6 flex flex-col gap-5 w-full">
       <div className="flex items-center gap-2.5">
         <Sparkles size={20} className="text-[#EC4899]" />
-        <h3 className="text-base font-bold text-[#F8FAFC]">AI Study Feedback</h3>
+        <h3 className="text-base font-bold text-[var(--text-main)]">AI Study Feedback</h3>
       </div>
 
       <div className="flex flex-col gap-3">
-        <p className="text-[13px] text-[#EEF2F6] leading-5">
+        <p className="text-[13px] text-[var(--text-main)] leading-5">
           Your child shows solid progress! Their strongest performance is in{' '}
           <strong className="text-[#10B981] font-bold">{strongestTopic.name} ({strongestTopic.average}%)</strong>.
           We recommend focusing practice sessions on <strong>{weakestTopic.name}</strong>, where they currently average{' '}
-          <strong className="text-[#A01322] font-bold">{weakestTopic.average}%</strong>.
+          <strong className="text-red-500 font-bold">{weakestTopic.average}%</strong>.
         </p>
         <div className="flex gap-2 p-3 bg-pink-500/5 border border-pink-500/15 rounded-xl">
           <MessageCircle size={14} className="text-[#EC4899] mt-0.5" />
-          <p className="text-xs text-[#F9A8D4] leading-[18px] font-medium">{tips}</p>
+          <p className="text-xs text-pink-600 dark:text-pink-300 leading-[18px] font-medium">{tips}</p>
         </div>
       </div>
     </div>

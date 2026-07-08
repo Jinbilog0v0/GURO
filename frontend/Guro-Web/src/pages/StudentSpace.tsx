@@ -400,35 +400,68 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         return null;
     };
 
-    const loadTopicHistory = useCallback(() => {
-        const queueJson = localStorage.getItem('guro_sync_queue');
-        if (!queueJson) return;
-        try {
-            const queue = JSON.parse(queueJson);
-            const history: Record<string, TopicStat> = {};
-            queue.forEach((item: any) => {
-                const { event } = item;
-                if (!event) return;
-                const key = `${event.subject}-${event.gradeLevel}-${event.topic}`;
-                const pct = event.score / event.totalQuestions;
-                const existing = history[key];
-                if (!existing) {
-                    history[key] = { bestScore: pct, lastScore: pct, attempts: 1 };
-                } else {
-                    history[key] = {
-                        bestScore: Math.max(existing.bestScore, pct),
-                        lastScore: pct,
-                        attempts: existing.attempts + 1,
-                    };
-                }
-            });
-            setTopicHistory(history);
-        } catch (e) {
-            // non-fatal
-        }
-    }, []);
+    const loadTopicHistory = useCallback(async () => {
+        const allEvents: any[] = [];
 
-    const fetchItemBank = async (forceCode?: string) => {
+        // 1. Add local queue items
+        const queueJson = localStorage.getItem('guro_sync_queue');
+        if (queueJson) {
+            try {
+                const queue = JSON.parse(queueJson);
+                if (Array.isArray(queue)) {
+                    queue.forEach((item: any) => {
+                        if (item.event) allEvents.push(item.event);
+                    });
+                }
+            } catch (e) {
+                console.error('[Sync] Error parsing local sync queue:', e);
+            }
+        }
+
+        // 2. Fetch already synced events from server when online
+        if (navigator.onLine && userName) {
+            const studentId = userName.trim().replace(/\s+/g, '-').toUpperCase() || 'STUDENT-WEB-USER';
+            const accessCode = getParentAccessCode(studentId);
+            try {
+                const res = await apiFetch(`/api/progress?studentId=${encodeURIComponent(studentId)}&accessCode=${encodeURIComponent(accessCode)}`);
+                if (res.ok) {
+                    const serverEvents = await res.json();
+                    if (Array.isArray(serverEvents)) {
+                        serverEvents.forEach((evt: any) => {
+                            if (!allEvents.some((qEvt) => qEvt.eventId === evt.eventId)) {
+                                allEvents.push(evt);
+                            }
+                        });
+                    }
+                }
+            } catch (err) {
+                console.warn('[Sync] Could not fetch student progress from server:', err);
+            }
+        }
+
+        // Sort by timestamp ascending so that as we process them, the last one processed is the newest
+        allEvents.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+        const history: Record<string, TopicStat> = {};
+        allEvents.forEach((evt) => {
+            const key = `${evt.subject}-${evt.gradeLevel}-${evt.topic}`;
+            const pct = evt.score / evt.totalQuestions;
+            const existing = history[key];
+            if (!existing) {
+                history[key] = { bestScore: pct, lastScore: pct, attempts: 1 };
+            } else {
+                history[key] = {
+                    bestScore: Math.max(existing.bestScore, pct),
+                    lastScore: pct,
+                    attempts: existing.attempts + 1,
+                };
+            }
+        });
+
+        setTopicHistory(history);
+    }, [userName]);
+
+    const fetchItemBank = useCallback(async (forceCode?: string) => {
         setItemBankLoading(true);
         const activeCode = forceCode !== undefined ? forceCode : (localStorage.getItem('guro_student_classroom_id') || classroomCode);
         const url = activeCode ? `/api/item-bank?classroomId=${encodeURIComponent(activeCode)}` : '/api/item-bank';
@@ -447,7 +480,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         } finally {
             setItemBankLoading(false);
         }
-    };
+    }, [classroomCode]);
 
     const handleJoinClassroom = async (code: string): Promise<boolean> => {
         try {
@@ -481,7 +514,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         fetchItemBank('');
     };
 
-    const flushSyncQueue = async () => {
+    const flushSyncQueue = useCallback(async () => {
         const queueJson = localStorage.getItem('guro_sync_queue');
         if (!queueJson) return;
         try {
@@ -540,12 +573,13 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                     localStorage.removeItem('guro_sync_queue');
                 }
                 console.log(`[Sync] Successfully uploaded telemetry batches.`);
+                loadTopicHistory();
             }
         } catch (e) {
             console.error('[Sync] Error parsing sync queue from local storage', e);
             localStorage.removeItem('guro_sync_queue');
         }
-    };
+    }, [classroomCode, loadTopicHistory]);
 
     useEffect(() => {
         fetchItemBank();
@@ -562,7 +596,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         return () => {
             window.removeEventListener('online', handleOnline);
         };
-    }, []);
+    }, [fetchItemBank, loadTopicHistory, flushSyncQueue]);
 
     // Helper to get available topics for a subject & grade level
     const getTopicsForCurrentSelection = (subject: 'Mathematics' | 'English'): string[] => {

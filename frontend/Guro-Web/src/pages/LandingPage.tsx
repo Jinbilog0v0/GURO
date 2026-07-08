@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { User, Users, BookOpenText, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket } from 'lucide-react';
+import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap } from 'lucide-react';
 import { RoleCard, type RoleCardProps } from '../components/landing/RoleCard';
 import { FeatureCard, type FeatureCardProps } from '../components/landing/FeatureCard';
+import { setAuthToken } from '../utils/api';
 
 // ─── Logo ────────────────────────────────────────────────────────────────────
 
@@ -17,9 +18,9 @@ const GuroLogoGraphic: React.FC = () => (
 );
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-
+ 
 interface LandingPageProps {
-    onSelectRole: (role: 'student' | 'teacher' | 'parent' | 'lesson-builder') => void;
+    onSelectRole: (role: 'student' | 'teacher' | 'parent' | 'lesson-builder', grade?: number) => void;
     onLoginSuccess: (user: { userId: string; email: string; name: string; role: string; classroomId?: string | null }) => void;
 }
 
@@ -39,6 +40,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [roleSelection, setRoleSelection] = useState('teacher');
+    const [loginRole, setLoginRole] = useState<'student' | 'teacher' | 'parent'>('teacher');
+    const [loginGrade, setLoginGrade] = useState<number>(4);
+    const [registerGrade, setRegisterGrade] = useState<number>(4);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [authError, setAuthError] = useState('');
 
@@ -67,7 +71,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
             });
             if (res.ok) {
                 const data = await res.json();
-                onLoginSuccess(data.user);
+                if (data.user.role.toLowerCase() !== loginRole.toLowerCase()) {
+                    setAuthError(`Role Mismatch: This account is registered as a ${data.user.role}, not a ${loginRole}.`);
+                } else {
+                    if (data.token) setAuthToken(data.token);
+                    if (loginRole === 'student') {
+                        localStorage.setItem('guro_student_grade', String(loginGrade));
+                    }
+                    onLoginSuccess(data.user);
+                }
             } else {
                 const err = await res.json();
                 setAuthError(err.error || 'Authentication failed.');
@@ -92,6 +104,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
             });
             if (res.ok) {
                 const data = await res.json();
+                if (data.token) setAuthToken(data.token);
+                if (roleSelection === 'student') {
+                    localStorage.setItem('guro_student_grade', String(registerGrade));
+                }
                 onLoginSuccess(data.user);
             } else {
                 const err = await res.json();
@@ -106,20 +122,47 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
     // ── Data ──────────────────────────────────────────────────────────────────
 
-    const roleCards: (RoleCardProps & { key: 'student' | 'teacher' | 'parent' | 'lesson-builder' })[] = [
+    const guestCards: (RoleCardProps & { key: string; onClick: () => void })[] = [
         {
-            key: 'student',
-            role: 'Student',
-            description: 'Learn Math & English with fun lessons',
-            Icon: User,
-            bgColor: 'bg-[#11428E]',
+            key: 'student-4',
+            role: 'Grade 4 Student',
+            description: 'Learn Grade 4 Math & English',
+            Icon: GraduationCap,
+            bgColor: 'bg-emerald-600',
+            onClick: () => {
+                localStorage.setItem('guro_student_grade', '4');
+                onSelectRole('student', 4);
+            }
+        },
+        {
+            key: 'student-5',
+            role: 'Grade 5 Student',
+            description: 'Learn Grade 5 Math & English',
+            Icon: GraduationCap,
+            bgColor: 'bg-blue-600',
+            onClick: () => {
+                localStorage.setItem('guro_student_grade', '5');
+                onSelectRole('student', 5);
+            }
+        },
+        {
+            key: 'student-6',
+            role: 'Grade 6 Student',
+            description: 'Learn Grade 6 Math & English',
+            Icon: GraduationCap,
+            bgColor: 'bg-purple-600',
+            onClick: () => {
+                localStorage.setItem('guro_student_grade', '6');
+                onSelectRole('student', 6);
+            }
         },
         {
             key: 'teacher',
             role: 'Teacher',
             description: 'Monitor student progress & performance',
-            Icon: BookOpenText,
+            Icon: School,
             bgColor: 'bg-[#A01322]',
+            onClick: () => onSelectRole('teacher')
         },
         {
             key: 'parent',
@@ -127,6 +170,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
             description: "Track your child's learning journey",
             Icon: Users,
             bgColor: 'bg-[#F59E0B]',
+            onClick: () => onSelectRole('parent')
         },
     ];
 
@@ -196,6 +240,58 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                         )}
 
                         <form onSubmit={handleLogin} className="flex flex-col gap-4">
+                            {/* Role selection for Sign In */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className={labelCls}>Specify Role</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {(['teacher', 'student', 'parent'] as const).map((r) => {
+                                        const active = loginRole === r;
+                                        const IconComponent = r === 'teacher' ? School : r === 'student' ? GraduationCap : Users;
+                                        return (
+                                            <button
+                                                key={r}
+                                                type="button"
+                                                onClick={() => { setLoginRole(r); setAuthError(''); }}
+                                                className={`py-2 px-3 rounded-xl border text-xs font-bold capitalize cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
+                                                    active
+                                                        ? 'bg-[#11428E]/10 border-[#11428E] text-[#11428E]'
+                                                        : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                                                }`}
+                                            >
+                                                <IconComponent size={14} className={active ? 'text-[#11428E]' : 'text-slate-400'} />
+                                                <span>{r}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Grade level selection for student role */}
+                            {loginRole === 'student' && (
+                                <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <label className={labelCls}>Specify Grade Level</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {[4, 5, 6].map((g) => {
+                                            const active = loginGrade === g;
+                                            return (
+                                                <button
+                                                    key={g}
+                                                    type="button"
+                                                    onClick={() => setLoginGrade(g)}
+                                                    className={`py-2 px-3 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
+                                                        active
+                                                            ? 'bg-[#11428E]/10 border-[#11428E] text-[#11428E]'
+                                                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                                                    }`}
+                                                >
+                                                    Grade {g}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex flex-col gap-1.5">
                                 <label className={labelCls} htmlFor="login-email">Email address</label>
                                 <div className="relative">
@@ -343,16 +439,54 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
                             <div className="flex flex-col gap-1.5">
                                 <label className={labelCls}>Account role</label>
-                                <select
-                                    value={roleSelection}
-                                    onChange={(e) => setRoleSelection(e.target.value)}
-                                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all"
-                                >
-                                    <option value="teacher">Teacher — dashboard &amp; curriculums</option>
-                                    <option value="parent">Parent — child monitoring</option>
-                                    <option value="student">Student — quizzes &amp; practice</option>
-                                </select>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {(['teacher', 'student', 'parent'] as const).map((r) => {
+                                        const active = roleSelection === r;
+                                        const IconComponent = r === 'teacher' ? School : r === 'student' ? GraduationCap : Users;
+                                        return (
+                                            <button
+                                                key={r}
+                                                type="button"
+                                                onClick={() => { setRoleSelection(r); setAuthError(''); }}
+                                                className={`py-2 px-3 rounded-xl border text-xs font-bold capitalize cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
+                                                    active
+                                                        ? 'bg-[#11428E]/10 border-[#11428E] text-[#11428E]'
+                                                        : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                                                }`}
+                                            >
+                                                <IconComponent size={14} className={active ? 'text-[#11428E]' : 'text-slate-400'} />
+                                                <span>{r}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
+
+                            {/* Grade level selection for student role during registration */}
+                            {roleSelection === 'student' && (
+                                <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <label className={labelCls}>Specify Grade Level</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {[4, 5, 6].map((g) => {
+                                            const active = registerGrade === g;
+                                            return (
+                                                <button
+                                                    key={g}
+                                                    type="button"
+                                                    onClick={() => setRegisterGrade(g)}
+                                                    className={`py-2 px-3 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
+                                                        active
+                                                            ? 'bg-[#11428E]/10 border-[#11428E] text-[#11428E]'
+                                                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                                                    }`}
+                                                >
+                                                    Grade {g}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
 
                             <button
                                 type="submit"
@@ -376,15 +510,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                 {/* ── Guest role picker ── */}
                 {view === 'guest-roles' && (
                     <div className="flex flex-col items-center gap-8 w-full mt-4">
-                        <div className="grid w-full max-w-2xl grid-cols-1 gap-5 md:grid-cols-3 px-2">
-                            {roleCards.map((card) => (
+                        <div className="grid w-full max-w-4xl grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 px-2 justify-center">
+                            {guestCards.map((card) => (
                                 <RoleCard
                                     key={card.key}
                                     role={card.role}
                                     description={card.description}
                                     Icon={card.Icon}
                                     bgColor={card.bgColor}
-                                    onClick={() => onSelectRole(card.key)}
+                                    onClick={card.onClick}
                                 />
                             ))}
                         </div>

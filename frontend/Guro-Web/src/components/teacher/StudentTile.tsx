@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, BookOpen, Clock, Award, Key, Star, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Trophy, BookOpen, Clock, Award, User, Star, TrendingUp, AlertTriangle } from 'lucide-react';
 
 interface SyncedEvent {
   studentId: string;
@@ -59,7 +59,7 @@ export const StudentTile: React.FC<StudentTileProps> = ({
     >
       <div className="flex items-center gap-3 w-full">
         <div className="w-9 h-9 rounded-[10px] bg-[var(--border-color)] flex items-center justify-center border border-[var(--border-color)]">
-          <Key size={16} className="text-[#F59E0B]" />
+          <User size={16} className="text-[#11428E]" />
         </div>
         <div className="flex-1 flex flex-col">
           <h4 className="text-sm font-bold text-[var(--text-main)] font-mono truncate max-w-[120px]">{studentId}</h4>
