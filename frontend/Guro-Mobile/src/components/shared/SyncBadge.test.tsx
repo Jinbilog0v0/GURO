@@ -45,7 +45,7 @@ describe('SyncBadge Component', () => {
     });
 
     const stringified = JSON.stringify(root.toJSON());
-    expect(stringified).toContain('Offline');
+    expect(stringified).toContain('No Internet');
   });
 
   test('should display pending count when online and pending items exist', async () => {
@@ -60,6 +60,6 @@ describe('SyncBadge Component', () => {
     });
 
     const stringified = JSON.stringify(root.toJSON());
-    expect(stringified).toContain('1 Pending');
+    expect(stringified).toContain('Saving… (1)');
   });
 });

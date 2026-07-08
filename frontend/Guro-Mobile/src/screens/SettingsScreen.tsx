@@ -28,6 +28,8 @@ import {
   Sparkles,
   Trophy,
   Award,
+  Star,
+  BarChart2,
 } from 'lucide-react-native';
 
 // ── Design System & UI ────────────────────────────────────────────────────────
@@ -37,6 +39,7 @@ import { Spacing, Radius } from '../theme/spacing';
 import { GlassCard } from '../components/ui/GlassCard';
 import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { PrimaryButton, DangerButton } from '../components/ui/Buttons';
+import { toast } from '../components';
 import { styles } from '../styles/SettingsScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
@@ -114,17 +117,17 @@ export function SettingsScreen({ navigation }: Props) {
     const confirm = promoteConfirmPassword;
 
     if (!name || !email || !password || !confirm) {
-      Alert.alert('Missing Fields', 'Please fill in all fields to register.');
+      toast.error('Please fill in all fields to register.');
       return;
     }
 
     if (password !== confirm) {
-      Alert.alert('Passwords Mismatch', 'Password and Confirm Password do not match.');
+      toast.error('Password and Confirm Password do not match.');
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Weak Password', 'Password must be at least 6 characters.');
+      toast.error('Password must be at least 6 characters.');
       return;
     }
 
@@ -135,15 +138,15 @@ export function SettingsScreen({ navigation }: Props) {
       const result = await registerAndPromoteAction(email, password, name);
       if (result.success) {
         setAppModeAction('online');
-        Alert.alert('Success!', 'Your account has been created and synced online!');
+        toast.success('Your account has been created and synced online!');
         setPromoteEmail('');
         setPromotePassword('');
         setPromoteConfirmPassword('');
       } else {
-        Alert.alert('Failed', result.message ?? 'An error occurred during registration.');
+        toast.error(result.message ?? 'An error occurred during registration.');
       }
     } catch (e: any) {
-      Alert.alert('Error', e.message ?? 'Failed to connect to server.');
+      toast.error(e.message ?? 'Failed to connect to server.');
     } finally {
       setIsPromoting(false);
     }
@@ -305,7 +308,7 @@ export function SettingsScreen({ navigation }: Props) {
             <View style={styles.githubBoxBody}>
               
               {/* Mascot Status */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: Radius.md, borderVertical: 1, borderColor: Colors.border }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border }}>
                 <View style={{ position: 'relative' }}>
                   <Text style={{ fontSize: 56 }}>{avatarEmoji}</Text>
                   {currentOutfitObj && currentOutfitObj.emoji ? (
@@ -316,9 +319,12 @@ export function SettingsScreen({ navigation }: Props) {
                   <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
                     {guestName ?? currentUser?.name ?? 'Explorer'}'s Buddy
                   </Text>
-                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#D97706', marginTop: 4 }}>
-                    ⭐ {virtualStars} Study Stars Available
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                    <Star size={12} color="#D97706" fill="#D97706" />
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#D97706' }}>
+                      {virtualStars} Study Stars Available
+                    </Text>
+                  </View>
                 </View>
               </View>
 
@@ -342,7 +348,7 @@ export function SettingsScreen({ navigation }: Props) {
                           if (virtualStars >= item.cost) {
                             Alert.alert(
                               'Unlock Accessory',
-                              `Unlock ${item.label} for ⭐ ${item.cost} Stars?`,
+                              `Unlock ${item.label} for ${item.cost} Stars?`,
                               [
                                 { text: 'Cancel', style: 'cancel' },
                                 {
@@ -350,14 +356,14 @@ export function SettingsScreen({ navigation }: Props) {
                                   onPress: () => {
                                     const success = purchaseOutfit(item.id, item.cost);
                                     if (success) {
-                                      Alert.alert('Unlocked!', `You purchased the ${item.label}!`);
+                                      toast.success(`You purchased the ${item.label}!`);
                                     }
                                   }
                                 }
                               ]
                             );
                           } else {
-                            Alert.alert('Need More Stars!', `This accessory costs ⭐ ${item.cost} Stars. Finish more quizzes to earn stars!`);
+                            toast.warning(`This accessory costs ${item.cost} Stars. Finish more quizzes to earn stars!`);
                           }
                         }
                       }}
@@ -367,7 +373,10 @@ export function SettingsScreen({ navigation }: Props) {
                       {isOwned ? (
                         <Text style={styles.closetItemOwned}>{isActive ? '• Equipped •' : 'Owned'}</Text>
                       ) : (
-                        <Text style={styles.closetItemPrice}>⭐ {item.cost} Stars</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, justifyContent: 'center', marginTop: 4 }}>
+                          <Star size={10} color="#D97706" fill="#D97706" />
+                          <Text style={styles.closetItemPrice}>{item.cost} Stars</Text>
+                        </View>
                       )}
                     </TouchableOpacity>
                   );
@@ -392,7 +401,7 @@ export function SettingsScreen({ navigation }: Props) {
                 style={styles.switchRow}
                 activeOpacity={0.7}
               >
-                <Text style={styles.switchLabel}>🔊 Correct / Wrong Ding SFX</Text>
+                <Text style={styles.switchLabel}>Correct / Wrong Ding SFX</Text>
                 <View style={[styles.switchTrack, { backgroundColor: soundEffectsEnabled ? Colors.success : Colors.textDark }]}>
                   <View style={[styles.switchThumb, { alignSelf: soundEffectsEnabled ? 'flex-end' : 'flex-start' }]} />
                 </View>
@@ -432,9 +441,9 @@ export function SettingsScreen({ navigation }: Props) {
                 <Text style={styles.formLabel}>Ding Victory Sounds Style:</Text>
                 <View style={styles.segmentRow}>
                   {[
-                    { key: 'ding', label: '🔔 Classic' },
-                    { key: 'arcade', label: '🎮 Arcade' },
-                    { key: 'laser', label: '⚡ Laser' },
+                    { key: 'ding', label: 'Classic' },
+                    { key: 'arcade', label: 'Arcade' },
+                    { key: 'laser', label: 'Laser' },
                   ].map((item) => {
                     const active = correctSoundTheme === item.key;
                     return (
@@ -458,9 +467,9 @@ export function SettingsScreen({ navigation }: Props) {
                 <Text style={styles.formLabel}>Narrator Speech Speed (TTS):</Text>
                 <View style={styles.segmentRow}>
                   {[
-                    { label: '🐢 Slow', rate: 0.75 },
-                    { label: '🚶 Normal', rate: 1.0 },
-                    { label: '⚡ Fast', rate: 1.25 }
+                    { label: 'Slow', rate: 0.75 },
+                    { label: 'Normal', rate: 1.0 },
+                    { label: 'Fast', rate: 1.25 }
                   ].map((item) => {
                     const active = speechRate === item.rate;
                     return (
@@ -527,7 +536,7 @@ export function SettingsScreen({ navigation }: Props) {
                         key={theme.key}
                         onPress={() => {
                           setColorTheme(theme.key);
-                          Alert.alert('Theme Changed', `Applied ${theme.label} successfully!`);
+                          toast.success(`Applied ${theme.label} successfully!`);
                         }}
                         style={[styles.themeBtn, active && [styles.themeBtnActive, { borderColor: theme.color }]]}
                         activeOpacity={0.7}
@@ -586,16 +595,24 @@ export function SettingsScreen({ navigation }: Props) {
             <View style={styles.githubBoxBody}>
               <View style={styles.statsBox}>
                 <Text style={styles.statsText}>
-                  • Math Before English Gate: <Text style={{ fontFamily: Fonts.bodyBold }}>{parentalControls.mathBeforeEnglish ? '🔒 Required' : '🔓 Unlocked'}</Text>
+                  • Math Before English Gate: <Text style={{ fontFamily: Fonts.bodyBold }}>{parentalControls.mathBeforeEnglish ? 'Required' : 'Unlocked'}</Text>
                 </Text>
                 <Text style={styles.statsText}>
-                  • Forced Bilingual Mode: <Text style={{ fontFamily: Fonts.bodyBold }}>{parentalControls.forcedBilingual ? '🌐 Active' : '🔓 Disabled'}</Text>
+                  • Forced Bilingual Mode: <Text style={{ fontFamily: Fonts.bodyBold }}>{parentalControls.forcedBilingual ? 'Active' : 'Disabled'}</Text>
                 </Text>
                 {parentalControls.priorityTopic && (
                   <Text style={styles.statsText}>
                     • Focused Priority Topic: <Text style={{ fontFamily: Fonts.bodyBold }}>{parentalControls.priorityTopic}</Text>
                   </Text>
                 )}
+              </View>
+
+              <View style={{ marginTop: Spacing.md }}>
+                <PrimaryButton
+                  label="View Progress Report"
+                  icon={<BarChart2 size={16} color={Colors.white} style={{ marginRight: 6 }} />}
+                  onPress={() => navigation.navigate('StudentProgressReport')}
+                />
               </View>
             </View>
           </View>
@@ -608,7 +625,7 @@ export function SettingsScreen({ navigation }: Props) {
         return (
           <View style={styles.githubBox}>
             <View style={styles.githubBoxHeader}>
-              <Text style={styles.githubBoxTitle}>Data Treasure Chest 💎</Text>
+              <Text style={styles.githubBoxTitle}>Data Storage</Text>
               <Text style={styles.githubBoxSubtitle}>Review exercises completed offline and upload them to your teacher's dashboard!</Text>
             </View>
             <View style={styles.githubBoxBody}>
@@ -620,23 +637,25 @@ export function SettingsScreen({ navigation }: Props) {
                   • Total Exercises Saved: <Text style={{ fontFamily: Fonts.bodyBold }}>{studentProgress.length}</Text>
                 </Text>
                 <Text style={styles.statsText}>
-                  • Unsynced Data Jewels: <Text style={{ fontFamily: Fonts.bodyBold, color: unsyncedCount > 0 ? Colors.warning : Colors.textMuted }}>{unsyncedCount} 💎</Text>
+                  • Unsynced Data: <Text style={{ fontFamily: Fonts.bodyBold, color: unsyncedCount > 0 ? Colors.warning : Colors.textMuted }}>{unsyncedCount}</Text>
                 </Text>
                 <Text style={styles.statsText}>
-                  • Synced Cloud Jewels: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.success }}>{syncedCount} ✨</Text>
+                  • Synced Progress: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.success }}>{syncedCount}</Text>
                 </Text>
                 
                 {unsyncedCount > 0 && appMode === 'online' ? (
                   <View style={{ marginTop: Spacing.sm }}>
                     <PrimaryButton
-                      label="Launch Data Rocket 🚀"
+                      label="Launch Data Sync"
+                      icon={<Database size={16} color={Colors.white} style={{ marginRight: 6 }} />}
                       onPress={async () => {
-                        const serverUrl = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.254.125:8000';
+                        const serverUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
                         const result = await syncProgressNow(serverUrl);
-                        Alert.alert(
-                          result.success ? 'Sync Successful! 🚀' : 'Sync Failed',
-                          result.message
-                        );
+                        if (result.success) {
+                          toast.success('Sync Successful!');
+                        } else {
+                          toast.error(`Sync Failed: ${result.message}`);
+                        }
                       }}
                     />
                   </View>
@@ -741,7 +760,7 @@ export function SettingsScreen({ navigation }: Props) {
                     style: 'destructive',
                     onPress: () => {
                       logoutFromCloud();
-                      navigation.replace('Login');
+                      navigation.replace((appMode as string) === 'offline' ? 'StudentDashboard' : 'Login');
                     },
                   },
                 ]

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import itemBankData from '../../assets/item_bank.json';
 import {
   getLocalItemBank,
@@ -71,10 +72,12 @@ interface AppState {
   itemBank: ItemBank | null;
   logs: string[];
   parentPin: string | null;
+  token: string | null;
   studentProgress: ProgressEvent[];
   studentId: string;
   classroomId: string | null;
   streakCount: number;
+  bestStreak: number;
   unlockedBadges: string[];
   parentalControls: {
     dailyTimeLimit: number;
@@ -82,7 +85,7 @@ interface AppState {
     forcedBilingual: boolean;
     priorityTopic: string | null;
   };
-  currentUser: { userId: string; email: string; name: string; role: string } | null;
+  currentUser: { userId: string; email: string; name: string; role: string; classroomId?: string } | null;
   appMode: 'online' | 'offline';
   guestName: string | null;
   dailyMinutesUsed: number;
@@ -98,6 +101,8 @@ interface AppState {
   voiceGuideTheme: string;
   correctSoundTheme: string;
   preferredGrade: number;
+  serverUrl: string;
+  setServerUrl: (url: string) => void;
   setAvatarEmoji: (emoji: string) => void;
   setSoundEffectsEnabled: (enabled: boolean) => void;
   setSpeechRate: (rate: number) => void;
@@ -107,6 +112,7 @@ interface AppState {
   setVoiceGuideTheme: (theme: string) => void;
   setCorrectSoundTheme: (theme: string) => void;
   setPreferredGrade: (grade: number) => void;
+  setToken: (token: string | null) => void;
   addLog: (message: string) => void;
   clearLogs: () => void;
   loadItemBankSync: () => Promise<void>;
@@ -128,6 +134,14 @@ interface AppState {
   initializeLocalStore: () => Promise<void>;
 }
 
+export function resolveServerUrl(url: string): string {
+  let cleaned = url.trim();
+  if (Platform.OS === 'android') {
+    cleaned = cleaned.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
+  }
+  return cleaned;
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -138,6 +152,7 @@ export const useAppStore = create<AppState>()(
       studentId: 'GURO-STUDENT-LOCAL',
       classroomId: null,
       streakCount: 0,
+      bestStreak: 0,
       unlockedBadges: [],
       parentalControls: {
         dailyTimeLimit: 0,
@@ -146,6 +161,7 @@ export const useAppStore = create<AppState>()(
         priorityTopic: null,
       },
       currentUser: null,
+      token: null,
       appMode: 'offline',
       guestName: null,
       dailyMinutesUsed: 0,
@@ -161,6 +177,9 @@ export const useAppStore = create<AppState>()(
       voiceGuideTheme: 'astronaut',
       correctSoundTheme: 'ding',
       preferredGrade: 4,
+      serverUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000',
+      setServerUrl: (url) => set({ serverUrl: url }),
+      setToken: (token) => set({ token }),
       setAppMode: (mode) => set({ appMode: mode }),
       setGuestName: (name) => set({ guestName: name }),
       setAvatarEmoji: (emoji) => set({ avatarEmoji: emoji }),
@@ -213,9 +232,10 @@ export const useAppStore = create<AppState>()(
       },
       registerAndPromote: async (email, password, name) => {
         const anonymousStudentId = get().studentId;
-        const serverUrl = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.254.125:8000'; // Default serverUrl
+        const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+        const resolvedUrl = resolveServerUrl(rawUrl);
         try {
-          const res = await fetch(`${serverUrl}/api/auth/promote`, {
+          const res = await fetch(`${resolvedUrl}/api/auth/promote`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ anonymousStudentId, email, password, name })
@@ -224,12 +244,13 @@ export const useAppStore = create<AppState>()(
             const data = await res.json();
             set({ 
               currentUser: data.user,
-              studentId: data.studentId
+              studentId: data.studentId,
+              token: data.token
             });
             get().addLog(`Guest account promoted. Official studentId is now: ${data.studentId}`);
             return { success: true, message: 'Account successfully registered and progress merged!' };
           } else {
-            const err = await res.json();
+            const err = await res.json().catch(() => ({}));
             return { success: false, message: err.error || 'Promotion failed.' };
           }
         } catch (e: any) {
@@ -237,23 +258,25 @@ export const useAppStore = create<AppState>()(
         }
       },
       loginToCloud: async (email, password) => {
-        const serverUrl = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.254.125:8000';
+        const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+        const resolvedUrl = resolveServerUrl(rawUrl);
         try {
-          const res = await fetch(`${serverUrl}/api/auth/login`, {
+          const res = await fetch(`${resolvedUrl}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
           });
           if (res.ok) {
             const data = await res.json();
-            set({ 
+            set({
               currentUser: data.user,
-              studentId: data.user.name.replace(/\s+/g, '-').toUpperCase()
+              studentId: data.studentId ?? data.user.name.replace(/\s+/g, '-').toUpperCase(),
+              token: data.token,
             });
             get().addLog(`Logged in as: ${data.user.email}`);
             return { success: true, message: `Successfully logged in as ${data.user.name}` };
           } else {
-            const err = await res.json();
+            const err = await res.json().catch(() => ({}));
             return { success: false, message: err.error || 'Login failed.' };
           }
         } catch (e: any) {
@@ -263,11 +286,22 @@ export const useAppStore = create<AppState>()(
       logoutFromCloud: () => {
         set({
           currentUser: null,
+          token: null,
           studentId: 'GURO-STUDENT-LOCAL',
           appMode: 'offline',
           guestName: null,
+          classroomId: null,
+          parentalControls: {
+            dailyTimeLimit: 0,
+            mathBeforeEnglish: false,
+            forcedBilingual: false,
+            priorityTopic: null,
+          },
+          dailyMinutesUsed: 0,
+          lastActiveDay: null,
         });
         get().addLog('Logged out of cloud account. Reverted to GURO-STUDENT-LOCAL.');
+        get().initializeLocalStore().catch(console.error);
       },
       addLog: (message) =>
         set((state) => ({
@@ -303,8 +337,11 @@ export const useAppStore = create<AppState>()(
         get().addLog(id ? `Linked device to classroom invite code: ${id}` : 'Unlinked device from classroom invite code.');
       },
       fetchItemBankFromServer: async (serverUrl, id) => {
+        const resolvedUrl = resolveServerUrl(serverUrl);
         try {
-          const res = await fetch(`${serverUrl}/api/item-bank?classroomId=${id}`);
+          const res = await fetch(`${resolvedUrl}/api/item-bank?classroomId=${id}`, {
+            headers: { Authorization: `Bearer ${get().token ?? ''}` },
+          });
           if (res.ok) {
             const bank = await res.json();
             if (bank && Object.keys(bank).length > 0) {
@@ -370,9 +407,13 @@ export const useAppStore = create<AppState>()(
         const earnedXP = event.score * 10 + (isPerfect ? 50 : 0);
         const earnedStars = event.score * 2 + (isPerfect ? 10 : 0);
 
+        const currentBest = get().bestStreak || 0;
+        const nextBest = Math.max(currentBest, nextStreak);
+
         set((state) => ({
           studentProgress: [newEvent, ...state.studentProgress],
           streakCount: nextStreak,
+          bestStreak: nextBest,
           unlockedBadges: nextBadges,
           lastActiveDay: today,
           xpPoints: (state.xpPoints || 0) + earnedXP,
@@ -382,6 +423,7 @@ export const useAppStore = create<AppState>()(
         try {
           await saveLocalProgress(newEvent);
           await saveParentSetting('streak_count', nextStreak.toString());
+          await saveParentSetting('best_streak', nextBest.toString());
           await saveParentSetting('unlocked_badges', JSON.stringify(nextBadges));
           await saveParentSetting('last_active_day', today);
           await saveParentSetting('xp_points', get().xpPoints.toString());
@@ -390,6 +432,14 @@ export const useAppStore = create<AppState>()(
           console.error('[SQLite] Failed to save progress/achievements locally:', e);
         }
         get().addLog(`Recorded local progress for "${event.topic}" (${event.score}/${event.totalQuestions}) (+${earnedXP} XP, +${earnedStars} Stars)`);
+
+        // Trigger background sync in online mode to sync with web immediately
+        const state = get();
+        if (state.appMode === 'online') {
+          get().syncProgressNow(state.serverUrl).catch((err) => {
+            console.warn('[Sync] Background sync failed:', err);
+          });
+        }
       },
       clearProgress: async () => {
         set({ studentProgress: [] });
@@ -401,6 +451,7 @@ export const useAppStore = create<AppState>()(
         get().addLog('Local student progress logs cleared.');
       },
       syncProgressNow: async (serverUrl) => {
+        const resolvedUrl = resolveServerUrl(serverUrl);
         const unsyncedEvents = get().studentProgress.filter((e) => !e.synced);
         if (unsyncedEvents.length === 0) {
           return { success: true, syncedCount: 0, message: 'No new progress logs to sync.' };
@@ -408,9 +459,12 @@ export const useAppStore = create<AppState>()(
 
         get().addLog(`Starting manual sync of ${unsyncedEvents.length} events...`);
         try {
-          const response = await fetch(`${serverUrl}/api/sync`, {
+          const response = await fetch(`${resolvedUrl}/api/sync`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${get().token ?? ''}`,
+            },
             body: JSON.stringify({
               studentId: get().studentId || 'GURO-STUDENT-LOCAL',
               classroomId: get().classroomId,
@@ -461,6 +515,7 @@ export const useAppStore = create<AppState>()(
           const localLogs = await getLocalProgress();
           const localBank = await getLocalItemBank();
           const streakStr = await getParentSetting('streak_count');
+          const bestStreakStr = await getParentSetting('best_streak');
           const badgesStr = await getParentSetting('unlocked_badges');
           const xpStr = await getParentSetting('xp_points');
           const starsStr = await getParentSetting('virtual_stars');
@@ -473,6 +528,7 @@ export const useAppStore = create<AppState>()(
             studentProgress: localLogs,
             itemBank: localBank || get().itemBank,
             streakCount: streakStr ? parseInt(streakStr, 10) : 0,
+            bestStreak: bestStreakStr ? parseInt(bestStreakStr, 10) : 0,
             unlockedBadges: badgesStr ? JSON.parse(badgesStr) : [],
             xpPoints: xpStr ? parseInt(xpStr, 10) : get().xpPoints,
             virtualStars: starsStr ? parseInt(starsStr, 10) : get().virtualStars,
@@ -512,6 +568,11 @@ export const useAppStore = create<AppState>()(
         voiceGuideTheme: state.voiceGuideTheme,
         correctSoundTheme: state.correctSoundTheme,
         preferredGrade: state.preferredGrade,
+        serverUrl: state.serverUrl,
+        avatarEmoji: state.avatarEmoji,
+        speechRate: state.speechRate,
+        soundEffectsEnabled: state.soundEffectsEnabled,
+        colorTheme: state.colorTheme,
       }),
     }
   )

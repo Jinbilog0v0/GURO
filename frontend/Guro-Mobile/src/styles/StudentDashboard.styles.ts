@@ -60,4 +60,7 @@ export const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
+  bottomSpacer: {
+    height: Spacing['3xl'],
+  },
 });

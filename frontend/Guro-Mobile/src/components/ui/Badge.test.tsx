@@ -4,10 +4,10 @@ import { Badge } from './Badge';
 
 describe('Badge Component', () => {
   test('renders correctly', async () => {
-    let tree;
+    let tree: renderer.ReactTestRenderer | undefined;
     await act(async () => {
       tree = renderer.create(<Badge label="Test Badge" variant="success" />);
     });
-    expect(tree.toJSON()).toBeDefined();
+    expect(tree!.toJSON()).toBeDefined();
   });
 });

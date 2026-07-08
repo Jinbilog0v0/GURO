@@ -19,6 +19,7 @@ const mockLoginToCloud = jest.fn();
 const mockSetAppMode = jest.fn();
 const mockSetGuestName = jest.fn();
 const mockSetStudentId = jest.fn();
+const mockSetPreferredGrade = jest.fn();
 
 const mockState = {
   loginToCloud: mockLoginToCloud,
@@ -28,6 +29,8 @@ const mockState = {
   setAppMode: mockSetAppMode,
   setGuestName: mockSetGuestName,
   setStudentId: mockSetStudentId,
+  setPreferredGrade: mockSetPreferredGrade,
+  preferredGrade: 4,
 };
 
 jest.mock('../store/useAppStore', () => {
@@ -43,6 +46,25 @@ jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 // Mock Reanimated
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children }: any) => children,
+}));
+
+// Mock expo-network
+jest.mock('expo-network', () => ({
+  getNetworkStateAsync: jest.fn().mockResolvedValue({ isConnected: true, isInternetReachable: true }),
+}));
+
+// Helper to safely search for text in the react-test-renderer JSON tree, avoiding circular references
+function findTextInJSON(json: any, text: string): boolean {
+  if (!json) return false;
+  if (typeof json === 'string') return json.includes(text);
+  if (Array.isArray(json)) return json.some((item) => findTextInJSON(item, text));
+  if (json.children) return findTextInJSON(json.children, text);
+  if (json.props && json.props.children) return findTextInJSON(json.props.children, text);
+  return false;
+}
+
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 describe('LoginScreen', () => {
@@ -56,9 +78,9 @@ describe('LoginScreen', () => {
       root = renderer.create(<LoginScreen navigation={mockNavigation as any} route={{} as any} />);
     });
 
-    const stringified = JSON.stringify(root.toJSON());
-    expect(stringified).toContain('GURO');
-    expect(stringified).toContain('Offline-first learning platform');
+    const rootJSON = root.toJSON();
+    expect(findTextInJSON(rootJSON, 'GURO')).toBe(true);
+    expect(findTextInJSON(rootJSON, 'Guided Unified Remote Online')).toBe(true);
   });
 
   test('should launch guest session when valid offline name is submitted', () => {
