@@ -4,12 +4,13 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { LoginScreen } from '../screens/LoginScreen';
 import { StudentTabNavigator } from './StudentTabNavigator';
-import { TeacherDashboard } from '../screens/TeacherDashboard';
+import { TeacherTabNavigator } from './TeacherTabNavigator';
 import { ParentDashboard } from '../screens/ParentDashboard';
 import { AssessmentScreen } from '../screens/AssessmentScreen';
 import { StudyScreen } from '../screens/StudyScreen';
 import { DetailsScreen } from '../screens/DetailsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { StudentProgressReportScreen } from '../screens/StudentProgressReportScreen';
 import { Colors } from '../theme/colors';
 import { Fonts } from '../theme/typography';
 
@@ -22,6 +23,7 @@ export type RootStackParamList = {
   Study: { subject: string; gradeLevel: number; topic: string };
   Details: { fileName: string; content: string };
   Settings: undefined;
+  StudentProgressReport: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -70,7 +72,7 @@ export function AppNavigator() {
       />
       <Stack.Screen
         name="TeacherDashboard"
-        component={TeacherDashboard}
+        component={TeacherTabNavigator}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -92,6 +94,11 @@ export function AppNavigator() {
         name="Details"
         component={DetailsScreen}
         options={{ title: 'Report View' }}
+      />
+      <Stack.Screen
+        name="StudentProgressReport"
+        component={StudentProgressReportScreen}
+        options={{ title: 'Progress Report' }}
       />
     </Stack.Navigator>
   );

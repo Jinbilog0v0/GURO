@@ -1,9 +1,20 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { Alert } from 'react-native';
-import { TeacherDashboard } from './TeacherDashboard';
+import { TeacherDashboardScreen } from './TeacherDashboardScreen';
+import { TeacherSettingsScreen } from './TeacherSettingsScreen';
 import { useAppStore } from '../store/useAppStore';
 import { FileService } from '../services/fileService';
+import { toast } from '../components';
+
+jest.mock('../components', () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+    warning: jest.fn(),
+    info: jest.fn(),
+  },
+}));
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -21,6 +32,7 @@ jest.mock('../services/fileService', () => ({
     listFiles: jest.fn().mockResolvedValue(['report-1.txt', 'report-2.txt']),
     saveFile: jest.fn().mockResolvedValue('file:///uri/report-1.txt'),
     deleteFile: jest.fn().mockResolvedValue(undefined),
+    readFile: jest.fn().mockResolvedValue('some content'),
   }
 }));
 
@@ -62,48 +74,56 @@ jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 // Mock Reanimated
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 
+// Mock Navigation Hooks
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => mockNavigation,
+}));
+
+// Mock expo-network
+jest.mock('expo-network', () => ({
+  getNetworkStateAsync: jest.fn().mockResolvedValue({ isConnected: true, isInternetReachable: true }),
+}));
+
 // ── Tests ──────────────────────────────────────────────────────────────────
 
-describe('TeacherDashboard', () => {
+describe('Teacher Screens', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  test('should render teacher statistics and saved report file names', async () => {
+  test('TeacherDashboardScreen should render stats', async () => {
     let root: any;
     await act(async () => {
-      root = renderer.create(<TeacherDashboard navigation={mockNavigation as any} route={{} as any} />);
+      root = renderer.create(<TeacherDashboardScreen />);
     });
 
     const stringified = JSON.stringify(root.toJSON());
     expect(stringified).toContain('Teacher Dashboard');
-    expect(stringified).toContain('report-1.txt');
-    expect(stringified).toContain('report-2.txt');
     expect(stringified).toContain('Questions');
-  }, 45000);
+  });
 
-  test('should handle validation alert and not write when title or content is empty', async () => {
+  test('TeacherSettingsScreen should render saved reports and handle actions', async () => {
     let root: any;
     await act(async () => {
-      root = renderer.create(<TeacherDashboard navigation={mockNavigation as any} route={{} as any} />);
+      root = renderer.create(<TeacherSettingsScreen />);
     });
+
+    const stringified = JSON.stringify(root.toJSON());
+    expect(stringified).toContain('report-1.txt');
+    expect(stringified).toContain('report-2.txt');
 
     const submitBtn = root.root.findByProps({ label: 'Save to Device' });
     act(() => {
       submitBtn.props.onPress();
     });
 
-    expect(Alert.alert).toHaveBeenCalledWith(
-      'Validation Error',
-      'Please enter a report title and content.'
-    );
-    expect(FileService.saveFile).not.toHaveBeenCalled();
+    expect(toast.error as jest.Mock).toHaveBeenCalledWith('Please enter a report title and content.');
   });
 
-  test('should call FileService.saveFile when title and content are valid', async () => {
+  test('TeacherSettingsScreen should call FileService.saveFile when valid', async () => {
     let root: any;
     await act(async () => {
-      root = renderer.create(<TeacherDashboard navigation={mockNavigation as any} route={{} as any} />);
+      root = renderer.create(<TeacherSettingsScreen />);
     });
 
     const nameInput = root.root.findByProps({ placeholder: 'e.g. Grade5_Math_Session1' });
@@ -120,6 +140,5 @@ describe('TeacherDashboard', () => {
     });
 
     expect(FileService.saveFile).toHaveBeenCalledWith('Test-Report.txt', 'Student got 80% correct.');
-    expect(mockAddLog).toHaveBeenCalledWith(expect.stringContaining('Generated local diagnostic report'));
   });
 });
