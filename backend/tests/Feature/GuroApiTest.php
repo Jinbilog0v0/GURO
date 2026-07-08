@@ -263,3 +263,44 @@ it('can generate a lesson from PDF base64', function () {
             'questions' => []
         ]);
 });
+
+it('can request and verify recovery code for teacher@guro.dev', function () {
+    // Seed the user first
+    $user = User::create([
+        'user_id' => 'USR-TEACH-SEED',
+        'email' => 'teacher@guro.dev',
+        'password_hash' => 'oldsalt:oldhash',
+        'name' => 'Seeded Teacher',
+        'role' => 'teacher'
+    ]);
+
+    // Send code
+    $response = $this->postJson('/api/auth/forgot-password/send-code', [
+        'email' => 'teacher@guro.dev',
+        'role' => 'teacher'
+    ]);
+
+    // Assert successful response
+    $response->assertStatus(200);
+
+    // Get code from cache
+    $code = Illuminate\Support\Facades\Cache::get('password_reset_code_teacher@guro.dev');
+    expect($code)->not->toBeNull();
+
+    // Verify code and reset password
+    $verifyResponse = $this->postJson('/api/auth/forgot-password/verify-code', [
+        'email' => 'teacher@guro.dev',
+        'role' => 'teacher',
+        'code' => $code,
+        'new_password' => 'newsecurepassword123'
+    ]);
+
+    $verifyResponse->assertStatus(200)
+        ->assertJson([
+            'success' => true
+        ]);
+
+    // Reload user and verify password hash changed
+    $user->refresh();
+    expect($user->password_hash)->not->toBe('oldsalt:oldhash');
+});

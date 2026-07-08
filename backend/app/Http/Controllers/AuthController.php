@@ -6,6 +6,8 @@ use App\Models\ProgressLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -164,5 +166,111 @@ class AuthController extends Controller
                 'studentId' => $newStudentId,
             ]);
         });
+    }
+
+    // POST /api/auth/forgot-password/send-code
+    public function sendRecoveryCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'role' => 'required|in:student,teacher,parent',
+        ]);
+
+        $email = strtolower(trim($request->input('email')));
+        $role = trim($request->input('role'));
+
+        $user = User::where('email', $email)->where('role', $role)->first();
+
+        if (!$user) {
+            return response()->json(['error' => 'No account found with this email and role.'], 404);
+        }
+
+        // Generate 6-digit verification code
+        $code = (string) mt_rand(100000, 999999);
+
+        // Store code in cache for 15 minutes
+        Cache::put('password_reset_code_' . $email, $code, now()->addMinutes(15));
+
+        // Always log OTP for local debugging
+        \Illuminate\Support\Facades\Log::info("[Password Recovery Code] OTP Code for {$email} is: {$code}");
+
+        // Call Resend API to send the email
+        try {
+            $apiKey = env('RESEND_API_KEY');
+            $response = Http::withoutVerifying()->withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'Content-Type' => 'application/json',
+            ])->post('https://api.resend.com/emails', [
+                'from' => 'GURO Recovery <onboarding@resend.dev>',
+                'to' => [$email],
+                'subject' => 'GURO Account Password Reset Code',
+                'html' => '<h3>Reset Your Password</h3><p>Hello,</p><p>You requested a password reset for your GURO account. Use the verification code below to proceed:</p><h2 style="color: #11428E; letter-spacing: 2px;">' . $code . '</h2><p>This code is valid for 15 minutes.</p><p>If you did not request this, you can safely ignore this email.</p><br><p>Best regards,<br>The GURO Team</p>',
+            ]);
+
+            if ($response->failed()) {
+                $responseBody = $response->body();
+                \Illuminate\Support\Facades\Log::error('[Resend Email failed] API Response: ' . $responseBody);
+                
+                // If sandbox restriction, return code in response for testing convenience
+                if (strpos($responseBody, 'validation_error') !== false && strpos($responseBody, 'testing emails') !== false) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => "Sandbox Mode: Since '{$email}' is not verified in Resend, we simulated sending. Your code is: {$code} (Also logged in laravel.log).",
+                        'sandbox' => true,
+                    ]);
+                }
+                
+                return response()->json(['error' => 'Failed to send recovery email. Please try again later.'], 500);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('[Resend Exception] ' . $e->getMessage());
+            return response()->json(['error' => 'Could not connect to recovery email service.'], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'A 6-digit recovery code has been sent to your email address.',
+        ]);
+    }
+
+    // POST /api/auth/forgot-password/verify-code
+    public function verifyRecoveryCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'role' => 'required|in:student,teacher,parent',
+            'code' => 'required|string|size:6',
+            'new_password' => 'required|string|min:6',
+        ]);
+
+        $email = strtolower(trim($request->input('email')));
+        $role = trim($request->input('role'));
+        $code = trim($request->input('code'));
+        $newPassword = $request->input('new_password');
+
+        $user = User::where('email', $email)->where('role', $role)->first();
+
+        if (!$user) {
+            return response()->json(['error' => 'No account found with this email and role.'], 404);
+        }
+
+        // Verify stored code
+        $storedCode = Cache::get('password_reset_code_' . $email);
+
+        if (!$storedCode || $storedCode !== $code) {
+            return response()->json(['error' => 'Invalid or expired verification code.'], 400);
+        }
+
+        // Update password
+        $user->password_hash = $this->hashPassword($newPassword);
+        $user->save();
+
+        // Clear cache
+        Cache::forget('password_reset_code_' . $email);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset successful. You can now login with your new password.',
+        ]);
     }
 }

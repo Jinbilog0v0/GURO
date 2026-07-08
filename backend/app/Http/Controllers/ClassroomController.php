@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Classroom;
+use App\Models\RateLimitConfig;
+use App\Models\AiGenerationLog;
 use App\Services\GeminiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -72,6 +74,39 @@ class ClassroomController extends Controller
             'pdf' => 'required_without:lessonText|nullable|string',
         ]);
 
+        // ── Rate limit enforcement ────────────────────────────────────────────
+        $user = $request->user();
+        $role = $user->role ?? 'teacher';
+
+        $config = RateLimitConfig::where('role', $role)->where('is_enabled', true)->first();
+
+        if ($config) {
+            $since = now()->subMinutes($config->window_minutes);
+            $usageCount = AiGenerationLog::where('user_id', $user->id)
+                ->where('generated_at', '>=', $since)
+                ->count();
+
+            if ($usageCount >= $config->max_requests) {
+                $resetAt = AiGenerationLog::where('user_id', $user->id)
+                    ->where('generated_at', '>=', $since)
+                    ->oldest('generated_at')
+                    ->value('generated_at');
+
+                $resetIn = $resetAt
+                    ? (int) ceil(now()->diffInMinutes($resetAt->addMinutes($config->window_minutes), false))
+                    : $config->window_minutes;
+
+                return response()->json([
+                    'error'          => "AI generation rate limit reached. You have used {$usageCount}/{$config->max_requests} requests in the last {$config->window_minutes} minutes.",
+                    'limit'          => $config->max_requests,
+                    'window_minutes' => $config->window_minutes,
+                    'used'           => $usageCount,
+                    'reset_in_minutes' => max(1, $resetIn),
+                ], 429);
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         $subject = $request->input('subject');
         $grade = (int) $request->input('grade');
         $topic = $request->input('topic');
@@ -80,6 +115,12 @@ class ClassroomController extends Controller
 
         try {
             $result = $this->geminiService->generateQuestions($subject, $grade, $topic, $lessonText, $pdf);
+
+            // Log successful generation for rate tracking
+            AiGenerationLog::create([
+                'user_id' => $user->id,
+                'role'    => $role,
+            ]);
 
             return response()->json($result);
         } catch (\Exception $e) {
