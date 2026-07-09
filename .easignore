@@ -7,11 +7,11 @@
 # Ignore other files inside frontend
 frontend/*
 
-# Allow only Guro-Mobile
-!frontend/Guro-Mobile/
+# Allow only guro-mobile
+!frontend/guro-mobile/
 
-# Standard ignores inside Guro-Mobile
-frontend/Guro-Mobile/node_modules/
-frontend/Guro-Mobile/.expo/
-frontend/Guro-Mobile/dist/
-frontend/Guro-Mobile/web-build/
+# Standard ignores inside guro-mobile
+frontend/guro-mobile/node_modules/
+frontend/guro-mobile/.expo/
+frontend/guro-mobile/dist/
+frontend/guro-mobile/web-build/
