@@ -8,31 +8,31 @@
 ## Steps
 
 ### Step 1 — Auth token in API store calls `[P1]` ✅
-**File:** `frontend/Guro-Mobile/src/store/useAppStore.ts`  
+**File:** `frontend/guro-mobile/src/store/useAppStore.ts`  
 **Fix:** Added `Authorization: Bearer ${get().token}` to `fetchItemBankFromServer` and `syncProgressNow`. Both now send the stored Sanctum token on every classroom fetch and progress sync.
 
 ---
 
 ### Step 2 — Persist user preferences on cold start `[P1]` ✅
-**File:** `frontend/Guro-Mobile/src/store/useAppStore.ts`  
+**File:** `frontend/guro-mobile/src/store/useAppStore.ts`  
 **Fix:** Added `avatarEmoji`, `speechRate`, `soundEffectsEnabled`, `colorTheme` to the Zustand `partialize` whitelist. These four preferences now survive app restarts.
 
 ---
 
 ### Step 3 — Android hardware-back guard for all student tabs `[P2]` ✅
-**File:** `frontend/Guro-Mobile/src/navigation/StudentTabNavigator.tsx`  
+**File:** `frontend/guro-mobile/src/navigation/StudentTabNavigator.tsx`  
 **Fix:** Added `BackHandler.addEventListener('hardwareBackPress', () => true)` in a `useEffect` at the navigator level. All four tabs (Home, Lessons, Progress, Me) are now protected — hardware back no longer exits to the Login screen.
 
 ---
 
 ### Step 4 — `loginToCloud` clobbers `studentId` `[P2]` ✅
-**File:** `frontend/Guro-Mobile/src/store/useAppStore.ts`  
+**File:** `frontend/guro-mobile/src/store/useAppStore.ts`  
 **Fix:** Changed `studentId` assignment to `data.studentId ?? data.user.name.replace(...)`. Cloud login now uses the server-issued `studentId` when present, preserving existing parent access codes.
 
 ---
 
 ### Step 5 — TeacherSettingsScreen remaining Alert.alert calls `[P2]` ✅
-**File:** `frontend/Guro-Mobile/src/screens/TeacherSettingsScreen.tsx`  
+**File:** `frontend/guro-mobile/src/screens/TeacherSettingsScreen.tsx`  
 **Fix:**  
 - `showLogDetailsAlert` → converted to `toast.info(title — desc)` (non-destructive info).  
 - Logout confirm dialog → retained as `Alert.alert` (destructive confirmation, correct pattern).
@@ -46,13 +46,13 @@
 ---
 
 ### Step 7 — `handleSwitchClassroom` skips server verification `[P2]` ✅
-**File:** `frontend/Guro-Mobile/src/screens/TeacherSettingsScreen.tsx`  
+**File:** `frontend/guro-mobile/src/screens/TeacherSettingsScreen.tsx`  
 **Fix:** Before switching, calls `/api/classroom/verify`. If unreachable → `toast.warning`. If locked (expiresAt in the past) → `toast.warning`. Only switches and sets `classroomStatus('active')` on a valid, live classroom.
 
 ---
 
 ### Step 8 — Badge unlock uses best-attempt, not average `[P2]` ✅
-**File:** `frontend/Guro-Mobile/src/screens/ParentDashboard.tsx`  
+**File:** `frontend/guro-mobile/src/screens/ParentDashboard.tsx`  
 **Fix:** Replaced `Array.some(pct >= 80)` with average accuracy across all attempts for the topic: `avg = sum / count >= 80`. Parents now see badges that reflect sustained mastery, not a single lucky attempt.
 
 ---
