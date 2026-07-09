@@ -1,17 +1,13 @@
 # Ignore all root files and directories
 *
-
 # Allow the frontend directory
 !frontend/
-
 # Ignore other files inside frontend
 frontend/*
-
-# Allow only guro-mobile
-!frontend/guro-mobile/
-
-# Standard ignores inside guro-mobile
-frontend/guro-mobile/node_modules/
-frontend/guro-mobile/.expo/
-frontend/guro-mobile/dist/
-frontend/guro-mobile/web-build/
+# Allow only Guro-mobile
+!frontend/Guro-mobile/
+# Standard ignores inside Guro-mobile
+frontend/Guro-mobile/node_modules/
+frontend/Guro-mobile/.expo/
+frontend/Guro-mobile/dist/
+frontend/Guro-mobile/web-build/
