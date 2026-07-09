@@ -4,7 +4,7 @@
 
 ---
 
-## 📱 Tech Stack & Architecture
+## Tech Stack & Architecture
 
 ### 1. Routing & Navigation
 *   **Framework:** `@react-navigation/native` & `@react-navigation/native-stack`
@@ -23,7 +23,7 @@
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 GURO-App/
