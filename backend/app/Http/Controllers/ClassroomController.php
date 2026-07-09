@@ -20,7 +20,7 @@ class ClassroomController extends Controller
 
     private function getItemBankPath(): string
     {
-        return base_path('../frontend/Guro-Mobile/assets/item_bank.json');
+        return base_path('../frontend/guro-mobile/assets/item_bank.json');
     }
 
     // GET /api/item-bank
