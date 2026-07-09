@@ -136,6 +136,15 @@ interface AppState {
 
 export function resolveServerUrl(url: string): string {
   let cleaned = url.trim();
+  
+  // Strip trailing slashes
+  cleaned = cleaned.replace(/\/+$/, '');
+  
+  // Strip trailing /api so we don't end up with /api/api
+  if (cleaned.endsWith('/api')) {
+    cleaned = cleaned.substring(0, cleaned.length - 4);
+  }
+
   if (Platform.OS === 'android') {
     cleaned = cleaned.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
   }
