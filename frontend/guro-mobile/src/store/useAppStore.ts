@@ -23,9 +23,11 @@ export interface Question {
     en: string;
     fil: string;
   };
+  type?: 'multiple-choice' | 'fill-in-the-blank' | 'drag-drop-matching' | 'true-false' | 'swipe-card';
+  matchingPairs?: Record<string, string>;
 }
 
-export type AssessmentCategory = 'Multiple-Choice' | 'Paragraph Comprehension' | 'Figures of Speech';
+export type AssessmentCategory = 'Figures of Speech' | 'Reading/Paragraph Comprehension';
 export type DifficultyTier = 'Easy' | 'Average' | 'Difficult';
 
 export interface StudyContent {
@@ -76,6 +78,7 @@ interface AppState {
   studentProgress: ProgressEvent[];
   studentId: string;
   classroomId: string | null;
+  activeSubjects: string[];
   streakCount: number;
   bestStreak: number;
   unlockedBadges: string[];
@@ -119,6 +122,7 @@ interface AppState {
   setParentPin: (pin: string | null) => void;
   setStudentId: (id: string) => void;
   setClassroomId: (id: string | null) => void;
+  setActiveSubjects: (subjects: string[]) => void;
   setAppMode: (mode: 'online' | 'offline') => void;
   setGuestName: (name: string | null) => void;
   fetchItemBankFromServer: (serverUrl: string, classroomId: string) => Promise<boolean>;
@@ -136,6 +140,15 @@ interface AppState {
 
 export function resolveServerUrl(url: string): string {
   let cleaned = url.trim();
+  
+  // Strip trailing slashes
+  cleaned = cleaned.replace(/\/+$/, '');
+  
+  // Strip trailing /api so we don't end up with /api/api
+  if (cleaned.endsWith('/api')) {
+    cleaned = cleaned.substring(0, cleaned.length - 4);
+  }
+
   if (Platform.OS === 'android') {
     cleaned = cleaned.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
   }
@@ -151,6 +164,7 @@ export const useAppStore = create<AppState>()(
       studentProgress: [],
       studentId: 'GURO-STUDENT-LOCAL',
       classroomId: null,
+      activeSubjects: ['Mathematics', 'English'],
       streakCount: 0,
       bestStreak: 0,
       unlockedBadges: [],
@@ -311,7 +325,9 @@ export const useAppStore = create<AppState>()(
       loadItemBankSync: async () => {
         try {
           const localBank = await getLocalItemBank();
-          if (localBank && Object.keys(localBank).length > 0) {
+          // Check if local bank has study content (representing the new gamified asset). If not, force reload from JSON.
+          const hasAdjectiveStudy = localBank && localBank['English']?.['5']?.['Adjectives']?.studyContent;
+          if (localBank && Object.keys(localBank).length > 0 && hasAdjectiveStudy) {
             set({ itemBank: localBank });
           } else {
             const fallbackBank = itemBankData as ItemBank;
@@ -334,7 +350,13 @@ export const useAppStore = create<AppState>()(
       },
       setClassroomId: (id) => {
         set({ classroomId: id });
+        if (!id) {
+          set({ activeSubjects: ['Mathematics', 'English'] });
+        }
         get().addLog(id ? `Linked device to classroom invite code: ${id}` : 'Unlinked device from classroom invite code.');
+      },
+      setActiveSubjects: (subjects) => {
+        set({ activeSubjects: subjects });
       },
       fetchItemBankFromServer: async (serverUrl, id) => {
         const resolvedUrl = resolveServerUrl(serverUrl);
@@ -347,6 +369,20 @@ export const useAppStore = create<AppState>()(
             if (bank && Object.keys(bank).length > 0) {
               set({ itemBank: bank });
               await saveLocalItemBank(bank);
+              
+              // Also fetch active subjects offered by the teacher
+              try {
+                const subRes = await fetch(`${resolvedUrl}/api/classroom/active-subjects?classroomId=${id}`);
+                if (subRes.ok) {
+                  const subData = await subRes.json();
+                  if (subData.subjects && Array.isArray(subData.subjects)) {
+                    set({ activeSubjects: subData.subjects });
+                  }
+                }
+              } catch (subErr) {
+                console.error('[Store] Failed to fetch active subjects:', subErr);
+              }
+
               get().addLog(`Downloaded custom classroom item bank from server for: ${id}`);
               return true;
             }

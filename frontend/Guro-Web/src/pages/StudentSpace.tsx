@@ -22,6 +22,8 @@ interface QuestionItem {
         en: string;
         fil: string;
     };
+    type?: 'multiple-choice' | 'fill-in-the-blank' | 'drag-drop-matching' | 'true-false' | 'swipe-card' | 'fraction-builder';
+    matchingPairs?: Record<string, string>;
 }
 
 interface ItemBank {
@@ -240,6 +242,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     // Dynamic item bank loading
     const [itemBank, setItemBank] = useState<ItemBank>(FALLBACK_ITEM_BANK);
     const [itemBankLoading, setItemBankLoading] = useState(true);
+    const [activeSubjects, setActiveSubjects] = useState<string[]>(['Mathematics', 'English']);
 
     // Gamification & Rewards
     const [stars, setStars] = useState<number>(() => parseInt(localStorage.getItem('guro_student_stars') ?? '0', 10) || 0);
@@ -276,6 +279,12 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     useEffect(() => {
         localStorage.setItem('guro_student_subject', selectedSubject);
     }, [selectedSubject]);
+
+    useEffect(() => {
+        if (activeSubjects.length > 0 && !activeSubjects.includes(selectedSubject)) {
+            setSelectedSubject(activeSubjects[0] as any);
+        }
+    }, [activeSubjects, selectedSubject]);
 
     useEffect(() => {
         localStorage.setItem('guro_student_topic', selectedTopic);
@@ -475,8 +484,22 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                     setItemBank(FALLBACK_ITEM_BANK);
                 }
             }
+
+            // Also fetch active subjects offered by the teacher
+            if (activeCode) {
+                const subRes = await apiFetch(`/api/classroom/active-subjects?classroomId=${encodeURIComponent(activeCode)}`);
+                if (subRes.ok) {
+                    const subData = await subRes.json();
+                    if (subData.subjects && Array.isArray(subData.subjects)) {
+                        setActiveSubjects(subData.subjects);
+                    }
+                }
+            } else {
+                setActiveSubjects(['Mathematics', 'English']);
+            }
         } catch (error) {
             console.warn('Could not load online item bank, falling back to local static bank:', error);
+            setActiveSubjects(['Mathematics', 'English']);
         } finally {
             setItemBankLoading(false);
         }
@@ -629,12 +652,26 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                 const qList = categories[category];
                 if (Array.isArray(qList)) {
                     qList.forEach((q) => {
+                        let detectedType = q.type;
+                        if (!detectedType || detectedType === 'multiple-choice') {
+                            if (q.matchingPairs && Object.keys(q.matchingPairs).length > 0) {
+                                detectedType = 'drag-drop-matching';
+                            } else if (q.questionText.includes('[[blank]]') || q.questionText.includes('____') || q.questionText.includes('______')) {
+                                detectedType = 'fill-in-the-blank';
+                            } else if (q.options && q.options.length === 2 && ((q.options[0] === 'True' && q.options[1] === 'False') || (q.options[0] === 'False' && q.options[1] === 'True'))) {
+                                detectedType = 'true-false';
+                            } else {
+                                detectedType = 'multiple-choice';
+                            }
+                        }
                         allQuestions.push({
                             id: q.id,
                             questionText: q.questionText,
                             options: q.options,
                             correctAnswer: q.correctAnswer,
                             feedback: q.feedback,
+                            type: detectedType,
+                            matchingPairs: q.matchingPairs,
                         });
                     });
                 }
@@ -885,6 +922,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                 >
                     {step === 'dashboard' && (
                         <DashboardStep
+                            activeSubjects={activeSubjects}
                             userName={userName}
                             email={currentUser?.email}
                             selectedGrade={selectedGrade}
@@ -1105,8 +1143,11 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                     options={questions[currentQuestionIndex].options}
                     correctOption={questions[currentQuestionIndex].correctAnswer}
                     explanationEn={questions[currentQuestionIndex].feedback.en}
+                    type={questions[currentQuestionIndex].type}
+                    matchingPairs={questions[currentQuestionIndex].matchingPairs}
                     onBack={() => setStep('study')}
                     onNextOrFinish={handleQuestionNext}
+                    answeredHistory={answeredHistory}
                 />
             )}
 

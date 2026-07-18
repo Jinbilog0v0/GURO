@@ -133,15 +133,19 @@ export function TeacherLessonBuilderScreen() {
             summary: [],
           }
         : null,
-      questions: questions.map((q, i) => ({
-        id: `MANUAL-${q.id}`,
-        questionText: q.questionText.trim(),
-        options: q.options.filter((o) => o.trim()),
-        correctAnswer: q.options[q.correctIndex].trim(),
-        difficulty: 'Average',
-        category: 'Multiple-Choice',
-        feedback: { en: q.feedback.trim() || 'Review the lesson content and try again.', fil: '' },
-      })),
+       questions: questions.map((q, i) => {
+        const isFIB = q.questionText.includes('[[blank]]');
+        return {
+          id: `MANUAL-${q.id}`,
+          questionText: q.questionText.trim(),
+          options: q.options.filter((o) => o.trim()),
+          correctAnswer: q.options[q.correctIndex].trim(),
+          difficulty: 'Average',
+          category: 'Figures of Speech',
+          type: isFIB ? 'fill-in-the-blank' : 'multiple-choice',
+          feedback: { en: q.feedback.trim() || 'Review the lesson content and try again.', fil: '' },
+        };
+      }),
     };
 
     setSubmitting(true);

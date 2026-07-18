@@ -26,6 +26,7 @@ class ParentUserSeeder extends Seeder
                 'name' => 'Sample Parent',
                 'role' => 'parent',
                 'classroom_id' => null,
+                'parent_access_token' => 'SAMPLE-STUDENT', // Connected to Sample Student
             ]);
         }
     }

@@ -36,7 +36,9 @@ export async function getLocalDb(): Promise<SQLite.SQLiteDatabase> {
       options TEXT NOT NULL, -- JSON string array
       correct_answer TEXT NOT NULL,
       feedback_en TEXT NOT NULL,
-      feedback_fil TEXT NOT NULL
+      feedback_fil TEXT NOT NULL,
+      type TEXT DEFAULT 'multiple-choice',
+      matching_pairs TEXT -- JSON string (optional)
     );
 
     CREATE TABLE IF NOT EXISTS local_study_content (
@@ -57,6 +59,18 @@ export async function getLocalDb(): Promise<SQLite.SQLiteDatabase> {
     CREATE INDEX IF NOT EXISTS idx_student_progress_synced ON student_progress (synced);
     CREATE INDEX IF NOT EXISTS idx_local_item_bank_search ON local_item_bank (subject, grade_level, topic);
   `);
+
+  // Run dynamic migrations for gamified question columns if they don't exist
+  try {
+    await db.execAsync("ALTER TABLE local_item_bank ADD COLUMN type TEXT DEFAULT 'multiple-choice';");
+  } catch (e) {
+    // Column already exists
+  }
+  try {
+    await db.execAsync("ALTER TABLE local_item_bank ADD COLUMN matching_pairs TEXT;");
+  } catch (e) {
+    // Column already exists
+  }
 
   dbInstance = db;
   return db;
@@ -194,8 +208,8 @@ export async function saveLocalItemBank(itemBank: ItemBank): Promise<void> {
                 for (const q of questions) {
                   await db.runAsync(
                     `INSERT INTO local_item_bank 
-                     (id, subject, grade_level, topic, difficulty, category, question_text, options, correct_answer, feedback_en, feedback_fil)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                     (id, subject, grade_level, topic, difficulty, category, question_text, options, correct_answer, feedback_en, feedback_fil, type, matching_pairs)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                       q.id,
                       subject,
@@ -207,7 +221,9 @@ export async function saveLocalItemBank(itemBank: ItemBank): Promise<void> {
                       JSON.stringify(q.options),
                       q.correctAnswer,
                       q.feedback.en,
-                      q.feedback.fil
+                      q.feedback.fil,
+                      (q as any).type || 'multiple-choice',
+                      (q as any).matchingPairs ? JSON.stringify((q as any).matchingPairs) : null
                     ]
                   );
                 }
@@ -240,6 +256,8 @@ export async function getLocalItemBank(): Promise<ItemBank | null> {
     correct_answer: string;
     feedback_en: string;
     feedback_fil: string;
+    type: string | null;
+    matching_pairs: string | null;
   }>('SELECT * FROM local_item_bank');
 
   const studyRows = await db.getAllAsync<{
@@ -267,16 +285,33 @@ export async function getLocalItemBank(): Promise<ItemBank | null> {
     if (!topicEntry[difficulty]) topicEntry[difficulty] = {};
     if (!topicEntry[difficulty][category]) topicEntry[difficulty][category] = [];
 
+    const parsedOptions = JSON.parse(row.options) as string[];
+    const parsedMatchingPairs = row.matching_pairs ? JSON.parse(row.matching_pairs) : undefined;
+    let detectedType = row.type;
+    if (!detectedType || detectedType === 'multiple-choice') {
+      if (parsedMatchingPairs && Object.keys(parsedMatchingPairs).length > 0) {
+        detectedType = 'drag-drop-matching';
+      } else if (row.question_text.includes('[[blank]]') || row.question_text.includes('____') || row.question_text.includes('______')) {
+        detectedType = 'fill-in-the-blank';
+      } else if (parsedOptions && parsedOptions.length === 2 && ((parsedOptions[0] === 'True' && parsedOptions[1] === 'False') || (parsedOptions[0] === 'False' && parsedOptions[1] === 'True'))) {
+        detectedType = 'true-false';
+      } else {
+        detectedType = 'multiple-choice';
+      }
+    }
+
     const q: Question = {
       id: row.id,
       questionText: row.question_text,
-      options: JSON.parse(row.options),
+      options: parsedOptions,
       correctAnswer: row.correct_answer,
       feedback: {
         en: row.feedback_en,
         fil: row.feedback_fil,
       },
-    };
+      type: detectedType as any,
+      matchingPairs: parsedMatchingPairs,
+    } as any;
 
     topicEntry[difficulty][category].push(q);
   });

@@ -36,9 +36,9 @@ export const QuizOption: React.FC<QuizOptionProps> = ({
             type="button"
             disabled={isSubmitted}
             onClick={onSelect}
-            className={`w-full px-6 py-5 flex items-center justify-between text-left text-lg font-semibold rounded-2xl border transition-all duration-200 focus:outline-none relative cursor-pointer ${cardStyle}`}
+            className={`w-full px-5 py-4 flex items-center justify-between text-left text-sm sm:text-base font-semibold rounded-2xl border transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.97] active:translate-y-0 focus:outline-none relative cursor-pointer ${cardStyle}`}
         >
-            <span className="truncate pr-4">{text}</span>
+            <span className="pr-4 break-words whitespace-normal leading-relaxed">{text}</span>
 
             {/* Icon feedback conditionally rendered after execution */}
             {isSubmitted && isCorrectAnswer && (

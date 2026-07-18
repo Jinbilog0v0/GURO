@@ -273,4 +273,54 @@ class AuthController extends Controller
             'message' => 'Password reset successful. You can now login with your new password.',
         ]);
     }
+
+    // POST /api/parent/create-student
+    public function createStudent(Request $request)
+    {
+        if ($request->user()->role !== 'parent') {
+            return response()->json(['error' => 'Unauthorized. Only parents can create student accounts.'], 403);
+        }
+
+        $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email',
+            'password' => 'required|string|min:6',
+        ]);
+
+        $email = strtolower(trim($request->input('email')));
+        $password = $request->input('password');
+        $name = trim($request->input('name'));
+
+        if (User::where('email', $email)->exists()) {
+            return response()->json(['error' => 'Email already registered.'], 400);
+        }
+
+        $userId = 'USR-' . strtoupper(Str::random(7));
+        $passwordHash = $this->hashPassword($password);
+        $newStudentId = strtoupper(str_replace(' ', '-', $name)) . '-' . strtoupper(Str::random(4));
+
+        $student = User::create([
+            'user_id' => $userId,
+            'email' => $email,
+            'password_hash' => $passwordHash,
+            'name' => $name,
+            'role' => 'student',
+            'classroom_id' => null,
+            'parent_access_token' => Str::random(32),
+        ]);
+
+        $accessCode = substr(hash('sha256', $newStudentId . 'GURO_PARENT_SALT'), 0, 8);
+
+        return response()->json([
+            'success' => true,
+            'student' => [
+                'userId' => $student->user_id,
+                'email' => $student->email,
+                'name' => $student->name,
+                'role' => $student->role,
+                'studentId' => $newStudentId,
+                'accessCode' => $accessCode,
+            ],
+        ]);
+    }
 }

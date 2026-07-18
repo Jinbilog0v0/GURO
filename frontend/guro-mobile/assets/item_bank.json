@@ -117,6 +117,31 @@
         }
       },
       "Adjectives": {
+        "studyContent": {
+          "introduction": "Hello learner! Today, we will explore Adjectives. Adjectives are words that describe nouns or pronouns. They tell us more about people, places, animals, or things!",
+          "definitions": [
+            {
+              "term": "Adjective",
+              "definition": "A word that describes or modifies a noun or pronoun (e.g. size, color, shape).",
+              "examples": ["The big blue balloon", "She is a happy student."]
+            },
+            {
+              "term": "Comparative Adjective",
+              "definition": "Used to compare two things, usually ending in '-er' or using 'more'.",
+              "examples": ["This cat is faster than that one.", "Math is more exciting than reading."]
+            },
+            {
+              "term": "Superlative Adjective",
+              "definition": "Used to compare three or more things, showing the highest degree, usually ending in '-est' or using 'most'.",
+              "examples": ["Mount Everest is the highest mountain.", "He is the most helpful boy in class."]
+            }
+          ],
+          "summary": [
+            "Adjectives describe nouns (people, places, things).",
+            "Use comparative adjectives to compare 2 things (usually ending in -er).",
+            "Use superlative adjectives to compare 3 or more things (usually ending in -est)."
+          ]
+        },
         "Easy": {
           "Multiple-Choice": [
             {
@@ -167,6 +192,17 @@
                 "en": "\"Tallest\" is the superlative form of \"tall\" and is used when comparing three or more things, or when describing the upper limit of a quality among many, like all mountains in the world.",
                 "fil": "\"Tallest\" is the superlative form of \"tall\" and is used when comparing three or more things, or when describing the upper limit of a quality among many, like all mountains in the world."
               }
+            },
+            {
+              "id": "ENG-G5-ADJ-GF1",
+              "type": "fill-in-the-blank",
+              "questionText": "The energetic puppy chased the [[blank]] ball.",
+              "options": ["playful", "running", "sleeping", "heavy"],
+              "correctAnswer": "playful",
+              "feedback": {
+                "en": "'Playful' is an adjective that describes the noun 'ball' in a fun context.",
+                "fil": "'Playful' is an adjective that describes the noun 'ball' in a fun context."
+              }
             }
           ]
         },
@@ -200,6 +236,22 @@
               "feedback": {
                 "en": "An adjective modifies a noun or pronoun. \"Beautifully\" is an adverb because it describes how she sings (a verb). There is no word describing a noun or pronoun in this specific phrase.",
                 "fil": "An adjective modifies a noun or pronoun. \"Beautifully\" is an adverb because it describes how she sings (a verb). There is no word describing a noun or pronoun in this specific phrase."
+              }
+            },
+            {
+              "id": "ENG-G5-ADJ-GF2",
+              "type": "drag-drop-matching",
+              "questionText": "Match the adjectives with their opposite meanings (antonyms).",
+              "options": ["Hot", "Fast", "Big", "Cold", "Slow", "Small"],
+              "matchingPairs": {
+                "Hot": "Cold",
+                "Fast": "Slow",
+                "Big": "Small"
+              },
+              "correctAnswer": "Hot-Cold, Fast-Slow, Big-Small",
+              "feedback": {
+                "en": "The correct antonym pairs are Hot/Cold, Fast/Slow, and Big/Small.",
+                "fil": "The correct antonym pairs are Hot/Cold, Fast/Slow, and Big/Small."
               }
             }
           ]

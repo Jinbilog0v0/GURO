@@ -36,6 +36,18 @@ class TeacherUserSeeder extends Seeder
                 'classroom_id' => null,
             ]);
         }
+
+        $email2 = 'teacher@guro.dev';
+        if (!User::where('email', $email2)->exists()) {
+            User::create([
+                'user_id' => 'USR-TEACHER',
+                'email' => $email2,
+                'password_hash' => $this->hashPassword($password),
+                'name' => 'Sample Teacher',
+                'role' => 'teacher',
+                'classroom_id' => null,
+            ]);
+        }
     }
 
     /**

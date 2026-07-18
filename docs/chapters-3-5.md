@@ -117,11 +117,11 @@ Mobile Client                          Laravel API
 | FR-04 | The system shall support password recovery via a 6-digit OTP delivered to the user's email through the Resend API, valid for 15 minutes. |
 | FR-05 | The system shall allow teachers to create a classroom with a unique invite code (format: SUBJECT-GRADENUMBER-XXXXX) and an optional join expiry time. |
 | FR-06 | The system shall allow teachers to lock a classroom, immediately invalidating the join link. |
-| FR-07 | The system shall allow teachers and lesson-builders to generate structured lesson content (study material + categorized quiz questions) using the Google Gemini 2.5 Flash API from a topic name, grade level, subject, and optional PDF/text input. |
+| FR-07 | The system shall allow teachers and lesson-builders to generate structured lesson content (study material with an active definition-matching checkpoint + multiple-choice, fill-in-the-blank, and drag-drop-matching quiz questions) using the Google Gemini 2.5 Flash API from a topic name, grade level, subject, and optional PDF/text input. |
 | FR-08 | The system shall enforce per-role AI generation rate limits, configurable at runtime by developers through the `/api/dev/rate-limits` endpoint. |
 | FR-09 | The system shall allow students to join a classroom using the invite code, linking their progress logs to that classroom. |
 | FR-10 | The system shall deliver lessons to students (web and mobile) from a global or classroom-specific item bank. |
-| FR-11 | The system shall record student quiz results (score, total questions, subject, grade, topic, timestamp) as `ProgressEvent` objects. |
+| FR-11 | The system shall record student quiz results (score, total questions, subject, grade, topic, timestamp) from standard and gamified formats as `ProgressEvent` objects. |
 | FR-12 | The mobile client shall operate fully offline, storing quiz events locally and syncing to the server when connectivity is restored. |
 | FR-13 | The system shall compute and display student streaks, XP points, virtual stars, and unlocked badges based on quiz performance. |
 | FR-14 | The system shall allow parents to monitor their child's progress using a 6-digit parent access code derived from the student's ID. |
@@ -468,8 +468,8 @@ Teachers can create classrooms identified by a structured code (e.g., `ENG-G5-AB
 
 The AI generation pipeline accepts a subject, grade level, topic name, optional lesson text, and optional PDF (base64-encoded). The `GeminiService` constructs a structured prompt and calls the Google Gemini 2.5 Flash API (`generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`) with a JSON output schema enforcing:
 
-- `studyContent`: structured lesson body
-- `questions[]`: items categorized as Easy / Average / Difficult, with four types (multiple choice, fill-in-the-blank, true/false, enumeration)
+- `studyContent`: structured lesson body containing introduction, definitions, and an active definition-matching checkpoint
+- `questions[]`: items categorized as Easy / Average / Difficult, supporting standard multiple-choice, fill-in-the-blank (with word bubbles), and drag-drop-matching question formats
 
 A temperature of 0.2 ensures near-deterministic output. Per-role rate limits are enforced via the `ai_generation_logs` table and `rate_limit_configs`, queried at request time.
 

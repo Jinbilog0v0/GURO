@@ -155,7 +155,11 @@ describe('Student Lifecycle Integration Flow', () => {
     const nextBtn2 = studyRoot.root.findByProps({ label: 'Next →' });
     act(() => { nextBtn2.props.onPress(); });
 
-    // Slide 2 → Start Quiz
+    // Slide 2 → Next
+    const nextBtn3 = studyRoot.root.findByProps({ label: 'Next →' });
+    act(() => { nextBtn3.props.onPress(); });
+
+    // Slide 3 → Start Quiz
     const startQuizBtn = studyRoot.root.findByProps({ label: 'Start Quiz!' });
     act(() => { startQuizBtn.props.onPress(); });
 

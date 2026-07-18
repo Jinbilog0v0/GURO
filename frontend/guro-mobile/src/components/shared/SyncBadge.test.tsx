@@ -43,9 +43,16 @@ describe('SyncBadge Component', () => {
     await act(async () => {
       root = renderer.create(<SyncBadge />);
     });
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     const stringified = JSON.stringify(root.toJSON());
     expect(stringified).toContain('No Internet');
+
+    await act(async () => {
+      root.unmount();
+    });
   });
 
   test('should display pending count when online and pending items exist', async () => {
@@ -58,8 +65,15 @@ describe('SyncBadge Component', () => {
     await act(async () => {
       root = renderer.create(<SyncBadge />);
     });
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     const stringified = JSON.stringify(root.toJSON());
     expect(stringified).toContain('Saving… (1)');
+
+    await act(async () => {
+      root.unmount();
+    });
   });
 });

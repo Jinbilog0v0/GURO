@@ -29,7 +29,7 @@
 GURO-App/
 ├── backend/            # Laravel backend server (PostgreSQL sync and SQLite fallback)
 └── frontend/           # Frontend workspace
-    ├── Guro-Mobile/    # React Native client app (expo-sqlite local storage)
+    ├── guro-mobile/    # React Native client app (expo-sqlite local storage)
     └── Guro-Web/       # React/Vite web dashboard for teacher analytics
 ```
 
@@ -55,7 +55,7 @@ npm run dev
 
 ### 3. Start Expo mobile client
 ```bash
-cd frontend/Guro-Mobile
+cd frontend/guro-mobile
 npm install
 npx expo start
 ```
