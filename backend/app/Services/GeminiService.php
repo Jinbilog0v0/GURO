@@ -40,14 +40,39 @@ class GeminiService
             $prompt .= "Analyze the attached PDF document as the lesson content.\n\n";
         }
 
-        $prompt .= "Generate both studyContent and questions for:\n".
+        $prompt .= "Generate both studyContent (including a short, interactive 2-3 question refresherQuiz to test understanding) and questions for:\n".
                   '- Subject: '.$subject."\n".
                   '- Grade Level: '.$grade."\n".
                   '- Topic: '.$topic."\n\n".
                   "Ensure the studyContent uses simple, engaging, age-appropriate language for Grade {$grade} students.\n".
-                  "The questions should span Easy, Average, and Difficult tiers, and enforce feedback explaining the answer in English (both en and fil feedback fields must be populated with the English explanation).";
+                  "The questions should span Easy, Average, and Difficult tiers.\n".
+                  "Include a diverse mix of question types: 'multiple-choice', 'fill-in-the-blank' (using one '[[blank]]' inside the sentence), and 'drag-drop-matching' (matching antonyms, synonyms, or translations).\n".
+                  "Enforce feedback explaining the answer in English (both en and fil feedback fields must be populated with the English explanation).";
 
         $parts[] = ['text' => $prompt];
+
+        $categories = [];
+        $types = ['multiple-choice', 'fill-in-the-blank', 'drag-drop-matching', 'true-false'];
+
+        if (strtolower($subject) === 'mathematics') {
+            if ($grade === 4) {
+                $categories = ['Fractions'];
+                $types[] = 'fraction-builder';
+            } elseif ($grade === 5) {
+                $categories = ['Decimals'];
+            } else {
+                $categories = ['Algebraic Equations'];
+            }
+        } else { // English
+            if ($grade === 4) {
+                $categories = ['Figures of Speech'];
+                $types[] = 'swipe-card';
+            } elseif ($grade === 5) {
+                $categories = ['Reading/Paragraph Comprehension'];
+            } else {
+                $categories = ['Idiomatic Expressions'];
+            }
+        }
 
         $schema = [
             'type' => 'OBJECT',
@@ -87,26 +112,59 @@ class GeminiService
                             'type' => 'ARRAY',
                             'description' => 'A bulleted list of 3-5 key takeaway points of the lesson.',
                             'items' => ['type' => 'STRING']
+                        ],
+                        'refresherQuiz' => [
+                            'type' => 'ARRAY',
+                            'description' => 'A short list of 2-3 quick multiple-choice refresher questions to test the student immediately after reading.',
+                            'items' => [
+                                'type' => 'OBJECT',
+                                'properties' => [
+                                    'questionText' => [
+                                        'type' => 'STRING',
+                                        'description' => 'A simple, quick question about the concepts introduced.'
+                                    ],
+                                    'options' => [
+                                        'type' => 'ARRAY',
+                                        'description' => 'Exactly 3 simple, child-friendly options.',
+                                        'items' => ['type' => 'STRING']
+                                    ],
+                                    'correctAnswer' => [
+                                        'type' => 'STRING',
+                                        'description' => 'The correct option value, which must match exactly one of the options.'
+                                    ],
+                                    'explanation' => [
+                                        'type' => 'STRING',
+                                        'description' => 'A short, positive, child-friendly explanation for why this is correct.'
+                                    ]
+                                ],
+                                'required' => ['questionText', 'options', 'correctAnswer', 'explanation']
+                            ]
                         ]
                     ],
-                    'required' => ['introduction', 'definitions', 'summary']
+                    'required' => ['introduction', 'definitions', 'summary', 'refresherQuiz']
                 ],
                 'questions' => [
                     'type' => 'ARRAY',
-                    'description' => 'An array of generated assessment questions based on the lesson text.',
+                    'description' => 'An array of generated assessment questions based on the lesson text, including a mix of multiple-choice, fill-in-the-blank, and drag-drop-matching formats.',
                     'items' => [
                         'type' => 'OBJECT',
                         'properties' => [
                             'id' => ['type' => 'STRING', 'description' => 'Unique uppercase question ID, e.g., ENG-G5-ADJ-001.'],
                             'difficulty' => ['type' => 'STRING', 'enum' => ['Easy', 'Average', 'Difficult']],
-                            'category' => ['type' => 'STRING', 'enum' => ['Multiple-Choice', 'Paragraph Comprehension', 'Figures of Speech']],
-                            'questionText' => ['type' => 'STRING', 'description' => 'The text of the question or prompt.'],
+                            'category' => ['type' => 'STRING', 'enum' => $categories],
+                            'type' => ['type' => 'STRING', 'enum' => $types],
+                            'questionText' => ['type' => 'STRING', 'description' => 'The question text. For fill-in-the-blank, include exactly one "[[blank]]" placeholder.'],
                             'options' => [
                                 'type' => 'ARRAY',
                                 'items' => ['type' => 'STRING'],
-                                'description' => 'Exactly 4 multiple-choice options.',
+                                'description' => 'For multiple-choice and fill-in-the-blank, exactly 4 options. For true-false and swipe-card, exactly 2 options. For drag-drop-matching, list all matching items. For fraction-builder, exactly 2 items representing the target numerator at index 0 and denominator at index 1 (e.g. ["3", "4"]).',
                             ],
-                            'correctAnswer' => ['type' => 'STRING', 'description' => 'The option string representing the correct answer.'],
+                            'matchingPairs' => [
+                                'type' => 'OBJECT',
+                                'description' => 'Optional. For drag-drop-matching questions. Key-value pairs representing correct matches (e.g., {"Hot": "Cold", "Fast": "Slow"}).',
+                                'properties' => (object)[],
+                            ],
+                            'correctAnswer' => ['type' => 'STRING', 'description' => 'For multiple-choice and fill-in-the-blank, the correct option string. For drag-drop-matching, a string summary of correct pairs.'],
                             'feedback' => [
                                 'type' => 'OBJECT',
                                 'properties' => [
@@ -116,7 +174,7 @@ class GeminiService
                                 'required' => ['en', 'fil'],
                             ],
                         ],
-                        'required' => ['id', 'difficulty', 'category', 'questionText', 'options', 'correctAnswer', 'feedback'],
+                        'required' => ['id', 'difficulty', 'category', 'type', 'questionText', 'options', 'correctAnswer', 'feedback'],
                     ],
                 ],
             ],

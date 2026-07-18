@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, BookOpen, Trophy, TrendingUp, Hand, Lock, Play, Rocket, ShoppingBag, Sparkles, X, Clock, ArrowLeft, Flame, GraduationCap, Star } from 'lucide-react';
+import { Calculator, BookOpen, Trophy, TrendingUp, Hand, Lock, Play, Rocket, ShoppingBag, Sparkles, X, Clock, ArrowLeft, Flame, GraduationCap, Star, Inbox } from 'lucide-react';
 import { SubjectCard } from './SubjectCard';
 import { StatCard } from './StatCard';
 import { StudentProfile } from './StudentProfile';
@@ -49,6 +49,7 @@ interface DashboardStepProps {
     teacherName?: string;
     onJoinClassroom?: (code: string) => Promise<boolean>;
     onLeaveClassroom?: () => void;
+    activeSubjects?: string[];
 }
 
 const OUTFIT_OPTIONS = [
@@ -106,6 +107,7 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
     teacherName = '',
     onJoinClassroom,
     onLeaveClassroom,
+    activeSubjects = ['Mathematics', 'English'],
 }) => {
     const [isShopOpen, setIsShopOpen] = useState(false);
     const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
@@ -341,66 +343,149 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                     </div>
                 )}
 
-                {/* Subjects Dual Grid Layout */}
-                <div className="grid w-full grid-cols-1 md:grid-cols-2 gap-8 px-1">
-                    <SubjectCard
-                        title="Mathematics"
-                        description="Fractions, Decimals, Algebra & More"
-                        progress={mathProgress}
-                        topics={mathTopics}
-                        Icon={Calculator}
-                        variant="blue"
-                        onClick={isTimeLimitExceeded ? () => {} : () => onSelectSubject('Mathematics')}
-                    />
-                    <div className="relative">
-                        {isEnglishLocked && (
-                            <div className="absolute inset-0 z-10 rounded-[32px] bg-zinc-50/70 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 cursor-not-allowed border border-dashed border-zinc-200">
-                                <Lock className="size-8 text-zinc-400" />
-                                <span className="text-sm font-black text-zinc-500">English Locked</span>
-                            </div>
-                        )}
-                        <SubjectCard
-                            title="English"
-                            description="Grammar, Stories, Figures of Speech"
-                            progress={englishProgress}
-                            topics={englishTopics}
-                            Icon={BookOpen}
-                            variant="purple"
-                            onClick={isEnglishLocked || isTimeLimitExceeded ? () => {} : () => onSelectSubject('English')}
-                        />
-                    </div>
-                </div>
+                {/* Subjects & Stats Section */}
+                {activeSubjects.length === 1 ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 w-full px-1 items-stretch">
+                        {/* Left Column: The single subject card (3/5 width) */}
+                        <div className="lg:col-span-3 flex flex-col justify-stretch">
+                            {activeSubjects.includes('Mathematics') && (
+                                <SubjectCard
+                                    title="Mathematics"
+                                    description="Fractions, Decimals, Algebra & More"
+                                    progress={mathProgress}
+                                    topics={mathTopics}
+                                    Icon={Calculator}
+                                    variant="blue"
+                                    onClick={isTimeLimitExceeded ? () => {} : () => onSelectSubject('Mathematics')}
+                                />
+                            )}
+                            {activeSubjects.includes('English') && (
+                                <div className="relative h-full flex flex-col justify-stretch">
+                                    {isEnglishLocked && (
+                                        <div className="absolute inset-0 z-10 rounded-[32px] bg-zinc-50/70 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 cursor-not-allowed border border-dashed border-zinc-200">
+                                            <Lock className="size-8 text-zinc-400" />
+                                            <span className="text-sm font-black text-zinc-500">English Locked</span>
+                                        </div>
+                                    )}
+                                    <SubjectCard
+                                        title="English"
+                                        description="Grammar, Stories, Figures of Speech"
+                                        progress={englishProgress}
+                                        topics={englishTopics}
+                                        Icon={BookOpen}
+                                        variant="purple"
+                                        onClick={isEnglishLocked || isTimeLimitExceeded ? () => {} : () => onSelectSubject('English')}
+                                    />
+                                </div>
+                            )}
+                        </div>
 
-                {/* Statistical Cards Row */}
-                <div className="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 px-1">
-                    <StatCard
-                        value={stats.lessonsCompleted}
-                        labelEn="Lessons Completed"
-                        Icon={Trophy}
-                        iconColor="text-amber-500"
-                    />
-                    <StatCard
-                        value={`${stats.averageScore}%`}
-                        labelEn="Average Score"
-                        Icon={TrendingUp}
-                        iconColor="text-emerald-500"
-                    />
-                    <StatCard
-                        value={stats.streak}
-                        labelEn="Daily Streak"
-                        Icon={Flame}
-                        iconColor="text-orange-500"
-                    />
-                    <div className="glass-panel rounded-2xl p-5 border border-[var(--border-color)] flex items-center justify-between shadow-sm relative overflow-hidden group">
-                        <div className="flex flex-col">
-                            <span className="text-2xl font-black text-[var(--text-main)]">{stars}</span>
-                            <span className="text-xs font-extrabold text-[var(--text-muted)]">Stars Collected</span>
-                        </div>
-                        <div className="size-10 bg-amber-500/10 rounded-xl flex items-center justify-center shrink-0">
-                            <Star className="size-5 text-amber-500 fill-amber-500 animate-pulse shrink-0" />
+                        {/* Right Column: 2x2 Grid of the 4 stats boxes (2/5 width) */}
+                        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <StatCard
+                                value={stats.lessonsCompleted}
+                                labelEn="Lessons Completed"
+                                Icon={Trophy}
+                                iconColor="text-amber-500"
+                            />
+                            <StatCard
+                                value={`${stats.averageScore}%`}
+                                labelEn="Average Score"
+                                Icon={TrendingUp}
+                                iconColor="text-emerald-500"
+                            />
+                            <StatCard
+                                value={stats.streak}
+                                labelEn="Daily Streak"
+                                Icon={Flame}
+                                iconColor="text-orange-500"
+                            />
+                            <div className="glass-panel rounded-2xl p-5 border border-[var(--border-color)] flex items-center justify-between shadow-sm relative overflow-hidden group">
+                                <div className="flex flex-col">
+                                    <span className="text-2xl font-black text-[var(--text-main)]">{stars}</span>
+                                    <span className="text-xs font-extrabold text-[var(--text-muted)]">Stars Collected</span>
+                                </div>
+                                <div className="size-10 bg-amber-500/10 rounded-xl flex items-center justify-center shrink-0">
+                                    <Star className="size-5 text-amber-500 fill-amber-500 animate-pulse shrink-0" />
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                ) : (
+                    <>
+                        {/* Subjects Dual Grid Layout */}
+                        <div className="grid w-full grid-cols-1 md:grid-cols-2 gap-8 px-1">
+                            {activeSubjects.includes('Mathematics') && (
+                                <SubjectCard
+                                    title="Mathematics"
+                                    description="Fractions, Decimals, Algebra & More"
+                                    progress={mathProgress}
+                                    topics={mathTopics}
+                                    Icon={Calculator}
+                                    variant="blue"
+                                    onClick={isTimeLimitExceeded ? () => {} : () => onSelectSubject('Mathematics')}
+                                />
+                            )}
+                            {activeSubjects.includes('English') && (
+                                <div className="relative">
+                                    {isEnglishLocked && (
+                                        <div className="absolute inset-0 z-10 rounded-[32px] bg-zinc-50/70 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 cursor-not-allowed border border-dashed border-zinc-200">
+                                            <Lock className="size-8 text-zinc-400" />
+                                            <span className="text-sm font-black text-zinc-500">English Locked</span>
+                                        </div>
+                                    )}
+                                    <SubjectCard
+                                        title="English"
+                                        description="Grammar, Stories, Figures of Speech"
+                                        progress={englishProgress}
+                                        topics={englishTopics}
+                                        Icon={BookOpen}
+                                        variant="purple"
+                                        onClick={isEnglishLocked || isTimeLimitExceeded ? () => {} : () => onSelectSubject('English')}
+                                    />
+                                </div>
+                            )}
+                            {activeSubjects.length === 0 && (
+                                <div className="col-span-full w-full text-center py-10 bg-zinc-50 border border-dashed border-zinc-200 rounded-3xl">
+                                    <Inbox className="size-10 text-zinc-400 mx-auto mb-3" />
+                                    <p className="font-extrabold text-zinc-600">No Active Subjects</p>
+                                    <p className="text-zinc-500 text-xs mt-1">Your teacher has not activated any subjects for your grade level yet.</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Statistical Cards Row */}
+                        <div className="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 px-1">
+                            <StatCard
+                                value={stats.lessonsCompleted}
+                                labelEn="Lessons Completed"
+                                Icon={Trophy}
+                                iconColor="text-amber-500"
+                            />
+                            <StatCard
+                                value={`${stats.averageScore}%`}
+                                labelEn="Average Score"
+                                Icon={TrendingUp}
+                                iconColor="text-emerald-500"
+                            />
+                            <StatCard
+                                value={stats.streak}
+                                labelEn="Daily Streak"
+                                Icon={Flame}
+                                iconColor="text-orange-500"
+                            />
+                            <div className="glass-panel rounded-2xl p-5 border border-[var(--border-color)] flex items-center justify-between shadow-sm relative overflow-hidden group">
+                                <div className="flex flex-col">
+                                    <span className="text-2xl font-black text-[var(--text-main)]">{stars}</span>
+                                    <span className="text-xs font-extrabold text-[var(--text-muted)]">Stars Collected</span>
+                                </div>
+                                <div className="size-10 bg-amber-500/10 rounded-xl flex items-center justify-center shrink-0">
+                                    <Star className="size-5 text-amber-500 fill-amber-500 animate-pulse shrink-0" />
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
 
             </div>
 

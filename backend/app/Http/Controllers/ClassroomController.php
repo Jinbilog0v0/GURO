@@ -178,12 +178,27 @@ class ClassroomController extends Controller
                     $topicNode[$difficulty][$category] = [];
                 }
 
+                $type = $q['type'] ?? null;
+                if (!$type || $type === 'multiple-choice') {
+                    if (!empty($q['matchingPairs'])) {
+                        $type = 'drag-drop-matching';
+                    } elseif (str_contains($q['questionText'], '[[blank]]') || str_contains($q['questionText'], '____') || str_contains($q['questionText'], '______')) {
+                        $type = 'fill-in-the-blank';
+                    } elseif (isset($q['options']) && count($q['options']) === 2 && (($q['options'][0] === 'True' && $q['options'][1] === 'False') || ($q['options'][0] === 'False' && $q['options'][1] === 'True'))) {
+                        $type = 'true-false';
+                    } else {
+                        $type = 'multiple-choice';
+                    }
+                }
+
                 $topicNode[$difficulty][$category][] = [
                     'id' => $q['id'],
                     'questionText' => $q['questionText'],
                     'options' => $q['options'],
                     'correctAnswer' => $q['correctAnswer'],
                     'feedback' => $q['feedback'],
+                    'type' => $type,
+                    'matchingPairs' => $q['matchingPairs'] ?? null,
                 ];
             }
 
@@ -221,6 +236,40 @@ class ClassroomController extends Controller
             'customItemBank' => $classroom->custom_item_bank ?: (object) [],
             'expiresAt' => $classroom->expires_at ? $classroom->expires_at->toIso8601String() : null,
         ]);
+    }
+
+    // GET /api/classroom/active-subjects
+    public function getActiveSubjects(Request $request)
+    {
+        $classroomId = $request->query('classroomId');
+        if (!$classroomId) {
+            return response()->json(['subjects' => ['Mathematics', 'English']]);
+        }
+
+        $classroom = Classroom::where('classroom_id', strtoupper($classroomId))->first();
+        if (!$classroom) {
+            return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        $subjects = [];
+        if ($classroom->teacher_user_id) {
+            $subjects = Classroom::where('teacher_user_id', $classroom->teacher_user_id)
+                ->where('grade_level', $classroom->grade_level)
+                ->pluck('subject')
+                ->unique()
+                ->values()
+                ->toArray();
+        } else {
+            $subjects = Classroom::where('teacher_name', $classroom->teacher_name)
+                ->where('grade_level', $classroom->grade_level)
+                ->pluck('subject')
+                ->unique()
+                ->values()
+                ->toArray();
+        }
+
+        // Return the unique offered subjects, but make sure it only returns valid ones
+        return response()->json(['subjects' => $subjects]);
     }
 
     // POST /api/classroom/create
@@ -411,12 +460,27 @@ class ClassroomController extends Controller
                 $topicNode[$difficulty][$category] = [];
             }
 
+            $type = $q['type'] ?? null;
+            if (!$type || $type === 'multiple-choice') {
+                if (!empty($q['matchingPairs'])) {
+                    $type = 'drag-drop-matching';
+                } elseif (str_contains($q['questionText'], '[[blank]]') || str_contains($q['questionText'], '____') || str_contains($q['questionText'], '______')) {
+                    $type = 'fill-in-the-blank';
+                } elseif (isset($q['options']) && count($q['options']) === 2 && (($q['options'][0] === 'True' && $q['options'][1] === 'False') || ($q['options'][0] === 'False' && $q['options'][1] === 'True'))) {
+                    $type = 'true-false';
+                } else {
+                    $type = 'multiple-choice';
+                }
+            }
+
             $topicNode[$difficulty][$category][] = [
                 'id' => $q['id'],
                 'questionText' => $q['questionText'],
                 'options' => $q['options'],
                 'correctAnswer' => $q['correctAnswer'],
                 'feedback' => $q['feedback'],
+                'type' => $type,
+                'matchingPairs' => $q['matchingPairs'] ?? null,
             ];
         }
 

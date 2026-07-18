@@ -156,10 +156,10 @@ export const styles = StyleSheet.create({
   // Option text
   optionText: {
     fontFamily: Fonts.body,
-    fontSize: FontSizes.md,
+    fontSize: FontSizes.base,
     color: Colors.textMain,
     flex: 1,
-    lineHeight: FontSizes.md * 1.5,
+    lineHeight: FontSizes.base * 1.5,
   },
   optionTextSelected: {
     color: Colors.accentPrimary,

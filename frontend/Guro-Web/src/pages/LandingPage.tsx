@@ -439,10 +439,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
                             <div className="flex flex-col gap-1.5">
                                 <label className={labelCls}>Account role</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {(['teacher', 'student', 'parent'] as const).map((r) => {
+                                <div className="grid grid-cols-2 gap-2">
+                                    {(['teacher', 'parent'] as const).map((r) => {
                                         const active = roleSelection === r;
-                                        const IconComponent = r === 'teacher' ? School : r === 'student' ? GraduationCap : Users;
+                                        const IconComponent = r === 'teacher' ? School : Users;
                                         return (
                                             <button
                                                 key={r}

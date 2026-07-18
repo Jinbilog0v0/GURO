@@ -6,22 +6,26 @@
  * forcedBilingual toggle) is preserved unchanged.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Text,
   View,
   TouchableOpacity,
   ScrollView,
   Modal,
+  PanResponder,
+  Animated,
+  LayoutAnimation,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppStore, Question } from '../store/useAppStore';
 import { shuffle, MASTERY_THRESHOLD } from '../utils/engine';
-import { Trophy, Square, Volume2, Check, X, Inbox, ChevronDown, ChevronUp, WifiOff } from 'lucide-react-native';
+import { Trophy, Square, Volume2, Check, X, Inbox, ChevronDown, ChevronUp, WifiOff, ThumbsUp, ThumbsDown, Sparkles } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
+import Svg, { Path, Circle } from 'react-native-svg';
 
 // ── Design System ──────────────────────────────────────────────────────────────────────────────
 import { Colors } from '../theme/colors';
@@ -36,6 +40,30 @@ import { styles } from '../styles/AssessmentScreen.styles';
 // ─────────────────────────────────────────────────────────────────────────────
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Assessment'>;
+
+const getSlicePath = (index: number, total: number) => {
+  const radius = 95;
+  const center = 100;
+  const startAngle = (index * 360) / total - 90;
+  const endAngle = ((index + 1) * 360) / total - 90;
+  
+  const rad = (deg: number) => (deg * Math.PI) / 180;
+  const x1 = center + radius * Math.cos(rad(startAngle));
+  const y1 = center + radius * Math.sin(rad(startAngle));
+  const x2 = center + radius * Math.cos(rad(endAngle));
+  const y2 = center + radius * Math.sin(rad(endAngle));
+  
+  const largeArc = 0;
+  return `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+};
+
+const matchColors = [
+  { bg: 'rgba(6, 182, 212, 0.08)', border: '#06B6D4', text: '#0891B2', badgeBg: 'rgba(6, 182, 212, 0.15)' },
+  { bg: 'rgba(217, 70, 239, 0.08)', border: '#D946EF', text: '#C026D3', badgeBg: 'rgba(217, 70, 239, 0.15)' },
+  { bg: 'rgba(245, 158, 11, 0.08)', border: '#F59E0B', text: '#D97706', badgeBg: 'rgba(245, 158, 11, 0.15)' },
+  { bg: 'rgba(244, 63, 94, 0.08)', border: '#F43F5E', text: '#E11D48', badgeBg: 'rgba(244, 63, 94, 0.15)' },
+  { bg: 'rgba(16, 185, 129, 0.08)', border: '#10B981', text: '#059669', badgeBg: 'rgba(16, 185, 129, 0.15)' },
+];
 
 export function AssessmentScreen({ route, navigation }: Props) {
   const { subject, gradeLevel, topic } = route.params;
@@ -90,6 +118,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
   const [quizFinished, setQuizFinished] = useState(false);
   const [showAnswerReview, setShowAnswerReview] = useState(false);
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
+  const [shadedSlices, setShadedSlices] = useState<number[]>([]);
 
   interface AnswerLogEntry {
     questionText: string;
@@ -100,9 +129,158 @@ export function AssessmentScreen({ route, navigation }: Props) {
   }
   const [answerLog, setAnswerLog] = useState<AnswerLogEntry[]>([]);
 
+  const currentQuestion = (questions[currentIndex] || null) as any;
+
+  // ── Matching challenge states ────────────────────────────────────────────────
+  const [currentMatches, setCurrentMatches] = useState<Record<string, string>>({});
+  const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
+  const [rightOptionsShuffled, setRightOptionsShuffled] = useState<string[]>([]);
+  const [leftOptionsShuffled, setLeftOptionsShuffled] = useState<string[]>([]);
+
+  // ── Swipe Card pan states ──────────────────────────────────────────────────
+  const pan = useRef(new Animated.ValueXY()).current;
+  
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => {
+        const isSwipeType = questions[currentIndex]?.type === 'swipe-card';
+        return !isAnswered && !selectedOption && isSwipeType;
+      },
+      onMoveShouldSetPanResponder: () => {
+        const isSwipeType = questions[currentIndex]?.type === 'swipe-card';
+        return !isAnswered && !selectedOption && isSwipeType;
+      },
+      onPanResponderMove: (e, gestureState) => {
+        pan.setValue({ x: gestureState.dx, y: gestureState.dy });
+      },
+      onPanResponderRelease: (e, gestureState) => {
+        const threshold = 100;
+        const currentQ = questions[currentIndex];
+        if (gestureState.dx > threshold) {
+          const rightOpt = currentQ?.options?.[1];
+          if (rightOpt) {
+            handleOptionSelect(rightOpt);
+            Animated.timing(pan, {
+              toValue: { x: 320, y: gestureState.dy },
+              duration: 200,
+              useNativeDriver: false,
+            }).start();
+          } else {
+            Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+          }
+        } else if (gestureState.dx < -threshold) {
+          const leftOpt = currentQ?.options?.[0];
+          if (leftOpt) {
+            handleOptionSelect(leftOpt);
+            Animated.timing(pan, {
+              toValue: { x: -320, y: gestureState.dy },
+              duration: 200,
+              useNativeDriver: false,
+            }).start();
+          } else {
+            Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+          }
+        } else {
+          Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+        }
+      },
+    })
+  ).current;
+
+  const handleMobileButtonSelect = (option: string, isRight: boolean) => {
+    handleOptionSelect(option);
+    Animated.timing(pan, {
+      toValue: { x: isRight ? 320 : -320, y: 0 },
+      duration: 250,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  useEffect(() => {
+    setSelectedLeft(null);
+    setCurrentMatches({});
+    setShadedSlices([]);
+    pan.setValue({ x: 0, y: 0 });
+    if (currentQuestion && currentQuestion.type === 'drag-drop-matching' && currentQuestion.matchingPairs) {
+      const left = Object.keys(currentQuestion.matchingPairs);
+      const right = Object.values(currentQuestion.matchingPairs);
+      setLeftOptionsShuffled([...left].sort(() => Math.random() - 0.5));
+      setRightOptionsShuffled([...right].sort(() => Math.random() - 0.5));
+    }
+  }, [currentIndex, currentQuestion]);
+
+  const handleLeftSelect = (item: string) => {
+    if (isAnswered) return;
+    
+    // Tap a matched item to undo/remove it
+    if (currentMatches[item]) {
+      const nextMatches = { ...currentMatches };
+      delete nextMatches[item];
+      setCurrentMatches(nextMatches);
+      setSelectedOption(null);
+      return;
+    }
+
+    // Tap selected left item again to deselect
+    if (selectedLeft === item) {
+      setSelectedLeft(null);
+      return;
+    }
+
+    setSelectedLeft(item);
+  };
+
+  const checkAllMatched = (newMatches: Record<string, string>) => {
+    if (currentQuestion && currentQuestion.matchingPairs && Object.keys(newMatches).length === Object.keys(currentQuestion.matchingPairs).length) {
+      const isAllCorrect = Object.keys(currentQuestion.matchingPairs).every(
+        (key) => newMatches[key] === currentQuestion.matchingPairs?.[key]
+      );
+      if (isAllCorrect) {
+        setSelectedOption(currentQuestion.correctAnswer);
+      } else {
+        setSelectedOption('Incorrect Matching');
+      }
+    } else {
+      setSelectedOption(null);
+    }
+  };
+
+  const handleRightSelect = (item: string) => {
+    if (isAnswered) return;
+
+    const matchedLeftKey = Object.keys(currentMatches).find(key => currentMatches[key] === item);
+
+    if (!selectedLeft) {
+      // Tap matched item to undo/remove it
+      if (matchedLeftKey) {
+        const nextMatches = { ...currentMatches };
+        delete nextMatches[matchedLeftKey];
+        setCurrentMatches(nextMatches);
+        setSelectedOption(null);
+      }
+      return;
+    }
+
+    // If this right item is already matched to another left item, remove that old match first
+    const nextMatches = { ...currentMatches };
+    if (matchedLeftKey) {
+      delete nextMatches[matchedLeftKey];
+    }
+
+    nextMatches[selectedLeft] = item;
+    setCurrentMatches(nextMatches);
+    setSelectedLeft(null);
+    checkAllMatched(nextMatches);
+  };
+
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleOptionSelect = (option: string) => {
     if (isAnswered) return;
+    try {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
+    } catch (e) {
+      console.warn(e);
+    }
     setSelectedOption(option);
   };
 
@@ -144,7 +322,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
     );
   }
 
-  const currentQuestion = questions[currentIndex];
+
   const progress = (currentIndex + (isAnswered ? 1 : 0)) / questions.length;
   const isLastQuestion = currentIndex + 1 === questions.length;
   const isCorrect = selectedOption === currentQuestion.correctAnswer;
@@ -159,7 +337,10 @@ export function AssessmentScreen({ route, navigation }: Props) {
       const optionsText = currentQuestion.options
         .map((opt, idx) => `Option ${String.fromCharCode(65 + idx)}: ${opt}`)
         .join('. ');
-      const textToSpeak = `${currentQuestion.questionText}. ${optionsText}`.replace(/_+/g, ' blank ');
+      const cleanQuestionText = currentQuestion.questionText
+        .replace(/\[\[blank\]\]/g, ' blank ')
+        .replace(/_+/g, ' blank ');
+      const textToSpeak = `${cleanQuestionText}. ${optionsText}`;
       const rate = useAppStore.getState().speechRate || 1.0;
       const guide = useAppStore.getState().voiceGuideTheme || 'astronaut';
       let pitch = 1.0;
@@ -564,32 +745,451 @@ export function AssessmentScreen({ route, navigation }: Props) {
               </Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.questionText}>{currentQuestion.questionText}</Text>
+          {currentQuestion.type === 'fill-in-the-blank' && (currentQuestion.questionText.includes('[[blank]]') || currentQuestion.questionText.includes('______') || currentQuestion.questionText.includes('____')) ? (
+            (() => {
+              const delimiter = currentQuestion.questionText.includes('[[blank]]')
+                ? '[[blank]]'
+                : (currentQuestion.questionText.includes('______') ? '______' : '____');
+              const parts = currentQuestion.questionText.split(delimiter);
+              return (
+                <Text style={styles.questionText}>
+                  {parts[0]}
+                  <Text style={{ textDecorationLine: 'underline', color: Colors.accentPrimary, fontFamily: Fonts.display }}>
+                    {selectedOption ? ` ${selectedOption} ` : ' ______ '}
+                  </Text>
+                  {parts[1]}
+                </Text>
+              );
+            })()
+          ) : (
+            <Text style={styles.questionText}>{currentQuestion.questionText}</Text>
+          )}
         </GlassCard>
 
         {/* ── Options ── */}
         <View style={styles.optionsContainer}>
-          {currentQuestion.options.map((option, idx) => {
-            const optionStyle = getOptionStyle(option);
-            return (
-              <TouchableOpacity
-                key={`${currentQuestion.id}-opt-${idx}`}
-                onPress={() => handleOptionSelect(option)}
-                activeOpacity={isAnswered ? 1 : 0.75}
-                style={optionStyle.container}
-                accessibilityRole="radio"
-                accessibilityLabel={`Option ${idx + 1}: ${option}`}
-                accessibilityState={{ selected: selectedOption === option }}
-              >
-                <View style={styles.optionLetterBadge}>
-                  <Text style={styles.optionLetter}>
-                    {String.fromCharCode(65 + idx)}
+          {currentQuestion.type === 'drag-drop-matching' ? (
+            <View style={{ marginVertical: 10, width: '100%' }}>
+              <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.sm, color: Colors.textMuted, textAlign: 'center', marginBottom: 12 }}>
+                Tap a word on the left, then tap its match on the right! (Tap a matched word to undo)
+              </Text>
+              
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 16 }}>
+                {/* Left Column (Terms) */}
+                <View style={{ flex: 1, gap: 10 }}>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.sm, color: Colors.accentPrimary, textAlign: 'center', marginBottom: 4 }}>Term</Text>
+                  {leftOptionsShuffled
+                    .filter((item) => !currentMatches[item])
+                    .map((item, idx) => {
+                      const isSelected = selectedLeft === item;
+                      return (
+                        <TouchableOpacity
+                          key={`left-${idx}`}
+                          disabled={isAnswered}
+                          onPress={() => handleLeftSelect(item)}
+                          style={{
+                            backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.15)' : Colors.bgCard,
+                            borderWidth: 2,
+                            borderBottomWidth: 5,
+                            borderColor: isSelected ? Colors.accentPrimary : Colors.border,
+                            borderRadius: Radius.md || 12,
+                            paddingVertical: 12,
+                            paddingHorizontal: 10,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: 1,
+                          }}
+                        >
+                          <Text style={{ textAlign: 'center', fontFamily: Fonts.bodyBold, fontSize: FontSizes.base, color: isSelected ? Colors.accentPrimary : Colors.textMain }}>
+                            {item}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                </View>
+
+                {/* Right Column (Matches) */}
+                <View style={{ flex: 1, gap: 10 }}>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.sm, color: Colors.accentSecondary, textAlign: 'center', marginBottom: 4 }}>Match</Text>
+                  {rightOptionsShuffled
+                    .filter((item) => !Object.values(currentMatches).includes(item))
+                    .map((item, idx) => {
+                      let btnColor = Colors.bgCard;
+                      let borderColor = Colors.border;
+                      let textColor = Colors.textMain;
+
+                      if (!selectedLeft) {
+                        btnColor = Colors.bgCard;
+                        borderColor = Colors.border;
+                        textColor = Colors.textMuted;
+                      } else {
+                        btnColor = Colors.bgCard;
+                        borderColor = Colors.border;
+                        textColor = Colors.textMain;
+                      }
+
+                      return (
+                        <TouchableOpacity
+                          key={`right-${idx}`}
+                          disabled={isAnswered}
+                          onPress={() => handleRightSelect(item)}
+                          style={{
+                            backgroundColor: btnColor,
+                            borderWidth: 2,
+                            borderBottomWidth: 5,
+                            borderColor: borderColor,
+                            borderRadius: Radius.md || 12,
+                            paddingVertical: 12,
+                            paddingHorizontal: 10,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: !selectedLeft ? 0.6 : 1,
+                          }}
+                        >
+                          <Text style={{ textAlign: 'center', fontFamily: Fonts.bodyBold, fontSize: FontSizes.base, color: textColor }}>
+                            {item}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                </View>
+              </View>
+
+              {/* Display current matches */}
+              {Object.keys(currentMatches).length > 0 && (
+                <View style={{ marginTop: 24, backgroundColor: 'rgba(255, 255, 255, 0.02)', padding: 14, borderRadius: Radius.md || 12, borderWidth: 1, borderColor: Colors.border }}>
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: 8, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Your Matches
+                  </Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                    {Object.keys(currentMatches).map((key, idx) => {
+                      const config = matchColors[idx % matchColors.length];
+                      return (
+                        <View 
+                          key={idx} 
+                          style={{ 
+                            flexDirection: 'row', 
+                            alignItems: 'center', 
+                            backgroundColor: config.bg, 
+                            borderWidth: 2, 
+                            borderBottomWidth: 4,
+                            borderColor: config.border, 
+                            borderRadius: Radius.md || 12, 
+                            paddingHorizontal: 10, 
+                            paddingVertical: 6,
+                            gap: 6
+                          }}
+                        >
+                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: config.text }}>
+                            {key} ↔ {currentMatches[key]}
+                          </Text>
+                          {!isAnswered && (
+                            <TouchableOpacity
+                              onPress={() => {
+                                const nextMatches = { ...currentMatches };
+                                delete nextMatches[key];
+                                setCurrentMatches(nextMatches);
+                                setSelectedOption(null);
+                              }}
+                              style={{ marginLeft: 4 }}
+                            >
+                              <X size={14} color={Colors.danger} />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
+            </View>
+          ) : currentQuestion.type === 'true-false' ? (
+            <View style={{ flexDirection: 'row', gap: 12, width: '100%', marginVertical: 10 }}>
+              {['True', 'False'].map((option, idx) => {
+                const isSelected = selectedOption === option;
+                const isCorrect = option === currentQuestion.correctAnswer;
+                const isWrong = isSelected && selectedOption !== currentQuestion.correctAnswer;
+
+                let btnColor = Colors.bgCard;
+                let borderColor = Colors.border;
+                let textColor = Colors.textMain;
+
+                if (isAnswered) {
+                  if (isCorrect) {
+                    btnColor = 'rgba(16, 185, 129, 0.08)';
+                    borderColor = Colors.success;
+                    textColor = Colors.success;
+                  } else if (isWrong) {
+                    btnColor = 'rgba(239, 68, 68, 0.08)';
+                    borderColor = Colors.danger;
+                    textColor = Colors.danger;
+                  } else {
+                    btnColor = Colors.bgCard;
+                    borderColor = Colors.border;
+                    textColor = Colors.textMuted;
+                  }
+                } else if (isSelected) {
+                  if (option === 'True') {
+                    btnColor = 'rgba(16, 185, 129, 0.12)';
+                    borderColor = '#10B981';
+                    textColor = '#10B981';
+                  } else {
+                    btnColor = 'rgba(244, 63, 94, 0.12)';
+                    borderColor = '#F43F5E';
+                    textColor = '#F43F5E';
+                  }
+                }
+
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    disabled={isAnswered}
+                    onPress={() => handleOptionSelect(option)}
+                    activeOpacity={isAnswered ? 1 : 0.75}
+                    style={{
+                      flex: 1,
+                      backgroundColor: btnColor,
+                      borderWidth: 2,
+                      borderBottomWidth: 5,
+                      borderColor: borderColor,
+                      borderRadius: Radius.md || 12,
+                      paddingVertical: 20,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <View style={{ height: 28, justifyContent: 'center', alignItems: 'center' }}>
+                      {option === 'True' ? (
+                        <ThumbsUp size={28} color={textColor} />
+                      ) : (
+                        <ThumbsDown size={28} color={textColor} />
+                      )}
+                    </View>
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.base, color: textColor }}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : currentQuestion.type === 'swipe-card' ? (
+            <View style={{ alignItems: 'center', width: '100%', marginVertical: 10 }}>
+              {/* Category Indicators */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 20 }}>
+                <View style={{
+                  padding: 10,
+                  borderRadius: 12,
+                  borderWidth: 2,
+                  borderColor: Colors.border,
+                  backgroundColor: Colors.bgCard,
+                  alignItems: 'center',
+                  minWidth: 110,
+                }}>
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.textMuted, textTransform: 'uppercase' }}>◀ Swipe Left</Text>
+                  <Text style={{ fontFamily: Fonts.heading, fontSize: FontSizes.base, color: Colors.danger, marginTop: 4 }}>
+                    {currentQuestion.options[0]}
                   </Text>
                 </View>
-                <Text style={optionStyle.text}>{option}</Text>
-              </TouchableOpacity>
-            );
-          })}
+                
+                <View style={{
+                  padding: 10,
+                  borderRadius: 12,
+                  borderWidth: 2,
+                  borderColor: Colors.border,
+                  backgroundColor: Colors.bgCard,
+                  alignItems: 'center',
+                  minWidth: 110,
+                }}>
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.textMuted, textTransform: 'uppercase' }}>Swipe Right ▶</Text>
+                  <Text style={{ fontFamily: Fonts.heading, fontSize: FontSizes.base, color: Colors.success, marginTop: 4 }}>
+                    {currentQuestion.options[1]}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Swipe Deck Card */}
+              <View style={{ height: 230, width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+                <Animated.View
+                  {...panResponder.panHandlers}
+                  style={{
+                    transform: [
+                      { translateX: pan.x },
+                      { translateY: pan.y },
+                      {
+                        rotate: pan.x.interpolate({
+                          inputRange: [-200, 0, 200],
+                          outputRange: ['-12deg', '0deg', '12deg'],
+                        })
+                      }
+                    ],
+                    width: 220,
+                    height: 220,
+                    borderRadius: 24,
+                    borderWidth: 4,
+                    borderColor: isAnswered 
+                      ? selectedOption === currentQuestion.correctAnswer 
+                        ? Colors.success 
+                        : Colors.danger
+                      : Colors.border,
+                    backgroundColor: Colors.bgCard,
+                    padding: 20,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    elevation: 5,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 6,
+                  }}
+                >
+                  <Sparkles size={32} color={Colors.accentPrimary} style={{ marginBottom: 12, alignSelf: 'center' }} />
+                  <Text style={{
+                    fontFamily: Fonts.bodyBold,
+                    fontSize: FontSizes.base,
+                    color: Colors.textMain,
+                    textAlign: 'center',
+                    lineHeight: 22,
+                  }}>
+                    {currentQuestion.questionText}
+                  </Text>
+                </Animated.View>
+              </View>
+
+              {/* Manual Selection Action Buttons */}
+              {!isAnswered && (
+                <View style={{ flexDirection: 'row', gap: 40, marginTop: 25 }}>
+                  <TouchableOpacity
+                    onPress={() => handleMobileButtonSelect(currentQuestion.options[0], false)}
+                    style={{
+                      width: 55,
+                      height: 55,
+                      borderRadius: 28,
+                      borderWidth: 2,
+                      borderColor: '#FDA4AF',
+                      backgroundColor: '#FFE4E6',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      elevation: 2,
+                    }}
+                  >
+                    <X size={20} color={Colors.danger} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleMobileButtonSelect(currentQuestion.options[1], true)}
+                    style={{
+                      width: 55,
+                      height: 55,
+                      borderRadius: 28,
+                      borderWidth: 2,
+                      borderColor: '#A7F3D0',
+                      backgroundColor: '#D1FAE5',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      elevation: 2,
+                    }}
+                  >
+                    <Check size={20} color={Colors.success} />
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          ) : currentQuestion.type === 'fraction-builder' ? (
+            <View style={{ alignItems: 'center', width: '100%', marginVertical: 15, gap: 20 }}>
+              <GlassCard style={{ padding: 20, alignItems: 'center', justifyContent: 'center', width: 240, height: 240, borderRadius: 32, borderWidth: 1, borderColor: Colors.border }}>
+                <Svg width="200" height="200" viewBox="0 0 200 200">
+                  {Array.from({ length: parseInt(currentQuestion.options[1] || '4') }).map((_, idx) => {
+                    const denominator = parseInt(currentQuestion.options[1] || '4');
+                    const isShaded = shadedSlices.includes(idx);
+                    const path = getSlicePath(idx, denominator);
+                    
+                    let fillColor = '#FFFFFF';
+                    let strokeColor = '#E2E8F0';
+                    
+                    if (isAnswered) {
+                      const correctNum = parseInt(currentQuestion.options[0] || '0');
+                      const selectedNum = shadedSlices.length;
+                      if (selectedNum === correctNum) {
+                        fillColor = isShaded ? '#10B981' : 'rgba(16, 185, 129, 0.08)';
+                        strokeColor = '#10B981';
+                      } else {
+                        fillColor = isShaded ? '#EF4444' : 'rgba(239, 68, 68, 0.08)';
+                        strokeColor = '#EF4444';
+                      }
+                    } else if (isShaded) {
+                      fillColor = '#F59E0B';
+                      strokeColor = '#D97706';
+                    }
+
+                    return (
+                      <Path
+                        key={idx}
+                        d={path}
+                        fill={fillColor}
+                        stroke={strokeColor}
+                        strokeWidth="2.5"
+                        onPress={() => {
+                          if (isAnswered) return;
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                          
+                          const nextShaded = isShaded 
+                            ? shadedSlices.filter(i => i !== idx)
+                            : [...shadedSlices, idx];
+                          
+                          try {
+                            LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
+                          } catch (e) {}
+                          setShadedSlices(nextShaded);
+                          setSelectedOption(nextShaded.length.toString());
+                        }}
+                      />
+                    );
+                  })}
+                  <Circle cx="100" cy="100" r="30" fill={Colors.bgCard} stroke={Colors.border} strokeWidth="2" />
+                </Svg>
+              </GlassCard>
+
+              {/* Numerical label */}
+              <View style={{ alignItems: 'center', gap: 4 }}>
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>
+                  Shaded Fraction
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: 28, color: shadedSlices.length > 0 ? '#F59E0B' : Colors.textMain }}>
+                    {shadedSlices.length}
+                  </Text>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: 28, color: Colors.textMuted }}>
+                    /
+                  </Text>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: 28, color: Colors.textMain }}>
+                    {currentQuestion.options[1] || '4'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ) : (
+            currentQuestion.options.map((option, idx) => {
+              const optionStyle = getOptionStyle(option);
+              return (
+                <TouchableOpacity
+                  key={`${currentQuestion.id}-opt-${idx}`}
+                  onPress={() => handleOptionSelect(option)}
+                  activeOpacity={isAnswered ? 1 : 0.75}
+                  style={optionStyle.container}
+                  accessibilityRole="radio"
+                  accessibilityLabel={`Option ${idx + 1}: ${option}`}
+                  accessibilityState={{ selected: selectedOption === option }}
+                >
+                  <View style={styles.optionLetterBadge}>
+                    <Text style={styles.optionLetter}>
+                      {String.fromCharCode(65 + idx)}
+                    </Text>
+                  </View>
+                  <Text style={optionStyle.text}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })
+          )}
         </View>
 
         {/* ── Feedback card (shown after submit) ── */}

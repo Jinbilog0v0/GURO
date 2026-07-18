@@ -30,6 +30,33 @@ interface TeacherSpaceProps {
   setActiveSubTab?: (tab: 'analytics' | 'manual-lesson' | 'classroom-pairing') => void;
 }
 
+const getCategoriesAndTypes = (currentSubject: string, currentGrade: string | number) => {
+  const gNum = Number(currentGrade);
+  let categories: string[] = [];
+  let types = ['multiple-choice', 'fill-in-the-blank', 'drag-drop-matching', 'true-false'];
+
+  if (currentSubject.toLowerCase() === 'mathematics') {
+    if (gNum === 4) {
+      categories = ['Fractions'];
+      types.push('fraction-builder');
+    } else if (gNum === 5) {
+      categories = ['Decimals'];
+    } else {
+      categories = ['Algebraic Equations'];
+    }
+  } else { // English
+    if (gNum === 4) {
+      categories = ['Figures of Speech'];
+      types.push('swipe-card');
+    } else if (gNum === 5) {
+      categories = ['Reading/Paragraph Comprehension'];
+    } else {
+      categories = ['Idiomatic Expressions'];
+    }
+  }
+  return { categories, types };
+};
+
 export function TeacherSpace({ 
   progressLogs, 
   lastUpdatedCell, 
@@ -792,15 +819,81 @@ export function TeacherSpace({
                       </div>
                       <div className="form-group" style={{ margin: 0, width: '180px' }}>
                         <label style={{ fontSize: '10px' }}>Category</label>
-                        <select
-                          value={q.category}
-                          onChange={(e) => updateQuestionField(idx, 'category', e.target.value)}
-                          style={{ padding: '6px 10px', fontSize: '12px', marginTop: '4px' }}
-                        >
-                          <option value="Multiple-Choice">Multiple-Choice</option>
-                          <option value="Paragraph Comprehension">Paragraph Comprehension</option>
-                          <option value="Figures of Speech">Figures of Speech</option>
-                        </select>
+                        {(() => {
+                          const { categories } = getCategoriesAndTypes(editingLesson?.subject || 'English', editingLesson?.grade || 5);
+                          return (
+                            <select
+                              value={q.category}
+                              onChange={(e) => updateQuestionField(idx, 'category', e.target.value)}
+                              style={{ padding: '6px 10px', fontSize: '12px', marginTop: '4px' }}
+                            >
+                              {categories.map((cat) => (
+                                <option key={cat} value={cat}>{cat}</option>
+                              ))}
+                            </select>
+                          );
+                        })()}
+                      </div>
+                      <div className="form-group" style={{ margin: 0, width: '180px' }}>
+                        <label style={{ fontSize: '10px' }}>Format / Type</label>
+                        {(() => {
+                          const { categories, types } = getCategoriesAndTypes(editingLesson?.subject || 'English', editingLesson?.grade || 5);
+                          return (
+                            <select
+                              value={q.type || 'multiple-choice'}
+                              onChange={(e) => {
+                                const newType = e.target.value as any;
+                                setEditingLesson(prev => {
+                                  if (!prev) return null;
+                                  const questions = [...prev.questions];
+                                  const currentCat = questions[idx].category;
+                                  const safeCategory = categories.includes(currentCat) ? currentCat : (categories[0] || 'Figures of Speech');
+                                  questions[idx] = { 
+                                    ...questions[idx], 
+                                    type: newType,
+                                    category: safeCategory,
+                                    matchingPairs: newType === 'drag-drop-matching' ? (questions[idx].matchingPairs || { "Example Key": "Example Value" }) : undefined
+                                  };
+                                  if (newType === 'drag-drop-matching') {
+                                    const pairs = questions[idx].matchingPairs || {};
+                                    questions[idx].options = [...Object.keys(pairs), ...Object.values(pairs)];
+                                    questions[idx].correctAnswer = Object.entries(pairs).map(([k, v]) => `${k}-${v}`).join(', ');
+                                  } else if (newType === 'true-false') {
+                                    questions[idx].options = ['True', 'False'];
+                                    questions[idx].correctAnswer = 'True';
+                                  } else if (newType === 'swipe-card') {
+                                    questions[idx].options = ['Literal', 'Metaphor'];
+                                    questions[idx].correctAnswer = 'Literal';
+                                  } else if (newType === 'fraction-builder') {
+                                    questions[idx].options = ['2', '4'];
+                                    questions[idx].correctAnswer = '2';
+                                  } else {
+                                    questions[idx].options = ['', '', '', ''];
+                                    questions[idx].correctAnswer = '';
+                                  }
+                                  return { ...prev, questions };
+                                });
+                              }}
+                              style={{ padding: '6px 10px', fontSize: '12px', marginTop: '4px' }}
+                            >
+                              {types.map((t) => {
+                                const typeLabels: Record<string, string> = {
+                                  'multiple-choice': 'Multiple Choice',
+                                  'fill-in-the-blank': 'Fill-in-the-Blank',
+                                  'drag-drop-matching': 'Drag & Drop Matching',
+                                  'true-false': 'True or False',
+                                  'swipe-card': 'Swipe Card',
+                                  'fraction-builder': 'Fraction Builder',
+                                };
+                                return (
+                                  <option key={t} value={t}>
+                                    {typeLabels[t] || t}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          );
+                        })()}
                       </div>
                       <div className="form-group" style={{ margin: 0, flex: 1, minWidth: '150px' }}>
                         <label style={{ fontSize: '10px' }}>Question ID</label>
@@ -823,34 +916,300 @@ export function TeacherSpace({
                       />
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                      <label style={{ fontSize: '10px' }}>Options (Check correct answer)</label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
-                        {q.options.map((opt: string, optIdx: number) => {
-                          const isCorrect = opt === q.correctAnswer;
-                          return (
-                            <div key={optIdx} className="flex items-center gap-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-2" style={{ padding: '2px 8px' }}>
-                              <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', backgroundColor: 'var(--border-color)', width: '18px', height: '18px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                {String.fromCharCode(65 + optIdx)}
-                              </span>
+                    {(!q.type || q.type === 'multiple-choice' || q.type === 'fill-in-the-blank') && (
+                      <div className="flex flex-col gap-2">
+                        <label style={{ fontSize: '10px' }}>
+                          Options (Check correct answer)
+                          {q.type === 'fill-in-the-blank' && (
+                            <span style={{ fontSize: '10px', color: '#38BDF8', marginLeft: '6px', fontWeight: 'bold' }}>
+                              (💡 Prompt must contain exactly one [[blank]] placeholder)
+                            </span>
+                          )}
+                        </label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
+                          {q.options.map((opt: string, optIdx: number) => {
+                            const isCorrect = opt === q.correctAnswer;
+                            return (
+                              <div key={optIdx} className="flex items-center gap-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg px-2" style={{ padding: '2px 8px' }}>
+                                <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', backgroundColor: 'var(--border-color)', width: '18px', height: '18px', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  {String.fromCharCode(65 + optIdx)}
+                                </span>
+                                <input
+                                  type="text"
+                                  value={opt}
+                                  onChange={(e) => updateQuestionOption(idx, optIdx, e.target.value)}
+                                  style={{ flex: 1, background: 'transparent', border: 'none', padding: '6px 4px', fontSize: '12px' }}
+                                />
+                                <input
+                                  type="radio"
+                                  name={`correct-edit-${idx}`}
+                                  checked={isCorrect}
+                                  onChange={() => setCorrectOption(idx, optIdx)}
+                                  style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {q.type === 'true-false' && (
+                      <div className="flex flex-col gap-2 mt-2">
+                        <label style={{ fontSize: '10px' }}>Select the Correct Answer</label>
+                        <div style={{ display: 'flex', gap: '16px', marginTop: '4px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: '600', color: 'var(--text-main)' }}>
+                            <input
+                              type="radio"
+                              name={`edit-tf-correct-${idx}`}
+                              checked={q.correctAnswer === 'True'}
+                              onChange={() => {
+                                setEditingLesson(prev => {
+                                  if (!prev) return null;
+                                  const questions = [...prev.questions];
+                                  questions[idx] = { ...questions[idx], correctAnswer: 'True' };
+                                  return { ...prev, questions };
+                                });
+                              }}
+                              className="accent-[#10B981]"
+                              style={{ cursor: 'pointer' }}
+                            />
+                            <span>True</span>
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', fontWeight: '600', color: 'var(--text-main)' }}>
+                            <input
+                              type="radio"
+                              name={`edit-tf-correct-${idx}`}
+                              checked={q.correctAnswer === 'False'}
+                              onChange={() => {
+                                setEditingLesson(prev => {
+                                  if (!prev) return null;
+                                  const questions = [...prev.questions];
+                                  questions[idx] = { ...questions[idx], correctAnswer: 'False' };
+                                  return { ...prev, questions };
+                                });
+                              }}
+                              className="accent-[#10B981]"
+                              style={{ cursor: 'pointer' }}
+                            />
+                            <span>False</span>
+                          </label>
+                        </div>
+                      </div>
+                    )}
+
+                    {q.type === 'swipe-card' && (
+                      <div className="flex flex-col gap-2 mt-2">
+                        <label style={{ fontSize: '10px' }}>Swipe Card Categories (Define Left/Right targets & Select correct)</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '6px' }}>
+                          {['Left Target (Swipe Left)', 'Right Target (Swipe Right)'].map((label, optIdx) => {
+                            const option = q.options[optIdx] || '';
+                            const isCorrect = option === q.correctAnswer;
+                            return (
+                              <div key={optIdx} style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px' }}>
+                                <span style={{ fontSize: '9px', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{label}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <input
+                                    type="text"
+                                    value={option}
+                                    onChange={(e) => {
+                                      const newVal = e.target.value;
+                                      setEditingLesson(prev => {
+                                        if (!prev) return null;
+                                        const questions = [...prev.questions];
+                                        const oldVal = questions[idx].options[optIdx];
+                                        const options = [...questions[idx].options];
+                                        options[optIdx] = newVal;
+                                        let correctAnswer = questions[idx].correctAnswer;
+                                        if (correctAnswer === oldVal) {
+                                          correctAnswer = newVal;
+                                        }
+                                        questions[idx] = { ...questions[idx], options, correctAnswer };
+                                        return { ...prev, questions };
+                                      });
+                                    }}
+                                    style={{ flex: 1, padding: '4px 8px', fontSize: '12px', border: '1px solid var(--border-color)', borderRadius: '4px', background: 'transparent', color: 'var(--text-main)', outline: 'none' }}
+                                    placeholder={optIdx === 0 ? "e.g., Literal" : "e.g., Metaphor"}
+                                    required
+                                  />
+                                  <input
+                                    type="radio"
+                                    name={`edit-swipe-correct-${idx}`}
+                                    checked={isCorrect && option !== ''}
+                                    onChange={() => {
+                                      setEditingLesson(prev => {
+                                        if (!prev) return null;
+                                        const questions = [...prev.questions];
+                                        questions[idx] = { ...questions[idx], correctAnswer: questions[idx].options[optIdx] };
+                                        return { ...prev, questions };
+                                      });
+                                    }}
+                                    className="accent-[#10B981]"
+                                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {q.type === 'fraction-builder' && (
+                      <div className="flex flex-col gap-2 mt-2" style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px' }}>
+                        <label style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--accent-primary-text)', textTransform: 'uppercase' }}>Fraction Builder Setup</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '6px' }}>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label style={{ fontSize: '10px' }}>Denominator (Total Slices)</label>
+                            <select
+                              value={q.options[1] || '4'}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditingLesson(prev => {
+                                  if (!prev) return null;
+                                  const questions = [...prev.questions];
+                                  const options = [questions[idx].options[0] || '2', val];
+                                  questions[idx] = { ...questions[idx], options };
+                                  return { ...prev, questions };
+                                });
+                              }}
+                              style={{ width: '100%', padding: '6px 10px', fontSize: '12px', marginTop: '4px', background: 'var(--bg-sidebar)', border: '1px solid var(--border-color)', color: 'var(--text-main)', borderRadius: '6px' }}
+                            >
+                              {['3', '4', '5', '6', '8', '10', '12'].map(v => (
+                                <option key={v} value={v}>{v} slices</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label style={{ fontSize: '10px' }}>Correct Numerator (Shaded Slices)</label>
+                            <select
+                              value={q.options[0] || '2'}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditingLesson(prev => {
+                                  if (!prev) return null;
+                                  const questions = [...prev.questions];
+                                  const options = [val, questions[idx].options[1] || '4'];
+                                  questions[idx] = { ...questions[idx], options, correctAnswer: val };
+                                  return { ...prev, questions };
+                                });
+                              }}
+                              style={{ width: '100%', padding: '6px 10px', fontSize: '12px', marginTop: '4px', background: 'var(--bg-sidebar)', border: '1px solid var(--border-color)', color: 'var(--text-main)', borderRadius: '6px' }}
+                            >
+                              {Array.from({ length: parseInt(q.options[1] || '4') }).map((_, i) => (
+                                <option key={i + 1} value={(i + 1).toString()}>{i + 1} shaded</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {q.type === 'drag-drop-matching' && (
+                      <div className="flex flex-col gap-2 mt-2">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <label style={{ fontSize: '10px' }}>Matching Pairs (Pairs of Antonyms, Synonyms, etc.)</label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingLesson(prev => {
+                                if (!prev) return null;
+                                const questions = [...prev.questions];
+                                const pairs = { ...questions[idx].matchingPairs };
+                                const nextIdx = Object.keys(pairs).length + 1;
+                                pairs[`Key ${nextIdx}`] = `Val ${nextIdx}`;
+                                questions[idx] = {
+                                  ...questions[idx],
+                                  matchingPairs: pairs,
+                                  options: [...Object.keys(pairs), ...Object.values(pairs)],
+                                  correctAnswer: Object.entries(pairs).map(([k, v]) => `${k}-${v}`).join(', ')
+                                };
+                                return { ...prev, questions };
+                              });
+                            }}
+                            style={{ background: 'transparent', border: 'none', color: '#38BDF8', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                          >
+                            + Add Pair
+                          </button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                          {Object.entries(q.matchingPairs || {}).map(([key, val], pairIdx) => (
+                            <div key={pairIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px' }}>
                               <input
                                 type="text"
-                                value={opt}
-                                onChange={(e) => updateQuestionOption(idx, optIdx, e.target.value)}
-                                style={{ flex: 1, background: 'transparent', border: 'none', padding: '6px 4px', fontSize: '12px' }}
+                                value={key as string}
+                                placeholder="Left Item"
+                                onChange={(e) => {
+                                  const newKey = e.target.value;
+                                  if (!newKey) return;
+                                  setEditingLesson(prev => {
+                                    if (!prev) return null;
+                                    const questions = [...prev.questions];
+                                    const pairs = { ...questions[idx].matchingPairs };
+                                    delete pairs[key];
+                                    pairs[newKey] = val;
+                                    questions[idx] = {
+                                      ...questions[idx],
+                                      matchingPairs: pairs,
+                                      options: [...Object.keys(pairs), ...Object.values(pairs)],
+                                      correctAnswer: Object.entries(pairs).map(([k, v]) => `${k}-${v}`).join(', ')
+                                    };
+                                    return { ...prev, questions };
+                                  });
+                                }}
+                                style={{ flex: 1, padding: '4px 8px', fontSize: '12px', border: '1px solid var(--border-color)', borderRadius: '4px', background: 'transparent', color: 'var(--text-main)', outline: 'none' }}
+                                required
                               />
+                              <span style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 'bold' }}>⇄</span>
                               <input
-                                type="radio"
-                                name={`correct-edit-${idx}`}
-                                checked={isCorrect}
-                                onChange={() => setCorrectOption(idx, optIdx)}
-                                style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+                                type="text"
+                                value={val as string}
+                                placeholder="Right Item"
+                                onChange={(e) => {
+                                  const newVal = e.target.value;
+                                  setEditingLesson(prev => {
+                                    if (!prev) return null;
+                                    const questions = [...prev.questions];
+                                    const pairs = { ...questions[idx].matchingPairs };
+                                    pairs[key] = newVal;
+                                    questions[idx] = {
+                                      ...questions[idx],
+                                      matchingPairs: pairs,
+                                      options: [...Object.keys(pairs), ...Object.values(pairs)],
+                                      correctAnswer: Object.entries(pairs).map(([k, v]) => `${k}-${v}`).join(', ')
+                                    };
+                                    return { ...prev, questions };
+                                  });
+                                }}
+                                style={{ flex: 1, padding: '4px 8px', fontSize: '12px', border: '1px solid var(--border-color)', borderRadius: '4px', background: 'transparent', color: 'var(--text-main)', outline: 'none' }}
+                                required
                               />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingLesson(prev => {
+                                    if (!prev) return null;
+                                    const questions = [...prev.questions];
+                                    const pairs = { ...questions[idx].matchingPairs };
+                                    delete pairs[key];
+                                    questions[idx] = {
+                                      ...questions[idx],
+                                      matchingPairs: pairs,
+                                      options: [...Object.keys(pairs), ...Object.values(pairs)],
+                                      correctAnswer: Object.entries(pairs).map(([k, v]) => `${k}-${v}`).join(', ')
+                                    };
+                                    return { ...prev, questions };
+                                  });
+                                }}
+                                style={{ background: 'transparent', border: 'none', color: '#EF4444', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', padding: '0 4px' }}
+                              >
+                                ✕
+                              </button>
                             </div>
-                          );
-                        })}
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     <div className="form-group mt-3">
                       <label style={{ fontSize: '10px' }}>Explanation</label>

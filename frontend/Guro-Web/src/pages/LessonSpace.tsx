@@ -7,10 +7,12 @@ import { BookOpenText, Wrench, FolderOpen, Folder, FileText, Star, BookOpen, Fil
 export interface Question {
   id: string;
   difficulty: 'Easy' | 'Average' | 'Difficult';
-  category: 'Multiple-Choice' | 'Paragraph Comprehension' | 'Figures of Speech';
+  category: 'Figures of Speech' | 'Reading/Paragraph Comprehension';
+  type?: 'multiple-choice' | 'fill-in-the-blank' | 'drag-drop-matching' | 'true-false' | 'swipe-card' | 'fraction-builder';
   questionText: string;
   options: string[];
   correctAnswer: string;
+  matchingPairs?: Record<string, string>;
   feedback: {
     en: string;
     fil: string;
@@ -823,33 +825,251 @@ export function LessonSpace({
                               className="form-control w-full bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)]"
                             />
                           </div>
+                           <div className="form-group mt-3">
+                            <label>Question Type / Format</label>
+                            <select
+                              value={q.type || 'multiple-choice'}
+                              onChange={(e) => {
+                                const newType = e.target.value as any;
+                                const updated = [...stagedQuestions];
+                                const currentCat = updated[idx].category;
+                                const safeCategory = currentCat === 'Figures of Speech' || currentCat === 'Reading/Paragraph Comprehension' ? currentCat : 'Figures of Speech';
+                                updated[idx] = { 
+                                  ...updated[idx], 
+                                  type: newType,
+                                  category: safeCategory,
+                                  matchingPairs: newType === 'drag-drop-matching' ? (updated[idx].matchingPairs || { "Example Key": "Example Value" }) : undefined
+                                };
+                                if (newType === 'drag-drop-matching') {
+                                  const pairs = updated[idx].matchingPairs || {};
+                                  updated[idx].options = [...Object.keys(pairs), ...Object.values(pairs)];
+                                  updated[idx].correctAnswer = Object.entries(pairs).map(([k, v]) => `${k}-${v}`).join(', ');
+                                } else if (newType === 'true-false') {
+                                  updated[idx].options = ['True', 'False'];
+                                  updated[idx].correctAnswer = 'True';
+                                } else if (newType === 'swipe-card') {
+                                  updated[idx].options = ['Literal', 'Metaphor'];
+                                  updated[idx].correctAnswer = 'Literal';
+                                } else if (newType === 'fraction-builder') {
+                                  updated[idx].options = ['2', '4'];
+                                  updated[idx].correctAnswer = '2';
+                                } else {
+                                  updated[idx].options = ['', '', '', ''];
+                                  updated[idx].correctAnswer = '';
+                                }
+                                setStagedQuestions(updated);
+                              }}
+                              className="form-control w-full bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg py-2 px-3 text-[13px]"
+                            >
+                              <option value="multiple-choice">Multiple Choice (Standard)</option>
+                              <option value="fill-in-the-blank">Fill-in-the-Blank (Interactive bubbles)</option>
+                              <option value="drag-drop-matching">Drag & Drop Matching (Columns)</option>
+                              <option value="true-false">True or False</option>
+                              <option value="swipe-card">Swipe Card (Classification)</option>
+                              <option value="fraction-builder">Fraction Builder (Interactive Pie)</option>
+                            </select>
+                          </div>
 
-                          <div className="flex flex-col gap-2">
-                            <label>Multiple Choice options (Check the correct answer)</label>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 mt-1.5">
-                              {q.options.map((option, optIdx) => {
-                                const isCorrect = option === q.correctAnswer;
-                                return (
-                                  <div key={optIdx} className="flex items-center gap-2 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-lg px-2">
-                                    <span className="text-[10px] font-extrabold text-[var(--text-muted)] bg-[var(--border-color)] w-4.5 h-4.5 rounded flex items-center justify-center">{String.fromCharCode(65 + optIdx)}</span>
+                          {(!q.type || q.type === 'multiple-choice' || q.type === 'fill-in-the-blank') && (
+                            <div className="flex flex-col gap-2 mt-3">
+                              <label className="flex flex-col">
+                                <span>Options (Check the correct answer)</span>
+                                {q.type === 'fill-in-the-blank' && (
+                                  <span className="text-[11px] text-[#38BDF8] mt-0.5 font-medium">
+                                    💡 Prompt must contain exactly one <strong>[[blank]]</strong> placeholder (e.g. \'Adjectives describe a [[blank]]\').
+                                  </span>
+                                )}
+                              </label>
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 mt-1.5">
+                                {q.options.map((option, optIdx) => {
+                                  const isCorrect = option === q.correctAnswer;
+                                  return (
+                                    <div key={optIdx} className="flex items-center gap-2 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-lg px-2">
+                                      <span className="text-[10px] font-extrabold text-[var(--text-muted)] bg-[var(--border-color)] w-4.5 h-4.5 rounded flex items-center justify-center">{String.fromCharCode(65 + optIdx)}</span>
+                                      <input
+                                        type="text"
+                                        value={option}
+                                        onChange={(e) => updateOption(idx, optIdx, e.target.value)}
+                                        className="flex-1 bg-transparent border-none py-2 px-1 text-[13px] text-[var(--text-main)] focus:outline-none"
+                                      />
+                                      <input
+                                        type="radio"
+                                        name={`correct-${idx}`}
+                                        checked={isCorrect}
+                                        onChange={() => setCorrectAnswer(idx, optIdx)}
+                                        className="w-4 h-4 accent-[#10B981]"
+                                      />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {q.type === 'true-false' && (
+                            <div className="flex flex-col gap-2 mt-3">
+                              <label>Select the Correct Answer</label>
+                              <div className="flex gap-4 mt-1">
+                                <label className="flex items-center gap-2 cursor-pointer bg-[var(--bg-sidebar)] border border-[var(--border-color)] px-4 py-2.5 rounded-xl font-semibold text-[13px] text-[var(--text-main)]">
+                                  <input
+                                    type="radio"
+                                    name={`tf-correct-${idx}`}
+                                    checked={q.correctAnswer === 'True'}
+                                    onChange={() => {
+                                      const updated = [...stagedQuestions];
+                                      updated[idx].correctAnswer = 'True';
+                                      setStagedQuestions(updated);
+                                    }}
+                                    className="accent-[#10B981] w-4 h-4"
+                                  />
+                                  <span>True</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer bg-[var(--bg-sidebar)] border border-[var(--border-color)] px-4 py-2.5 rounded-xl font-semibold text-[13px] text-[var(--text-main)]">
+                                  <input
+                                    type="radio"
+                                    name={`tf-correct-${idx}`}
+                                    checked={q.correctAnswer === 'False'}
+                                    onChange={() => {
+                                      const updated = [...stagedQuestions];
+                                      updated[idx].correctAnswer = 'False';
+                                      setStagedQuestions(updated);
+                                    }}
+                                    className="accent-[#10B981] w-4 h-4"
+                                  />
+                                  <span>False</span>
+                                </label>
+                              </div>
+                            </div>
+                          )}
+
+                          {q.type === 'swipe-card' && (
+                            <div className="flex flex-col gap-2 mt-3">
+                              <label className="flex flex-col">
+                                <span>Swipe Card Categories (Define Left/Right targets & Select correct)</span>
+                              </label>
+                              <div className="grid grid-cols-2 gap-3 mt-1.5">
+                                {['Left Target (Swipe Left)', 'Right Target (Swipe Right)'].map((label, optIdx) => {
+                                  const option = q.options[optIdx] || '';
+                                  const isCorrect = option === q.correctAnswer;
+                                  return (
+                                    <div key={optIdx} className="flex flex-col gap-1.5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl p-3">
+                                      <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase">{label}</span>
+                                      <div className="flex items-center gap-2 mt-0.5">
+                                        <input
+                                          type="text"
+                                          value={option}
+                                          onChange={(e) => {
+                                            const updated = [...stagedQuestions];
+                                            const oldVal = updated[idx].options[optIdx];
+                                            updated[idx].options[optIdx] = e.target.value;
+                                            if (updated[idx].correctAnswer === oldVal) {
+                                              updated[idx].correctAnswer = e.target.value;
+                                            }
+                                            setStagedQuestions(updated);
+                                          }}
+                                          className="flex-1 bg-transparent border border-[var(--border-color)] rounded py-1 px-2 text-[13px] text-[var(--text-main)] focus:outline-none"
+                                          placeholder={optIdx === 0 ? "e.g., Literal" : "e.g., Metaphor"}
+                                          required
+                                        />
+                                        <input
+                                          type="radio"
+                                          name={`swipe-correct-${idx}`}
+                                          checked={isCorrect && option !== ''}
+                                          onChange={() => {
+                                            const updated = [...stagedQuestions];
+                                            updated[idx].correctAnswer = updated[idx].options[optIdx];
+                                            setStagedQuestions(updated);
+                                          }}
+                                          className="w-4 h-4 accent-[#10B981] cursor-pointer"
+                                        />
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {q.type === 'drag-drop-matching' && (
+                            <div className="flex flex-col gap-2 mt-3">
+                              <div className="flex justify-between items-center">
+                                <label>Matching Pairs (Pairs of Antonyms, Synonyms, etc.)</label>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = [...stagedQuestions];
+                                    const pairs = { ...updated[idx].matchingPairs };
+                                    const nextIdx = Object.keys(pairs).length + 1;
+                                    pairs[`Key ${nextIdx}`] = `Val ${nextIdx}`;
+                                    updated[idx].matchingPairs = pairs;
+                                    updated[idx].options = [...Object.keys(pairs), ...Object.values(pairs)];
+                                    updated[idx].correctAnswer = Object.entries(pairs).map(([k, v]) => `${k}-${v}`).join(', ');
+                                    setStagedQuestions(updated);
+                                  }}
+                                  className="text-[11px] text-[#38BDF8] font-bold hover:underline"
+                                >
+                                  + Add Pair
+                                </button>
+                              </div>
+                              
+                              <div className="flex flex-col gap-2 mt-1">
+                                {Object.entries(q.matchingPairs || {}).map(([key, val], pairIdx) => (
+                                  <div key={pairIdx} className="flex items-center gap-2 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-lg p-2">
                                     <input
                                       type="text"
-                                      value={option}
-                                      onChange={(e) => updateOption(idx, optIdx, e.target.value)}
-                                      className="flex-1 bg-transparent border-none py-2 px-1 text-[13px] text-[var(--text-main)] focus:outline-none"
+                                      value={key}
+                                      placeholder="Left Item"
+                                      onChange={(e) => {
+                                        const newKey = e.target.value;
+                                        if (!newKey) return;
+                                        const updated = [...stagedQuestions];
+                                        const pairs = { ...updated[idx].matchingPairs };
+                                        delete pairs[key];
+                                        pairs[newKey] = val;
+                                        updated[idx].matchingPairs = pairs;
+                                        updated[idx].options = [...Object.keys(pairs), ...Object.values(pairs)];
+                                        updated[idx].correctAnswer = Object.entries(pairs).map(([k, v]) => `${k}-${v}`).join(', ');
+                                        setStagedQuestions(updated);
+                                      }}
+                                      className="flex-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded py-1 px-2 text-[13px] text-[var(--text-main)] focus:outline-none"
                                     />
+                                    <span className="text-[var(--text-muted)] text-[12px] font-bold">⇄</span>
                                     <input
-                                      type="radio"
-                                      name={`correct-${idx}`}
-                                      checked={isCorrect}
-                                      onChange={() => setCorrectAnswer(idx, optIdx)}
-                                      className="w-4 h-4 accent-[#10B981]"
+                                      type="text"
+                                      value={val}
+                                      placeholder="Right Item"
+                                      onChange={(e) => {
+                                        const newVal = e.target.value;
+                                        const updated = [...stagedQuestions];
+                                        const pairs = { ...updated[idx].matchingPairs };
+                                        pairs[key] = newVal;
+                                        updated[idx].matchingPairs = pairs;
+                                        updated[idx].options = [...Object.keys(pairs), ...Object.values(pairs)];
+                                        updated[idx].correctAnswer = Object.entries(pairs).map(([k, v]) => `${k}-${v}`).join(', ');
+                                        setStagedQuestions(updated);
+                                      }}
+                                      className="flex-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded py-1 px-2 text-[13px] text-[var(--text-main)] focus:outline-none"
                                     />
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = [...stagedQuestions];
+                                        const pairs = { ...updated[idx].matchingPairs };
+                                        delete pairs[key];
+                                        updated[idx].matchingPairs = pairs;
+                                        updated[idx].options = [...Object.keys(pairs), ...Object.values(pairs)];
+                                        updated[idx].correctAnswer = Object.entries(pairs).map(([k, v]) => `${k}-${v}`).join(', ');
+                                        setStagedQuestions(updated);
+                                      }}
+                                      className="text-red-500 hover:text-red-600 px-2 font-bold text-[14px]"
+                                    >
+                                      ✕
+                                    </button>
                                   </div>
-                                );
-                              })}
+                                ))}
+                              </div>
                             </div>
-                          </div>
+                          )}
 
                           <div className="form-group mt-3">
                             <label className="flex items-center gap-1.5">

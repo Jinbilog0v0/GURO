@@ -3,7 +3,7 @@
  * Shows per-topic progress. Tapping a topic goes to Study → Assessment.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Text,
   View,
@@ -44,7 +44,15 @@ export function LessonsScreen() {
   const classroomId = useAppStore((s) => s.classroomId);
   const appMode = useAppStore((s) => s.appMode);
 
+  const activeSubjects = useAppStore((s) => s.activeSubjects || ['Mathematics', 'English']);
+
   const [selectedSubject, setSelectedSubject] = useState<Subject>('Mathematics');
+
+  useEffect(() => {
+    if (activeSubjects.length > 0 && !activeSubjects.includes(selectedSubject)) {
+      setSelectedSubject(activeSubjects[0] as any);
+    }
+  }, [activeSubjects, selectedSubject]);
 
   const isTimeLimitExceeded =
     parentalControls.dailyTimeLimit > 0 && dailyMinutesUsed >= parentalControls.dailyTimeLimit;
@@ -144,24 +152,26 @@ export function LessonsScreen() {
       </View>
 
       {/* Subject tabs */}
-      <View style={styles.subjectTabRow}>
-        {SUBJECTS.map((subj) => {
-          const active = subj === selectedSubject;
-          return (
-            <TouchableOpacity
-              key={subj}
-              onPress={() => setSelectedSubject(subj)}
-              activeOpacity={0.75}
-              style={[styles.subjectTab, active && styles.subjectTabActive]}
-              accessibilityLabel={subj}
-            >
-              <Text style={[styles.subjectTabText, active && styles.subjectTabTextActive]}>
-                {subj}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {activeSubjects.length > 0 ? (
+        <View style={styles.subjectTabRow}>
+          {SUBJECTS.filter((subj) => activeSubjects.includes(subj)).map((subj) => {
+            const active = subj === selectedSubject;
+            return (
+              <TouchableOpacity
+                key={subj}
+                onPress={() => setSelectedSubject(subj)}
+                activeOpacity={0.75}
+                style={[styles.subjectTab, active && styles.subjectTabActive]}
+                accessibilityLabel={subj}
+              >
+                <Text style={[styles.subjectTabText, active && styles.subjectTabTextActive]}>
+                  {subj}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      ) : null}
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* English lock notice */}
@@ -206,9 +216,13 @@ export function LessonsScreen() {
           ) : (
             <GlassCard variant="subtle" padding={Spacing.xl} style={{ alignItems: 'center', gap: Spacing.sm }}>
               <Inbox size={40} color={Colors.textMuted} />
-              <Text style={styles.emptyTitle}>No Topics Yet</Text>
+              <Text style={styles.emptyTitle}>
+                {activeSubjects.length === 0 ? 'No Active Subjects' : 'No Topics Yet'}
+              </Text>
               <Text style={styles.emptySubtitle}>
-                Pull down to refresh and load your teacher's activities.
+                {activeSubjects.length === 0
+                  ? 'Your teacher has not activated any subjects for your grade level yet.'
+                  : "Pull down to refresh and load your teacher's activities."}
               </Text>
             </GlassCard>
           )

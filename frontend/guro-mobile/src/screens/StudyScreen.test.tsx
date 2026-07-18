@@ -81,7 +81,7 @@ describe('StudyScreen', () => {
 
     const stringified = JSON.stringify(root.toJSON());
     expect(stringified).toContain('Step');
-    expect(stringified).toContain('of 3');
+    expect(stringified).toContain('of 4');
     expect(stringified).toContain('Introduction');
     expect(stringified).toContain('Learn about Fractions!');
 
@@ -106,11 +106,11 @@ describe('StudyScreen', () => {
 
     let stringified = JSON.stringify(root.toJSON());
     expect(stringified).toContain('Step');
-    expect(stringified).toContain('of 3');
-    expect(stringified).toContain('Key Terms');
+    expect(stringified).toContain('of 4');
+    expect(stringified).toContain('Concept Card');
     expect(stringified).toContain('Fraction');
 
-    // Step 2: Click Next
+    // Step 2: Click Next (Goes to Recap Summary)
     const nextBtn2 = root.root.findByProps({ label: 'Next →' });
     act(() => {
       nextBtn2.props.onPress();
@@ -118,11 +118,17 @@ describe('StudyScreen', () => {
 
     stringified = JSON.stringify(root.toJSON());
     expect(stringified).toContain('Step');
-    expect(stringified).toContain('of 3');
+    expect(stringified).toContain('of 4');
     expect(stringified).toContain('Recap Summary');
     expect(stringified).toContain('Fractions are parts.');
 
-    // Step 3: Click Start Quiz
+    // Step 3: Click Next (Goes to Completed Screen)
+    const nextBtn3 = root.root.findByProps({ label: 'Next →' });
+    act(() => {
+      nextBtn3.props.onPress();
+    });
+
+    // Step 4: Click Start Quiz
     const startQuizBtn = root.root.findByProps({ label: 'Start Quiz!' });
     act(() => {
       startQuizBtn.props.onPress();
