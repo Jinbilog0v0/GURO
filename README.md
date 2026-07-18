@@ -1,46 +1,55 @@
-# GURO-App
+# GURO Educational Platform
 
-GURO-App is a comprehensive educational platform that bridges offline mobile learning with online teacher and parent analytics. It includes a Laravel backend, a React/Vite teacher dashboard, and an offline-first React Native mobile client.
-
----
-
-## Tech Stack & Architecture
-
-### 1. Routing & Navigation (Mobile)
-* **Framework:** `@react-navigation/native` & `@react-navigation/native-stack`
-* **Performance:** Native primitives via `react-native-screens` and `react-native-safe-area-context`.
-
-### 2. State Management (Offline Persisted)
-* **Library:** `zustand`
-* **Persistence:** State is persisted to local flash storage using `@react-native-async-storage/async-storage` via the Zustand `persist` middleware, ensuring state is preserved across app terminations.
-
-### 3. Database & Storage
-* **Local Database (Mobile):** Local SQLite storage is utilized to cache lessons, quizzes, and telemetry logs offline.
-* **File System Storage:** Local sandboxed disk operations are managed through a custom wrapper (`src/services/fileService.ts`) built on `expo-file-system/legacy`.
-
-### 4. Zero Network Constraint (Mobile Client)
-* Offline operations are prioritized; all core lesson reading and quiz tracking run completely offline. Local telemetry logs are synced automatically when an internet connection becomes available.
+GURO is a secure, interactive learning ecosystem designed to bridge offline, gamified learning for primary school students with real-time telemetry analytics for parents and teachers. The platform is structured as a multi-client workspace powered by a Laravel backend API.
 
 ---
 
-## Key Features
+## Tech Stack & System Architecture
 
-### 1. Curriculum & Lesson Flow
-* **Interleaved Checkpoint Questions:** Lessons are presented page-by-page, with active check-in questions (1-3 checkpoint questions per lesson topic) to verify student comprehension before unlocking the main quiz.
-* **Dynamic Category & Format Mappings:** Question categories and format styles are dynamically mapped by subject and grade level:
-  * **Mathematics:**
-    * **Grade 4:** Fractions (with Fraction Builder pie-chart visualization)
-    * **Grade 5:** Decimals (with multiple-choice, fill-in-the-blank, matching)
-    * **Grade 6:** Algebraic Equations
-  * **English:**
-    * **Grade 4:** Figures of Speech (with Swipe Card literal vs metaphor classification)
-    * **Grade 5:** Reading/Paragraph Comprehension
-    * **Grade 6:** Idiomatic Expressions
+The platform is divided into three primary components:
 
-### 2. Role-Based Portals & Sync
-* **Teacher Space:** Manage classroom invitation codes, view telemetry analytics dashboards, review mastery matrices, and build custom lessons/quizzes (either manually or using Gemini AI generation).
-* **Parent Space:** Create student accounts securely and monitor real-world learning progression logs.
-* **Classroom Pairing & Visibility:** Students enrolled under a teacher only access the subjects active or offered by their teacher. If a subject isn't offered, it is automatically hidden from the student's dashboard.
+### 1. Laravel Backend
+* **Database Compatibility:** Supports relational configurations (PostgreSQL) and lightweight local environments (SQLite).
+* **AI Engine:** Integrated with Google Gemini API to structure custom lesson guides and generate diagnostic question banks.
+* **Telemetry Sync:** Manages synchronization endpoints that receive student quiz scores, response paths, progress statistics, and classroom pairing codes.
+
+### 2. Guro-Web Portal
+* **Framework:** React, Vite, and CSS.
+* **Teacher View:** Allows teachers to manage classrooms, generate custom lessons (manually or via Gemini AI), monitor mastery matrices, and analyze diagnostic alert thresholds.
+* **Parent View:** Allows parents to register student accounts, retrieve credentials, and view interactive progress heatmaps.
+
+### 3. Guro-Mobile Client
+* **Framework:** Expo and React Native.
+* **Offline-First:** Implements offline SQLite databases to cache lessons and track progress without internet dependencies. Telemetry is queued locally and synced when online.
+* **State Management:** Zustand state store with AsyncStorage persistence to survive cold restarts.
+
+---
+
+## Key Features & Business Logic
+
+### 1. Parent-Created Student Accounts
+* **Restricted Self-Registration:** Direct sign-up is disabled for student roles. To protect young users, student profiles can only be created by authenticated parent accounts.
+* **Credentials Auto-Generation:** Parents input basic student information to generate unique access codes. The parent portal auto-populates the telemetry search field with the new student's credentials immediately upon creation.
+
+### 2. Classroom Subject Visibility Rules
+* **Teacher-Controlled Offering:** Students enrolled in a teacher's classroom can only view and access subjects actively offered or activated by that teacher (e.g. Mathematics or English).
+* **Visibility Filtering:** Off-offered subjects are hidden from the student's dashboard dynamically on both mobile and web clients.
+
+### 3. Paginated Lesson Flow with Checkpoints
+* **Refresher Checkpoints:** Rather than showing long, monolithic text blocks, lessons are split into paginated screens.
+* **Reading Verification:** Students must complete 1 to 3 short checkpoint questions embedded in the lesson screens. The main quiz remains locked until these checkpoint tasks are completed successfully.
+
+### 4. Grade-Specific Curriculum Mappings
+Category dropdown options and interactive question types in the manual lesson builder, editing views, and Gemini AI schema enums adjust dynamically based on the selected Grade Level and Subject:
+* **Mathematics Grade 4:** Fractions (uses the Fraction Builder interactive pie-chart slices format).
+* **Mathematics Grade 5:** Decimals.
+* **Mathematics Grade 6:** Algebraic Equations.
+* **English Grade 4:** Figures of Speech (uses the Swipe Card literal-vs-metaphor classification format).
+* **English Grade 5:** Reading/Paragraph Comprehension.
+* **English Grade 6:** Idiomatic Expressions.
+
+### 5. Adaptive Student Dashboard Layout
+* **Layout Grid Optimization:** If a student only has one active subject offered by their teacher, Guro-Web renders the active subject card side-by-side with the statistics panel in a responsive grid. This optimizes space usage and avoids stack stretching.
 
 ---
 
@@ -48,33 +57,34 @@ GURO-App is a comprehensive educational platform that bridges offline mobile lea
 
 ```text
 GURO-App/
-├── backend/            # Laravel backend server (PostgreSQL/SQLite sync logs)
-└── frontend/           # Frontend workspace
-    ├── guro-mobile/    # React Native client app (offline local storage)
-    └── Guro-Web/       # React/Vite web dashboard for teacher and parent analytics
+├── backend/            # Laravel backend API server
+└── frontend/           # Frontend client workspace
+    ├── guro-mobile/    # React Native client application
+    └── Guro-Web/       # React/Vite teacher and parent administration web portal
 ```
 
 ---
 
-## Development Scripts
+## Development Setup
 
-To run the application locally:
-
-### 1. Start backend server (Laravel)
+### 1. Laravel Backend
 ```bash
 cd backend
 composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
 php artisan serve
 ```
 
-### 2. Start teacher web dashboard
+### 2. Guro-Web Administration Dashboard
 ```bash
 cd frontend/Guro-Web
 npm install
 npm run dev
 ```
 
-### 3. Start Expo mobile client
+### 3. Guro-Mobile Client
 ```bash
 cd frontend/guro-mobile
 npm install
@@ -83,5 +93,9 @@ npx expo start
 
 ---
 
-## Backend Directory
-The `backend` directory contains the PHP/Laravel API server managing telemetry sync logs, classroom configurations, parent-student profile generation, and user accounts. It supports both a local SQLite fallback database and a relational structure, with Gemini API integration for curriculum generation.
+## Test Suites
+
+Run the test suites in their respective directories:
+* **Backend:** `./vendor/bin/pest`
+* **Web Portal:** `npm run test`
+* **Mobile App:** `npm run test`
