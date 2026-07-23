@@ -2,6 +2,39 @@
   "Mathematics": {
     "4": {
       "Fractions": {
+        "studyContent": {
+          "introduction": "Welcome to Grade 4 Math! Fractions represent equal parts of a whole or set.",
+          "definitions": [
+            {
+              "term": "Numerator & Denominator",
+              "definition": "The top number (numerator) tells how many parts you have; the bottom number (denominator) tells total equal parts.",
+              "examples": ["In 3/4, 3 is the numerator and 4 is the denominator."]
+            },
+            {
+              "term": "Like Fractions",
+              "definition": "Fractions that have the exact same denominator.",
+              "examples": ["1/4 and 2/4 have the same denominator (4)."]
+            }
+          ],
+          "refresherQuiz": [
+            {
+              "questionText": "Quick Check: In the fraction 3/5, what is the numerator?",
+              "options": ["3", "5", "8", "2"],
+              "correctAnswer": "3",
+              "explanation": "Correct! The numerator is the top number in a fraction."
+            },
+            {
+              "questionText": "Quick Check: What is 1/4 + 2/4?",
+              "options": ["3/8", "3/4", "2/4", "1/2"],
+              "correctAnswer": "3/4",
+              "explanation": "Correct! When denominators match, simply add the top numbers: 1 + 2 = 3/4."
+            }
+          ],
+          "summary": [
+            "Numerators count parts; denominators count total equal pieces.",
+            "To add like fractions, add the top numbers and keep the denominator."
+          ]
+        },
         "Easy": {
           "Multiple-Choice": [
             {
@@ -25,6 +58,39 @@
     },
     "5": {
       "Decimals": {
+        "studyContent": {
+          "introduction": "Welcome to Grade 5 Math! Decimals express numbers that include whole numbers and fractional tenths or hundredths.",
+          "definitions": [
+            {
+              "term": "Decimal Place Values",
+              "definition": "Positions to the right of the decimal point: tenths (0.1) and hundredths (0.01).",
+              "examples": ["In 0.25, 2 is in the tenths place and 5 is in the hundredths place."]
+            },
+            {
+              "term": "Decimal Multiplication",
+              "definition": "Multiply numbers as whole numbers first, then count total decimal places in factors to place the point in the product.",
+              "examples": ["0.5 × 0.2 = 0.10 (2 decimal places total)."]
+            }
+          ],
+          "refresherQuiz": [
+            {
+              "questionText": "Quick Check: In 0.75, which digit is in the tenths place?",
+              "options": ["7", "5", "0", "75"],
+              "correctAnswer": "7",
+              "explanation": "Correct! The first digit to the right of the decimal point is the tenths place."
+            },
+            {
+              "questionText": "Quick Check: Multiply 0.3 by 0.3. What is the result?",
+              "options": ["0.9", "0.09", "9.0", "0.009"],
+              "correctAnswer": "0.09",
+              "explanation": "Correct! 3 × 3 = 9. Counting 2 decimal places gives 0.09."
+            }
+          ],
+          "summary": [
+            "Decimals extend place values into parts of ten and hundred.",
+            "Always align decimal places when performing arithmetic."
+          ]
+        },
         "Average": {
           "Multiple-Choice": [
             {
@@ -48,6 +114,39 @@
     },
     "6": {
       "Algebraic Equations": {
+        "studyContent": {
+          "introduction": "Welcome to Grade 6 Math! Algebraic equations express mathematical statements where two expressions are equal.",
+          "definitions": [
+            {
+              "term": "Variable & Equation",
+              "definition": "A variable is a letter representing an unknown number (e.g. x). An equation states that two expressions are equal.",
+              "examples": ["In 3x - 5 = 16, x is the variable."]
+            },
+            {
+              "term": "Inverse Operations",
+              "definition": "Operations that undo each other, used to isolate the variable on one side.",
+              "examples": ["Addition undoes subtraction; division undoes multiplication."]
+            }
+          ],
+          "refresherQuiz": [
+            {
+              "questionText": "Quick Check: To solve x + 8 = 15, what operation should you perform to isolate x?",
+              "options": ["Subtract 8 from both sides", "Add 8 to both sides", "Multiply by 8", "Divide by 15"],
+              "correctAnswer": "Subtract 8 from both sides",
+              "explanation": "Correct! Subtraction is the inverse operation of addition."
+            },
+            {
+              "questionText": "Quick Check: Solve for x in 2x = 10.",
+              "options": ["x = 5", "x = 8", "x = 12", "x = 20"],
+              "correctAnswer": "x = 5",
+              "explanation": "Correct! Divide both sides by 2: 10 / 2 = 5."
+            }
+          ],
+          "summary": [
+            "Variables represent unknown quantities.",
+            "Use inverse operations on both sides of the equation to isolate the variable."
+          ]
+        },
         "Difficult": {
           "Multiple-Choice": [
             {
@@ -73,6 +172,39 @@
   "English": {
     "4": {
       "Figurative Language": {
+        "studyContent": {
+          "introduction": "Welcome to Grade 4 English! Figurative language uses words in imaginative ways to create vivid pictures.",
+          "definitions": [
+            {
+              "term": "Simile",
+              "definition": "Compares two different things using words such as 'like' or 'as'.",
+              "examples": ["Her cheeks are like red roses.", "Brave as a lion."]
+            },
+            {
+              "term": "Metaphor",
+              "definition": "Compares two different things directly without using 'like' or 'as'.",
+              "examples": ["Time is gold.", "He is a shining star."]
+            }
+          ],
+          "refresherQuiz": [
+            {
+              "questionText": "Quick Check: Which sentence uses a Simile?",
+              "options": ["He is a lion in battle.", "She is as fast as a cheetah.", "The wind sang a song.", "Books are keys to wisdom."],
+              "correctAnswer": "She is as fast as a cheetah.",
+              "explanation": "Correct! It uses 'as...as' to make a direct comparison."
+            },
+            {
+              "questionText": "Quick Check: 'Time is money' is an example of which figure of speech?",
+              "options": ["Simile", "Metaphor", "Onomatopoeia", "Hyperbole"],
+              "correctAnswer": "Metaphor",
+              "explanation": "Correct! It compares time directly to money without using 'like' or 'as'."
+            }
+          ],
+          "summary": [
+            "Similes use 'like' or 'as' for comparison.",
+            "Metaphors compare directly without 'like' or 'as'."
+          ]
+        },
         "Easy": {
           "Figures of Speech": [
             {
@@ -134,6 +266,20 @@
               "term": "Superlative Adjective",
               "definition": "Used to compare three or more things, showing the highest degree, usually ending in '-est' or using 'most'.",
               "examples": ["Mount Everest is the highest mountain.", "He is the most helpful boy in class."]
+            }
+          ],
+          "refresherQuiz": [
+            {
+              "questionText": "Quick Check: Which of the following words is an adjective describing size?",
+              "options": ["Run", "Gigantic", "Quickly", "Cat"],
+              "correctAnswer": "Gigantic",
+              "explanation": "Correct! 'Gigantic' is an adjective describing the size of a noun."
+            },
+            {
+              "questionText": "Quick Check: What suffix is added to compare two items (Comparative)?",
+              "options": ["-est", "-ing", "-er", "-ly"],
+              "correctAnswer": "-er",
+              "explanation": "Correct! Comparative adjectives usually end in '-er' (e.g., taller, faster)."
             }
           ],
           "summary": [

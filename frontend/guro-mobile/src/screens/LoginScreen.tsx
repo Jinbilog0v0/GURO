@@ -25,17 +25,28 @@ import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { toast } from '../components';
 import { styles } from '../styles/LoginScreen.styles';
 import { School, Users, GraduationCap, Cloud, WifiOff } from 'lucide-react-native';
-import Svg, { Path } from 'react-native-svg';
 import * as Network from 'expo-network';
 
 const GuroLogoGraphic = () => (
-  <View style={{ width: 52, height: 52, alignItems: 'center', justifyContent: 'center', position: 'relative', marginBottom: Spacing.sm }}>
-    <Svg width={52} height={52} viewBox="0 0 52 52" fill="none">
-      <Path d="M8 38 C8 38 8 14 26 14 C44 14 44 38 44 38" stroke="#11428E" strokeWidth={3.5} strokeLinecap="round" />
-      <Path d="M26 14 L26 38" stroke="#11428E" strokeWidth={3.5} strokeLinecap="round" />
-      <Path d="M8 38 L44 38" stroke="#11428E" strokeWidth={3.5} strokeLinecap="round" />
-    </Svg>
-    <Text style={{ position: 'absolute', top: -4, right: -4, fontSize: 14, color: '#11428E', fontWeight: 'bold' }}>✦</Text>
+  <View style={{
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    backgroundColor: '#11428E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+    shadowColor: '#11428E',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    position: 'relative',
+  }}>
+    <GraduationCap size={36} color="#FFFFFF" strokeWidth={2.2} />
+    <Text style={{ position: 'absolute', top: -4, right: -4, fontSize: 13, color: '#F59E0B', fontWeight: 'bold' }}>✦</Text>
   </View>
 );
 
@@ -57,6 +68,7 @@ export function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [offlineName, setOfflineName] = useState('');
+  const [offlineEmailOrId, setOfflineEmailOrId] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<number>(4);
   const [selectedOfflineGrade, setSelectedOfflineGrade] = useState<number>(4);
   const [loading, setLoading] = useState(false);
@@ -330,6 +342,7 @@ export function LoginScreen({ navigation }: Props) {
   const handleStartOffline = () => {
     setOfflineNameError('');
     const trimmedOfflineName = offlineName.trim();
+    const trimmedOfflineEmail = offlineEmailOrId.trim();
     
     if (!trimmedOfflineName) {
       setOfflineNameError('Please enter a name.');
@@ -343,9 +356,14 @@ export function LoginScreen({ navigation }: Props) {
       return;
     }
     
+    const primaryId = trimmedOfflineEmail || trimmedOfflineName;
     setAppMode('offline');
-    setGuestName(trimmedOfflineName);
-    setStudentId(trimmedOfflineName.replace(/\s+/g, '-').toUpperCase() + '-GUEST');
+    if (trimmedOfflineEmail) {
+      setGuestName(trimmedOfflineName, trimmedOfflineEmail);
+    } else {
+      setGuestName(trimmedOfflineName);
+    }
+    setStudentId(primaryId.replace(/\s+/g, '-').toUpperCase() + '-GUEST');
     setPreferredGrade(selectedOfflineGrade);
     toast.success(`Welcome, ${trimmedOfflineName}! Started offline session.`);
     navigation.replace('StudentDashboard');
@@ -547,6 +565,17 @@ export function LoginScreen({ navigation }: Props) {
                   value={offlineName}
                   onChangeText={(t) => { setOfflineName(t); setOfflineNameError(''); }}
                   error={offlineNameError}
+               />
+            </View>
+
+            <View style={styles.formGroup}>
+               <ThemedTextInput
+                  label="School Email or Learner ID (Optional)"
+                  placeholder="e.g. juan@school.ph or LRN-123456"
+                  value={offlineEmailOrId}
+                  onChangeText={setOfflineEmailOrId}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
                />
             </View>
 

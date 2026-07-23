@@ -78,19 +78,27 @@ export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs
                   <span>No topic averages fall below mastery thresholds currently.</span>
                 </div>
               ) : (
-                lowAverageTopics.map((item) => (
-                  <div key={item.topic} className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
-                    <AlertCircle size={15} className="text-[#A01322] mt-0.5 shrink-0" aria-hidden="true" />
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[13px] font-bold text-[var(--text-main)]">
-                        {item.topic} (Grade {item.grade} {item.subject})
-                      </span>
-                      <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
-                        Class average: <strong className="text-[#A01322] font-extrabold">{item.average}%</strong>. Remediation recommended.
-                      </p>
+                lowAverageTopics.map((item) => {
+                  const isCritical = item.average < 50;
+                  return (
+                    <div key={item.topic} className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
+                      <AlertCircle size={15} className={isCritical ? 'text-[#A01322] mt-0.5 shrink-0' : 'text-[#F59E0B] mt-0.5 shrink-0'} aria-hidden="true" />
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[13px] font-bold text-[var(--text-main)]">
+                            {item.topic} (Grade {item.grade} {item.subject})
+                          </span>
+                          <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${isCritical ? 'bg-[#A01322]/15 text-[#A01322] border border-[#A01322]/30' : 'bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30'}`}>
+                            {isCritical ? 'Critical (<50%)' : 'Borderline (50-79%)'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
+                          Class average: <strong className="text-[#A01322] font-extrabold">{item.average}%</strong>. {isCritical ? 'Prerequisite lesson return recommended.' : 'Guided micro-practice boost recommended.'}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
@@ -113,17 +121,22 @@ export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs
                   </div>
                 </div>
               ) : (
-                lowAverageTopics.map((item) => (
-                  <div key={item.topic} className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
-                    <Lightbulb size={15} className="text-[#F59E0B] mt-0.5 shrink-0" aria-hidden="true" />
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[13px] font-bold text-[var(--text-main)]">Targeted Boost: {item.topic}</span>
-                      <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
-                        Go to <strong>Lesson Ingestor</strong> → Grade <strong>{item.grade}</strong> → <strong>{item.subject}</strong> → parse an extension lesson for <em>"{item.topic}"</em> with simplified Q&amp;A.
-                      </p>
+                lowAverageTopics.map((item) => {
+                  const isCritical = item.average < 50;
+                  return (
+                    <div key={item.topic} className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
+                      <Lightbulb size={15} className="text-[#F59E0B] mt-0.5 shrink-0" aria-hidden="true" />
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[13px] font-bold text-[var(--text-main)]">Targeted Boost: {item.topic}</span>
+                        <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
+                          {isCritical
+                            ? <>Go to <strong>Lesson Ingestor</strong> → Grade <strong>{item.grade}</strong> → <strong>{item.subject}</strong> → parse a prerequisite fallback module for <em>"{item.topic}"</em> with foundational step-by-step guidance.</>
+                            : <>Go to <strong>Lesson Ingestor</strong> → Grade <strong>{item.grade}</strong> → <strong>{item.subject}</strong> → parse an extension lesson for <em>"{item.topic}"</em> with simplified Q&amp;A.</>}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

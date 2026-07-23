@@ -53,14 +53,22 @@ interface DashboardStepProps {
 }
 
 const OUTFIT_OPTIONS = [
-    { key: 'default', label: 'Classic Spacecraft', emoji: '🚀', cost: 0 },
-    { key: 'detective_hat', label: 'Detective Gear', emoji: '🕵️‍♂️', cost: 20 },
-    { key: 'space_visor', label: 'Cosmic Visor', emoji: '👨‍🚀', cost: 40 },
-    { key: 'wizard_cape', label: 'Wizard Cape', emoji: '🧙‍♂️', cost: 60 },
-    { key: 'crown', label: 'Golden Crown', emoji: '👑', cost: 80 },
+    { key: 'default', label: 'Classic Companion', emoji: '🦉', cost: 0 },
+    { key: 'graduation_cap', label: 'Scholar Cap', emoji: '🎓', cost: 20 },
+    { key: 'detective_hat', label: 'Detective Gear', emoji: '🕵️‍♂️', cost: 35 },
+    { key: 'wizard_cape', label: 'Magic Wizard Cape', emoji: '🧙‍♂️', cost: 50 },
+    { key: 'crown', label: 'Crown of Mastery', emoji: '👑', cost: 75 },
+    { key: 'superhero_cape', label: 'Super Learning Hero', emoji: '🦸', cost: 100 },
+    { key: 'party_hat', label: 'Fiesta Party Hat', emoji: '🥳', cost: 120 },
+    { key: 'astronaut_helmet', label: 'Space Visor', emoji: '🧑‍🚀', cost: 150 },
+    { key: 'artist_beret', label: 'Artist Beret', emoji: '🎨', cost: 180 },
+    { key: 'scientist_goggles', label: 'Lab Goggles', emoji: '🔬', cost: 200 },
 ];
 
-const EMOJI_AVATARS = ['🚀', '🦁', '🐱', '🦊', '🦄', '🐨', '🐼', '🤖', '👾'];
+const EMOJI_AVATARS = [
+    '🦉', '🦊', '🐼', '🦁', '🦄', '🚀', '🐬', '🐝',
+    '🐯', '🐶', '🐱', '🤖', '👾', '🦖', '🐸', '🎓'
+];
 
 export const DashboardStep: React.FC<DashboardStepProps> = ({
     userName = 'Explorer',

@@ -1,4 +1,4 @@
-import { shuffle, calculateNextDifficulty, DifficultyTier } from './engine';
+import { shuffle, calculateNextDifficulty, evaluateRemediationRouting, DifficultyTier } from './engine';
 
 describe('Algorithmic Engine (Mobile)', () => {
   
@@ -59,6 +59,28 @@ describe('Algorithmic Engine (Mobile)', () => {
     test('should throw error for invalid difficulty tier', () => {
       // @ts-ignore
       expect(() => calculateNextDifficulty(80, 'Hardest')).toThrow(TypeError);
+    });
+  });
+
+  describe('evaluateRemediationRouting()', () => {
+    test('should return "advance" for score >= 80%', () => {
+      const result = evaluateRemediationRouting(85, 'Mathematics', 5, 'Decimals');
+      expect(result.instruction).toBe('advance');
+      expect(result.feedbackTitle).toContain('Mastery Achieved');
+    });
+
+    test('should return "scaffold_review" for borderline score (50-79%)', () => {
+      const result = evaluateRemediationRouting(65, 'Mathematics', 5, 'Decimals');
+      expect(result.instruction).toBe('scaffold_review');
+      expect(result.suggestedActionLabel).toBe('Start Micro-Review');
+    });
+
+    test('should return "prerequisite_return" and target prerequisite topic for score < 50%', () => {
+      // For Mathematics Grade 5 Decimals, prerequisite in sequence is Grade 4 Fractions
+      const result = evaluateRemediationRouting(40, 'Mathematics', 5, 'Decimals');
+      expect(result.instruction).toBe('prerequisite_return');
+      expect(result.targetLesson).toEqual({ grade: 4, topic: 'Fractions' });
+      expect(result.feedbackMessage).toContain('Fractions');
     });
   });
 });

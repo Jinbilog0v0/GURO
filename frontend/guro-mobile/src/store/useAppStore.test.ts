@@ -186,7 +186,8 @@ describe('AppStore (Mobile Online Flows)', () => {
       expect(updatedState.studentId).toBe('GURO-STUDENT-LOCAL');
       expect(updatedState.appMode).toBe('offline');
       expect(updatedState.guestName).toBeNull();
-      expect(updatedState.classroomId).toBeNull();
+      // Classroom pairing is preserved on logout (not revoked unless unlinked explicitly)
+      expect(updatedState.classroomId).toBe('CLASS-456');
       expect(updatedState.parentalControls.dailyTimeLimit).toBe(0);
       expect(updatedState.parentalControls.mathBeforeEnglish).toBe(false);
       expect(updatedState.parentalControls.forcedBilingual).toBe(false);

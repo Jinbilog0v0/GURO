@@ -30,9 +30,10 @@ interface ItemBank {
     [subject: string]: {
         [grade: string]: {
             [topic: string]: {
+                studyContent?: any;
                 [difficulty: string]: {
                     [category: string]: QuestionItem[];
-                };
+                } | any;
             };
         };
     };
@@ -42,6 +43,39 @@ const FALLBACK_ITEM_BANK: ItemBank = {
     "Mathematics": {
         "4": {
             "Fractions": {
+                "studyContent": {
+                    "introduction": "Welcome to Grade 4 Math! Fractions represent equal parts of a whole or set.",
+                    "definitions": [
+                        {
+                            "term": "Numerator & Denominator",
+                            "definition": "The top number (numerator) tells how many parts you have; the bottom number (denominator) tells total equal parts.",
+                            "examples": ["In 3/4, 3 is the numerator and 4 is the denominator."]
+                        },
+                        {
+                            "term": "Like Fractions",
+                            "definition": "Fractions that have the exact same denominator.",
+                            "examples": ["1/4 and 2/4 have the same denominator (4)."]
+                        }
+                    ],
+                    "refresherQuiz": [
+                        {
+                            "questionText": "Quick Check: In the fraction 3/5, what is the numerator?",
+                            "options": ["3", "5", "8", "2"],
+                            "correctAnswer": "3",
+                            "explanation": "Correct! The numerator is the top number in a fraction."
+                        },
+                        {
+                            "questionText": "Quick Check: What is 1/4 + 2/4?",
+                            "options": ["3/8", "3/4", "2/4", "1/2"],
+                            "correctAnswer": "3/4",
+                            "explanation": "Correct! When denominators match, simply add the top numbers: 1 + 2 = 3/4."
+                        }
+                    ],
+                    "summary": [
+                        "Numerators count parts; denominators count total equal pieces.",
+                        "To add like fractions, add the top numbers and keep the denominator."
+                    ]
+                },
                 "Easy": {
                     "Multiple-Choice": [
                         {
@@ -60,6 +94,39 @@ const FALLBACK_ITEM_BANK: ItemBank = {
         },
         "5": {
             "Decimals": {
+                "studyContent": {
+                    "introduction": "Welcome to Grade 5 Math! Decimals express numbers that include whole numbers and fractional tenths or hundredths.",
+                    "definitions": [
+                        {
+                            "term": "Decimal Place Values",
+                            "definition": "Positions to the right of the decimal point: tenths (0.1) and hundredths (0.01).",
+                            "examples": ["In 0.25, 2 is in the tenths place and 5 is in the hundredths place."]
+                        },
+                        {
+                            "term": "Decimal Multiplication",
+                            "definition": "Multiply numbers as whole numbers first, then count total decimal places in factors to place the point in the product.",
+                            "examples": ["0.5 × 0.2 = 0.10 (2 decimal places total)."]
+                        }
+                    ],
+                    "refresherQuiz": [
+                        {
+                            "questionText": "Quick Check: In 0.75, which digit is in the tenths place?",
+                            "options": ["7", "5", "0", "75"],
+                            "correctAnswer": "7",
+                            "explanation": "Correct! The first digit to the right of the decimal point is the tenths place."
+                        },
+                        {
+                            "questionText": "Quick Check: Multiply 0.3 by 0.3. What is the result?",
+                            "options": ["0.9", "0.09", "9.0", "0.009"],
+                            "correctAnswer": "0.09",
+                            "explanation": "Correct! 3 × 3 = 9. Counting 2 decimal places gives 0.09."
+                        }
+                    ],
+                    "summary": [
+                        "Decimals extend place values into parts of ten and hundred.",
+                        "Always align decimal places when performing arithmetic."
+                    ]
+                },
                 "Average": {
                     "Multiple-Choice": [
                         {
@@ -78,6 +145,39 @@ const FALLBACK_ITEM_BANK: ItemBank = {
         },
         "6": {
             "Algebraic Equations": {
+                "studyContent": {
+                    "introduction": "Welcome to Grade 6 Math! Algebraic equations express mathematical statements where two expressions are equal.",
+                    "definitions": [
+                        {
+                            "term": "Variable & Equation",
+                            "definition": "A variable is a letter representing an unknown number (e.g. x). An equation states that two expressions are equal.",
+                            "examples": ["In 3x - 5 = 16, x is the variable."]
+                        },
+                        {
+                            "term": "Inverse Operations",
+                            "definition": "Operations that undo each other, used to isolate the variable on one side.",
+                            "examples": ["Addition undoes subtraction; division undoes multiplication."]
+                        }
+                    ],
+                    "refresherQuiz": [
+                        {
+                            "questionText": "Quick Check: To solve x + 8 = 15, what operation should you perform to isolate x?",
+                            "options": ["Subtract 8 from both sides", "Add 8 to both sides", "Multiply by 8", "Divide by 15"],
+                            "correctAnswer": "Subtract 8 from both sides",
+                            "explanation": "Correct! Subtraction is the inverse operation of addition."
+                        },
+                        {
+                            "questionText": "Quick Check: Solve for x in 2x = 10.",
+                            "options": ["x = 5", "x = 8", "x = 12", "x = 20"],
+                            "correctAnswer": "x = 5",
+                            "explanation": "Correct! Divide both sides by 2: 10 / 2 = 5."
+                        }
+                    ],
+                    "summary": [
+                        "Variables represent unknown quantities.",
+                        "Use inverse operations on both sides of the equation to isolate the variable."
+                    ]
+                },
                 "Difficult": {
                     "Multiple-Choice": [
                         {
@@ -98,6 +198,39 @@ const FALLBACK_ITEM_BANK: ItemBank = {
     "English": {
         "4": {
             "Figurative Language": {
+                "studyContent": {
+                    "introduction": "Welcome to Grade 4 English! Figurative language uses words in imaginative ways to create vivid pictures.",
+                    "definitions": [
+                        {
+                            "term": "Simile",
+                            "definition": "Compares two different things using words such as 'like' or 'as'.",
+                            "examples": ["Her cheeks are like red roses.", "Brave as a lion."]
+                        },
+                        {
+                            "term": "Metaphor",
+                            "definition": "Compares two different things directly without using 'like' or 'as'.",
+                            "examples": ["Time is gold.", "He is a shining star."]
+                        }
+                    ],
+                    "refresherQuiz": [
+                        {
+                            "questionText": "Quick Check: Which sentence uses a Simile?",
+                            "options": ["He is a lion in battle.", "She is as fast as a cheetah.", "The wind sang a song.", "Books are keys to wisdom."],
+                            "correctAnswer": "She is as fast as a cheetah.",
+                            "explanation": "Correct! It uses 'as...as' to make a direct comparison."
+                        },
+                        {
+                            "questionText": "Quick Check: 'Time is money' is an example of which figure of speech?",
+                            "options": ["Simile", "Metaphor", "Onomatopoeia", "Hyperbole"],
+                            "correctAnswer": "Metaphor",
+                            "explanation": "Correct! It compares time directly to money without using 'like' or 'as'."
+                        }
+                    ],
+                    "summary": [
+                        "Similes use 'like' or 'as' for comparison.",
+                        "Metaphors compare directly without 'like' or 'as'."
+                    ]
+                },
                 "Easy": {
                     "Figures of Speech": [
                         {
@@ -120,6 +253,55 @@ const FALLBACK_ITEM_BANK: ItemBank = {
             }
         },
         "5": {
+            "Adjectives": {
+                "studyContent": {
+                    "introduction": "Hello learner! Today, we will explore Adjectives. Adjectives are words that describe nouns or pronouns. They tell us more about people, places, animals, or things!",
+                    "definitions": [
+                        {
+                            "term": "Adjective",
+                            "definition": "A word that describes or modifies a noun or pronoun (e.g. size, color, shape).",
+                            "examples": ["The big blue balloon", "She is a happy student."]
+                        },
+                        {
+                            "term": "Comparative Adjective",
+                            "definition": "Used to compare two things, usually ending in '-er' or using 'more'.",
+                            "examples": ["This cat is faster than that one.", "Math is more exciting than reading."]
+                        }
+                    ],
+                    "refresherQuiz": [
+                        {
+                            "questionText": "Quick Check: Which of the following words is an adjective describing size?",
+                            "options": ["Run", "Gigantic", "Quickly", "Cat"],
+                            "correctAnswer": "Gigantic",
+                            "explanation": "Correct! 'Gigantic' is an adjective describing the size of a noun."
+                        },
+                        {
+                            "questionText": "Quick Check: What suffix is added to compare two items (Comparative)?",
+                            "options": ["-est", "-ing", "-er", "-ly"],
+                            "correctAnswer": "-er",
+                            "explanation": "Correct! Comparative adjectives usually end in '-er' (e.g., taller, faster)."
+                        }
+                    ],
+                    "summary": [
+                        "Adjectives describe nouns (people, places, things).",
+                        "Use comparative adjectives to compare 2 things (usually ending in -er)."
+                    ]
+                },
+                "Average": {
+                    "Multiple-Choice": [
+                        {
+                            "id": "ENG-G5-ADJ-001",
+                            "questionText": "Which word in the sentence \"The big dog barked loudly\" is an adjective?",
+                            "options": ["The", "big", "dog", "loudly"],
+                            "correctAnswer": "big",
+                            "feedback": {
+                                "en": "An adjective describes a noun or pronoun. In this sentence, \"big\" describes the noun \"dog\".",
+                                "fil": "An adjective describes a noun or pronoun. In this sentence, \"big\" describes the noun \"dog\"."
+                            }
+                        }
+                    ]
+                }
+            },
             "Short Story Comprehension": {
                 "Average": {
                     "Paragraph Comprehension": [
@@ -171,7 +353,7 @@ const FALLBACK_ITEM_BANK: ItemBank = {
 interface StudentSpaceProps {
     onExit: () => void;
     onLogout: () => void;
-    currentUser?: { name: string; email: string; userId: string } | null;
+    currentUser?: { name: string; email: string; userId: string; classroomId?: string | null } | null;
     isDarkMode: boolean;
     onToggleTheme: () => void;
 }
@@ -209,6 +391,9 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         return 'name';
     });
     const [userName, setUserName] = useState(currentUser ? currentUser.name : savedName);
+    const storedEmailOrId = localStorage.getItem('guro_student_email_or_id') || (currentUser ? currentUser.email : '');
+    const activeStudentId = (storedEmailOrId || userName || 'STUDENT-WEB-USER').trim().replace(/\s+/g, '-').toUpperCase();
+
     const [selectedGrade, setSelectedGrade] = useState<number>(savedGrade);
     const [selectedSubject, setSelectedSubject] = useState<'Mathematics' | 'English'>(() => {
         const stored = localStorage.getItem('guro_student_subject');
@@ -219,10 +404,11 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         return localStorage.getItem('guro_student_topic') ?? '';
     });
     const [classroomCode, setClassroomCode] = useState(() => {
-        return localStorage.getItem('guro_student_classroom_id') ?? '';
+        const currentUserClassroom = currentUser?.classroomId;
+        return currentUserClassroom || localStorage.getItem(`guro_student_classroom_id_${activeStudentId}`) || localStorage.getItem('guro_student_classroom_id') || '';
     });
     const [teacherName, setTeacherName] = useState(() => {
-        return localStorage.getItem('guro_student_teacher_name') ?? '';
+        return localStorage.getItem(`guro_student_teacher_name_${activeStudentId}`) || localStorage.getItem('guro_student_teacher_name') || '';
     });
 
     // Quiz execution state
@@ -231,13 +417,26 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     const [score, setScore] = useState(0);
     const [answeredHistory, setAnsweredHistory] = useState<AnsweredQuestion[]>([]);
 
-    // Per-topic progress history (key: `${subject}-${grade}-${topic}`)
-    const [topicHistory, setTopicHistory] = useState<Record<string, TopicStat>>({});
+    // Per-topic progress history (key: `${subject}-${grade}-${topic}`) scoped to current student account
+    const [topicHistory, setTopicHistory] = useState<Record<string, TopicStat>>(() => {
+        try {
+            const raw = localStorage.getItem(`guro_student_topic_history_${activeStudentId}`);
+            return raw ? JSON.parse(raw) : {};
+        } catch {
+            return {};
+        }
+    });
 
-    // Sync metrics history
-    const [lessonsCompleted, setLessonsCompleted] = useState(0);
-    const [totalScoreSum, setTotalScoreSum] = useState(0);
-    const [totalQuestionsAnswered, setTotalQuestionsAnswered] = useState(0);
+    // Sync metrics history scoped to current student account
+    const [lessonsCompleted, setLessonsCompleted] = useState<number>(() => {
+        return parseInt(localStorage.getItem(`guro_student_lessons_completed_${activeStudentId}`) ?? '0', 10) || 0;
+    });
+    const [totalScoreSum, setTotalScoreSum] = useState<number>(() => {
+        return parseInt(localStorage.getItem(`guro_student_score_sum_${activeStudentId}`) ?? '0', 10) || 0;
+    });
+    const [totalQuestionsAnswered, setTotalQuestionsAnswered] = useState<number>(() => {
+        return parseInt(localStorage.getItem(`guro_student_questions_answered_${activeStudentId}`) ?? '0', 10) || 0;
+    });
 
     // Dynamic item bank loading
     const [itemBank, setItemBank] = useState<ItemBank>(FALLBACK_ITEM_BANK);
@@ -246,7 +445,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
 
     // Gamification & Rewards
     const [stars, setStars] = useState<number>(() => parseInt(localStorage.getItem('guro_student_stars') ?? '0', 10) || 0);
-    const [avatarEmoji, setAvatarEmoji] = useState<string>(() => localStorage.getItem('guro_student_avatar') ?? '🚀');
+    const [avatarEmoji, setAvatarEmoji] = useState<string>(() => localStorage.getItem('guro_student_avatar') ?? '🦉');
     const [activeOutfit, setActiveOutfit] = useState<string>(() => localStorage.getItem('guro_student_outfit') ?? 'default');
     const [ownedOutfits, setOwnedOutfits] = useState<string[]>(() => {
         try {
@@ -411,15 +610,18 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
 
     const loadTopicHistory = useCallback(async () => {
         const allEvents: any[] = [];
+        const currentStudentId = (userName || 'STUDENT-WEB-USER').trim().replace(/\s+/g, '-').toUpperCase();
 
-        // 1. Add local queue items
+        // 1. Add local queue items matching current student ID
         const queueJson = localStorage.getItem('guro_sync_queue');
         if (queueJson) {
             try {
                 const queue = JSON.parse(queueJson);
                 if (Array.isArray(queue)) {
                     queue.forEach((item: any) => {
-                        if (item.event) allEvents.push(item.event);
+                        if (item.event && (!item.studentId || item.studentId === currentStudentId)) {
+                            allEvents.push(item.event);
+                        }
                     });
                 }
             } catch (e) {
@@ -429,10 +631,9 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
 
         // 2. Fetch already synced events from server when online
         if (navigator.onLine && userName) {
-            const studentId = userName.trim().replace(/\s+/g, '-').toUpperCase() || 'STUDENT-WEB-USER';
-            const accessCode = getParentAccessCode(studentId);
+            const accessCode = getParentAccessCode(currentStudentId);
             try {
-                const res = await apiFetch(`/api/progress?studentId=${encodeURIComponent(studentId)}&accessCode=${encodeURIComponent(accessCode)}`);
+                const res = await apiFetch(`/api/progress?studentId=${encodeURIComponent(currentStudentId)}&accessCode=${encodeURIComponent(accessCode)}`);
                 if (res.ok) {
                     const serverEvents = await res.json();
                     if (Array.isArray(serverEvents)) {
@@ -451,7 +652,13 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         // Sort by timestamp ascending so that as we process them, the last one processed is the newest
         allEvents.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-        const history: Record<string, TopicStat> = {};
+        // Load existing stored local topic history first for current student account
+        let history: Record<string, TopicStat> = {};
+        try {
+            const stored = localStorage.getItem(`guro_student_topic_history_${currentStudentId}`);
+            if (stored) history = JSON.parse(stored);
+        } catch (e) {}
+
         allEvents.forEach((evt) => {
             const key = `${evt.subject}-${evt.gradeLevel}-${evt.topic}`;
             const pct = evt.score / evt.totalQuestions;
@@ -468,6 +675,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         });
 
         setTopicHistory(history);
+        localStorage.setItem(`guro_student_topic_history_${currentStudentId}`, JSON.stringify(history));
     }, [userName]);
 
     const fetchItemBank = useCallback(async (forceCode?: string) => {
@@ -513,7 +721,9 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                 setClassroomCode(data.classroomId);
                 setTeacherName(data.teacherName || '');
                 localStorage.setItem('guro_student_classroom_id', data.classroomId);
+                localStorage.setItem(`guro_student_classroom_id_${activeStudentId}`, data.classroomId);
                 localStorage.setItem('guro_student_teacher_name', data.teacherName || '');
+                localStorage.setItem(`guro_student_teacher_name_${activeStudentId}`, data.teacherName || '');
                 toast.success(`Successfully joined ${data.teacherName ? `${data.teacherName}'s ` : ''}classroom!`);
                 fetchItemBank(data.classroomId);
                 return true;
@@ -532,7 +742,9 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         setClassroomCode('');
         setTeacherName('');
         localStorage.removeItem('guro_student_classroom_id');
+        localStorage.removeItem(`guro_student_classroom_id_${activeStudentId}`);
         localStorage.removeItem('guro_student_teacher_name');
+        localStorage.removeItem(`guro_student_teacher_name_${activeStudentId}`);
         toast.success('Successfully left classroom.');
         fetchItemBank('');
     };
@@ -735,9 +947,17 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
             setCurrentQuestionIndex(currentQuestionIndex + 1);
         } else {
             // Quiz completed! Save & Sync progress report
-            setLessonsCompleted((prev) => prev + 1);
-            setTotalScoreSum((prev) => prev + newScore);
-            setTotalQuestionsAnswered((prev) => prev + questions.length);
+            const nextLessonsCompleted = lessonsCompleted + 1;
+            const nextTotalScoreSum = totalScoreSum + newScore;
+            const nextTotalQuestionsAnswered = totalQuestionsAnswered + questions.length;
+
+            setLessonsCompleted(nextLessonsCompleted);
+            setTotalScoreSum(nextTotalScoreSum);
+            setTotalQuestionsAnswered(nextTotalQuestionsAnswered);
+
+            localStorage.setItem(`guro_student_lessons_completed_${activeStudentId}`, String(nextLessonsCompleted));
+            localStorage.setItem(`guro_student_score_sum_${activeStudentId}`, String(nextTotalScoreSum));
+            localStorage.setItem(`guro_student_questions_answered_${activeStudentId}`, String(nextTotalQuestionsAnswered));
 
             // Calculate XP and Stars
             const isPerfect = newScore === questions.length;
@@ -749,8 +969,8 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
             setXpPoints(nextXp);
             setStars(nextStars);
 
-            localStorage.setItem('guro_student_xp', String(nextXp));
-            localStorage.setItem('guro_student_stars', String(nextStars));
+            localStorage.setItem(`guro_student_xp_${activeStudentId}`, String(nextXp));
+            localStorage.setItem(`guro_student_stars_${activeStudentId}`, String(nextStars));
 
             // Record last activity
             const activityData = {
@@ -760,14 +980,14 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                 score: newScore,
                 totalQuestions: questions.length
             };
-            localStorage.setItem('guro_last_activity', JSON.stringify(activityData));
+            localStorage.setItem(`guro_last_activity_${activeStudentId}`, JSON.stringify(activityData));
 
-            // Update per-topic history
+            // Update per-topic history for activeStudentId
             const topicKey = `${selectedSubject}-${selectedGrade}-${selectedTopic}`;
             const pct = newScore / questions.length;
             setTopicHistory((prev) => {
                 const existing = prev[topicKey];
-                return {
+                const updatedHistory = {
                     ...prev,
                     [topicKey]: {
                         bestScore: existing ? Math.max(existing.bestScore, pct) : pct,
@@ -775,6 +995,8 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                         attempts: existing ? existing.attempts + 1 : 1,
                     },
                 };
+                localStorage.setItem(`guro_student_topic_history_${activeStudentId}`, JSON.stringify(updatedHistory));
+                return updatedHistory;
             });
 
             const studentId = userName.replace(/\s+/g, '-').toUpperCase() || 'STUDENT-WEB-USER';
@@ -820,18 +1042,66 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
 
     // Derive real subject progress % from topicHistory
     const computeSubjectAvg = (subject: string, grade: number): number => {
-        const keys = Object.keys(topicHistory).filter(k => k.startsWith(`${subject}-${grade}-`));
-        if (keys.length === 0) return 0;
-        const avg = keys.reduce((sum, k) => sum + topicHistory[k].bestScore, 0) / keys.length;
-        return Math.round(avg * 100);
+        const topics = getTopicsForCurrentSelection(subject as 'Mathematics' | 'English');
+        if (topics.length === 0) return 0;
+        let sumPct = 0;
+        topics.forEach((topic) => {
+            const key = `${subject}-${grade}-${topic}`;
+            if (topicHistory[key]) {
+                sumPct += topicHistory[key].bestScore;
+            }
+        });
+        return Math.round((sumPct / topics.length) * 100);
+    };
+
+    // Collect all progress events (from queue & topicHistory) for ProgressView
+    const getFullStudentProgressEvents = (): any[] => {
+        const events: any[] = [];
+        try {
+            const q = localStorage.getItem('guro_sync_queue');
+            if (q) {
+                const parsed = JSON.parse(q);
+                if (Array.isArray(parsed)) {
+                    parsed.forEach((item: any) => {
+                        if (item.event && (!item.studentId || item.studentId === activeStudentId)) {
+                            events.push(item.event);
+                        }
+                    });
+                }
+            }
+        } catch (e) {}
+
+        Object.keys(topicHistory).forEach((key) => {
+            const parts = key.split('-');
+            if (parts.length >= 3) {
+                const subject = parts[0];
+                const gradeLevel = parseInt(parts[1], 10) || 4;
+                const topic = parts.slice(2).join('-');
+                const stat = topicHistory[key];
+                if (!events.some((e) => e.topic === topic && e.subject === subject && e.gradeLevel === gradeLevel)) {
+                    events.push({
+                        eventId: `hist-${key}`,
+                        subject,
+                        gradeLevel,
+                        topic,
+                        score: Math.round(stat.lastScore * 5),
+                        totalQuestions: 5,
+                        timestamp: new Date().toISOString(),
+                    });
+                }
+            }
+        });
+
+        return events;
     };
 
     const liveMathProgress = computeSubjectAvg('Mathematics', selectedGrade);
     const liveEnglishProgress = computeSubjectAvg('English', selectedGrade);
 
-    // Math-before-English lock: only apply if Math has been attempted and avg < 80%
+    // Math-before-English lock: do NOT lock if enrolled in a teacher classroom or Math has not been attempted
+    const isEnrolledInClassroom = Boolean(classroomCode && classroomCode.trim().length > 0);
     const mathAttempted = Object.keys(topicHistory).some(k => k.startsWith(`Mathematics-${selectedGrade}-`));
-    const isEnglishLocked = mathAttempted && liveMathProgress < 80;
+    const isEnglishLocked = isEnrolledInClassroom ? false : (mathAttempted && liveMathProgress < 80);
     const englishLockReason = isEnglishLocked
         ? `Score at least 80% in Grade ${selectedGrade} Mathematics to unlock English. Your current Math score: ${liveMathProgress}%.`
         : undefined;
@@ -1098,15 +1368,9 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
 
                     {step === 'progress' && (
                         <ProgressView
-                            studentProgress={(() => {
-                                try {
-                                    const q = localStorage.getItem('guro_sync_queue');
-                                    if (!q) return [];
-                                    return (JSON.parse(q) as any[]).map((item: any) => item.event).filter(Boolean);
-                                } catch { return []; }
-                            })()}
+                            studentProgress={getFullStudentProgressEvents()}
                             streakCount={lessonsCompleted > 0 ? 1 : 0}
-                            xpPoints={totalScoreSum * 10}
+                            xpPoints={xpPoints}
                         />
                     )}
 
@@ -1167,6 +1431,14 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                         setScore(0);
                         setAnsweredHistory([]);
                         setStep('quiz');
+                    }}
+                    onSelectPrerequisite={(prereqTopic, prereqGrade) => {
+                        setSelectedGrade(prereqGrade);
+                        setSelectedTopic(prereqTopic);
+                        setStep('study');
+                    }}
+                    onStudyReview={() => {
+                        setStep('study');
                     }}
                 />
             )}

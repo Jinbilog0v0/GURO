@@ -44,11 +44,16 @@ import { toast } from '../components';
 type PinTarget = 'teacher' | 'parent' | 'parent-setup';
 
 const OUTFIT_OPTIONS = [
-  { key: 'default',      label: 'Classic',    emoji: '🚀', cost: 0 },
-  { key: 'detective_hat',label: 'Detective',  emoji: '🕵️‍♂️', cost: 20 },
-  { key: 'space_visor',  label: 'Astronaut',  emoji: '👨‍🚀', cost: 30 },
-  { key: 'wizard_cape',  label: 'Wizard',     emoji: '🧙‍♂️', cost: 40 },
-  { key: 'crown',        label: 'Royalty',    emoji: '👑', cost: 50 },
+  { key: 'default', label: 'Classic', emoji: '🦉', cost: 0 },
+  { key: 'graduation_cap', label: 'Scholar Cap', emoji: '🎓', cost: 20 },
+  { key: 'detective_hat', label: 'Detective', emoji: '🕵️‍♂️', cost: 35 },
+  { key: 'space_visor', label: 'Astronaut', emoji: '🧑‍🚀', cost: 50 },
+  { key: 'wizard_cape', label: 'Wizard', emoji: '🧙‍♂️', cost: 65 },
+  { key: 'crown', label: 'Royalty', emoji: '👑', cost: 80 },
+  { key: 'superhero_cape', label: 'Super Hero', emoji: '🦸', cost: 100 },
+  { key: 'party_hat', label: 'Party Hat', emoji: '🥳', cost: 120 },
+  { key: 'artist_beret', label: 'Artist', emoji: '🎨', cost: 150 },
+  { key: 'scientist_goggles', label: 'Lab Goggles', emoji: '🔬', cost: 180 },
 ];
 
 export function ProfileScreen() {
