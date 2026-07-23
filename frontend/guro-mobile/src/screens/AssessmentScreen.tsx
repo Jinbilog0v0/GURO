@@ -21,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppStore, Question } from '../store/useAppStore';
-import { shuffle, MASTERY_THRESHOLD } from '../utils/engine';
+import { shuffle, MASTERY_THRESHOLD, evaluateRemediationRouting } from '../utils/engine';
 import { Trophy, Square, Volume2, Check, X, Inbox, ChevronDown, ChevronUp, WifiOff, ThumbsUp, ThumbsDown, Sparkles } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
@@ -203,7 +203,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
     pan.setValue({ x: 0, y: 0 });
     if (currentQuestion && currentQuestion.type === 'drag-drop-matching' && currentQuestion.matchingPairs) {
       const left = Object.keys(currentQuestion.matchingPairs);
-      const right = Object.values(currentQuestion.matchingPairs);
+      const right = Object.values(currentQuestion.matchingPairs) as string[];
       setLeftOptionsShuffled([...left].sort(() => Math.random() - 0.5));
       setRightOptionsShuffled([...right].sort(() => Math.random() - 0.5));
     }
@@ -335,7 +335,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
     } else {
       setIsSpeaking(true);
       const optionsText = currentQuestion.options
-        .map((opt, idx) => `Option ${String.fromCharCode(65 + idx)}: ${opt}`)
+        .map((opt: string, idx: number) => `Option ${String.fromCharCode(65 + idx)}: ${opt}`)
         .join('. ');
       const cleanQuestionText = currentQuestion.questionText
         .replace(/\[\[blank\]\]/g, ' blank ')
@@ -520,6 +520,100 @@ export function AssessmentScreen({ route, navigation }: Props) {
               />
             </View>
 
+            {/* Actionable Remediation & Prerequisite Return Card */}
+            {(() => {
+              const remediation = evaluateRemediationRouting(percentage, subject, gradeLevel, topic);
+              const isPrereq = remediation.instruction === 'prerequisite_return';
+              const isScaffold = remediation.instruction === 'scaffold_review';
+              const cardBg = passed
+                ? 'rgba(16, 185, 129, 0.08)'
+                : isPrereq
+                ? 'rgba(239, 68, 68, 0.08)'
+                : 'rgba(245, 158, 11, 0.08)';
+              const cardBorder = passed
+                ? 'rgba(16, 185, 129, 0.25)'
+                : isPrereq
+                ? 'rgba(239, 68, 68, 0.25)'
+                : 'rgba(245, 158, 11, 0.25)';
+              const titleColor = passed
+                ? Colors.success
+                : isPrereq
+                ? Colors.danger
+                : Colors.warning;
+
+              return (
+                <View
+                  style={{
+                    marginVertical: Spacing.md,
+                    padding: Spacing.md,
+                    backgroundColor: cardBg,
+                    borderWidth: 1,
+                    borderColor: cardBorder,
+                    borderRadius: Radius.md,
+                    gap: 6,
+                    width: '100%',
+                  }}
+                >
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: titleColor }}>
+                    {remediation.feedbackTitle}
+                  </Text>
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMain, lineHeight: 17 }}>
+                    {remediation.feedbackMessage}
+                  </Text>
+
+                  {isPrereq && remediation.targetLesson && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        navigation.replace('Study', {
+                          subject,
+                          gradeLevel: remediation.targetLesson!.grade,
+                          topic: remediation.targetLesson!.topic,
+                        });
+                      }}
+                      activeOpacity={0.8}
+                      style={{
+                        marginTop: 6,
+                        backgroundColor: Colors.danger,
+                        paddingVertical: 10,
+                        paddingHorizontal: 14,
+                        borderRadius: Radius.sm,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.white }}>
+                        🎯 Return to Prerequisite: {remediation.targetLesson.topic} (Grade {remediation.targetLesson.grade})
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {isScaffold && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        navigation.replace('Study', {
+                          subject,
+                          gradeLevel,
+                          topic,
+                        });
+                      }}
+                      activeOpacity={0.8}
+                      style={{
+                        marginTop: 6,
+                        backgroundColor: Colors.warning,
+                        paddingVertical: 10,
+                        paddingHorizontal: 14,
+                        borderRadius: Radius.sm,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#000000' }}>
+                        💡 Start Guided Study Review: {topic}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })()}
+
             <PrimaryButton
               label="Back to Topics"
               onPress={() => navigation.goBack()}
@@ -612,30 +706,107 @@ export function AssessmentScreen({ route, navigation }: Props) {
 
           {/* Answer review list */}
           {showAnswerReview && answerLog.map((entry, idx) => (
-            <GlassCard key={idx} padding={14} style={{ gap: 6 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-                {entry.isCorrect
-                  ? <Check size={16} color={Colors.success} strokeWidth={3} style={{ marginTop: 2 }} />
-                  : <X size={16} color={Colors.danger} strokeWidth={3} style={{ marginTop: 2 }} />
-                }
-                <Text style={{ flex: 1, fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMain, lineHeight: 18 }}>
-                  {entry.questionText}
-                </Text>
-              </View>
-              {!entry.isCorrect && (
-                <View style={{ marginLeft: 24, gap: 2 }}>
-                  <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.danger }}>
-                    Your answer: <Text style={{ fontFamily: Fonts.bodyBold }}>{entry.selectedOption}</Text>
-                  </Text>
-                  <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.success }}>
-                    Correct: <Text style={{ fontFamily: Fonts.bodyBold }}>{entry.correctAnswer}</Text>
+            <GlassCard key={idx} padding={16} style={{ gap: 10, marginTop: Spacing.sm }}>
+              {/* Header: Question Badge, Text, Status Pill */}
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, flex: 1 }}>
+                  <View style={{
+                    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                    borderRadius: Radius.sm,
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    marginTop: 2,
+                  }}>
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                      Q{idx + 1}
+                    </Text>
+                  </View>
+                  <Text style={{ flex: 1, fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMain, lineHeight: 18 }}>
+                    {entry.questionText}
                   </Text>
                 </View>
-              )}
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: Radius.lg,
+                  backgroundColor: entry.isCorrect ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                  borderWidth: 1,
+                  borderColor: entry.isCorrect ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)',
+                }}>
+                  {entry.isCorrect
+                    ? <Check size={12} color={Colors.success} strokeWidth={3} />
+                    : <X size={12} color={Colors.danger} strokeWidth={3} />
+                  }
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: entry.isCorrect ? Colors.success : Colors.danger }}>
+                    {entry.isCorrect ? 'Correct' : 'Review'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Option details */}
+              <View style={{ gap: 6, paddingTop: 4 }}>
+                {!entry.isCorrect && (
+                  <View style={{
+                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(239, 68, 68, 0.2)',
+                    borderRadius: Radius.sm,
+                    padding: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}>
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.danger }}>
+                      Your choice:
+                    </Text>
+                    <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.danger, textDecorationLine: 'line-through' }}>
+                      {entry.selectedOption}
+                    </Text>
+                  </View>
+                )}
+                <View style={{
+                  backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(16, 185, 129, 0.2)',
+                  borderRadius: Radius.sm,
+                  padding: 8,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                }}>
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.success }}>
+                    Correct answer:
+                  </Text>
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.success }}>
+                    {entry.correctAnswer}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Explanation box */}
               {entry.explanation ? (
-                <Text style={{ marginLeft: 24, fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted, lineHeight: 16, fontStyle: 'italic' }}>
-                  {entry.explanation}
-                </Text>
+                <View style={{
+                  backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                  borderLeftWidth: 3,
+                  borderLeftColor: Colors.warning,
+                  borderRadius: Radius.sm,
+                  padding: 10,
+                  gap: 4,
+                  marginTop: 2,
+                }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Sparkles size={12} color={Colors.warning} />
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.warning, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      Explanation & Key Concept
+                    </Text>
+                  </View>
+                  <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textMain, lineHeight: 16 }}>
+                    {entry.explanation}
+                  </Text>
+                </View>
               ) : null}
             </GlassCard>
           ))}
@@ -680,6 +851,15 @@ export function AssessmentScreen({ route, navigation }: Props) {
       ? currentQuestion.feedback.en
       : currentQuestion?.feedback || '';
 
+  const comboStreak = (() => {
+    let streak = 0;
+    for (let i = answerLog.length - 1; i >= 0; i--) {
+      if (answerLog[i].isCorrect) streak++;
+      else break;
+    }
+    return streak;
+  })();
+
   // ── Main render ────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.screen}>
@@ -697,6 +877,13 @@ export function AssessmentScreen({ route, navigation }: Props) {
               variant="indigo"
               style={styles.headerBadgeGap}
             />
+            {comboStreak >= 2 && (
+              <Badge
+                label={`🔥 ${comboStreak}x Combo`}
+                variant="warning"
+                style={styles.headerBadgeGap}
+              />
+            )}
           </View>
           <Text style={styles.headerTopic}>{topic}</Text>
 
@@ -814,9 +1001,9 @@ export function AssessmentScreen({ route, navigation }: Props) {
                   {rightOptionsShuffled
                     .filter((item) => !Object.values(currentMatches).includes(item))
                     .map((item, idx) => {
-                      let btnColor = Colors.bgCard;
-                      let borderColor = Colors.border;
-                      let textColor = Colors.textMain;
+                      let btnColor: string = Colors.bgCard;
+                      let borderColor: string = Colors.border;
+                      let textColor: string = Colors.textMain;
 
                       if (!selectedLeft) {
                         btnColor = Colors.bgCard;
@@ -910,9 +1097,9 @@ export function AssessmentScreen({ route, navigation }: Props) {
                 const isCorrect = option === currentQuestion.correctAnswer;
                 const isWrong = isSelected && selectedOption !== currentQuestion.correctAnswer;
 
-                let btnColor = Colors.bgCard;
-                let borderColor = Colors.border;
-                let textColor = Colors.textMain;
+                let btnColor: string = Colors.bgCard;
+                let borderColor: string = Colors.border;
+                let textColor: string = Colors.textMain;
 
                 if (isAnswered) {
                   if (isCorrect) {
@@ -987,7 +1174,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
                   minWidth: 110,
                 }}>
                   <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.textMuted, textTransform: 'uppercase' }}>◀ Swipe Left</Text>
-                  <Text style={{ fontFamily: Fonts.heading, fontSize: FontSizes.base, color: Colors.danger, marginTop: 4 }}>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.base, color: Colors.danger, marginTop: 4 }}>
                     {currentQuestion.options[0]}
                   </Text>
                 </View>
@@ -1002,7 +1189,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
                   minWidth: 110,
                 }}>
                   <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.textMuted, textTransform: 'uppercase' }}>Swipe Right ▶</Text>
-                  <Text style={{ fontFamily: Fonts.heading, fontSize: FontSizes.base, color: Colors.success, marginTop: 4 }}>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.base, color: Colors.success, marginTop: 4 }}>
                     {currentQuestion.options[1]}
                   </Text>
                 </View>
@@ -1168,7 +1355,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
               </View>
             </View>
           ) : (
-            currentQuestion.options.map((option, idx) => {
+            currentQuestion.options.map((option: string, idx: number) => {
               const optionStyle = getOptionStyle(option);
               return (
                 <TouchableOpacity

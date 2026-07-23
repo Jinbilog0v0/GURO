@@ -57,10 +57,16 @@ import { isLessonLocked, LESSON_SEQUENCE } from '../utils/engine';
 
 const OUTFIT_EMOJIS: Record<string, string> = {
   default: '',
+  graduation_cap: '🎓',
   detective_hat: '🕵️‍♂️',
-  space_visor: '👨‍🚀',
+  space_visor: '🧑‍🚀',
   wizard_cape: '🧙‍♂️',
   crown: '👑',
+  superhero_cape: '🦸',
+  party_hat: '🥳',
+  astronaut_helmet: '🧑‍🚀',
+  artist_beret: '🎨',
+  scientist_goggles: '🔬',
 };
 
 export function StudentDashboard() {
@@ -217,7 +223,11 @@ export function StudentDashboard() {
   };
 
   const isEnglishLocked = (gradeLevel: number): boolean => {
-    if (!parentalControls.mathBeforeEnglish) return false;
+    if (classroomId || !parentalControls.mathBeforeEnglish) return false;
+    const mathLogs = studentProgress.filter(
+      (p) => p.subject === 'Mathematics' && p.gradeLevel === gradeLevel,
+    );
+    if (mathLogs.length === 0) return false;
     const mathScore = getMathAverageScore(gradeLevel);
     return mathScore < 80;
   };

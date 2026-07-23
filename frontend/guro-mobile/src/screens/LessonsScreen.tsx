@@ -67,7 +67,11 @@ export function LessonsScreen() {
   };
 
   const isEnglishLocked = (gradeLevel: number): boolean => {
-    if (selectedSubject !== 'English' || !parentalControls.mathBeforeEnglish) return false;
+    if (selectedSubject !== 'English' || classroomId || !parentalControls.mathBeforeEnglish) return false;
+    const mathLogs = studentProgress.filter(
+      (p) => p.subject === 'Mathematics' && p.gradeLevel === gradeLevel,
+    );
+    if (mathLogs.length === 0) return false;
     const mathScore = getMathAverageScore(gradeLevel);
     return mathScore < 80;
   };

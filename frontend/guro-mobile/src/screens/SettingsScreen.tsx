@@ -179,13 +179,17 @@ export function SettingsScreen({ navigation }: Props) {
     Speech.speak(text, { rate, pitch });
   };
 
-  // Outfit descriptions
   const outfitList = [
-    { id: 'default', label: 'Casual Mascot', emoji: '', cost: 0 },
-    { id: 'detective_hat', label: 'Detective Hat', emoji: '🕵️‍♂️', cost: 20 },
-    { id: 'space_visor', label: 'Space Visor', emoji: '👨‍🚀', cost: 40 },
-    { id: 'wizard_cape', label: 'Wizard Cape', emoji: '🧙‍♂️', cost: 60 },
-    { id: 'crown', label: 'Royal Crown', emoji: '👑', cost: 100 },
+    { id: 'default', label: 'Casual Mascot', emoji: '🦉', cost: 0 },
+    { id: 'graduation_cap', label: 'Scholar Cap', emoji: '🎓', cost: 20 },
+    { id: 'detective_hat', label: 'Detective Hat', emoji: '🕵️‍♂️', cost: 35 },
+    { id: 'space_visor', label: 'Space Visor', emoji: '🧑‍🚀', cost: 50 },
+    { id: 'wizard_cape', label: 'Wizard Cape', emoji: '🧙‍♂️', cost: 65 },
+    { id: 'crown', label: 'Royal Crown', emoji: '👑', cost: 80 },
+    { id: 'superhero_cape', label: 'Super Hero', emoji: '🦸', cost: 100 },
+    { id: 'party_hat', label: 'Party Hat', emoji: '🥳', cost: 120 },
+    { id: 'artist_beret', label: 'Artist Beret', emoji: '🎨', cost: 150 },
+    { id: 'scientist_goggles', label: 'Lab Goggles', emoji: '🔬', cost: 180 },
   ];
 
   // ── Dynamic Settings Box Content Render ──────────────────────────────────
@@ -504,7 +508,7 @@ export function SettingsScreen({ navigation }: Props) {
               <View>
                 <Text style={styles.formLabel}>Choose Mascot Emoji Base:</Text>
                 <View style={styles.avatarGrid}>
-                  {['🚀', '🤖', '🦉', '⭐', '🦖', '🦄', '🍎', '⚽'].map((emoji) => {
+                  {['🦉', '🦊', '🐼', '🦁', '🦄', '🚀', '🐬', '🐝', '🐯', '🐶', '🐱', '🤖', '👾', '🦖', '🐸', '🎓'].map((emoji) => {
                     const active = emoji === avatarEmoji;
                     return (
                       <TouchableOpacity

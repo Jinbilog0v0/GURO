@@ -341,9 +341,9 @@ export function StudyScreen({ route, navigation }: Props) {
                 const isOptSelected = selected === opt;
                 const hasChecked = refresherChecked[rIdx];
 
-                let btnBg = Colors.bgCard;
-                let btnBorder = Colors.border;
-                let txtColor = Colors.textMain;
+                let btnBg: string = Colors.bgCard;
+                let btnBorder: string = Colors.border;
+                let txtColor: string = Colors.textMain;
 
                 if (hasChecked) {
                   if (opt === currentItem.data.correctAnswer) {

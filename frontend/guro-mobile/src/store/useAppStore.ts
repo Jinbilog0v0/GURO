@@ -38,6 +38,7 @@ export interface StudyContent {
     examples: string[];
   }>;
   summary: string[];
+  refresherQuiz?: Array<{ questionText: string; options: string[]; correctAnswer: string; explanation: string; id?: string; feedback?: any }>;
 }
 
 export interface TopicData {
@@ -124,7 +125,7 @@ interface AppState {
   setClassroomId: (id: string | null) => void;
   setActiveSubjects: (subjects: string[]) => void;
   setAppMode: (mode: 'online' | 'offline') => void;
-  setGuestName: (name: string | null) => void;
+  setGuestName: (name: string | null, emailOrId?: string | null) => void;
   fetchItemBankFromServer: (serverUrl: string, classroomId: string) => Promise<boolean>;
   recordProgress: (event: Omit<ProgressEvent, 'eventId' | 'timestamp' | 'synced'>) => Promise<void>;
   clearProgress: () => Promise<void>;
@@ -180,7 +181,7 @@ export const useAppStore = create<AppState>()(
       guestName: null,
       dailyMinutesUsed: 0,
       lastActiveDay: null,
-      avatarEmoji: '🚀',
+      avatarEmoji: '🦉',
       soundEffectsEnabled: true,
       speechRate: 1.0,
       colorTheme: 'blue',
@@ -195,7 +196,11 @@ export const useAppStore = create<AppState>()(
       setServerUrl: (url) => set({ serverUrl: url }),
       setToken: (token) => set({ token }),
       setAppMode: (mode) => set({ appMode: mode }),
-      setGuestName: (name) => set({ guestName: name }),
+      setGuestName: (name, emailOrId) => {
+        const primaryId = (emailOrId && emailOrId.trim()) ? emailOrId.trim() : (name && name.trim()) ? name.trim() : 'STUDENT-MOBILE-USER';
+        const sanitized = primaryId.replace(/\s+/g, '-').toUpperCase();
+        set({ guestName: name, studentId: sanitized });
+      },
       setAvatarEmoji: (emoji) => set({ avatarEmoji: emoji }),
       setSoundEffectsEnabled: (enabled) => set({ soundEffectsEnabled: enabled }),
       setSpeechRate: (rate) => set({ speechRate: rate }),
@@ -282,10 +287,12 @@ export const useAppStore = create<AppState>()(
           });
           if (res.ok) {
             const data = await res.json();
+            const serverClassroomId = data.user?.classroomId || data.classroomId;
             set({
               currentUser: data.user,
               studentId: data.studentId ?? data.user.name.replace(/\s+/g, '-').toUpperCase(),
               token: data.token,
+              ...(serverClassroomId ? { classroomId: serverClassroomId } : {}),
             });
             get().addLog(`Logged in as: ${data.user.email}`);
             return { success: true, message: `Successfully logged in as ${data.user.name}` };
@@ -304,7 +311,7 @@ export const useAppStore = create<AppState>()(
           studentId: 'GURO-STUDENT-LOCAL',
           appMode: 'offline',
           guestName: null,
-          classroomId: null,
+          // NOTE: Preserve classroomId on logout so classroom access is not revoked
           parentalControls: {
             dailyTimeLimit: 0,
             mathBeforeEnglish: false,
@@ -314,7 +321,7 @@ export const useAppStore = create<AppState>()(
           dailyMinutesUsed: 0,
           lastActiveDay: null,
         });
-        get().addLog('Logged out of cloud account. Reverted to GURO-STUDENT-LOCAL.');
+        get().addLog('Logged out of cloud account. Preserved active classroom pairing.');
         get().initializeLocalStore().catch(console.error);
       },
       addLog: (message) =>

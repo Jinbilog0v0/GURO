@@ -74,6 +74,76 @@ export function calculateNextDifficulty(
   }
 }
 
+export interface RemediationRoutingResult {
+  instruction: 'advance' | 'scaffold_review' | 'prerequisite_return';
+  tier: DifficultyTier;
+  targetLesson?: LessonSequenceItem;
+  remedialConcept?: string;
+  feedbackTitle: string;
+  feedbackMessage: string;
+  suggestedActionLabel: string;
+}
+
+/**
+ * Advanced adaptive routing function evaluating student performance thresholds
+ * and determining actionable remediation pathways.
+ *
+ * Routing logic:
+ * - Score >= 80%: 'advance' (Mastery achieved, unlock next tier or topic)
+ * - Score 50% - 79%: 'scaffold_review' (Borderline result, trigger guided micro-lesson on current topic)
+ * - Score < 50%: 'prerequisite_return' (Critical skill gap, return to prerequisite topic or foundation review)
+ */
+export function evaluateRemediationRouting(
+  score: number,
+  subject: string,
+  currentGrade: number,
+  currentTopic: string,
+  currentDifficulty: DifficultyTier = 'Average'
+): RemediationRoutingResult {
+  if (typeof score !== 'number' || isNaN(score)) {
+    throw new TypeError('Score must be a valid number.');
+  }
+
+  // Threshold Routing Logic
+  if (score >= MASTERY_THRESHOLD) {
+    const nextTier: DifficultyTier = currentDifficulty === 'Easy' ? 'Average' : 'Difficult';
+    return {
+      instruction: 'advance',
+      tier: nextTier,
+      feedbackTitle: 'Mastery Achieved! 🎉',
+      feedbackMessage: `Outstanding job! You scored ${score}%. You have demonstrated solid mastery and are ready to advance.`,
+      suggestedActionLabel: 'Next Topic / Tier',
+    };
+  } else if (score >= 50) {
+    return {
+      instruction: 'scaffold_review',
+      tier: currentDifficulty,
+      remedialConcept: currentTopic,
+      feedbackTitle: 'Guided Micro-Review 💡',
+      feedbackMessage: `You scored ${score}%. You are close to mastery! Let's do a guided micro-review on "${currentTopic}" before retrying to lock in your score.`,
+      suggestedActionLabel: 'Start Micro-Review',
+    };
+  } else {
+    const seq = LESSON_SEQUENCE[subject] || [];
+    const currentIndex = seq.findIndex((item) => item.grade === currentGrade && item.topic === currentTopic);
+    const prereq = currentIndex > 0 ? seq[currentIndex - 1] : undefined;
+
+    const lowerTier: DifficultyTier = currentDifficulty === 'Difficult' ? 'Average' : 'Easy';
+
+    return {
+      instruction: 'prerequisite_return',
+      tier: lowerTier,
+      targetLesson: prereq,
+      feedbackTitle: 'Foundational Re-Routing 📚',
+      feedbackMessage: prereq
+        ? `You scored ${score}%. We detected foundational gaps. Let's return to "${prereq.topic}" (Grade ${prereq.grade}) to rebuild essential skills before re-attempting ${currentTopic}.`
+        : `You scored ${score}%. Let's step down to ${lowerTier} level and review core building blocks for "${currentTopic}".`,
+      suggestedActionLabel: prereq ? `Review ${prereq.topic}` : 'Review Fundamentals',
+    };
+  }
+}
+
+
 /**
  * 1:1 Strict Lesson Progression Sequence across grades.
  */
