@@ -6,16 +6,16 @@ import { setAuthToken } from '../utils/api';
 
 // ─── Logo ────────────────────────────────────────────────────────────────────
 
-const GuroLogoGraphic: React.FC = () => (
-    <div className="relative flex size-14 items-center justify-center">
-        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M8 38 C8 38 8 14 26 14 C44 14 44 38 44 38" stroke="#11428E" strokeWidth="3.5" strokeLinecap="round" />
-            <path d="M26 14 L26 38" stroke="#11428E" strokeWidth="3.5" strokeLinecap="round" />
-            <path d="M8 38 L44 38" stroke="#11428E" strokeWidth="3.5" strokeLinecap="round" />
-        </svg>
-        <span className="absolute -top-1 -right-1 text-sm leading-none">✦</span>
-    </div>
-);
+const GuroLogoGraphic: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' }) => {
+    const dimensions = size === 'lg' ? 'size-20' : size === 'sm' ? 'size-12' : 'size-16';
+    const iconSize = size === 'lg' ? 'size-11' : size === 'sm' ? 'size-6' : 'size-9';
+    return (
+        <div className={`relative flex ${dimensions} items-center justify-center rounded-3xl bg-gradient-to-tr from-[#11428E] via-[#2563EB] to-[#A01322] text-white shadow-xl shadow-[#11428E]/25 border border-white/30 transform hover:scale-105 transition-all duration-300`}>
+            <GraduationCap className={iconSize} strokeWidth={2.3} />
+            <span className="absolute -top-1.5 -right-1.5 text-xs text-amber-300 animate-pulse">✦</span>
+        </div>
+    );
+};
 
 // ─── Types ───────────────────────────────────────────────────────────────────
  
@@ -175,9 +175,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
     ];
 
     const featureCards: FeatureCardProps[] = [
-        { label: 'DepEd MELC Aligned', Icon: BookOpen },
-        { label: 'Adaptive Learning', Icon: Target },
-        { label: 'Works Offline', Icon: Smartphone },
+        {
+            label: 'DepEd MELC Aligned',
+            description: 'Grade 4–6 Math & English curriculum standards',
+            badge: 'Official Standards',
+            Icon: BookOpen,
+            gradient: 'from-[#11428E] to-blue-600',
+        },
+        {
+            label: 'Adaptive Learning',
+            description: 'Predictive score analysis & quick refresher checks',
+            badge: 'AI Diagnostic',
+            Icon: Target,
+            gradient: 'from-purple-600 to-indigo-600',
+        },
+        {
+            label: 'Works 100% Offline',
+            description: 'Learn anywhere, zero internet required',
+            badge: 'Offline Mode',
+            Icon: Smartphone,
+            gradient: 'from-emerald-600 to-teal-600',
+        },
     ];
 
     // ── Shared sub-components ─────────────────────────────────────────────────
@@ -527,7 +545,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
                 {/* ── Feature strip ── */}
                 {view !== 'guest-roles' && (
-                    <div className="grid w-full grid-cols-3 gap-4 max-w-lg mt-2">
+                    <div className="grid w-full grid-cols-1 sm:grid-cols-3 gap-5 max-w-3xl mt-4 px-2">
                         {featureCards.map((card) => (
                             <FeatureCard key={card.label} {...card} />
                         ))}

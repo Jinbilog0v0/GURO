@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, ChevronRight } from 'lucide-react';
+import { ArrowLeft, User, ChevronRight, Mail, GraduationCap } from 'lucide-react';
 
 interface NameInputStepProps {
     onBack: () => void;
@@ -7,25 +7,25 @@ interface NameInputStepProps {
 }
 
 const STORAGE_KEY_NAME = 'guro_student_name';
+const STORAGE_KEY_EMAIL_ID = 'guro_student_email_or_id';
 
 const GuroLogoGraphic: React.FC = () => (
-    <div className="relative flex size-14 items-center justify-center">
-        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M8 38 C8 38 8 14 26 14 C44 14 44 38 44 38" stroke="#11428E" strokeWidth="3.5" strokeLinecap="round" />
-            <path d="M26 14 L26 38" stroke="#11428E" strokeWidth="3.5" strokeLinecap="round" />
-            <path d="M8 38 L44 38" stroke="#11428E" strokeWidth="3.5" strokeLinecap="round" />
-        </svg>
-        <span className="absolute -top-1 -right-1 text-sm leading-none">✦</span>
+    <div className="relative flex size-16 items-center justify-center rounded-3xl bg-gradient-to-tr from-[#11428E] via-[#2563EB] to-[#A01322] text-white shadow-xl shadow-[#11428E]/25 border border-white/30 transform hover:scale-105 transition-all duration-300">
+        <GraduationCap className="size-9" strokeWidth={2.3} />
+        <span className="absolute -top-1.5 -right-1.5 text-xs text-amber-300 animate-pulse">✦</span>
     </div>
 );
 
 export const NameInputStep: React.FC<NameInputStepProps> = ({ onBack, onStartLearning }) => {
     const [name, setName] = useState('');
+    const [emailOrId, setEmailOrId] = useState('');
     const [savedName, setSavedName] = useState<string | null>(null);
 
     useEffect(() => {
         const stored = localStorage.getItem(STORAGE_KEY_NAME);
+        const storedEmail = localStorage.getItem(STORAGE_KEY_EMAIL_ID);
         if (stored) setSavedName(stored);
+        if (storedEmail) setEmailOrId(storedEmail);
     }, []);
 
     const isInputEmpty = name.trim() === '';
@@ -34,6 +34,9 @@ export const NameInputStep: React.FC<NameInputStepProps> = ({ onBack, onStartLea
         e.preventDefault();
         if (!isInputEmpty) {
             localStorage.setItem(STORAGE_KEY_NAME, name.trim());
+            if (emailOrId.trim()) {
+                localStorage.setItem(STORAGE_KEY_EMAIL_ID, emailOrId.trim());
+            }
             onStartLearning(name.trim());
         }
     };
@@ -120,6 +123,24 @@ export const NameInputStep: React.FC<NameInputStepProps> = ({ onBack, onStartLea
                                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-300 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all"
                                 maxLength={30}
                                 autoFocus={!savedName}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">School Email or Learner ID (Optional)</label>
+                            <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">Cloud Sync Ready</span>
+                        </div>
+                        <div className="relative">
+                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                            <input
+                                type="text"
+                                value={emailOrId}
+                                onChange={(e) => setEmailOrId(e.target.value)}
+                                placeholder="e.g. juan@school.ph or LRN-123456"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-300 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all"
+                                maxLength={50}
                             />
                         </div>
                     </div>

@@ -185,7 +185,20 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
     const isLastQuestion = currentQuestionIndex === totalQuestions;
     const isCorrect = selectedOption === correctOption;
 
+    const comboStreak = (() => {
+        let streak = 0;
+        for (let i = answeredHistory.length - 1; i >= 0; i--) {
+            if (answeredHistory[i].isCorrect) streak++;
+            else break;
+        }
+        return streak;
+    })();
 
+    const mascotEmoji = (() => {
+        if (isSubmitted) return isCorrect ? '🦉🎉' : '🦉✋';
+        if (comboStreak >= 2) return '🦉🔥';
+        return '🦉';
+    })();
 
     const progressPercentage = (currentQuestionIndex / totalQuestions) * 100;
 
@@ -420,6 +433,12 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                     </button>
 
                     <div className="flex items-center gap-3">
+                        {comboStreak >= 2 && (
+                            <span className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-xs rounded-full shadow-md animate-bounce flex items-center gap-1.5">
+                                <Sparkles className="size-3.5 fill-white" />
+                                🔥 {comboStreak}x Combo!
+                            </span>
+                        )}
                         <span className="px-4 py-2 bg-white border border-zinc-200/60 rounded-full shadow-sm text-zinc-700 font-bold text-sm">
                             {currentQuestionIndex}/{totalQuestions}
                         </span>
@@ -473,6 +492,9 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                 className="w-full max-w-3xl bg-white rounded-[32px] p-6 md:p-10 shadow-2xl shadow-zinc-200/80 border border-zinc-100/50 flex flex-col items-center gap-6 mt-24 relative z-10"
             >
                 <div className="flex items-center gap-3">
+                    <div className="size-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-xl shadow-sm hover:scale-110 transition-transform cursor-pointer" title="Wise Owl Companion">
+                        {mascotEmoji}
+                    </div>
                     <div className="px-5 py-1.5 bg-purple-50 rounded-full text-xs font-bold text-purple-600 tracking-wide border border-purple-100/40">
                         {type === 'fill-in-the-blank' 
                             ? 'Fill-in-the-Blank' 
