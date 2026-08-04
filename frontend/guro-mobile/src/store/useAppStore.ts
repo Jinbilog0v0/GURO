@@ -67,6 +67,7 @@ export interface ProgressEvent {
   topic: string;
   score: number;
   totalQuestions: number;
+  difficulty?: string;
   timestamp: string;
   synced: boolean;
 }

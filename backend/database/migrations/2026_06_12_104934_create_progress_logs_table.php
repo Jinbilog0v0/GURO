@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('topic', 255);
             $table->integer('score');
             $table->integer('total_questions');
+            $table->string('difficulty', 50)->nullable();
             $table->timestamp('timestamp');
             $table->timestamp('synced_at')->useCurrent();
             $table->timestamps();

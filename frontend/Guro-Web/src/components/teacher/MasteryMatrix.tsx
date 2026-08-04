@@ -9,6 +9,7 @@ interface SyncedEvent {
   topic: string;
   score: number;
   totalQuestions: number;
+  difficulty?: string;
   timestamp: string;
 }
 
@@ -31,10 +32,26 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
 
   const visibleTopics = topicFilter === 'All' ? allTopics : allTopics.filter((t) => t === topicFilter);
 
-  const getBestScore = (studentId: string, topic: string) => {
+  const getBestScoreDetails = (studentId: string, topic: string) => {
     const logs = progressLogs.filter((l) => l.studentId === studentId && l.topic === topic);
     if (logs.length === 0) return null;
-    return Math.max(...logs.map((l) => (l.score / l.totalQuestions) * 100));
+    
+    // Find log with highest score percentage
+    let bestLog = logs[0];
+    let bestPercent = (bestLog.score / bestLog.totalQuestions) * 100;
+    
+    for (let i = 1; i < logs.length; i++) {
+      const pct = (logs[i].score / logs[i].totalQuestions) * 100;
+      if (pct > bestPercent) {
+        bestPercent = pct;
+        bestLog = logs[i];
+      }
+    }
+    
+    return {
+      percentage: bestPercent,
+      difficulty: bestLog.difficulty || 'Average'
+    };
   };
 
   const getCellStyles = (percentage: number | null) => {
@@ -129,7 +146,9 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
                         <span className="inline-flex items-center gap-1.5"><Key className="size-3 text-slate-400" aria-hidden="true" />{student}</span>
                       </td>
                       {visibleTopics.map((topic) => {
-                        const bestScore = getBestScore(student, topic);
+                        const bestDetails = getBestScoreDetails(student, topic);
+                        const bestScore = bestDetails ? bestDetails.percentage : null;
+                        const difficulty = bestDetails ? bestDetails.difficulty : null;
                         const cellStyle = getCellStyles(bestScore);
                         const isRecentlyUpdated =
                           lastUpdatedCell &&
@@ -148,14 +167,26 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
                           ? `Score ${Math.round(bestScore)}% for ${student} on ${topic}`
                           : `No data for ${student} on ${topic}`;
 
+                        let diffBadgeColor = '';
+                        if (difficulty === 'Easy') diffBadgeColor = 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400';
+                        else if (difficulty === 'Difficult') diffBadgeColor = 'bg-rose-500/20 text-rose-600 dark:text-rose-400';
+                        else diffBadgeColor = 'bg-amber-500/20 text-amber-600 dark:text-amber-400';
+
                         return (
                           <td key={topic} className="p-3 px-4.5 whitespace-nowrap">
-                            <div
-                              className={`${pulseClass} inline-flex items-center justify-center py-1.5 px-3 min-w-[55px] text-xs`}
-                              style={{ ...cellStyle, borderRadius: '8px', transition: 'all 0.5s ease' }}
-                              aria-label={label}
-                            >
-                              {bestScore !== null ? `${Math.round(bestScore)}%` : '—'}
+                            <div className="flex items-center gap-1.5">
+                              <div
+                                className={`${pulseClass} inline-flex items-center justify-center py-1.5 px-3 min-w-[55px] text-xs`}
+                                style={{ ...cellStyle, borderRadius: '8px', transition: 'all 0.5s ease' }}
+                                aria-label={label}
+                              >
+                                {bestScore !== null ? `${Math.round(bestScore)}%` : '—'}
+                              </div>
+                              {difficulty && (
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold select-none ${diffBadgeColor}`} title={`${difficulty} Level`}>
+                                  {difficulty.charAt(0)}
+                                </span>
+                              )}
                             </div>
                           </td>
                         );

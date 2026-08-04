@@ -15,6 +15,7 @@ class ProgressLog extends Model
         'topic',
         'score',
         'total_questions',
+        'difficulty',
         'timestamp',
         'synced_at',
     ];

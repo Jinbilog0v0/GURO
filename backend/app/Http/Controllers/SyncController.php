@@ -45,6 +45,7 @@ class SyncController extends Controller
                     'topic' => $evt['topic'],
                     'score' => (int) $evt['score'],
                     'total_questions' => (int) $evt['totalQuestions'],
+                    'difficulty' => $evt['difficulty'] ?? 'Average',
                     'timestamp' => $evt['timestamp'],
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -59,6 +60,7 @@ class SyncController extends Controller
                     'topic' => $evt['topic'],
                     'score' => (int) $evt['score'],
                     'totalQuestions' => (int) $evt['totalQuestions'],
+                    'difficulty' => $evt['difficulty'] ?? 'Average',
                     'timestamp' => $evt['timestamp'],
                 ];
             }
