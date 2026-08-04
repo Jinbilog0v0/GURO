@@ -215,7 +215,7 @@ class AuthController extends Controller
                 if (strpos($responseBody, 'validation_error') !== false && strpos($responseBody, 'testing emails') !== false) {
                     return response()->json([
                         'success' => true,
-                        'message' => "Sandbox Mode: Since '{$email}' is not verified in Resend, we simulated sending. Your code is: {$code} (Also logged in laravel.log).",
+                        'message' => "Sandbox Mode: Since '{$email}' is not verified in Resend, we simulated sending. Code is logged in laravel.log.",
                         'sandbox' => true,
                     ]);
                 }
@@ -309,7 +309,15 @@ class AuthController extends Controller
             'parent_access_token' => Str::random(32),
         ]);
 
-        $accessCode = substr(hash('sha256', $newStudentId . 'GURO_PARENT_SALT'), 0, 8);
+        $normalized = strtoupper(preg_replace('/\s+/', '-', trim($newStudentId)));
+        $salt = "GURO_PARENT_SALT";
+        $combined = $normalized . $salt;
+        $sum = 0;
+        $len = strlen($combined);
+        for ($i = 0; $i < $len; $i++) {
+            $sum += ord($combined[$i]) * ($i + 1);
+        }
+        $accessCode = (string) (100000 + ($sum % 900000));
 
         return response()->json([
             'success' => true,
