@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
 import * as Network from 'expo-network';
-import { getTeacherDerivedPin } from '../utils/security';
+import { getTeacherDerivedPin, getParentAccessCode } from '../utils/security';
 import {
   Settings,
   Users,
@@ -84,6 +84,8 @@ export function ProfileScreen() {
   const [classModal,  setClassModal]  = useState(false);
   const [classCode,   setClassCode]   = useState('');
   const [isLinking,   setIsLinking]   = useState(false);
+  const [resetPinModal, setResetPinModal] = useState(false);
+  const [resetCodeInput, setResetCodeInput] = useState('');
 
   const studentName = guestName ?? currentUser?.name ?? 'Explorer';
 
@@ -115,39 +117,14 @@ export function ProfileScreen() {
   const handleForgotPin = () => {
     if (pinTarget === 'teacher') {
       Alert.alert(
-        'Teacher Security Challenge',
-        'Solve to verify you are a teacher:\n\nWhat is 14 × 13?',
-        [
-          { text: '172', onPress: () => toast.error('Wrong Answer. Please try again!') },
-          { text: '194', onPress: () => toast.error('Wrong Answer. Please try again!') },
-          {
-            text: '182',
-            onPress: () => {
-              const pin = getTeacherDerivedPin(classroomId, studentId);
-              toast.success(`Access Granted 🔑 Your Teacher PIN is: ${pin}`, 5000);
-            },
-          },
-        ],
-        { cancelable: true },
+        'Teacher Security Console',
+        'To access the Teacher Console, please use the correct classroom PIN.\n\nIf you have forgotten it, verify it on your web administration dashboard under your classroom settings.',
+        [{ text: 'OK' }],
+        { cancelable: true }
       );
     } else if (pinTarget === 'parent') {
-      Alert.alert(
-        'Parent PIN Reset',
-        'Solve to reset your PIN:\n\nWhat is 15 × 16?',
-        [
-          { text: '230', onPress: () => toast.error('Wrong Answer. Please try again!') },
-          { text: '250', onPress: () => toast.error('Wrong Answer. Please try again!') },
-          {
-            text: '240',
-            onPress: () => {
-              setParentPin(null);
-              setPinVisible(false);
-              toast.success('PIN Reset! Tap Parent Portal again to set a new one.');
-            },
-          },
-        ],
-        { cancelable: true },
-      );
+      setPinVisible(false);
+      setResetPinModal(true);
     }
   };
 
@@ -478,6 +455,49 @@ export function ProfileScreen() {
               <SecondaryButton
                 label="Cancel"
                 onPress={() => { setClassModal(false); setClassCode(''); }}
+              />
+            </GlassCard>
+          </View>
+        </View>
+      )}
+
+      {/* Reset PIN modal */}
+      {resetPinModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalWrapper}>
+            <GlassCard padding={Spacing['2xl']} style={{ gap: Spacing.md }}>
+              <SectionHeader
+                title="Reset Parent PIN"
+                subtitle="Enter the 6-digit Parent Access Code (found on your web dashboard) to reset your parent PIN."
+              />
+              <ThemedTextInput
+                label="Parent Access Code"
+                value={resetCodeInput}
+                onChangeText={setResetCodeInput}
+                placeholder="e.g. 123456"
+                keyboardType="numeric"
+                maxLength={6}
+              />
+              <PrimaryButton
+                label="Verify & Reset PIN"
+                onPress={() => {
+                  const expected = getParentAccessCode(studentId);
+                  if (resetCodeInput.trim() === expected) {
+                    setParentPin(null);
+                    setResetPinModal(false);
+                    setResetCodeInput('');
+                    toast.success('Parent PIN has been reset. Please set a new one.');
+                  } else {
+                    toast.error('Invalid access code. Please try again.');
+                  }
+                }}
+              />
+              <SecondaryButton
+                label="Cancel"
+                onPress={() => {
+                  setResetPinModal(false);
+                  setResetCodeInput('');
+                }}
               />
             </GlassCard>
           </View>

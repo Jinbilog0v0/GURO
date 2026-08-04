@@ -87,18 +87,37 @@ class SyncController extends Controller
         }
 
         $hasClassroom = !empty($classroomId);
-        $hasStudentAndToken = !empty($studentId) && !empty($accessToken);
+        $hasStudent = !empty($studentId);
 
-        if (!$hasClassroom && !$hasStudentAndToken) {
+        if (!$hasClassroom && !$hasStudent) {
             return response()->json([
-                'error' => 'Missing required filters. Provide classroomId or both studentId and accessCode.'
+                'error' => 'Missing required filters. Provide classroomId or studentId.'
             ], 400);
         }
 
-        if ($hasStudentAndToken) {
+        // If studentId is provided, we MUST validate the accessCode
+        if ($hasStudent) {
+            if (empty($accessToken)) {
+                return response()->json(['error' => 'Missing required accessCode for student query.'], 400);
+            }
             $expectedCode = $this->getParentAccessCode($studentId);
             if ($accessToken !== $expectedCode) {
                 return response()->json(['error' => 'Invalid parent access code.'], 403);
+            }
+        } else {
+            // Classroom-only query: must be authenticated as the teacher of this classroom
+            $user = $request->user('sanctum');
+            if (!$user || $user->role !== 'teacher') {
+                return response()->json(['error' => 'Unauthenticated. Classroom query requires an authenticated teacher session.'], 401);
+            }
+
+            $classroom = \App\Models\Classroom::where('classroom_id', strtoupper($classroomId))->first();
+            if (!$classroom) {
+                return response()->json(['error' => 'Classroom not found.'], 404);
+            }
+
+            if ($classroom->teacher_user_id !== $user->id) {
+                return response()->json(['error' => 'Forbidden. You are not the teacher of this classroom.'], 403);
             }
         }
 
@@ -107,7 +126,7 @@ class SyncController extends Controller
             if ($hasClassroom) {
                 $query->where('classroom_id', strtoupper($classroomId));
             }
-            if ($hasStudentAndToken) {
+            if ($hasStudent) {
                 $query->where('student_id', $studentId);
             }
 

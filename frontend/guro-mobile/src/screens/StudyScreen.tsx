@@ -78,7 +78,21 @@ export function StudyScreen({ route, navigation }: Props) {
   const subjectData = itemBank?.[subject];
   const gradeData = subjectData?.[gradeLevel.toString()];
   const topicData = gradeData?.[topic];
-  const studyContent = topicData?.studyContent;
+
+  const adaptiveTiers = useAppStore((state) => state.adaptiveTiers || {});
+  const topicKey = `${subject}_${gradeLevel}_${topic}`;
+  const currentTier = adaptiveTiers[topicKey] || 'Average';
+
+  const studyContent = React.useMemo(() => {
+    const rawContent = topicData?.studyContent;
+    if (!rawContent) return null;
+    // Check if it has Easy/Average/Difficult keys
+    if (rawContent[currentTier]) {
+      return rawContent[currentTier];
+    }
+    // Fallback to monolithic structure
+    return rawContent;
+  }, [topicData, currentTier]);
 
   const slides = React.useMemo(() => {
     if (!studyContent) return [];
@@ -276,7 +290,13 @@ export function StudyScreen({ route, navigation }: Props) {
               </TouchableOpacity>
             </View>
           </View>
-          <Text style={styles.title}>{topic}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+            <Text style={styles.title}>{topic}</Text>
+            <Badge 
+              label={`${currentTier} Level`} 
+              variant={currentTier === 'Easy' ? 'success' : currentTier === 'Difficult' ? 'danger' : 'warning'} 
+            />
+          </View>
         </View>
 
         {/* ── SLIDE DISPLAY DISPATCHER ────────────────────────────────────── */}

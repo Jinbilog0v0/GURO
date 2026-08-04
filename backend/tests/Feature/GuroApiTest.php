@@ -144,8 +144,26 @@ it('can sync telemetry progress logs and retrieve them', function () {
             'newSynced' => 1
         ]);
 
-    // Fetch progress logs
-    $progressRes = $this->getJson('/api/progress?classroomId=ENG-G5-ABC');
+    // Setup teacher and classroom to allow secure querying of classroom telemetry
+    $teacher = User::create([
+        'user_id' => 'USR-TEACH-TEST',
+        'email' => 'teacher-test@example.com',
+        'password_hash' => 'somehash',
+        'name' => 'Test Teacher',
+        'role' => 'teacher'
+    ]);
+
+    Classroom::create([
+        'classroom_id' => 'ENG-G5-ABC',
+        'teacher_user_id' => $teacher->id,
+        'teacher_name' => 'Test Teacher',
+        'subject' => 'English',
+        'grade_level' => 5,
+        'custom_item_bank' => (object) [],
+    ]);
+
+    // Fetch progress logs (as the teacher)
+    $progressRes = $this->actingAs($teacher, 'sanctum')->getJson('/api/progress?classroomId=ENG-G5-ABC');
     $progressRes->assertStatus(200)
         ->assertJsonCount(1)
         ->assertJsonFragment([
@@ -156,11 +174,12 @@ it('can sync telemetry progress logs and retrieve them', function () {
     // Rejects progress request without filters
     $noFilterRes = $this->getJson('/api/progress');
     $noFilterRes->assertStatus(400)
-        ->assertJsonFragment(['error' => 'Missing required filters. Provide classroomId or both studentId and accessCode.']);
+        ->assertJsonFragment(['error' => 'Missing required filters. Provide classroomId or studentId.']);
 
     // Rejects progress request with studentId but missing accessCode
     $missingCodeRes = $this->getJson('/api/progress?studentId=STUDENT-1');
-    $missingCodeRes->assertStatus(400);
+    $missingCodeRes->assertStatus(400)
+        ->assertJsonFragment(['error' => 'Missing required accessCode for student query.']);
 
     // Rejects progress request with studentId but wrong accessCode
     $wrongCodeRes = $this->getJson('/api/progress?studentId=STUDENT-1&accessCode=000000');

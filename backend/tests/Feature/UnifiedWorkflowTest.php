@@ -76,8 +76,17 @@ it('executes the full unified workflow (Teacher -> Student -> Parent)', function
         ]);
 
     // ── STEP 4: Parent Log-In & Progress Tracker Query ──
-    // Parent fetches child's telemetry statistics
-    $parentQueryResponse = $this->getJson("/api/progress?studentId={$student->user_id}&classroomId={$classroomId}");
+    // Parent fetches child's telemetry statistics (requires parent access code)
+    $salt = "GURO_PARENT_SALT";
+    $combined = $student->user_id . $salt;
+    $sum = 0;
+    $len = strlen($combined);
+    for ($i = 0; $i < $len; $i++) {
+        $sum += ord($combined[$i]) * ($i + 1);
+    }
+    $correctCode = (string) (100000 + ($sum % 900000));
+
+    $parentQueryResponse = $this->getJson("/api/progress?studentId={$student->user_id}&accessCode={$correctCode}");
 
     $parentQueryResponse->assertStatus(200)
         ->assertJsonCount(1);
@@ -89,7 +98,7 @@ it('executes the full unified workflow (Teacher -> Student -> Parent)', function
     expect($syncedLog['totalQuestions'])->toBe(5);
 
     // ── STEP 5: Teacher Views Dashboard Diagnostics Alerts ──
-    $teacherAlertsResponse = $this->getJson("/api/progress?classroomId={$classroomId}");
+    $teacherAlertsResponse = $this->actingAs($teacher, 'sanctum')->getJson("/api/progress?classroomId={$classroomId}");
 
     $teacherAlertsResponse->assertStatus(200)
         ->assertJsonCount(1);

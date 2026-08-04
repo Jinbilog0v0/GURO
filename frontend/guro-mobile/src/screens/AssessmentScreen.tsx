@@ -16,13 +16,14 @@ import {
   PanResponder,
   Animated,
   LayoutAnimation,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppStore, Question } from '../store/useAppStore';
 import { shuffle, MASTERY_THRESHOLD, evaluateRemediationRouting } from '../utils/engine';
-import { Trophy, Square, Volume2, Check, X, Inbox, ChevronDown, ChevronUp, WifiOff, ThumbsUp, ThumbsDown, Sparkles } from 'lucide-react-native';
+import { Trophy, Square, Volume2, Check, X, Inbox, ChevronDown, ChevronUp, WifiOff, ThumbsUp, ThumbsDown, Sparkles, Trash2 } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -73,6 +74,10 @@ export function AssessmentScreen({ route, navigation }: Props) {
   const addLog = useAppStore((state) => state.addLog);
   const recordProgress = useAppStore((state) => state.recordProgress);
 
+  const adaptiveTiers = useAppStore((state) => state.adaptiveTiers || {});
+  const topicKey = `${subject}_${gradeLevel}_${topic}`;
+  const currentTier = adaptiveTiers[topicKey] || 'Average';
+
   // ── Active-minutes tracker ─────────────────────────────────────────────────
   useEffect(() => {
     const interval = setInterval(() => {
@@ -90,15 +95,25 @@ export function AssessmentScreen({ route, navigation }: Props) {
     if (!gradeData) return [];
     const topicData = gradeData[topic];
     if (!topicData) return [];
+    
     const list: Question[] = [];
-    Object.keys(topicData).forEach((diff) => {
-      if (diff === 'studyContent') return;
-      const diffData = topicData[diff] as Record<string, Question[]> | undefined;
-      if (!diffData || typeof diffData !== 'object') return;
+    const diffData = topicData[currentTier] as Record<string, Question[]> | undefined;
+    if (diffData && typeof diffData === 'object') {
       Object.keys(diffData).forEach((cat) => {
         list.push(...diffData[cat]);
       });
-    });
+    }
+
+    if (list.length === 0) {
+      Object.keys(topicData).forEach((diff) => {
+        if (diff === 'studyContent') return;
+        const fallbackDiffData = topicData[diff] as Record<string, Question[]> | undefined;
+        if (!fallbackDiffData || typeof fallbackDiffData !== 'object') return;
+        Object.keys(fallbackDiffData).forEach((cat) => {
+          list.push(...fallbackDiffData[cat]);
+        });
+      });
+    }
     return list;
   };
 
@@ -136,6 +151,10 @@ export function AssessmentScreen({ route, navigation }: Props) {
   const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
   const [rightOptionsShuffled, setRightOptionsShuffled] = useState<string[]>([]);
   const [leftOptionsShuffled, setLeftOptionsShuffled] = useState<string[]>([]);
+
+  // ── Bubbly Spelling (letter-pop) states ──────────────────────────────────────
+  const [spelledLetters, setSpelledLetters] = useState<string[]>([]);
+  const [letterPool, setLetterPool] = useState<Array<{ id: string; letter: string; selected: boolean }>>([]);
 
   // ── Swipe Card pan states ──────────────────────────────────────────────────
   const pan = useRef(new Animated.ValueXY()).current;
@@ -206,6 +225,18 @@ export function AssessmentScreen({ route, navigation }: Props) {
       const right = Object.values(currentQuestion.matchingPairs) as string[];
       setLeftOptionsShuffled([...left].sort(() => Math.random() - 0.5));
       setRightOptionsShuffled([...right].sort(() => Math.random() - 0.5));
+    }
+    if (currentQuestion && currentQuestion.type === 'letter-pop') {
+      const word = (currentQuestion.correctAnswer || '').toUpperCase();
+      const chars = word.split('');
+      const poolChars = chars.filter((c: string) => c !== ' ');
+      
+      const shuffled = poolChars
+        .map((char: string, index: number) => ({ id: `letter-${char}-${index}-${Math.random().toString(36).substring(2, 5)}`, letter: char, selected: false }))
+        .sort(() => Math.random() - 0.5);
+      
+      setLetterPool(shuffled);
+      setSpelledLetters([]);
     }
   }, [currentIndex, currentQuestion]);
 
@@ -429,6 +460,55 @@ export function AssessmentScreen({ route, navigation }: Props) {
         score: finalScore,
         totalQuestions: questions.length,
       });
+
+      // Adaptive progression & continuous failure routing
+      const percentage = Math.round((finalScore / questions.length) * 100);
+      const remediation = evaluateRemediationRouting(percentage, subject, gradeLevel, topic, currentTier);
+      
+      // Update store active difficulty tier using defensive guards
+      const state = useAppStore.getState();
+      if (typeof state.setAdaptiveTier === 'function') {
+        state.setAdaptiveTier(topicKey, remediation.tier);
+      }
+
+      if (percentage < 80) {
+        let nextFailures = 1;
+        if (typeof state.incrementConsecutiveFailures === 'function') {
+          nextFailures = state.incrementConsecutiveFailures(topicKey);
+        }
+        if (nextFailures >= 3 && remediation.targetLesson) {
+          const prevLesson = remediation.targetLesson;
+          Alert.alert(
+            "Foundational Review Recommended 📚",
+            `You've had a few tough attempts at "${topic}". Would you like to return to "${prevLesson.topic}" (Grade ${prevLesson.grade}) to build up your core skills first?`,
+            [
+              {
+                text: "Keep Trying Here",
+                onPress: () => {},
+                style: "cancel"
+              },
+              {
+                text: `Review ${prevLesson.topic}`,
+                onPress: () => {
+                  // Reset failure count so they aren't immediately prompted again
+                  if (typeof state.resetConsecutiveFailures === 'function') {
+                    state.resetConsecutiveFailures(topicKey);
+                  }
+                  navigation.replace('Study', {
+                    subject,
+                    gradeLevel: prevLesson.grade,
+                    topic: prevLesson.topic
+                  });
+                }
+              }
+            ]
+          );
+        }
+      } else {
+        if (typeof state.resetConsecutiveFailures === 'function') {
+          state.resetConsecutiveFailures(topicKey);
+        }
+      }
       setQuizFinished(true);
       addLog(
         `Completed quiz for topic "${topic}". Final Score: ${finalScore}/${questions.length}`,
@@ -522,7 +602,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
 
             {/* Actionable Remediation & Prerequisite Return Card */}
             {(() => {
-              const remediation = evaluateRemediationRouting(percentage, subject, gradeLevel, topic);
+              const remediation = evaluateRemediationRouting(percentage, subject, gradeLevel, topic, currentTier);
               const isPrereq = remediation.instruction === 'prerequisite_return';
               const isScaffold = remediation.instruction === 'scaffold_review';
               const cardBg = passed
@@ -1353,6 +1433,166 @@ export function AssessmentScreen({ route, navigation }: Props) {
                   </Text>
                 </View>
               </View>
+            </View>
+          ) : currentQuestion.type === 'letter-pop' ? (
+            <View style={{ width: '100%', alignItems: 'center', marginVertical: 10, gap: 20 }}>
+              {/* Target Word Spelled Display */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, minHeight: 65, alignItems: 'center' }}>
+                {(currentQuestion.correctAnswer || '').split('').map((char: string, idx: number) => {
+                  if (char === ' ') {
+                    return <View key={`space-${idx}`} style={{ width: 15 }} />;
+                  }
+
+                  // Find which spelled letter index corresponds to this slot
+                  const nonSpaceIndex = (currentQuestion.correctAnswer || '')
+                    .substring(0, idx)
+                    .split('')
+                    .filter((c: string) => c !== ' ').length;
+                  
+                  const letter = spelledLetters[nonSpaceIndex];
+
+                  return (
+                    <TouchableOpacity
+                      key={`slot-${idx}`}
+                      disabled={isAnswered || !letter}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                        const updatedSpelled = [...spelledLetters];
+                        // Find the letter pool item that corresponds to the removed letter
+                        const poolItem = letterPool.find(item => item.letter === letter && item.selected);
+                        if (poolItem) {
+                          poolItem.selected = false;
+                          setLetterPool([...letterPool]);
+                        }
+                        // Remove from spelledLetters by index
+                        updatedSpelled.splice(nonSpaceIndex, 1);
+                        setSpelledLetters(updatedSpelled);
+                        setSelectedOption(updatedSpelled.join(''));
+                      }}
+                      style={{
+                        width: 40,
+                        height: 44,
+                        borderRadius: 12,
+                        borderWidth: 2,
+                        borderBottomWidth: 5,
+                        borderColor: isAnswered
+                          ? letter === (currentQuestion.correctAnswer || '').replace(/\s+/g, '')[nonSpaceIndex]
+                            ? Colors.success
+                            : Colors.danger
+                          : letter
+                            ? Colors.accentPrimary
+                            : Colors.border,
+                        backgroundColor: isAnswered
+                          ? letter === (currentQuestion.correctAnswer || '').replace(/\s+/g, '')[nonSpaceIndex]
+                            ? 'rgba(16, 185, 129, 0.08)'
+                            : 'rgba(239, 68, 68, 0.08)'
+                          : letter
+                            ? 'rgba(99, 102, 241, 0.08)'
+                            : 'transparent',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text style={{
+                        fontFamily: Fonts.display,
+                        fontSize: FontSizes.xl,
+                        color: isAnswered
+                          ? letter === (currentQuestion.correctAnswer || '').replace(/\s+/g, '')[nonSpaceIndex]
+                            ? Colors.success
+                            : Colors.danger
+                          : Colors.textMain,
+                      }}>
+                        {letter || ''}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Bubbly Letter Bank */}
+              <View style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: 12,
+                padding: 15,
+                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                borderRadius: 24,
+                borderWidth: 1,
+                borderColor: Colors.border,
+                width: '100%',
+              }}>
+                {letterPool.map((item) => {
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      disabled={isAnswered || item.selected}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                        // Add to spelled
+                        const nextSpelled = [...spelledLetters, item.letter];
+                        item.selected = true;
+                        setLetterPool([...letterPool]);
+                        setSpelledLetters(nextSpelled);
+                        setSelectedOption(nextSpelled.join(''));
+                      }}
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 24,
+                        borderWidth: 2,
+                        borderBottomWidth: item.selected ? 2 : 5,
+                        borderColor: item.selected ? 'transparent' : Colors.accentSecondary,
+                        backgroundColor: item.selected ? 'rgba(255, 255, 255, 0.03)' : Colors.bgCard,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transform: [{ translateY: item.selected ? 3 : 0 }],
+                        shadowColor: Colors.accentSecondary,
+                        shadowOffset: { width: 0, height: item.selected ? 0 : 2 },
+                        shadowOpacity: item.selected ? 0 : 0.2,
+                        shadowRadius: 2,
+                        elevation: item.selected ? 0 : 3,
+                      }}
+                    >
+                      <Text style={{
+                        fontFamily: Fonts.display,
+                        fontSize: FontSizes.lg,
+                        color: item.selected ? Colors.textMuted : Colors.textMain,
+                      }}>
+                        {item.letter}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Clear/Reset Action */}
+              {!isAnswered && spelledLetters.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+                    setLetterPool(letterPool.map(item => ({ ...item, selected: false })));
+                    setSpelledLetters([]);
+                    setSelectedOption(null);
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: Colors.dangerBorder,
+                    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                  }}
+                >
+                  <Trash2 size={14} color={Colors.dangerText} />
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.dangerText }}>
+                    Reset Spelling
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             currentQuestion.options.map((option: string, idx: number) => {

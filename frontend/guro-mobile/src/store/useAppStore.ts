@@ -123,6 +123,11 @@ interface AppState {
   setParentPin: (pin: string | null) => void;
   setStudentId: (id: string) => void;
   setClassroomId: (id: string | null) => void;
+  adaptiveTiers: Record<string, 'Easy' | 'Average' | 'Difficult'>;
+  consecutiveFailures: Record<string, number>;
+  setAdaptiveTier: (topicKey: string, tier: 'Easy' | 'Average' | 'Difficult') => void;
+  incrementConsecutiveFailures: (topicKey: string) => number;
+  resetConsecutiveFailures: (topicKey: string) => void;
   setActiveSubjects: (subjects: string[]) => void;
   setAppMode: (mode: 'online' | 'offline') => void;
   setGuestName: (name: string | null, emailOrId?: string | null) => void;
@@ -193,6 +198,8 @@ export const useAppStore = create<AppState>()(
       correctSoundTheme: 'ding',
       preferredGrade: 4,
       serverUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000',
+      adaptiveTiers: {},
+      consecutiveFailures: {},
       setServerUrl: (url) => set({ serverUrl: url }),
       setToken: (token) => set({ token }),
       setAppMode: (mode) => set({ appMode: mode }),
@@ -350,6 +357,20 @@ export const useAppStore = create<AppState>()(
         set({ parentPin: pin });
         get().addLog(pin ? 'Parent PIN updated.' : 'Parent PIN reset.');
       },
+      setAdaptiveTier: (topicKey, tier) => set((state) => ({
+        adaptiveTiers: { ...state.adaptiveTiers, [topicKey]: tier }
+      })),
+      incrementConsecutiveFailures: (topicKey) => {
+        const current = get().consecutiveFailures[topicKey] || 0;
+        const next = current + 1;
+        set((state) => ({
+          consecutiveFailures: { ...state.consecutiveFailures, [topicKey]: next }
+        }));
+        return next;
+      },
+      resetConsecutiveFailures: (topicKey) => set((state) => ({
+        consecutiveFailures: { ...state.consecutiveFailures, [topicKey]: 0 }
+      })),
       setStudentId: (id) => {
         const sanitized = id.replace(/\s+/g, '-').toUpperCase();
         set({ studentId: sanitized });
@@ -616,6 +637,8 @@ export const useAppStore = create<AppState>()(
         speechRate: state.speechRate,
         soundEffectsEnabled: state.soundEffectsEnabled,
         colorTheme: state.colorTheme,
+        adaptiveTiers: state.adaptiveTiers,
+        consecutiveFailures: state.consecutiveFailures,
       }),
     }
   )
