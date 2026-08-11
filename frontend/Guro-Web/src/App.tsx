@@ -21,6 +21,7 @@ import {
   Key,
   PlusCircle,
   User,
+  UserPlus,
   Zap,
   LogOut,
   RotateCw,
@@ -70,9 +71,9 @@ function App() {
     if (stored) return stored as TabType;
     return 'landing';
   });
-  const [activeSubTab, setActiveSubTab] = useState<'analytics' | 'manual-lesson' | 'classroom-pairing'>(() => {
+  const [activeSubTab, setActiveSubTab] = useState<string>(() => {
     const stored = localStorage.getItem('guro_active_sub_tab');
-    if (stored) return stored as 'analytics' | 'manual-lesson' | 'classroom-pairing';
+    if (stored) return stored;
     return 'analytics';
   });
   const [progressLogs, setProgressLogs] = useState<SyncedEvent[]>([]);
@@ -114,7 +115,10 @@ function App() {
   useEffect(() => {
     if (currentUser && activeTab === 'landing') {
       if (currentUser.role === 'teacher') setActiveTab('dashboard');
-      else if (currentUser.role === 'parent') setActiveTab('parent');
+      else if (currentUser.role === 'parent') {
+        setActiveTab('parent');
+        setActiveSubTab('parent-explorer');
+      }
       else if (currentUser.role === 'student') setActiveTab('student');
       else if (currentUser.role === 'admin') setActiveTab('dashboard');
       else if (currentUser.role === 'lesson-builder' || currentUser.role === 'developer') setActiveTab('lesson-builder');
@@ -237,8 +241,8 @@ function App() {
             lastUpdatedCell={lastUpdatedCell}
             refreshLogs={fetchLogs}
             loading={loading}
-            activeSubTab={activeSubTab}
-            setActiveSubTab={setActiveSubTab}
+            activeSubTab={activeSubTab as any}
+            setActiveSubTab={setActiveSubTab as any}
           />
         );
       case 'parent':
@@ -246,6 +250,8 @@ function App() {
           <ParentSpace
             progressLogs={progressLogs}
             lastUpdatedCell={lastUpdatedCell}
+            activeSubTab={activeSubTab}
+            setActiveSubTab={setActiveSubTab}
           />
         );
       case 'lesson-builder':
@@ -276,8 +282,8 @@ function App() {
             lastUpdatedCell={lastUpdatedCell}
             refreshLogs={fetchLogs}
             loading={loading}
-            activeSubTab={activeSubTab}
-            setActiveSubTab={setActiveSubTab}
+            activeSubTab={activeSubTab as any}
+            setActiveSubTab={setActiveSubTab as any}
           />
         );
     }
@@ -396,11 +402,24 @@ function App() {
 
           {isParent && (
             isSidebarOpen ? (
-              <button onClick={() => setActiveTab('parent')} className={navBtn(activeTab === 'parent')} aria-current={activeTab === 'parent' ? 'page' : undefined}>
-                <User size={18} className="shrink-0" /><span>Parent Explorer</span>
-              </button>
+              <div className="flex flex-col">
+                <div className="px-[14px] pt-4 pb-1.5 text-[10.5px] font-extrabold tracking-[0.1em] uppercase text-[var(--text-dark)]">
+                  Parent Console
+                </div>
+                <div className="flex flex-col gap-[3px] pl-2 border-l-[1.5px] border-[var(--border-color)] ml-[14px]">
+                  <button onClick={() => { setActiveTab('parent'); setActiveSubTab('parent-explorer'); }} className={navBtn(activeTab === 'parent' && activeSubTab === 'parent-explorer')} aria-current={activeTab === 'parent' && activeSubTab === 'parent-explorer' ? 'page' : undefined}>
+                    <User size={17} className="shrink-0" /><span>Parent Explorer</span>
+                  </button>
+                  <button onClick={() => { setActiveTab('parent'); setActiveSubTab('create-student'); }} className={navBtn(activeTab === 'parent' && activeSubTab === 'create-student')} aria-current={activeTab === 'parent' && activeSubTab === 'create-student' ? 'page' : undefined}>
+                    <UserPlus size={17} className="shrink-0" /><span>Create Student</span>
+                  </button>
+                </div>
+              </div>
             ) : (
-              <button onClick={() => setActiveTab('parent')} className={navBtnIcon(activeTab === 'parent')} title="Parent Explorer" aria-label="Parent Explorer"><User size={18} /></button>
+              <>
+                <button onClick={() => { setActiveTab('parent'); setActiveSubTab('parent-explorer'); }} className={navBtnIcon(activeTab === 'parent' && activeSubTab === 'parent-explorer')} title="Parent Explorer" aria-label="Parent Explorer"><User size={18} /></button>
+                <button onClick={() => { setActiveTab('parent'); setActiveSubTab('create-student'); }} className={navBtnIcon(activeTab === 'parent' && activeSubTab === 'create-student')} title="Create Student" aria-label="Create Student"><UserPlus size={18} /></button>
+              </>
             )
           )}
 
@@ -503,10 +522,17 @@ function App() {
                     {activeSubTab === 'manual-lesson' && 'Create Lesson Manually'}
                   </span>
                 </>
+              ) : activeTab === 'parent' ? (
+                <>
+                  <span className="text-[var(--text-muted)]">Parent Console</span>
+                  <span className="text-[var(--border-color)]">/</span>
+                  <span className="text-[var(--text-main)] font-bold">
+                    {activeSubTab === 'create-student' ? 'Create Student Account' : 'Parent Explorer'}
+                  </span>
+                </>
               ) : (
                 <span className="text-[var(--text-main)] font-bold">
-                  {activeTab === 'parent' ? 'Parent Explorer'
-                    : activeTab === 'dashboard' ? (isAdmin ? 'Main Dashboard' : 'System Dashboard')
+                  {activeTab === 'dashboard' ? (isAdmin ? 'Main Dashboard' : 'System Dashboard')
                     : 'Lesson Ingestor'}
                 </span>
               )}
