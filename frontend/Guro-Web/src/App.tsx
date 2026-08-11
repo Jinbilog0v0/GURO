@@ -345,7 +345,9 @@ function App() {
             <div className="leading-tight overflow-hidden">
               <div className="font-['Space_Grotesk',sans-serif] text-[18px] font-extrabold text-[var(--text-main)]">GURO</div>
               <div className={`text-[12px] font-semibold ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--text-muted)]'}`}>
-                {isAdmin ? 'Admin Console' : 'Teacher Portal'}
+                {isAdmin ? 'Admin Console' 
+                  : currentUser?.role === 'parent' ? 'Parent Portal' 
+                  : 'Teacher Portal'}
               </div>
             </div>
           )}
