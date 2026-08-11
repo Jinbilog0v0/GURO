@@ -108,6 +108,7 @@ class AuthController extends Controller
                 'role' => $user->role,
                 'classroomId' => $user->classroom_id,
             ],
+            'studentId' => $user->role === 'student' ? $user->user_id : null,
         ]);
     }
 
@@ -136,20 +137,32 @@ class AuthController extends Controller
             return response()->json(['error' => 'Email already registered.'], 400);
         }
 
-        $userId = 'USR-'.strtoupper(Str::random(7));
         $passwordHash = $this->hashPassword($password);
         $newStudentId = strtoupper(str_replace(' ', '-', $name));
+        if (User::where('user_id', $newStudentId)->exists()) {
+            $newStudentId .= '-' . strtoupper(Str::random(4));
+        }
 
-        return DB::transaction(function () use ($userId, $email, $passwordHash, $name, $anonymousStudentId, $newStudentId) {
-            // Create user with a random parent access token
+        $normalized = strtoupper(preg_replace('/\s+/', '-', trim($newStudentId)));
+        $salt = "GURO_PARENT_SALT";
+        $combined = $normalized . $salt;
+        $sum = 0;
+        $len = strlen($combined);
+        for ($i = 0; $i < $len; $i++) {
+            $sum += ord($combined[$i]) * ($i + 1);
+        }
+        $accessCode = (string) (100000 + ($sum % 900000));
+
+        return DB::transaction(function () use ($email, $passwordHash, $name, $anonymousStudentId, $newStudentId, $accessCode) {
+            // Create user with actual parent access token
             $user = User::create([
-                'user_id' => $userId,
+                'user_id' => $newStudentId,
                 'email' => $email,
                 'password_hash' => $passwordHash,
                 'name' => $name,
                 'role' => 'student',
                 'classroom_id' => null,
-                'parent_access_token' => Str::random(32),
+                'parent_access_token' => $accessCode,
             ]);
 
             // Migrate student progress events
@@ -168,7 +181,7 @@ class AuthController extends Controller
                     'role' => $user->role,
                     'classroomId' => $user->classroom_id,
                 ],
-                'studentId' => $newStudentId,
+                'studentId' => $user->user_id,
             ]);
         });
     }
@@ -300,19 +313,8 @@ class AuthController extends Controller
             return response()->json(['error' => 'Email already registered.'], 400);
         }
 
-        $userId = 'USR-' . strtoupper(Str::random(7));
         $passwordHash = $this->hashPassword($password);
         $newStudentId = strtoupper(str_replace(' ', '-', $name)) . '-' . strtoupper(Str::random(4));
-
-        $student = User::create([
-            'user_id' => $userId,
-            'email' => $email,
-            'password_hash' => $passwordHash,
-            'name' => $name,
-            'role' => 'student',
-            'classroom_id' => null,
-            'parent_access_token' => Str::random(32),
-        ]);
 
         $normalized = strtoupper(preg_replace('/\s+/', '-', trim($newStudentId)));
         $salt = "GURO_PARENT_SALT";
@@ -324,6 +326,16 @@ class AuthController extends Controller
         }
         $accessCode = (string) (100000 + ($sum % 900000));
 
+        $student = User::create([
+            'user_id' => $newStudentId,
+            'email' => $email,
+            'password_hash' => $passwordHash,
+            'name' => $name,
+            'role' => 'student',
+            'classroom_id' => null,
+            'parent_access_token' => $accessCode,
+        ]);
+
         return response()->json([
             'success' => true,
             'student' => [
@@ -331,8 +343,8 @@ class AuthController extends Controller
                 'email' => $student->email,
                 'name' => $student->name,
                 'role' => $student->role,
-                'studentId' => $newStudentId,
-                'accessCode' => $accessCode,
+                'studentId' => $student->user_id,
+                'accessCode' => $student->parent_access_token,
             ],
         ]);
     }
