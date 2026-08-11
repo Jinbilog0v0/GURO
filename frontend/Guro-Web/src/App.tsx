@@ -124,6 +124,17 @@ function App() {
       else if (currentUser.role === 'lesson-builder' || currentUser.role === 'developer') setActiveTab('lesson-builder');
     }
   }, [currentUser, activeTab]);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setCurrentUser(null);
+      setActiveTab('landing');
+      toast.error('Session expired. Please log in again.');
+    };
+    window.addEventListener('guro_unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('guro_unauthorized', handleUnauthorized);
+  }, []);
+
   const [lastUpdatedCell, setLastUpdatedCell] = useState<{ studentId: string; topic: string; timestamp: number } | null>(null);
   const [loading, setLoading] = useState(true);
 

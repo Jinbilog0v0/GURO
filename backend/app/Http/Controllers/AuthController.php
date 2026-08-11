@@ -111,6 +111,11 @@ class AuthController extends Controller
         ]);
     }
 
+    public function unauthorized()
+    {
+        return response()->json(['error' => 'Unauthenticated.'], 401);
+    }
+
     // POST /api/auth/promote
     public function promote(Request $request)
     {

@@ -4,14 +4,21 @@ export const setAuthToken = (token: string) => localStorage.setItem(TOKEN_KEY, t
 export const clearAuthToken = () => localStorage.removeItem(TOKEN_KEY);
 export const getAuthToken = () => localStorage.getItem(TOKEN_KEY) ?? '';
 
-export const apiFetch = (path: string, init?: RequestInit): Promise<Response> => {
+export const apiFetch = async (path: string, init?: RequestInit): Promise<Response> => {
   const token = getAuthToken();
-  return fetch(path, {
+  const res = await fetch(path, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers ?? {}),
     },
   });
+  if (res.status === 401) {
+    clearAuthToken();
+    localStorage.removeItem('guro_user_session');
+    window.dispatchEvent(new Event('guro_unauthorized'));
+  }
+  return res;
 };
