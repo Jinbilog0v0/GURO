@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
 import { List } from 'react-window';
-import { Search, AlertCircle, Inbox, BarChart3, Calculator, BookOpen, User, Star, TrendingUp, AlertTriangle, Calendar, Trash2, UserPlus } from 'lucide-react';
+import { Search, AlertCircle, Inbox, BarChart3, Calculator, BookOpen, User, Star, TrendingUp, AlertTriangle, Calendar, Trash2, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { ActivityHeatmap } from '../components/parent/ActivityHeatmap';
 import { TutorReport } from '../components/parent/TutorReport';
 import { BadgeCase } from '../components/parent/BadgeCase';
@@ -138,6 +138,7 @@ export function ParentSpace({
   const [createStudentError, setCreateStudentError] = useState<string | null>(null);
   const [createStudentSuccess, setCreateStudentSuccess] = useState<any>(null);
   const [isCreatingStudent, setIsCreatingStudent] = useState(false);
+  const [showStudentPassword, setShowStudentPassword] = useState(false);
 
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -311,15 +312,24 @@ export function ParentSpace({
             </div>
             <div className="form-group" style={{ margin: 0 }}>
               <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">Password</label>
-              <input
-                type="password"
-                placeholder="Choose password..."
-                value={newStudentPassword}
-                onChange={(e) => setNewStudentPassword(e.target.value)}
-                className="form-control w-full"
-                style={{ width: '100%' }}
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showStudentPassword ? 'text' : 'password'}
+                  placeholder="Choose password..."
+                  value={newStudentPassword}
+                  onChange={(e) => setNewStudentPassword(e.target.value)}
+                  className="form-control w-full pr-10"
+                  style={{ width: '100%' }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowStudentPassword(!showStudentPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer bg-transparent border-none p-0 flex items-center justify-center"
+                >
+                  {showStudentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             {createStudentError && (
