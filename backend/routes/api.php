@@ -6,7 +6,7 @@ use App\Http\Controllers\SyncController;
 use App\Http\Controllers\RateLimitController;
 use Illuminate\Support\Facades\Route;
 
-// Public — no authentication required
+Route::get('/login', [AuthController::class, 'unauthorized'])->name('login');
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/promote', [AuthController::class, 'promote']);

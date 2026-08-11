@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
 import { List } from 'react-window';
-import { Search, AlertCircle, Inbox, BarChart3, Calculator, BookOpen, User, Star, TrendingUp, AlertTriangle, Calendar, Trash2, UserPlus } from 'lucide-react';
+import { Search, AlertCircle, Inbox, BarChart3, Calculator, BookOpen, User, Star, TrendingUp, AlertTriangle, Calendar, Trash2, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { ActivityHeatmap } from '../components/parent/ActivityHeatmap';
 import { TutorReport } from '../components/parent/TutorReport';
 import { BadgeCase } from '../components/parent/BadgeCase';
@@ -21,6 +21,8 @@ interface SyncedEvent {
 interface ParentSpaceProps {
   progressLogs?: SyncedEvent[];
   lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null;
+  activeSubTab?: string;
+  setActiveSubTab?: (tab: any) => void;
 }
 
 const RowRenderer = ({
@@ -111,7 +113,11 @@ const RowRenderer = ({
   );
 };
 
-export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
+export function ParentSpace({
+  lastUpdatedCell,
+  activeSubTab = 'parent-explorer',
+  setActiveSubTab
+}: ParentSpaceProps) {
   const [studentIdInput, setStudentIdInput] = useState(() => {
     return localStorage.getItem('guro_parent_student_id') ?? '';
   });
@@ -132,6 +138,7 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
   const [createStudentError, setCreateStudentError] = useState<string | null>(null);
   const [createStudentSuccess, setCreateStudentSuccess] = useState<any>(null);
   const [isCreatingStudent, setIsCreatingStudent] = useState(false);
+  const [showStudentPassword, setShowStudentPassword] = useState(false);
 
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,13 +147,8 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
     setIsCreatingStudent(true);
 
     try {
-      const token = localStorage.getItem('guro_auth_token');
-      const response = await fetch('/api/parent/create-student', {
+      const response = await apiFetch('/api/parent/create-student', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
         body: JSON.stringify({
           name: newStudentName.trim(),
           email: newStudentEmail.trim().toLowerCase(),
@@ -265,6 +267,103 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
   };
 
   const avgScore = getAverageScore();
+  if (activeSubTab === 'create-student') {
+    return (
+      <div className="fade-in flex flex-col items-center justify-center gap-6 w-full py-8">
+        <div className="mb-2 text-center max-w-xl">
+          <h2 style={{ color: 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <UserPlus className="size-6 text-pink-500" /> Create Student Account
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
+            Register a secure credentials profile for your child. They can use these credentials to log in on Guro-Web or the mobile app.
+          </p>
+        </div>
+
+        <div className="w-full max-w-xl glass-panel p-8 shadow-xl border border-[var(--border-color)]">
+          <form onSubmit={handleCreateStudent} className="flex flex-col gap-4">
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">Student Full Name</label>
+              <input
+                type="text"
+                placeholder="Child's name..."
+                value={newStudentName}
+                onChange={(e) => setNewStudentName(e.target.value)}
+                className="form-control w-full"
+                style={{ width: '100%' }}
+                required
+              />
+            </div>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">Student Email</label>
+              <input
+                type="email"
+                placeholder="Child's login email..."
+                value={newStudentEmail}
+                onChange={(e) => setNewStudentEmail(e.target.value)}
+                className="form-control w-full"
+                style={{ width: '100%' }}
+                required
+              />
+            </div>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">Password</label>
+              <div className="relative">
+                <input
+                  type={showStudentPassword ? 'text' : 'password'}
+                  placeholder="Choose password..."
+                  value={newStudentPassword}
+                  onChange={(e) => setNewStudentPassword(e.target.value)}
+                  className="form-control w-full pr-10"
+                  style={{ width: '100%' }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowStudentPassword(!showStudentPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer bg-transparent border-none p-0 flex items-center justify-center"
+                >
+                  {showStudentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {createStudentError && (
+              <div className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1.5">
+                <AlertCircle className="size-4" /> {createStudentError}
+              </div>
+            )}
+
+            {createStudentSuccess && (
+              <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-800 text-xs font-semibold mt-2 flex flex-col gap-2">
+                <p className="font-extrabold text-emerald-950 flex items-center gap-1">✓ Account Created Successfully!</p>
+                <p className="mt-1">Student ID: <code className="font-mono bg-emerald-500/5 px-1 py-0.5 rounded text-sm font-bold">{createStudentSuccess.studentId}</code></p>
+                <p>Access Code: <code className="font-mono bg-emerald-500/5 px-1 py-0.5 rounded text-sm font-bold">{createStudentSuccess.accessCode}</code></p>
+                <p className="text-[11px] text-emerald-700 mt-1" style={{ lineHeight: '15px' }}>Credentials have been saved. Your child can now log in using this email and password!</p>
+                
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab?.('parent-explorer')}
+                  className="btn btn-primary w-full py-2.5 mt-2 flex items-center justify-center gap-1.5 font-bold text-xs cursor-pointer"
+                >
+                  Go to Explorer Dashboard & Sync
+                </button>
+              </div>
+            )}
+
+            {!createStudentSuccess && (
+              <button
+                type="submit"
+                disabled={isCreatingStudent}
+                className="btn btn-primary w-full py-3 mt-3 flex items-center justify-center gap-1.5 font-bold text-sm cursor-pointer"
+              >
+                {isCreatingStudent ? 'Registering...' : 'Register Student'}
+              </button>
+            )}
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fade-in flex flex-col gap-6 w-full">
@@ -277,136 +376,62 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="flex flex-col gap-6 w-full">
         {/* Left columns: Search Reports */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <form onSubmit={handleSearch} className="glass-panel px-6 py-5">
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-              <div className="form-group" style={{ flex: 1, minWidth: '200px' }}>
-                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
-                  Child's Device or Student ID
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. GURO-STUDENT-LOCAL"
-                  value={studentIdInput}
-                  onChange={(e) => setStudentIdInput(e.target.value)}
-                  className="form-control"
-                  style={{ width: '100%' }}
-                  required
-                />
-              </div>
-              <div className="form-group" style={{ flex: 1, minWidth: '200px' }}>
-                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
-                  6-Digit Parent Access Code
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. 123456"
-                  value={accessCodeInput}
-                  onChange={(e) => setAccessCodeInput(e.target.value)}
-                  className="form-control"
-                  style={{ width: '100%' }}
-                  maxLength={6}
-                  required
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <button type="submit" className="btn btn-primary px-6 cursor-pointer" style={{ height: '42px' }}>
-                  <span className="flex items-center justify-center gap-1.5"><Search className="size-4" /> Search Reports</span>
-                </button>
-                {(studentIdInput || accessCodeInput) && (
-                  <button
-                    type="button"
-                    onClick={handleClear}
-                    aria-label="Clear Search"
-                    className="px-3 border border-[var(--border-color)] text-[var(--text-muted)] rounded-[10px] cursor-pointer transition-all duration-200 hover:bg-[var(--danger)]/10 hover:text-[var(--danger)] hover:border-[var(--danger)]/20 active:scale-[0.97] flex items-center justify-center"
-                    style={{ height: '42px' }}
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-            {errorMsg && (
-              <div style={{ marginTop: '12px', color: 'var(--danger)', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <AlertCircle className="size-4" /> {errorMsg}
-              </div>
-            )}
-          </form>
-        </div>
-
-        {/* Right column: Create Student Account */}
-        <div className="glass-panel p-6">
-          <h3 className="text-sm font-extrabold text-[var(--accent-primary-text)] uppercase tracking-[0.5px] mb-3 flex items-center gap-1.5" style={{ color: 'var(--text-main)' }}>
-            <UserPlus className="size-4 text-pink-500" /> Create Student Account
-          </h3>
-          <p className="text-[11px] text-[var(--text-muted)] mb-4 font-semibold" style={{ lineHeight: '15px' }}>
-            Register a secure credentials profile for your child. They can use these credentials to log in on Guro-Web or the mobile app.
-          </p>
-
-          <form onSubmit={handleCreateStudent} className="flex flex-col gap-3">
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="text-[11px] font-bold text-[var(--text-main)] mb-1 block">Student Full Name</label>
+        <form onSubmit={handleSearch} className="glass-panel px-6 py-5 w-full">
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div className="form-group" style={{ flex: 1, minWidth: '200px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                Child's Device or Student ID
+              </label>
               <input
                 type="text"
-                placeholder="Child's name..."
-                value={newStudentName}
-                onChange={(e) => setNewStudentName(e.target.value)}
-                className="form-control w-full text-xs"
+                placeholder="e.g. GURO-STUDENT-LOCAL"
+                value={studentIdInput}
+                onChange={(e) => setStudentIdInput(e.target.value)}
+                className="form-control"
                 style={{ width: '100%' }}
                 required
               />
             </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="text-[11px] font-bold text-[var(--text-main)] mb-1 block">Student Email</label>
+            <div className="form-group" style={{ flex: 1, minWidth: '200px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                6-Digit Parent Access Code
+              </label>
               <input
-                type="email"
-                placeholder="Child's login email..."
-                value={newStudentEmail}
-                onChange={(e) => setNewStudentEmail(e.target.value)}
-                className="form-control w-full text-xs"
+                type="text"
+                placeholder="e.g. 123456"
+                value={accessCodeInput}
+                onChange={(e) => setAccessCodeInput(e.target.value)}
+                className="form-control"
                 style={{ width: '100%' }}
+                maxLength={6}
                 required
               />
             </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="text-[11px] font-bold text-[var(--text-main)] mb-1 block">Password</label>
-              <input
-                type="password"
-                placeholder="Choose password..."
-                value={newStudentPassword}
-                onChange={(e) => setNewStudentPassword(e.target.value)}
-                className="form-control w-full text-xs"
-                style={{ width: '100%' }}
-                required
-              />
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button type="submit" className="btn btn-primary px-6 cursor-pointer" style={{ height: '42px' }}>
+                <span className="flex items-center justify-center gap-1.5"><Search className="size-4" /> Search Reports</span>
+              </button>
+              {(studentIdInput || accessCodeInput) && (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  aria-label="Clear Search"
+                  className="px-3 border border-[var(--border-color)] text-[var(--text-muted)] rounded-[10px] cursor-pointer transition-all duration-200 hover:bg-[var(--danger)]/10 hover:text-[var(--danger)] hover:border-[var(--danger)]/20 active:scale-[0.97] flex items-center justify-center"
+                  style={{ height: '42px' }}
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              )}
             </div>
-
-            {createStudentError && (
-              <div className="text-[11px] font-bold text-red-500 mt-1 flex items-center gap-1">
-                <AlertCircle className="size-3.5" /> {createStudentError}
-              </div>
-            )}
-
-            {createStudentSuccess && (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-800 text-[11px] font-semibold mt-1 flex flex-col gap-1">
-                <p className="font-extrabold text-emerald-950 flex items-center gap-1">✓ Account Created!</p>
-                <p className="mt-1">Student ID: <code className="font-mono bg-emerald-500/5 px-1 py-0.5 rounded">{createStudentSuccess.studentId}</code></p>
-                <p>Access Code: <code className="font-mono bg-emerald-500/5 px-1 py-0.5 rounded">{createStudentSuccess.accessCode}</code></p>
-                <p className="text-[10px] text-emerald-700 mt-1" style={{ lineHeight: '14px' }}>Credentials have been automatically filled into the search filters on the left.</p>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isCreatingStudent}
-              className="btn btn-secondary w-full py-2.5 mt-2 flex items-center justify-center gap-1.5 font-bold text-xs cursor-pointer"
-            >
-              {isCreatingStudent ? 'Registering...' : 'Register Student'}
-            </button>
-          </form>
-        </div>
+          </div>
+          {errorMsg && (
+            <div style={{ marginTop: '12px', color: 'var(--danger)', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <AlertCircle className="size-4" /> {errorMsg}
+            </div>
+          )}
+        </form>
       </div>
 
       {loading ? (
@@ -469,13 +494,13 @@ export function ParentSpace({ lastUpdatedCell }: ParentSpaceProps) {
                     <Calendar size={18} className="text-[var(--accent-primary)] shrink-0" />
                     <span>Practice Timeline History</span>
                   </h3>
-                    <List<{ studentLogs: SyncedEvent[]; lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null }>
-                      style={{ overflowX: 'hidden', height: 500, width: '100%' }}
-                      rowCount={studentLogs.length}
-                      rowHeight={115}
-                      rowComponent={RowRenderer}
-                      rowProps={{ studentLogs, lastUpdatedCell }}
-                    />
+                  <List<{ studentLogs: SyncedEvent[]; lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null }>
+                    style={{ overflowX: 'hidden', height: 500, width: '100%' }}
+                    rowCount={studentLogs.length}
+                    rowHeight={115}
+                    rowComponent={RowRenderer}
+                    rowProps={{ studentLogs, lastUpdatedCell }}
+                  />
                 </div>
               </div>
             </div>

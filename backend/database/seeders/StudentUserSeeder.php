@@ -36,7 +36,7 @@ class StudentUserSeeder extends Seeder
 
         if (!User::where('email', $email)->exists()) {
             User::create([
-                'user_id' => 'USR-STUDENT',
+                'user_id' => 'SAMPLE-STUDENT',
                 'email' => $email,
                 'password_hash' => $this->hashPassword($password),
                 'name' => $name,

@@ -72,21 +72,33 @@ describe('LoginScreen', () => {
     jest.clearAllMocks();
   });
 
-  test('should render logo section and default forms', () => {
+  test('should render logo section and default forms', async () => {
     let root: any;
-    act(() => {
+    await act(async () => {
       root = renderer.create(<LoginScreen navigation={mockNavigation as any} route={{} as any} />);
+    });
+    // Wait for the async mount effects (Network state fetch) to finish
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
     });
 
     const rootJSON = root.toJSON();
     expect(findTextInJSON(rootJSON, 'GURO')).toBe(true);
     expect(findTextInJSON(rootJSON, 'Guided Unified Remote Online')).toBe(true);
+
+    act(() => {
+      root.unmount();
+    });
   });
 
-  test('should launch guest session when valid offline name is submitted', () => {
+  test('should launch guest session when valid offline name is submitted', async () => {
     let root: any;
-    act(() => {
+    await act(async () => {
       root = renderer.create(<LoginScreen navigation={mockNavigation as any} route={{} as any} />);
+    });
+    // Wait for the async mount effects (Network state fetch) to finish
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
     });
 
     // Find the text input for guest name
@@ -105,12 +117,20 @@ describe('LoginScreen', () => {
     expect(mockSetGuestName).toHaveBeenCalledWith('Neal Claro');
     expect(mockSetStudentId).toHaveBeenCalledWith('NEAL-CLARO-GUEST');
     expect(mockNavigation.replace).toHaveBeenCalledWith('StudentDashboard');
+
+    act(() => {
+      root.unmount();
+    });
   });
 
-  test('should show validation error if offline name is too short', () => {
+  test('should show validation error if offline name is too short', async () => {
     let root: any;
-    act(() => {
+    await act(async () => {
       root = renderer.create(<LoginScreen navigation={mockNavigation as any} route={{} as any} />);
+    });
+    // Wait for the async mount effects (Network state fetch) to finish
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
     });
 
     const input = root.root.findByProps({ placeholder: 'e.g. Juan' });
@@ -125,5 +145,9 @@ describe('LoginScreen', () => {
 
     expect(mockSetAppMode).not.toHaveBeenCalled();
     expect(mockNavigation.replace).not.toHaveBeenCalled();
+
+    act(() => {
+      root.unmount();
+    });
   });
 });

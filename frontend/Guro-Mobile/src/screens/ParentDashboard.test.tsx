@@ -73,10 +73,14 @@ describe('ParentDashboard', () => {
     ) as jest.Mock;
   });
 
-  test('should render parental controls and statistics correctly', () => {
+  test('should render parental controls and statistics correctly', async () => {
     let root: any;
-    act(() => {
+    await act(async () => {
       root = renderer.create(<ParentDashboard navigation={mockNavigation as any} route={{} as any} />);
+    });
+    // Wait for the async mount effects (AsyncStorage calls) to finish
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
     });
 
     const stringified = JSON.stringify(root.toJSON());
@@ -85,12 +89,20 @@ describe('ParentDashboard', () => {
     expect(stringified).toContain('80%'); // score average (8/10)
     expect(stringified).toContain('12'); // minutes used
     expect(stringified).toContain('30'); // limit
+
+    act(() => {
+      root.unmount();
+    });
   });
 
-  test('should toggle mathBeforeEnglish switch and call updateParentalControls', () => {
+  test('should toggle mathBeforeEnglish switch and call updateParentalControls', async () => {
     let root: any;
-    act(() => {
+    await act(async () => {
       root = renderer.create(<ParentDashboard navigation={mockNavigation as any} route={{} as any} />);
+    });
+    // Wait for the async mount effects (AsyncStorage calls) to finish
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
     });
 
     // Find the switches
@@ -105,12 +117,20 @@ describe('ParentDashboard', () => {
     expect(mockUpdateParentalControls).toHaveBeenCalledWith(expect.objectContaining({
       mathBeforeEnglish: true
     }));
+
+    act(() => {
+      root.unmount();
+    });
   });
 
-  test('should clear history when delete database button is pressed and confirmed', () => {
+  test('should clear history when delete database button is pressed and confirmed', async () => {
     let root: any;
-    act(() => {
+    await act(async () => {
       root = renderer.create(<ParentDashboard navigation={mockNavigation as any} route={{} as any} />);
+    });
+    // Wait for the async mount effects (AsyncStorage calls) to finish
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
     });
 
     // Mock confirmation alert dialog success trigger
@@ -131,5 +151,9 @@ describe('ParentDashboard', () => {
       expect.any(Array)
     );
     expect(mockClearProgress).toHaveBeenCalled();
+
+    act(() => {
+      root.unmount();
+    });
   });
 });

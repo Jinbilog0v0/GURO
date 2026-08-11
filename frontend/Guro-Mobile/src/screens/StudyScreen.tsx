@@ -87,8 +87,9 @@ export function StudyScreen({ route, navigation }: Props) {
     const rawContent = topicData?.studyContent;
     if (!rawContent) return null;
     // Check if it has Easy/Average/Difficult keys
-    if (rawContent[currentTier]) {
-      return rawContent[currentTier];
+    const tierContent = (rawContent as any)[currentTier];
+    if (tierContent) {
+      return tierContent;
     }
     // Fallback to monolithic structure
     return rawContent;

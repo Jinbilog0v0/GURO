@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap } from 'lucide-react';
+import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap, Eye, EyeOff } from 'lucide-react';
 import { RoleCard, type RoleCardProps } from '../components/landing/RoleCard';
 import { FeatureCard, type FeatureCardProps } from '../components/landing/FeatureCard';
 import { setAuthToken } from '../utils/api';
@@ -38,6 +38,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
     const [view, setView] = useState<ViewType>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [name, setName] = useState('');
     const [roleSelection, setRoleSelection] = useState('teacher');
     const [loginRole, setLoginRole] = useState<'student' | 'teacher' | 'parent'>('teacher');
@@ -213,6 +214,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
     const inputCls = "w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all";
     const inputErrCls = "w-full pl-10 pr-4 py-3 bg-slate-50 border border-[#A01322] rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#A01322] focus:ring-2 focus:ring-[#A01322]/20 focus:bg-white transition-all";
+    const passwordInputCls = "w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all";
+    const passwordInputErrCls = "w-full pl-10 pr-10 py-3 bg-slate-50 border border-[#A01322] rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#A01322] focus:ring-2 focus:ring-[#A01322]/20 focus:bg-white transition-all";
     const labelCls = "text-[11px] font-bold text-slate-400 uppercase tracking-wider";
 
     // ── Views ─────────────────────────────────────────────────────────────────
@@ -335,15 +338,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
                                     <input
                                         id="login-password"
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         placeholder="••••••••"
-                                        className={fieldErrors.password ? inputErrCls : inputCls}
+                                        className={fieldErrors.password ? passwordInputErrCls : passwordInputCls}
                                         value={password}
                                         onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: '' })); }}
                                         onBlur={(e) => handleFieldBlur('password', e.target.value)}
                                         required
                                         aria-describedby={fieldErrors.password ? 'login-pw-err' : undefined}
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none flex items-center justify-center p-1 rounded-md hover:bg-slate-100 transition-colors"
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                    >
+                                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                    </button>
                                 </div>
                                 {fieldErrors.password && <p id="login-pw-err" className="text-[11px] text-[#A01322] font-semibold pl-1">{fieldErrors.password}</p>}
                             </div>
@@ -439,15 +450,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
                                     <input
                                         id="reg-password"
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         placeholder="Minimum 6 characters"
-                                        className={fieldErrors.password ? inputErrCls : inputCls}
+                                        className={fieldErrors.password ? passwordInputErrCls : passwordInputCls}
                                         value={password}
                                         onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: '' })); }}
                                         onBlur={(e) => handleFieldBlur('password', e.target.value)}
                                         required
                                         aria-describedby={fieldErrors.password ? 'reg-pw-err' : undefined}
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none flex items-center justify-center p-1 rounded-md hover:bg-slate-100 transition-colors"
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                    >
+                                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                    </button>
                                 </div>
                                 {fieldErrors.password && <p id="reg-pw-err" className="text-[11px] text-[#A01322] font-semibold pl-1">{fieldErrors.password}</p>}
                                 {password.length > 0 && password.length < 6 && !fieldErrors.password && (
