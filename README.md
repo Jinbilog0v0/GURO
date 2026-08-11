@@ -59,7 +59,7 @@ Category dropdown options and interactive question types in the manual lesson bu
 GURO-App/
 ├── backend/            # Laravel backend API server
 └── frontend/           # Frontend client workspace
-    ├── guro-mobile/    # React Native client application
+    ├── Guro-Mobile/    # React Native client application
     └── Guro-Web/       # React/Vite teacher and parent administration web portal
 ```
 
@@ -86,7 +86,7 @@ npm run dev
 
 ### 3. Guro-Mobile Client
 ```bash
-cd frontend/guro-mobile
+cd frontend/Guro-Mobile
 npm install
 npx expo start
 ```
