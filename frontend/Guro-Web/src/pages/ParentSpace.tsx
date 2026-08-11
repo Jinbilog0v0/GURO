@@ -147,13 +147,8 @@ export function ParentSpace({
     setIsCreatingStudent(true);
 
     try {
-      const token = localStorage.getItem('guro_auth_token');
-      const response = await fetch('/api/parent/create-student', {
+      const response = await apiFetch('/api/parent/create-student', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
         body: JSON.stringify({
           name: newStudentName.trim(),
           email: newStudentEmail.trim().toLowerCase(),
