@@ -129,7 +129,7 @@ If you prefer not to use `pgdata/`, you can use your system's global PostgreSQL 
 
 1. Navigate to the mobile frontend directory:
    ```bash
-   cd ../guro-mobile
+   cd ../Guro-Mobile
    ```
 2. Install Node dependencies:
    ```bash
@@ -159,6 +159,6 @@ You can verify that your setup is fully functional by running the test suites:
   ```
 * **Mobile tests (Jest):**
   ```bash
-  cd frontend/guro-mobile
+  cd frontend/Guro-Mobile
   npm run test
   ```

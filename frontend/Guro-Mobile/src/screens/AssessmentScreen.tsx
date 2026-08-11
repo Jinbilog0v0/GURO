@@ -459,6 +459,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
         topic,
         score: finalScore,
         totalQuestions: questions.length,
+        difficulty: currentTier,
       });
 
       // Adaptive progression & continuous failure routing
