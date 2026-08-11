@@ -349,7 +349,7 @@ export function ParentSpace({
               <button
                 type="submit"
                 disabled={isCreatingStudent}
-                className="btn btn-secondary w-full py-3 mt-3 flex items-center justify-center gap-1.5 font-bold text-sm cursor-pointer"
+                className="btn btn-primary w-full py-3 mt-3 flex items-center justify-center gap-1.5 font-bold text-sm cursor-pointer"
               >
                 {isCreatingStudent ? 'Registering...' : 'Register Student'}
               </button>
