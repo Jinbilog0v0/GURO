@@ -110,7 +110,7 @@ export function evaluateRemediationRouting(
     return {
       instruction: 'advance',
       tier: nextTier,
-      feedbackTitle: 'Mastery Achieved! 🎉',
+      feedbackTitle: 'Mastery Achieved!',
       feedbackMessage: `Outstanding job! You scored ${score}%. You have demonstrated solid mastery and are ready to advance.`,
       suggestedActionLabel: 'Next Topic / Tier',
     };
@@ -119,7 +119,7 @@ export function evaluateRemediationRouting(
       instruction: 'scaffold_review',
       tier: currentDifficulty,
       remedialConcept: currentTopic,
-      feedbackTitle: 'Guided Micro-Review 💡',
+      feedbackTitle: 'Guided Micro-Review',
       feedbackMessage: `You scored ${score}%. You are close to mastery! Let's do a guided micro-review on "${currentTopic}" before retrying to lock in your score.`,
       suggestedActionLabel: 'Start Micro-Review',
     };
@@ -134,7 +134,7 @@ export function evaluateRemediationRouting(
       instruction: 'prerequisite_return',
       tier: lowerTier,
       targetLesson: prereq,
-      feedbackTitle: 'Foundational Re-Routing 📚',
+      feedbackTitle: 'Foundational Re-Routing',
       feedbackMessage: prereq
         ? `You scored ${score}%. We detected foundational gaps. Let's return to "${prereq.topic}" (Grade ${prereq.grade}) to rebuild essential skills before re-attempting ${currentTopic}.`
         : `You scored ${score}%. Let's step down to ${lowerTier} level and review core building blocks for "${currentTopic}".`,

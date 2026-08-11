@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
+    "@expo-google-fonts/nunito": "^0.4.2",
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo-google-fonts/space-grotesk": "^0.4.1",
     "@google/genai": "^2.8.0",

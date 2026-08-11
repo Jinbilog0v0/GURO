@@ -1,5 +1,5 @@
 import React from 'react';
-import { Award, Lock, CheckCircle2, Medal, Pizza, Target, Coins, Shield, Theater, Zap, Ruler } from 'lucide-react';
+import { Award, Lock, CheckCircle2, Calculator, BookOpen, Flame, Zap } from 'lucide-react';
 
 interface SyncedEvent {
   studentId: string;
@@ -18,8 +18,6 @@ interface BadgeCaseProps {
 interface BadgeDef {
   id: string;
   name: string;
-  topicName: string;
-  subject: string;
   icon: React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>;
   color: string;
   description: string;
@@ -28,50 +26,97 @@ interface BadgeDef {
 export const BadgeCase: React.FC<BadgeCaseProps> = ({ logs }) => {
   const badgeDefinitions: BadgeDef[] = [
     {
-      id: 'fraction-cadet',
-      name: 'Fraction Cadet',
-      topicName: 'Fractions',
-      subject: 'Mathematics',
-      icon: Pizza,
+      id: 'first_step',
+      name: 'First Step',
+      icon: Award,
       color: '#3B82F6',
-      description: 'Achieve 80%+ accuracy on Grade 4 Fractions.',
+      description: 'Completed your first lesson.',
     },
     {
-      id: 'decimal-scout',
-      name: 'Decimal Scout',
-      topicName: 'Decimals',
-      subject: 'Mathematics',
-      icon: Coins,
-      color: '#0EA5E9',
-      description: 'Achieve 80%+ accuracy on Grade 5 Decimals.',
+      id: 'perfect_score',
+      name: 'Perfect 100%',
+      icon: CheckCircle2,
+      color: '#10B981',
+      description: 'Got 100% on any quiz.',
     },
     {
-      id: 'simile-pioneer',
-      name: 'Simile Pioneer',
-      topicName: 'Figurative Language',
-      subject: 'English',
-      icon: Theater,
-      color: '#8B5CF6',
-      description: 'Achieve 80%+ accuracy on Grade 4 Figurative Language.',
-    },
-    {
-      id: 'equation-master',
-      name: 'Algebra Algebrator',
-      topicName: 'Algebraic Equations',
-      subject: 'Mathematics',
-      icon: Ruler,
+      id: 'math_wizard',
+      name: 'Math Wizard',
+      icon: Calculator,
       color: '#F59E0B',
-      description: 'Achieve 80%+ accuracy on Grade 6 Algebraic Equations.',
+      description: 'Perfect score in Mathematics.',
+    },
+    {
+      id: 'english_champion',
+      name: 'English Champ',
+      icon: BookOpen,
+      color: '#8B5CF6',
+      description: 'Perfect score in English.',
+    },
+    {
+      id: 'streak_starter',
+      name: 'Streak Starter',
+      icon: Flame,
+      color: '#EF4444',
+      description: 'Achieved a 3-day study streak.',
+    },
+    {
+      id: 'streak_master',
+      name: 'Streak Master',
+      icon: Zap,
+      color: '#EAB308',
+      description: 'Achieved a 5-day study streak.',
     },
   ];
 
-  // Helper to determine if a badge is unlocked
-  const isBadgeUnlocked = (topicName: string) => {
-    const topicLogs = logs.filter((log) => log.topic.toLowerCase().includes(topicName.toLowerCase()));
-    if (topicLogs.length === 0) return false;
+  const calculateMaxStreak = (logs: SyncedEvent[]): number => {
+    if (logs.length === 0) return 0;
+    const uniqueDates = Array.from(
+      new Set(logs.map(log => new Date(log.timestamp).toISOString().split('T')[0]))
+    ).sort();
     
-    // Check if any log is >= 80% accuracy
-    return topicLogs.some((log) => (log.score / log.totalQuestions) * 100 >= 80);
+    let maxStreak = 0;
+    let currentStreak = 0;
+    let prevDate: Date | null = null;
+
+    for (const dateStr of uniqueDates) {
+      const currentDate = new Date(dateStr);
+      if (!prevDate) {
+        currentStreak = 1;
+      } else {
+        const diffTime = Math.abs(currentDate.getTime() - prevDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          currentStreak += 1;
+        } else if (diffDays > 1) {
+          currentStreak = 1;
+        }
+      }
+      prevDate = currentDate;
+      if (currentStreak > maxStreak) {
+        maxStreak = currentStreak;
+      }
+    }
+    return maxStreak;
+  };
+
+  const isBadgeUnlocked = (badgeId: string) => {
+    if (logs.length === 0) return false;
+    if (badgeId === 'first_step') return true;
+    if (badgeId === 'perfect_score') {
+      return logs.some((log) => log.score === log.totalQuestions);
+    }
+    if (badgeId === 'math_wizard') {
+      return logs.some((log) => log.score === log.totalQuestions && log.subject.toLowerCase() === 'mathematics');
+    }
+    if (badgeId === 'english_champion') {
+      return logs.some((log) => log.score === log.totalQuestions && log.subject.toLowerCase() === 'english');
+    }
+    if (badgeId === 'streak_starter' || badgeId === 'streak_master') {
+      const streak = calculateMaxStreak(logs);
+      return badgeId === 'streak_starter' ? streak >= 3 : streak >= 5;
+    }
+    return false;
   };
 
   return (
@@ -84,7 +129,7 @@ export const BadgeCase: React.FC<BadgeCaseProps> = ({ logs }) => {
 
       <div className="grid grid-cols-2 gap-4">
         {badgeDefinitions.map((badge) => {
-          const unlocked = isBadgeUnlocked(badge.topicName);
+          const unlocked = isBadgeUnlocked(badge.id);
           return (
             <div
               key={badge.id}
@@ -120,10 +165,6 @@ export const BadgeCase: React.FC<BadgeCaseProps> = ({ logs }) => {
               <div className="flex flex-col gap-[3px] flex-1">
                 <h4 className={`text-[13px] font-bold ${unlocked ? 'text-[var(--text-main)]' : 'text-[var(--text-dark)]'} flex items-center gap-1.5`}>
                   <span>{badge.name}</span>
-                  {badge.id === 'fraction-cadet' && <Medal size={14} className="text-[#F59E0B] shrink-0" />}
-                  {badge.id === 'decimal-scout' && <Target size={14} className="text-red-500 shrink-0" />}
-                  {badge.id === 'simile-pioneer' && <Shield size={14} className="text-[#8B5CF6] shrink-0" />}
-                  {badge.id === 'equation-master' && <Zap size={14} className="text-[#F59E0B] shrink-0" />}
                 </h4>
                 <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">{badge.description}</p>
                 <span
@@ -141,5 +182,3 @@ export const BadgeCase: React.FC<BadgeCaseProps> = ({ logs }) => {
     </div>
   );
 };
-
-

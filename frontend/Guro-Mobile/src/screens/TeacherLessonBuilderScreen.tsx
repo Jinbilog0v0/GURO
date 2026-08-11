@@ -27,6 +27,7 @@ import {
   CheckCircle2,
   Circle,
   Send,
+  AlertTriangle,
 } from 'lucide-react-native';
 
 interface QuestionDraft {
@@ -202,10 +203,13 @@ export function TeacherLessonBuilderScreen() {
 
           {!classroomId && (
             <GlassCard style={[styles.section, { borderColor: Colors.warning, backgroundColor: 'rgba(245,158,11,0.03)' }]}>
-              <Text style={{ fontFamily: Fonts.bodySemiBold, color: '#D97706', fontSize: FontSizes.sm }}>
-                ⚠️ Active Classroom Required
-              </Text>
-              <Text style={{ fontFamily: Fonts.body, color: Colors.textMuted, fontSize: FontSizes.xs, marginTop: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <AlertTriangle size={16} color="#D97706" />
+                <Text style={{ fontFamily: Fonts.bodyBold, color: '#D97706', fontSize: FontSizes.sm }}>
+                  Active Classroom Required
+                </Text>
+              </View>
+              <Text style={{ fontFamily: Fonts.body, color: Colors.textMuted, fontSize: FontSizes.xs }}>
                 Link this teacher account to a classroom first so lessons can be saved to your private bank.
               </Text>
             </GlassCard>

@@ -314,7 +314,10 @@ class AuthController extends Controller
         }
 
         $passwordHash = $this->hashPassword($password);
-        $newStudentId = strtoupper(str_replace(' ', '-', $name)) . '-' . strtoupper(Str::random(4));
+        $newStudentId = strtoupper(str_replace(' ', '-', $name));
+        if (User::where('user_id', $newStudentId)->exists()) {
+            $newStudentId .= '-' . strtoupper(Str::random(4));
+        }
 
         $normalized = strtoupper(preg_replace('/\s+/', '-', trim($newStudentId)));
         $salt = "GURO_PARENT_SALT";

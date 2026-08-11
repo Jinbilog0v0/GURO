@@ -16,10 +16,10 @@ export const Spacing = {
 } as const;
 
 export const Radius = {
-  sm: 8,
-  md: 10,   // Web: border-radius 10px on inputs/buttons
-  lg: 16,   // Web: border-radius 16px on .glass-panel
-  xl: 20,
+  sm: 10,
+  md: 14,   // Web: border-radius 14px on inputs/buttons
+  lg: 20,   // Web: border-radius 20px on .glass-panel
+  xl: 26,
   full: 999, // Web: border-radius 99px on badges
 } as const;
 

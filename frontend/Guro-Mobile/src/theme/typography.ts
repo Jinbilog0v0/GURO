@@ -5,16 +5,16 @@
  */
 
 export const Fonts = {
-  // Display — Space Grotesk (headings, logo, labels)
-  display: 'SpaceGrotesk_700Bold',
-  displayMedium: 'SpaceGrotesk_500Medium',
-  displayRegular: 'SpaceGrotesk_400Regular',
+  // Display — Nunito (headings, logo, labels)
+  display: 'Nunito_800ExtraBold',
+  displayMedium: 'Nunito_700Bold',
+  displayRegular: 'Nunito_500Medium',
 
-  // Body — Plus Jakarta Sans (paragraphs, buttons, inputs)
-  body: 'PlusJakartaSans_400Regular',
-  bodyMedium: 'PlusJakartaSans_500Medium',
-  bodySemiBold: 'PlusJakartaSans_600SemiBold',
-  bodyBold: 'PlusJakartaSans_700Bold',
+  // Body — Nunito (paragraphs, buttons, inputs)
+  body: 'Nunito_400Regular',
+  bodyMedium: 'Nunito_500Medium',
+  bodySemiBold: 'Nunito_600SemiBold',
+  bodyBold: 'Nunito_700Bold',
 } as const;
 
 export const FontSizes = {

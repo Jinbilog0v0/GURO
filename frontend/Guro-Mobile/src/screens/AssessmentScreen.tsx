@@ -23,7 +23,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppStore, Question } from '../store/useAppStore';
 import { shuffle, MASTERY_THRESHOLD, evaluateRemediationRouting } from '../utils/engine';
-import { Trophy, Square, Volume2, Check, X, Inbox, ChevronDown, ChevronUp, WifiOff, ThumbsUp, ThumbsDown, Sparkles, Trash2 } from 'lucide-react-native';
+import { Trophy, Square, Volume2, Check, X, Inbox, ChevronDown, ChevronUp, WifiOff, ThumbsUp, ThumbsDown, Sparkles, Trash2, Lightbulb, BookOpen, Target } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -635,9 +635,18 @@ export function AssessmentScreen({ route, navigation }: Props) {
                     width: '100%',
                   }}
                 >
-                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: titleColor }}>
-                    {remediation.feedbackTitle}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    {isMastery ? (
+                      <Trophy size={14} color={titleColor} />
+                    ) : isPrereq ? (
+                      <BookOpen size={14} color={titleColor} />
+                    ) : (
+                      <Lightbulb size={14} color={titleColor} />
+                    )}
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: titleColor }}>
+                      {remediation.feedbackTitle}
+                    </Text>
+                  </View>
                   <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMain, lineHeight: 17 }}>
                     {remediation.feedbackMessage}
                   </Text>
@@ -661,9 +670,12 @@ export function AssessmentScreen({ route, navigation }: Props) {
                         alignItems: 'center',
                       }}
                     >
-                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.white }}>
-                        🎯 Return to Prerequisite: {remediation.targetLesson.topic} (Grade {remediation.targetLesson.grade})
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Target size={14} color={Colors.white} />
+                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.white }}>
+                          Return to Prerequisite: {remediation.targetLesson.topic} (Grade {remediation.targetLesson.grade})
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   )}
 
@@ -686,9 +698,12 @@ export function AssessmentScreen({ route, navigation }: Props) {
                         alignItems: 'center',
                       }}
                     >
-                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#000000' }}>
-                        💡 Start Guided Study Review: {topic}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Lightbulb size={14} color="#000000" />
+                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#000000' }}>
+                          Start Guided Study Review: {topic}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   )}
                 </View>

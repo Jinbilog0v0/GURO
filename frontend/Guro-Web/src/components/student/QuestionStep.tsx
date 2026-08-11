@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Volume2, Square, X, Check, ThumbsUp, ThumbsDown, Sparkles } from 'lucide-react';
+import { ArrowLeft, Volume2, Square, X, Check, ThumbsUp, ThumbsDown, Sparkles, Star, Lightbulb } from 'lucide-react';
 import { QuizOption } from './QuizOption';
 import { QuizExplanation } from './QuizExplanation';
 
@@ -921,8 +921,12 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                 </span>
                             )}
                             {isSubmitted && (
-                                <span className="absolute -bottom-2 -left-2 text-lg bg-white border border-slate-150 p-0.5 rounded-full shadow-sm">
-                                    {isCorrect ? '⭐' : '💡'}
+                                <span className="absolute -bottom-2 -left-2 bg-white border border-slate-150 p-1.5 rounded-full shadow-sm">
+                                    {isCorrect ? (
+                                        <Star className="size-4 text-amber-500 fill-amber-400" />
+                                    ) : (
+                                        <Lightbulb className="size-4 text-sky-500 fill-sky-200" />
+                                    )}
                                 </span>
                             )}
                         </div>
