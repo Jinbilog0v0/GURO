@@ -63,13 +63,13 @@ export const StudentShell: React.FC<StudentShellProps> = ({
                                 onClick={() => onViewChange(view)}
                                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                                     active
-                                        ? 'bg-[#11428E]/10 text-[#11428E] font-bold'
+                                        ? 'bg-[var(--accent-primary-glow)] text-[var(--accent-primary-text)] font-bold'
                                         : 'text-[var(--text-muted)] hover:bg-[var(--bg-main)] hover:text-[var(--text-main)]'
                                 }`}
                             >
-                                <Icon className={`size-4 ${active ? 'text-[#11428E]' : 'text-[var(--text-dark)]'}`} />
+                                <Icon className={`size-4 ${active ? 'text-[var(--accent-primary-text)]' : 'text-[var(--text-dark)]'}`} />
                                 {label}
-                                {active && <div className="ml-auto size-1.5 rounded-full bg-[#11428E]" />}
+                                {active && <div className="ml-auto size-1.5 rounded-full bg-[var(--accent-primary-text)]" />}
                             </button>
                         );
                     })}
@@ -79,9 +79,9 @@ export const StudentShell: React.FC<StudentShellProps> = ({
                 <div className="p-3 border-t border-[var(--border-color)]">
                     <button
                         onClick={onLogout}
-                        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-[#A01322] hover:bg-[#A01322]/10 transition-all cursor-pointer"
+                        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-[var(--accent-secondary)] hover:bg-[var(--accent-secondary-glow)] transition-all cursor-pointer"
                     >
-                        <LogOut className="size-4 text-[#A01322]" />
+                        <LogOut className="size-4 text-[var(--accent-secondary)]" />
                         Log Out
                     </button>
                 </div>
@@ -119,8 +119,8 @@ export const StudentShell: React.FC<StudentShellProps> = ({
                         </div>
 
                         {/* Mobile grade badge */}
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-bold bg-[#11428E]/10 text-[#11428E] border-[#11428E]/20">
-                            <div className="size-1.5 rounded-full bg-[#11428E]" />
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-bold bg-[var(--accent-primary-glow)] text-[var(--accent-primary-text)] border-[var(--accent-primary)]/20">
+                            <div className="size-1.5 rounded-full bg-[var(--accent-primary-text)]" />
                             G{selectedGrade}
                         </div>
 
@@ -150,7 +150,7 @@ export const StudentShell: React.FC<StudentShellProps> = ({
                                 onClick={() => { onViewChange(view); setMobileNavOpen(false); }}
                                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                                     currentView === view
-                                        ? 'bg-[#11428E]/10 text-[#11428E] font-bold'
+                                        ? 'bg-[var(--accent-primary-glow)] text-[var(--accent-primary-text)] font-bold'
                                         : 'text-[var(--text-muted)] hover:bg-[var(--bg-main)]'
                                 }`}
                             >
@@ -161,7 +161,7 @@ export const StudentShell: React.FC<StudentShellProps> = ({
                         {/* Mobile Log Out */}
                         <button
                             onClick={() => { setMobileNavOpen(false); onLogout(); }}
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-[#A01322] hover:bg-[#A01322]/10 transition-all cursor-pointer border-t border-[var(--border-color)] mt-1 pt-3 w-full"
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-[var(--accent-secondary)] hover:bg-[var(--accent-secondary-glow)] transition-all cursor-pointer border-t border-[var(--border-color)] mt-1 pt-3 w-full"
                         >
                             <LogOut className="size-4" />
                             Log Out

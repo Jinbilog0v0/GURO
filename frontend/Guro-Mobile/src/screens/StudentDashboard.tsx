@@ -42,6 +42,7 @@ import {
   Trophy,
   Users,
   CheckCircle2,
+  School,
 } from 'lucide-react-native';
 import { toast } from '../components';
 
@@ -301,9 +302,12 @@ export function StudentDashboard() {
             <Hand size={18} color={Colors.accentPrimary} />
           </View>
           {classroomId ? (
-            <Text style={[styles.subWelcomeText, { color: Colors.accentPrimary, fontFamily: Fonts.bodyBold }]}>
-              🏫 Paired: {classroomId}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+              <School size={14} color={Colors.accentPrimary} />
+              <Text style={[styles.subWelcomeText, { color: Colors.accentPrimary, fontFamily: Fonts.bodyBold, marginTop: 0 }]}>
+                Paired: {classroomId}
+              </Text>
+            </View>
           ) : (
             <Text style={styles.subWelcomeText}>What will you learn today?</Text>
           )}

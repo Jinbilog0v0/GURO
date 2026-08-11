@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
-import { BarChart3, RotateCw, Loader2, FolderOpen, Inbox, Calculator, BookOpen, School, GraduationCap, Clock } from 'lucide-react';
+import { BarChart3, RotateCw, Loader2, FolderOpen, Inbox, Calculator, BookOpen, School, GraduationCap, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { RateLimitPanel } from '../components/developer/RateLimitPanel';
 
 function StatCard({ label, value, accentColor, valueColor }: {
@@ -49,6 +49,18 @@ interface ItemBankStructure {
   };
 }
 
+interface QuestionItem {
+  id?: string;
+  questionText?: string;
+  options?: string[];
+  correctAnswer?: string;
+  feedback?: string | { en?: string; fil?: string };
+  type?: string;
+  matchingPairs?: Record<string, string> | null;
+  difficulty?: string;
+  category?: string;
+}
+
 export function DashboardSpace({ 
   currentUser, 
   stagedQuestionsCount,
@@ -63,6 +75,47 @@ export function DashboardSpace({
     questions: 0,
   });
   const [itemBankData, setItemBankData] = useState<ItemBankStructure>({});
+  const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
+
+  const toggleTopic = (key: string) => {
+    setExpandedTopics(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const getTopicQuestions = (topicNode: Record<string, Record<string, QuestionItem[]>> | undefined) => {
+    const list: QuestionItem[] = [];
+
+    if (!topicNode) return list;
+
+    Object.keys(topicNode).forEach(diff => {
+      if (diff === 'studyContent') return;
+      const diffNode = topicNode[diff];
+      if (diffNode && typeof diffNode === 'object') {
+        Object.keys(diffNode).forEach(cat => {
+          const qList = diffNode[cat];
+          if (Array.isArray(qList)) {
+            (qList as QuestionItem[]).forEach((q: QuestionItem) => {
+              list.push({
+                id: q.id || '',
+                questionText: q.questionText || '',
+                difficulty: diff,
+                category: cat,
+                options: q.options || [],
+                correctAnswer: q.correctAnswer || '',
+                feedback: q.feedback,
+                type: q.type,
+                matchingPairs: q.matchingPairs,
+              });
+            });
+          }
+        });
+      }
+    });
+
+    return list;
+  };
 
   const isTeacher = currentUser?.role === 'teacher';
   const classCode = isTeacher ? (currentUser?.classroomId || localStorage.getItem('guro_teacher_classroom_code')) : null;
@@ -100,8 +153,9 @@ export function DashboardSpace({
                 const topicNode = db[sub][gradeKey][topicKey];
                 if (topicNode) {
                   Object.keys(topicNode).forEach(diff => {
+                    if (diff === 'studyContent') return;
                     const diffNode = topicNode[diff];
-                    if (diffNode) {
+                    if (diffNode && typeof diffNode === 'object') {
                       Object.keys(diffNode).forEach(cat => {
                         const qList = diffNode[cat];
                         if (Array.isArray(qList)) {
@@ -241,17 +295,117 @@ export function DashboardSpace({
                         <div className="flex flex-col gap-[8px]">
                           {topics.map(topicName => {
                             const topicNode = itemBankData[subjectName][gradeLevel][topicName];
+                            
+                            // Count questions accurately (excluding studyContent)
                             let qCount = 0;
                             if (topicNode) {
                               Object.keys(topicNode).forEach(diff => {
+                                if (diff === 'studyContent') return;
                                 const diffNode = topicNode[diff];
-                                if (diffNode) Object.keys(diffNode).forEach(cat => { if (Array.isArray(diffNode[cat])) qCount += diffNode[cat].length; });
+                                if (diffNode && typeof diffNode === 'object') {
+                                  Object.keys(diffNode).forEach(cat => {
+                                    if (Array.isArray(diffNode[cat])) {
+                                      qCount += diffNode[cat].length;
+                                    }
+                                  });
+                                }
                               });
                             }
+
+                            const topicKey = `${subjectName}-${gradeLevel}-${topicName}`;
+                            const isExpanded = expandedTopics[topicKey];
+                            const questions = getTopicQuestions(topicNode);
+
                             return (
-                              <div key={topicName} className="flex items-center justify-between px-[15px] py-[12px] bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[11px]">
-                                <span className="font-bold text-[14px] text-[var(--text-main)]">{topicName}</span>
-                                <span className="text-[11.5px] font-bold text-[var(--text-muted)] bg-[var(--bg-main)] border border-[var(--border-color)] px-[10px] py-[4px] rounded-full">{qCount} {qCount === 1 ? 'item' : 'items'}</span>
+                              <div key={topicName} className="border border-[var(--border-color)] rounded-[11px] bg-[var(--bg-card)] overflow-hidden transition-all duration-200">
+                                {/* Topic Header */}
+                                <div
+                                  onClick={() => toggleTopic(topicKey)}
+                                  className="flex items-center justify-between px-[15px] py-[12px] cursor-pointer hover:bg-[var(--bg-main)] transition-colors select-none"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    {isExpanded ? (
+                                      <ChevronUp className="size-4 text-[var(--text-muted)] shrink-0" />
+                                    ) : (
+                                      <ChevronDown className="size-4 text-[var(--text-muted)] shrink-0" />
+                                    )}
+                                    <span className="font-bold text-[14px] text-[var(--text-main)]">{topicName}</span>
+                                  </div>
+                                  <span className="text-[11.5px] font-bold text-[var(--text-muted)] bg-[var(--bg-main)] border border-[var(--border-color)] px-[10px] py-[4px] rounded-full">
+                                    {qCount} {qCount === 1 ? 'item' : 'items'}
+                                  </span>
+                                </div>
+
+                                {/* Topic Questions (Leaves of the Tree) */}
+                                {isExpanded && (
+                                  <div className="border-t border-[var(--border-color)] bg-[var(--bg-main)] p-4 flex flex-col gap-3">
+                                    {questions.length === 0 ? (
+                                      <div className="text-[12px] text-[var(--text-muted)] font-medium italic text-center py-2">
+                                        No questions generated or loaded for this topic.
+                                      </div>
+                                    ) : (
+                                      questions.map((q, qIdx) => {
+                                        const difficultyColor = q.difficulty === 'Easy' ? 'text-[#16A34A] bg-[#16A34A]/10 border-[#16A34A]/20' : q.difficulty === 'Difficult' ? 'text-[#CE1126] bg-[#CE1126]/10 border-[#CE1126]/20' : 'text-[#E8890C] bg-[#E8890C]/10 border-[#E8890C]/20';
+                                        return (
+                                          <div key={q.id || qIdx} className="p-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[8px] flex flex-col gap-2 shadow-sm">
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-[11px] font-bold text-[var(--accent-primary-text)] bg-[var(--accent-primary-glow)] px-2 py-0.5 rounded border border-[var(--accent-primary)]/20">
+                                                {q.id || `Item ${qIdx + 1}`} ({q.category})
+                                              </span>
+                                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${difficultyColor}`}>
+                                                {q.difficulty}
+                                              </span>
+                                            </div>
+
+                                            <p className="text-[13px] font-bold text-[var(--text-main)] m-0 leading-relaxed">
+                                              {q.questionText}
+                                            </p>
+
+                                            {/* Options */}
+                                            {q.options && q.options.length > 0 && (
+                                              <div className="grid grid-cols-1 gap-1.5 mt-1 pl-1">
+                                                {q.options.map((opt, oIdx) => {
+                                                  const isCorrect = opt === q.correctAnswer;
+                                                  return (
+                                                    <div key={oIdx} className="flex items-start gap-2 text-[12.5px]">
+                                                      <span className={`font-mono font-bold ${isCorrect ? 'text-[#16A34A]' : 'text-[var(--text-muted)]'}`}>
+                                                        {String.fromCharCode(65 + oIdx)}.
+                                                      </span>
+                                                      <span className={isCorrect ? 'text-[#16A34A] font-bold' : 'text-[var(--text-main)]'}>
+                                                        {opt} {isCorrect && '✓'}
+                                                      </span>
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            )}
+
+                                            {/* Matching Pairs */}
+                                            {q.matchingPairs && Object.keys(q.matchingPairs).length > 0 && (
+                                              <div className="flex flex-col gap-1.5 mt-1.5 pl-1 text-[12.5px]">
+                                                <span className="font-bold text-[var(--text-muted)] text-[10px] uppercase tracking-wider">Matching Pairs:</span>
+                                                {Object.entries(q.matchingPairs).map(([left, right], pIdx) => (
+                                                  <div key={pIdx} className="flex items-center gap-2">
+                                                    <span className="text-[var(--text-main)] font-semibold">{left}</span>
+                                                    <span className="text-[var(--text-muted)]">&rarr;</span>
+                                                    <span className="text-[#16A34A] font-bold">{String(right)}</span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+
+                                            {/* Feedback */}
+                                            {q.feedback && (
+                                              <div className="mt-1 text-[11.5px] italic text-[var(--text-muted)] bg-[var(--bg-main)] p-2 rounded border border-[var(--border-color)] leading-normal">
+                                                <strong>Feedback:</strong> {typeof q.feedback === 'object' ? q.feedback.en || q.feedback.fil || JSON.stringify(q.feedback) : q.feedback}
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             );
                           })}

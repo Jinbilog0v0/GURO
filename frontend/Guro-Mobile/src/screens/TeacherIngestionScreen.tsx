@@ -31,6 +31,8 @@ import {
   Sparkles,
   FileText,
   Trash2,
+  AlertTriangle,
+  Info,
 } from 'lucide-react-native';
 
 export function TeacherIngestionScreen({ route }: any) {
@@ -215,10 +217,13 @@ export function TeacherIngestionScreen({ route }: any) {
 
         {!classroomId && (
           <GlassCard style={[styles.section, { borderColor: Colors.warning, backgroundColor: 'rgba(245,158,11,0.03)' }]}>
-            <Text style={{ fontFamily: Fonts.bodySemiBold, color: '#D97706', fontSize: FontSizes.sm }}>
-              ⚠️ Active Classroom Required
-            </Text>
-            <Text style={{ fontFamily: Fonts.body, color: Colors.textMuted, fontSize: FontSizes.xs, marginTop: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <AlertTriangle size={16} color="#D97706" />
+              <Text style={{ fontFamily: Fonts.bodyBold, color: '#D97706', fontSize: FontSizes.sm }}>
+                Active Classroom Required
+              </Text>
+            </View>
+            <Text style={{ fontFamily: Fonts.body, color: Colors.textMuted, fontSize: FontSizes.xs }}>
               This teacher account is not yet linked to a classroom. Go to the web dashboard to configure your classroom profile first so your custom ingested lessons can be saved to your private bank.
             </Text>
           </GlassCard>
@@ -355,9 +360,10 @@ export function TeacherIngestionScreen({ route }: any) {
           )}
 
           {pdfBase64 !== '' && (
-            <View style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: Spacing.md, borderRadius: Radius.sm, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border }}>
-              <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                ℹ️ Text Ingestion is disabled because a PDF document is selected. The generator will parse study content and items directly from the PDF context.
+            <View style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: Spacing.md, borderRadius: Radius.sm, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
+              <Info size={16} color={Colors.textMuted} style={{ marginTop: 2, flexShrink: 0 }} />
+              <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, flex: 1, lineHeight: 16 }}>
+                Text Ingestion is disabled because a PDF document is selected. The generator will parse study content and items directly from the PDF context.
               </Text>
             </View>
           )}

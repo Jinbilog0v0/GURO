@@ -392,7 +392,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     });
     const [userName, setUserName] = useState(currentUser ? currentUser.name : savedName);
     const storedEmailOrId = localStorage.getItem('guro_student_email_or_id') || (currentUser ? currentUser.email : '');
-    const activeStudentId = (storedEmailOrId || userName || 'STUDENT-WEB-USER').trim().replace(/\s+/g, '-').toUpperCase();
+    const activeStudentId = currentUser?.userId || (storedEmailOrId || userName || 'STUDENT-WEB-USER').trim().replace(/\s+/g, '-').toUpperCase();
 
     const [selectedGrade, setSelectedGrade] = useState<number>(savedGrade);
     const [selectedSubject, setSelectedSubject] = useState<'Mathematics' | 'English'>(() => {
@@ -610,7 +610,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
 
     const loadTopicHistory = useCallback(async () => {
         const allEvents: any[] = [];
-        const currentStudentId = (userName || 'STUDENT-WEB-USER').trim().replace(/\s+/g, '-').toUpperCase();
+        const currentStudentId = activeStudentId;
 
         // 1. Add local queue items matching current student ID
         const queueJson = localStorage.getItem('guro_sync_queue');
@@ -676,7 +676,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
 
         setTopicHistory(history);
         localStorage.setItem(`guro_student_topic_history_${currentStudentId}`, JSON.stringify(history));
-    }, [userName]);
+    }, [activeStudentId, userName]);
 
     const fetchItemBank = useCallback(async (forceCode?: string) => {
         setItemBankLoading(true);
@@ -999,7 +999,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                 return updatedHistory;
             });
 
-            const studentId = userName.replace(/\s+/g, '-').toUpperCase() || 'STUDENT-WEB-USER';
+            const studentId = activeStudentId;
             const newEvent = {
                 eventId: `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 subject: selectedSubject,
@@ -1200,7 +1200,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                     isOnline={isOnline}
                     currentView={step === 'dashboard' ? 'dashboard' : step === 'topics' ? 'lessons' : step === 'progress' ? 'progress' : 'classroom'}
                     onViewChange={handleShellViewChange}
-                    parentAccessCode={getParentAccessCode(userName.replace(/\s+/g, '-').toUpperCase() || 'STUDENT-WEB-USER')}
+                    parentAccessCode={getParentAccessCode(activeStudentId)}
                     isDarkMode={isDarkMode}
                     onToggleTheme={onToggleTheme}
                 >
@@ -1221,7 +1221,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                                 averageScore: averageScorePercent || 0,
                                 streak: lessonsCompleted > 0 ? 1 : 0
                             }}
-                            parentAccessCode={getParentAccessCode(userName.replace(/\s+/g, '-').toUpperCase() || 'STUDENT-WEB-USER')}
+                            parentAccessCode={getParentAccessCode(activeStudentId)}
                             isEnglishLocked={isEnglishLocked}
                             englishLockReason={englishLockReason}
                             inShell

@@ -244,6 +244,9 @@ export function SettingsScreen({ navigation }: Props) {
                   </Text>
                 )}
                 <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: 4 }}>
+                  Student ID: <Text style={{ fontFamily: Fonts.bodyBold }}>{studentId}</Text>
+                </Text>
+                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: 4 }}>
                   Device Access Code: <Text style={{ fontFamily: Fonts.bodyBold }}>{getParentAccessCode(studentId)}</Text>
                 </Text>
               </View>

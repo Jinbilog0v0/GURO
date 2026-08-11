@@ -22,7 +22,7 @@ describe('BadgeCase Component', () => {
       topic: 'Decimals',
       score: 5,
       totalQuestions: 10,
-      timestamp: '2026-06-11T18:00:00Z', // Under 80%
+      timestamp: '2026-06-11T18:00:00Z',
     }
   ];
 
@@ -31,16 +31,16 @@ describe('BadgeCase Component', () => {
 
     expect(screen.getByText("Child's Milestone Badge Case")).toBeInTheDocument();
 
-    // Fraction Cadet should be unlocked (score 9/10 = 90% >= 80%)
-    expect(screen.getByText('Fraction Cadet')).toBeInTheDocument();
+    // First Step should be unlocked because logs length > 0
+    expect(screen.getByText('First Step')).toBeInTheDocument();
     expect(screen.getByText('✓ Completed')).toBeInTheDocument();
 
-    // Decimal Scout should be locked (score 5/10 = 50% < 80%)
-    expect(screen.getByText('Decimal Scout')).toBeInTheDocument();
+    // Perfect 100% should be locked because no quiz has 100% score
+    expect(screen.getByText('Perfect 100%')).toBeInTheDocument();
     
-    // There are 3 locked badges and 1 unlocked badge.
-    // 'Locked' text should appear 3 times in the document
+    // There are 5 locked badges and 1 unlocked badge.
+    // 'Locked' text should appear 5 times in the document
     const lockedLabels = screen.getAllByText('Locked');
-    expect(lockedLabels.length).toBe(3);
+    expect(lockedLabels.length).toBe(5);
   });
 });

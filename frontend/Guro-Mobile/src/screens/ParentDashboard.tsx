@@ -54,6 +54,11 @@ import {
   Pizza,
   Coins,
   Share2,
+  CheckCircle2,
+  Calculator,
+  BookOpen,
+  Flame,
+  Zap,
 } from 'lucide-react-native';
 import { toast } from '../components';
 
@@ -420,48 +425,97 @@ export function ParentDashboard({ navigation }: Props) {
 
   const badgeDefinitions = [
     {
-      id: 'fraction-cadet',
-      name: 'Fraction Cadet',
-      topicName: 'Fractions',
-      subject: 'Mathematics',
-      icon: Pizza,
-      color: '#3B82F6',
-      description: 'Achieve 80%+ accuracy on Grade 4 Fractions.',
-    },
-    {
-      id: 'decimal-scout',
-      name: 'Decimal Scout',
-      topicName: 'Decimals',
-      subject: 'Mathematics',
-      icon: Coins,
-      color: '#0EA5E9',
-      description: 'Achieve 80%+ accuracy on Grade 5 Decimals.',
-    },
-    {
-      id: 'simile-pioneer',
-      name: 'Simile Pioneer',
-      topicName: 'Figurative Language',
-      subject: 'English',
+      id: 'first_step',
+      name: 'First Step',
       icon: Award,
-      color: '#8B5CF6',
-      description: 'Achieve 80%+ accuracy on Grade 4 Figurative Language.',
+      color: '#3B82F6',
+      description: 'Completed your first lesson.',
     },
     {
-      id: 'equation-master',
-      name: 'Algebra Algebrator',
-      topicName: 'Algebraic Equations',
-      subject: 'Mathematics',
-      icon: Target,
+      id: 'perfect_score',
+      name: 'Perfect 100%',
+      icon: CheckCircle2,
+      color: '#10B981',
+      description: 'Got 100% on any quiz.',
+    },
+    {
+      id: 'math_wizard',
+      name: 'Math Wizard',
+      icon: Calculator,
       color: '#F59E0B',
-      description: 'Achieve 80%+ accuracy on Grade 6 Algebraic Equations.',
+      description: 'Perfect score in Mathematics.',
+    },
+    {
+      id: 'english_champion',
+      name: 'English Champ',
+      icon: BookOpen,
+      color: '#8B5CF6',
+      description: 'Perfect score in English.',
+    },
+    {
+      id: 'streak_starter',
+      name: 'Streak Starter',
+      icon: Flame,
+      color: '#EF4444',
+      description: 'Achieved a 3-day study streak.',
+    },
+    {
+      id: 'streak_master',
+      name: 'Streak Master',
+      icon: Zap,
+      color: '#EAB308',
+      description: 'Achieved a 5-day study streak.',
     },
   ];
 
-  const isBadgeUnlocked = (topicName: string) => {
-    const topicLogs = searchedLogs.filter((log) => log.topic.toLowerCase().includes(topicName.toLowerCase()));
-    if (topicLogs.length === 0) return false;
-    const avg = topicLogs.reduce((sum, log) => sum + (log.score / log.totalQuestions) * 100, 0) / topicLogs.length;
-    return avg >= 80;
+  const calculateMaxStreak = (logs: ProgressEvent[]): number => {
+    if (logs.length === 0) return 0;
+    const uniqueDates = Array.from(
+      new Set(logs.map(log => new Date(log.timestamp).toISOString().split('T')[0]))
+    ).sort();
+    
+    let maxStreak = 0;
+    let currentStreak = 0;
+    let prevDate: Date | null = null;
+
+    for (const dateStr of uniqueDates) {
+      const currentDate = new Date(dateStr);
+      if (!prevDate) {
+        currentStreak = 1;
+      } else {
+        const diffTime = Math.abs(currentDate.getTime() - prevDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          currentStreak += 1;
+        } else if (diffDays > 1) {
+          currentStreak = 1;
+        }
+      }
+      prevDate = currentDate;
+      if (currentStreak > maxStreak) {
+        maxStreak = currentStreak;
+      }
+    }
+    return maxStreak;
+  };
+
+  const isBadgeUnlocked = (badgeId: string) => {
+    if (searchedLogs.length === 0) return false;
+    if (badgeId === 'first_step') return true;
+    if (badgeId === 'perfect_score') {
+      return searchedLogs.some((log) => log.score === log.totalQuestions);
+    }
+    if (badgeId === 'math_wizard') {
+      return searchedLogs.some((log) => log.score === log.totalQuestions && log.subject.toLowerCase() === 'mathematics');
+    }
+    if (badgeId === 'english_champion') {
+      return searchedLogs.some((log) => log.score === log.totalQuestions && log.subject.toLowerCase() === 'english');
+    }
+    if (badgeId === 'streak_starter' || badgeId === 'streak_master') {
+      const streak = calculateMaxStreak(searchedLogs);
+      return badgeId === 'streak_starter' ? streak >= 3 : streak >= 5;
+    }
+    return false;
   };
 
   return (
@@ -780,7 +834,7 @@ export function ParentDashboard({ navigation }: Props) {
 
                   <View style={{ gap: Spacing.sm }}>
                     {badgeDefinitions.map((badge) => {
-                      const unlocked = isBadgeUnlocked(badge.topicName);
+                      const unlocked = isBadgeUnlocked(badge.id);
                       const IconComponent = badge.icon;
                       return (
                         <View
