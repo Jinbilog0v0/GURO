@@ -1160,6 +1160,20 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         else if (view === 'classroom') setStep('classroom');
     };
 
+    const OUTFIT_EMOJIS: Record<string, string> = {
+        default: '',
+        graduation_cap: '🎓',
+        detective_hat: '🕵️‍♂️',
+        space_visor: '🧑‍🚀',
+        wizard_cape: '🧙‍♂️',
+        crown: '👑',
+        superhero_cape: '🦸',
+        party_hat: '🥳',
+        artist_beret: '🎨',
+        scientist_goggles: '🔬',
+    };
+    const outfitEmoji = OUTFIT_EMOJIS[activeOutfit] || '';
+
     return (
         <div style={{ minHeight: '100vh', width: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
 
@@ -1395,6 +1409,8 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                     }
                     onStartQuiz={handleStartQuiz}
                     onBack={() => setStep('topics')}
+                    avatarEmoji={avatarEmoji}
+                    outfitEmoji={outfitEmoji}
                 />
             )}
 
@@ -1412,6 +1428,8 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                     onBack={() => setStep('study')}
                     onNextOrFinish={handleQuestionNext}
                     answeredHistory={answeredHistory}
+                    avatarEmoji={avatarEmoji}
+                    outfitEmoji={outfitEmoji}
                 />
             )}
 

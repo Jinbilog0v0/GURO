@@ -88,6 +88,7 @@ export function ProfileScreen() {
   const [resetCodeInput, setResetCodeInput] = useState('');
 
   const studentName = guestName ?? currentUser?.name ?? 'Explorer';
+  const outfitEmoji = mascotOutfit !== 'default' ? (OUTFIT_OPTIONS.find(o => o.key === mascotOutfit)?.emoji || '') : '';
 
   // ── PIN ─────────────────────────────────────────────────────────────────────
   const openTeacherPin = () => { setPinTarget('teacher');               setPinVisible(true); };
@@ -215,6 +216,11 @@ export function ProfileScreen() {
         <GlassCard padding={Spacing.lg} style={{ alignItems: 'center', gap: Spacing.md }}>
           <View style={{ position: 'relative', width: 80, height: 80, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontSize: 64 }}>{avatarEmoji}</Text>
+            {outfitEmoji ? (
+              <Text style={{ fontSize: 28, position: 'absolute', top: -8, right: -8 }}>
+                {outfitEmoji}
+              </Text>
+            ) : null}
           </View>
           <View style={{ alignItems: 'center', gap: 2 }}>
             <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>

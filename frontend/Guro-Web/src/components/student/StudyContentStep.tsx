@@ -28,6 +28,8 @@ interface StudyContentStepProps {
     studyContent: StudyContent | null;
     onStartQuiz: () => void;
     onBack: () => void;
+    avatarEmoji?: string;
+    outfitEmoji?: string;
 }
 
 interface Slide {
@@ -44,6 +46,8 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
     studyContent,
     onStartQuiz,
     onBack,
+    avatarEmoji = '🦉',
+    outfitEmoji = '',
 }) => {
     const isMath = subject === 'Mathematics';
     const accentClass = isMath ? 'bg-[#11428E]' : 'bg-purple-600';
@@ -193,6 +197,24 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
     const currentSlide = slides[currentSlideIndex];
     const progressPercent = ((currentSlideIndex + 1) / slides.length) * 100;
 
+    const getBuddyComment = () => {
+        if (!currentSlide) return "Let's learn together! 🌟";
+        switch (currentSlide.type) {
+            case 'intro':
+                return "Let's read this introduction first to get a quick overview! 📚";
+            case 'definition':
+                return `Here's an important key term: "${currentSlide.data.term}". Let's check out its definition and examples! 💡`;
+            case 'refresher':
+                return "Time for a quick refresher! Try to answer this question to check your understanding. You've got this! 🎯";
+            case 'summary':
+                return "Amazing! Here is a summary of what we just covered. Let's read through the main points to wrap up! 📝";
+            case 'completed':
+                return "Perfect! We've completed the study slides. Now, let's start the quiz to test your mastery! 🏆🎉";
+            default:
+                return "Let's keep going, you are doing awesome! 🚀";
+        }
+    };
+
     return (
         <div
             className="min-h-screen w-full flex flex-col items-center p-6 md:p-12 relative overflow-hidden select-none fade-in"
@@ -203,7 +225,7 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
             <div className="absolute -top-48 right-1/4 size-80 rounded-full blur-[160px]" style={{ background: 'rgba(160,19,34,0.07)' }} />
 
             {/* Header controls */}
-            <div className="w-full max-w-2xl flex items-center justify-between mb-6 mt-12 relative z-10">
+            <div className="w-full max-w-4xl flex items-center justify-between mb-6 mt-12 relative z-10">
                 <button
                     onClick={onBack}
                     className="flex items-center gap-1.5 px-3 py-1.5 glass-panel rounded-full text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all font-semibold text-xs cursor-pointer"
@@ -217,8 +239,10 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                 </div>
             </div>
 
-            {/* Interactive Slide Viewer Area */}
-            <div className="w-full max-w-2xl flex flex-col gap-6 relative z-10 flex-1 justify-center">
+            {/* Two-column layout on desktop: Slide Viewer + Buddy Mascot */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-8 w-full max-w-4xl relative z-10 flex-1 justify-center">
+                {/* Left/Main Column: Slide Viewer */}
+                <div className="flex-1 w-full flex flex-col gap-6 max-w-2xl justify-center">
                 {/* Step indicator progress bar */}
                 <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-center text-xs font-bold text-[var(--text-muted)]">
@@ -496,6 +520,28 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* Right/Sidebar Column: Buddy Mascot */}
+            {avatarEmoji && (
+                <div className="w-full lg:w-56 shrink-0 flex flex-row lg:flex-col items-center lg:items-stretch gap-4 bg-white/70 border border-slate-200/50 p-5 rounded-3xl backdrop-blur-md shadow-md lg:self-center">
+                    <div className="relative size-16 lg:size-20 flex items-center justify-center bg-slate-50 border border-slate-100 rounded-2xl shadow-sm shrink-0 self-center">
+                        <span className="text-4xl lg:text-5xl">{avatarEmoji}</span>
+                        {outfitEmoji && (
+                            <span className="absolute -top-2 -right-2 text-xl lg:text-2xl drop-shadow-md">
+                                {outfitEmoji}
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center lg:text-left">Study Buddy</span>
+                        <div className="relative bg-white border border-slate-100 p-3 rounded-2xl text-[12px] font-bold text-slate-600 leading-relaxed shadow-sm">
+                            <div className="hidden lg:block absolute -left-1.5 top-7 w-3 h-3 bg-white border-l border-b border-slate-100 rotate-45 transform" />
+                            <p className="text-center lg:text-left">{getBuddyComment()}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
+    </div>
     );
 };

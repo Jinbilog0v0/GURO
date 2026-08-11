@@ -39,6 +39,8 @@ interface QuestionStepProps {
     onBack: () => void;
     onNextOrFinish: (isCorrect: boolean, details: AnswerDetails) => void;
     answeredHistory?: { isCorrect: boolean }[];
+    avatarEmoji?: string;
+    outfitEmoji?: string;
 }
 
 const matchColorClasses = [
@@ -62,6 +64,8 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
     onBack,
     onNextOrFinish,
     answeredHistory = [],
+    avatarEmoji = '🦉',
+    outfitEmoji = '',
 }) => {
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -194,11 +198,17 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
         return streak;
     })();
 
-    const mascotEmoji = (() => {
-        if (isSubmitted) return isCorrect ? '🦉🎉' : '🦉✋';
-        if (comboStreak >= 2) return '🦉🔥';
-        return '🦉';
-    })();
+    const getBuddyComment = () => {
+        if (!isSubmitted) {
+            if (comboStreak >= 2) {
+                return `Awesome! You are on a ${comboStreak}-question streak! Keep it up! 🔥`;
+            }
+            return "Read the question carefully. I know you've got this! 🤔";
+        }
+        return isCorrect 
+            ? "Fantastic! That is the correct answer! 🎉🥳" 
+            : "Nice try! Read the explanation below to learn this concept, and let's try the next one! 💪";
+    };
 
     const progressPercentage = (currentQuestionIndex / totalQuestions) * 100;
 
@@ -486,15 +496,22 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                 </div>
             </div>
 
-            {/* Center Card Content Form Layout */}
-            <form
-                onSubmit={handleActionClick}
-                className="w-full max-w-3xl bg-white rounded-[32px] p-6 md:p-10 shadow-2xl shadow-zinc-200/80 border border-zinc-100/50 flex flex-col items-center gap-6 mt-24 relative z-10"
-            >
-                <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-xl shadow-sm hover:scale-110 transition-transform cursor-pointer" title="Wise Owl Companion">
-                        {mascotEmoji}
-                    </div>
+            {/* Two-column layout on desktop: Quiz Card + Buddy Mascot */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-8 w-full max-w-4xl relative z-10 flex-1 justify-center mt-24">
+                {/* Left/Main Column: Quiz Card */}
+                <form
+                    onSubmit={handleActionClick}
+                    className="flex-1 w-full max-w-3xl bg-white rounded-[32px] p-6 md:p-10 shadow-2xl shadow-zinc-200/80 border border-zinc-100/50 flex flex-col items-center gap-6 relative"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="relative size-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-xl shadow-sm hover:scale-110 transition-transform cursor-pointer" title="Your Buddy">
+                            <span>{avatarEmoji}</span>
+                            {outfitEmoji && (
+                                <span className="absolute -top-1.5 -right-1.5 text-xs drop-shadow-sm">
+                                    {outfitEmoji}
+                                </span>
+                            )}
+                        </div>
                     <div className="px-5 py-1.5 bg-purple-50 rounded-full text-xs font-bold text-purple-600 tracking-wide border border-purple-100/40">
                         {type === 'fill-in-the-blank' 
                             ? 'Fill-in-the-Blank' 
@@ -892,6 +909,33 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                     }
                 </button>
             </form>
+
+                {/* Right/Sidebar Column: Buddy Mascot */}
+                {avatarEmoji && (
+                    <div className="w-full lg:w-56 shrink-0 flex flex-row lg:flex-col items-center lg:items-stretch gap-4 bg-white/70 border border-slate-200/50 p-5 rounded-3xl backdrop-blur-md shadow-md lg:self-center">
+                        <div className="relative size-16 lg:size-20 flex items-center justify-center bg-slate-50 border border-slate-100 rounded-2xl shadow-sm shrink-0 self-center">
+                            <span className="text-4xl lg:text-5xl">{avatarEmoji}</span>
+                            {outfitEmoji && (
+                                <span className="absolute -top-2 -right-2 text-xl lg:text-2xl drop-shadow-md">
+                                    {outfitEmoji}
+                                </span>
+                            )}
+                            {isSubmitted && (
+                                <span className="absolute -bottom-2 -left-2 text-lg bg-white border border-slate-150 p-0.5 rounded-full shadow-sm">
+                                    {isCorrect ? '⭐' : '💡'}
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center lg:text-left">Quiz Buddy</span>
+                            <div className="relative bg-white border border-slate-100 p-3 rounded-2xl text-[12px] font-bold text-slate-600 leading-relaxed shadow-sm">
+                                <div className="hidden lg:block absolute -left-1.5 top-7 w-3 h-3 bg-white border-l border-b border-slate-100 rotate-45 transform" />
+                                <p className="text-center lg:text-left">{getBuddyComment()}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
