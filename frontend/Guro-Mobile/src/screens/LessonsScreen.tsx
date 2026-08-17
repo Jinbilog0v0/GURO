@@ -128,15 +128,54 @@ export function LessonsScreen() {
       );
       return;
     }
-    if (isLessonLocked(selectedSubject, gradeLevel, topic, studentProgress, preferredGrade)) {
+    if (isLessonLocked(selectedSubject, gradeLevel, topic, studentProgress, preferredGrade, itemBank)) {
       const seq = LESSON_SEQUENCE[selectedSubject];
-      const index = seq.findIndex((item) => item.grade === gradeLevel && item.topic === topic);
-      if (index > 0) {
-        const prevLesson = seq[index - 1];
-        toast.warning(`Score 80%+ in Grade ${prevLesson.grade} ${prevLesson.topic} first!`);
-      } else {
-        toast.warning("This lesson is locked.");
+      let prevLessonText = '';
+
+      // Check if we have a custom chronological sequence in the itemBank
+      let customSequence: { subject: string; gradeLevel: number; topic: string; orderIndex: number }[] = [];
+      if (itemBank) {
+        for (const sub of Object.keys(itemBank)) {
+          const subData = itemBank[sub];
+          if (subData && typeof subData === 'object') {
+            for (const gr of Object.keys(subData)) {
+              const grData = subData[gr];
+              if (grData && typeof grData === 'object') {
+                for (const top of Object.keys(grData)) {
+                  const topicData = grData[top];
+                  if (topicData?.studyContent?.orderIndex !== undefined) {
+                    customSequence.push({
+                      subject: sub,
+                      gradeLevel: parseInt(gr, 10),
+                      topic: top,
+                      orderIndex: topicData.studyContent.orderIndex,
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
+        customSequence.sort((a, b) => a.orderIndex - b.orderIndex);
       }
+
+      if (customSequence.length > 0) {
+        const index = customSequence.findIndex(
+          (item) => item.subject === selectedSubject && item.gradeLevel === gradeLevel && item.topic === topic
+        );
+        if (index > 0) {
+          const prevLesson = customSequence[index - 1];
+          prevLessonText = `Score 80%+ in Grade ${prevLesson.gradeLevel} ${prevLesson.topic} (${prevLesson.subject}) first!`;
+        }
+      } else {
+        const index = seq.findIndex((item) => item.grade === gradeLevel && item.topic === topic);
+        if (index > 0) {
+          const prevLesson = seq[index - 1];
+          prevLessonText = `Score 80%+ in Grade ${prevLesson.grade} ${prevLesson.topic} first!`;
+        }
+      }
+
+      toast.warning(prevLessonText || "This lesson is locked.");
       return;
     }
     navigation.navigate('Study', { subject: selectedSubject, gradeLevel, topic });
@@ -235,7 +274,7 @@ export function LessonsScreen() {
             {topics.map(({ gradeLevel, topic }) => {
               const { completionPercent, bestScore } = getTopicStats(gradeLevel, topic);
               const questionCount = getQuestionCount(gradeLevel, topic);
-              const isProgLocked = isLessonLocked(selectedSubject, gradeLevel, topic, studentProgress, preferredGrade);
+              const isProgLocked = isLessonLocked(selectedSubject, gradeLevel, topic, studentProgress, preferredGrade, itemBank);
               const isEngLocked = isEnglishLocked(gradeLevel);
               const isLocked = isProgLocked || isEngLocked;
 
@@ -244,13 +283,52 @@ export function LessonsScreen() {
                 const mathScore = getMathAverageScore(gradeLevel);
                 lockReason = `Reach 80% in Math first (${mathScore}% now)`;
               } else if (isProgLocked) {
-                const seq = LESSON_SEQUENCE[selectedSubject];
-                const index = seq.findIndex((item) => item.grade === gradeLevel && item.topic === topic);
-                if (index > 0) {
-                  const prevLesson = seq[index - 1];
-                  lockReason = `Score 80%+ in Grade ${prevLesson.grade} ${prevLesson.topic} first`;
+                // Find custom chronological sequence
+                let customSequence: { subject: string; gradeLevel: number; topic: string; orderIndex: number }[] = [];
+                if (itemBank) {
+                  for (const sub of Object.keys(itemBank)) {
+                    const subData = itemBank[sub];
+                    if (subData && typeof subData === 'object') {
+                      for (const gr of Object.keys(subData)) {
+                        const grData = subData[gr];
+                        if (grData && typeof grData === 'object') {
+                          for (const top of Object.keys(grData)) {
+                            const topicData = grData[top];
+                            if (topicData?.studyContent?.orderIndex !== undefined) {
+                              customSequence.push({
+                                subject: sub,
+                                gradeLevel: parseInt(gr, 10),
+                                topic: top,
+                                orderIndex: topicData.studyContent.orderIndex,
+                              });
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  customSequence.sort((a, b) => a.orderIndex - b.orderIndex);
+                }
+
+                if (customSequence.length > 0) {
+                  const index = customSequence.findIndex(
+                    (item) => item.subject === selectedSubject && item.gradeLevel === gradeLevel && item.topic === topic
+                  );
+                  if (index > 0) {
+                    const prevLesson = customSequence[index - 1];
+                    lockReason = `Pass ${prevLesson.topic} first`;
+                  } else {
+                    lockReason = 'Locked';
+                  }
                 } else {
-                  lockReason = 'Locked';
+                  const seq = LESSON_SEQUENCE[selectedSubject];
+                  const index = seq.findIndex((item) => item.grade === gradeLevel && item.topic === topic);
+                  if (index > 0) {
+                    const prevLesson = seq[index - 1];
+                    lockReason = `Score 80%+ in Grade ${prevLesson.grade} ${prevLesson.topic} first`;
+                  } else {
+                    lockReason = 'Locked';
+                  }
                 }
               }
 

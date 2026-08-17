@@ -323,3 +323,36 @@ it('can request and verify recovery code for teacher@guro.dev', function () {
     $user->refresh();
     expect($user->password_hash)->not->toBe('oldsalt:oldhash');
 });
+
+it('can update user profile names', function () {
+    $user = User::create([
+        'user_id' => 'USR-STUD1',
+        'email' => 'student@guro.dev',
+        'password_hash' => 'hash',
+        'name' => 'Neal Claro',
+        'role' => 'student'
+    ]);
+
+    $response = $this->actingAs($user, 'sanctum')->postJson('/api/user/update-profile', [
+        'first_name' => 'Neal',
+        'middle_name' => 'Jean',
+        'last_name' => 'Claro'
+    ]);
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'user' => [
+                'name' => 'Neal Jean Claro',
+                'firstName' => 'Neal',
+                'middleName' => 'Jean',
+                'lastName' => 'Claro',
+            ]
+        ]);
+
+    $user->refresh();
+    expect($user->name)->toBe('Neal Jean Claro');
+    expect($user->first_name)->toBe('Neal');
+    expect($user->middle_name)->toBe('Jean');
+    expect($user->last_name)->toBe('Claro');
+});

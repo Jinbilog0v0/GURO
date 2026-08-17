@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GraduationCap, ArrowRight, CheckCircle2, Info } from 'lucide-react';
+import { GraduationCap, ArrowRight, CheckCircle2, Info, RefreshCw, BarChart2 } from 'lucide-react';
 
 interface ClassroomStepProps {
     classroomCode: string;
@@ -74,7 +74,7 @@ export const ClassroomStep: React.FC<ClassroomStepProps> = ({
                         <div className="flex flex-col gap-3">
                             <div className="flex items-start gap-3">
                                 <div className="size-6 rounded-lg bg-[#11428E]/10 flex items-center justify-center shrink-0 mt-0.5">
-                                    <span className="text-xs">🔄</span>
+                                    <RefreshCw className="size-3.5 text-[#11428E]" />
                                 </div>
                                 <div className="flex-1">
                                     <h4 className="text-sm font-bold text-[var(--text-main)]">Auto-Synced Lessons</h4>
@@ -83,7 +83,7 @@ export const ClassroomStep: React.FC<ClassroomStepProps> = ({
                             </div>
                             <div className="flex items-start gap-3">
                                 <div className="size-6 rounded-lg bg-[#11428E]/10 flex items-center justify-center shrink-0 mt-0.5">
-                                    <span className="text-xs">📊</span>
+                                    <BarChart2 className="size-3.5 text-[#11428E]" />
                                 </div>
                                 <div className="flex-1">
                                     <h4 className="text-sm font-bold text-[var(--text-main)]">Telemetry Reports</h4>

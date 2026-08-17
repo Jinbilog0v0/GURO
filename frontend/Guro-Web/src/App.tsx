@@ -7,7 +7,6 @@ import { LogoutConfirmModal } from './components/shared/LogoutConfirmModal';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { SkeletonCard, SkeletonTable, SkeletonStatCards, PageLoadingSpinner } from './components/shared/SkeletonLoader';
 import type { Question } from './pages/LessonSpace';
-import { LiveActivityTicker } from './components/teacher/LiveActivityTicker';
 import './App.css';
 
 const StudentSpace = lazy(() => import('./pages/StudentSpace').then(m => ({ default: m.StudentSpace })));
@@ -77,8 +76,14 @@ function App() {
     return 'analytics';
   });
   const [progressLogs, setProgressLogs] = useState<SyncedEvent[]>([]);
+  const [classroomMembers, setClassroomMembers] = useState<string[]>([]);
   const [stagedQuestions, setStagedQuestions] = useState<Question[]>([]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [editFirstName, setEditFirstName] = useState('');
+  const [editMiddleName, setEditMiddleName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     return localStorage.getItem('guro_theme') !== 'light';
@@ -97,6 +102,19 @@ function App() {
   }, [activeSubTab]);
 
   useEffect(() => {
+    if (currentUser && activeTab === 'landing') {
+      if (currentUser.role === 'teacher') setActiveTab('dashboard');
+      else if (currentUser.role === 'parent') {
+        setActiveTab('parent');
+        setActiveSubTab('parent-explorer');
+      }
+      else if (currentUser.role === 'student') setActiveTab('student');
+      else if (currentUser.role === 'admin') setActiveTab('dashboard');
+      else if (currentUser.role === 'lesson-builder' || currentUser.role === 'developer') setActiveTab('lesson-builder');
+    }
+  }, [currentUser, activeTab]);
+
+  useEffect(() => {
     if (isDarkMode) {
       document.body.classList.remove('light-mode');
     } else {
@@ -112,24 +130,11 @@ function App() {
     });
   };
 
-  useEffect(() => {
-    if (currentUser && activeTab === 'landing') {
-      if (currentUser.role === 'teacher') setActiveTab('dashboard');
-      else if (currentUser.role === 'parent') {
-        setActiveTab('parent');
-        setActiveSubTab('parent-explorer');
-      }
-      else if (currentUser.role === 'student') setActiveTab('student');
-      else if (currentUser.role === 'admin') setActiveTab('dashboard');
-      else if (currentUser.role === 'lesson-builder' || currentUser.role === 'developer') setActiveTab('lesson-builder');
-    }
-  }, [currentUser, activeTab]);
-
+  // Listen to unauthorized event to force sign out
   useEffect(() => {
     const handleUnauthorized = () => {
-      setCurrentUser(null);
-      setActiveTab('landing');
-      toast.error('Session expired. Please log in again.');
+      localStorage.clear();
+      window.location.reload();
     };
     window.addEventListener('guro_unauthorized', handleUnauthorized);
     return () => window.removeEventListener('guro_unauthorized', handleUnauthorized);
@@ -142,6 +147,7 @@ function App() {
     const classCode = currentUser?.classroomId || localStorage.getItem('guro_teacher_classroom_code');
     if (!classCode) {
       setProgressLogs([]);
+      setClassroomMembers([]);
       setLoading(false);
       return;
     }
@@ -168,6 +174,15 @@ function App() {
           }
           return data;
         });
+      }
+
+      // Fetch classroom members list
+      const membersResponse = await apiFetch(`/api/classroom/members?classroomId=${encodeURIComponent(classCode)}`);
+      if (membersResponse.ok) {
+        const membersData = await membersResponse.json();
+        if (Array.isArray(membersData)) {
+          setClassroomMembers(membersData.map(m => m.studentId));
+        }
       }
     } catch (error) {
       console.error('Error fetching logs:', error);
@@ -197,6 +212,74 @@ function App() {
   // Handle exiting out of specialized sub-spaces back to the landing gate
   const handleExitToLanding = () => {
     setActiveTab('landing');
+  };
+
+  const handleOpenProfileModal = () => {
+    if (!currentUser) return;
+    
+    // Parse name if individual parts are missing
+    let fName = (currentUser as any).firstName || '';
+    let mName = (currentUser as any).middleName || '';
+    let lName = (currentUser as any).lastName || '';
+    
+    if (!fName && !lName && currentUser.name) {
+      const parts = currentUser.name.split(' ');
+      if (parts.length === 1) {
+        fName = parts[0];
+      } else if (parts.length === 2) {
+        fName = parts[0];
+        lName = parts[1];
+      } else {
+        fName = parts[0];
+        lName = parts[parts.length - 1];
+        mName = parts.slice(1, -1).join(' ');
+      }
+    }
+    
+    setEditFirstName(fName);
+    setEditMiddleName(mName);
+    setEditLastName(lName);
+    setIsProfileModalOpen(true);
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editFirstName.trim() || !editLastName.trim()) {
+      toast.error('First and Last names are required.');
+      return;
+    }
+    setIsSavingProfile(true);
+    try {
+      const response = await apiFetch('/api/user/update-profile', {
+        method: 'POST',
+        body: JSON.stringify({
+          first_name: editFirstName.trim(),
+          middle_name: editMiddleName.trim(),
+          last_name: editLastName.trim()
+        })
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        // Update user state
+        const updatedUser = {
+          ...currentUser,
+          name: data.user.name,
+          firstName: data.user.firstName,
+          middleName: data.user.middleName,
+          lastName: data.user.lastName
+        };
+        setCurrentUser(updatedUser as any);
+        localStorage.setItem('guro_user_session', JSON.stringify(updatedUser));
+        toast.success('Profile updated successfully!');
+        setIsProfileModalOpen(false);
+      } else {
+        toast.error(data.error || 'Failed to update profile.');
+      }
+    } catch {
+      toast.error('Network error. Unable to update profile.');
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   // Render full screen spaces vs workspace layouts with sidebars
@@ -249,6 +332,7 @@ function App() {
         return (
           <TeacherSpace
             progressLogs={progressLogs}
+            classroomMembers={classroomMembers}
             lastUpdatedCell={lastUpdatedCell}
             refreshLogs={fetchLogs}
             loading={loading}
@@ -290,6 +374,7 @@ function App() {
         return (
           <TeacherSpace
             progressLogs={progressLogs}
+            classroomMembers={classroomMembers}
             lastUpdatedCell={lastUpdatedCell}
             refreshLogs={fetchLogs}
             loading={loading}
@@ -471,7 +556,11 @@ function App() {
 
         {/* User footer */}
         {isSidebarOpen ? (
-          <div className="border-t border-[var(--border-color)] pt-[14px] flex items-center gap-[11px]">
+          <div 
+            onClick={currentUser ? handleOpenProfileModal : undefined}
+            className={`border-t border-[var(--border-color)] pt-[14px] flex items-center gap-[11px] ${currentUser ? 'cursor-pointer group' : ''}`}
+            title={currentUser ? "Edit Profile Settings" : undefined}
+          >
             <div className={`w-[38px] h-[38px] rounded-full border border-[var(--border-color)] flex items-center justify-center shrink-0 ${isAdmin ? 'bg-[#FBECEE]' : 'bg-[var(--bg-main)]'}`}>
               {isAdmin ? (
                 <Shield size={18} className="text-[#CE1126]" />
@@ -482,7 +571,7 @@ function App() {
               )}
             </div>
             <div className="flex flex-col flex-1 min-w-0 leading-[1.15]">
-              <span className="text-sm font-bold text-[var(--text-main)] truncate">
+              <span className={`text-sm font-bold text-[var(--text-main)] truncate ${currentUser ? 'group-hover:text-[#2563EB] transition-colors' : ''}`}>
                 {currentUser ? currentUser.name : 'Guest Workspace'}
               </span>
               <span className={`text-[11.5px] font-semibold truncate ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--success)]'}`}>
@@ -569,9 +658,6 @@ function App() {
           </div>
         </header>
 
-        {/* Live Activity Scrolling Ticker */}
-        <LiveActivityTicker events={progressLogs} />
-
         {/* View Component Wrapper */}
         <div key={activeTab} className="flex-1 overflow-y-auto p-[28px_30px_40px] fade-in">
           <ErrorBoundary>
@@ -604,6 +690,73 @@ function App() {
           toast.success('Logged out successfully.');
         }}
       />
+      
+      {isProfileModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100/80 animate-in fade-in zoom-in duration-200">
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-extrabold text-slate-800 tracking-tight">Edit Your Profile</h3>
+              <p className="text-xs text-slate-400 mt-1">Update your name settings. These changes sync across your workspace.</p>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">First name</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all"
+                    value={editFirstName}
+                    onChange={(e) => setEditFirstName(e.target.value)}
+                    placeholder="e.g. Maria"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Last name</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all"
+                    value={editLastName}
+                    onChange={(e) => setEditLastName(e.target.value)}
+                    placeholder="e.g. Santos"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Middle name (Optional)</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all"
+                  value={editMiddleName}
+                  onChange={(e) => setEditMiddleName(e.target.value)}
+                  placeholder="e.g. Dela Cruz"
+                />
+              </div>
+
+              <div className="flex gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsProfileModalOpen(false)}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs transition-colors cursor-pointer text-center"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingProfile}
+                  className="flex-1 py-2.5 bg-gradient-to-tr from-[#11428E] to-[#2563EB] hover:from-[#0d3470] hover:to-[#1d4ed8] text-white rounded-xl font-bold text-xs transition-colors cursor-pointer text-center shadow-lg shadow-[#11428E]/20"
+                >
+                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       <Toaster position="top-center" toastOptions={{ style: { background: '#1e293b', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' } }} />
     </div>
   );

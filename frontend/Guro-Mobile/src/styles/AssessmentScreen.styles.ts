@@ -331,4 +331,20 @@ export const styles = StyleSheet.create({
   bottomSpacer: {
     height: Spacing['3xl'],
   },
+  illustrationContainer: {
+    width: '100%',
+    maxHeight: 200,
+    backgroundColor: '#fff',
+    borderColor: Colors.border,
+    borderWidth: 1,
+    borderRadius: Radius.md,
+    marginVertical: Spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.xs,
+  },
+  illustration: {
+    width: '100%',
+    height: 180,
+  },
 });

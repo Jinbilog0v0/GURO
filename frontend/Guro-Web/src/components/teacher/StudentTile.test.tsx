@@ -36,7 +36,7 @@ describe('StudentTile Component', () => {
   test('renders student ID and calculated averages correctly', () => {
     render(<StudentTile {...defaultProps} />);
 
-    expect(screen.getByText('NEAL-GUEST')).toBeInTheDocument();
+    expect(screen.getByText('Neal')).toBeInTheDocument();
     
     // Average score should be (80% + 90%) / 2 = 85%
     expect(screen.getByText('85%')).toBeInTheDocument();

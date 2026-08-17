@@ -39,7 +39,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [name, setName] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [middleName, setMiddleName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [roleSelection, setRoleSelection] = useState('teacher');
     const [loginRole, setLoginRole] = useState<'student' | 'teacher' | 'parent'>('teacher');
     const [loginGrade, setLoginGrade] = useState<number>(4);
@@ -48,14 +50,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
     const [authError, setAuthError] = useState('');
 
     // Inline field validation errors
-    const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; name?: string }>({});
+    const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; firstName?: string; lastName?: string }>({});
 
     const validateEmail = (val: string) => !val.includes('@') || val.length < 5 ? 'Enter a valid email address.' : '';
     const validatePassword = (val: string) => val.length < 6 ? 'Password must be at least 6 characters.' : '';
-    const validateName = (val: string) => val.trim().length < 2 ? 'Full name is required.' : '';
+    const validateFirstName = (val: string) => val.trim().length < 2 ? 'First name is required.' : '';
+    const validateLastName = (val: string) => val.trim().length < 2 ? 'Last name is required.' : '';
 
-    const handleFieldBlur = (field: 'email' | 'password' | 'name', val: string) => {
-        const error = field === 'email' ? validateEmail(val) : field === 'password' ? validatePassword(val) : validateName(val);
+    const handleFieldBlur = (field: 'email' | 'password' | 'firstName' | 'lastName', val: string) => {
+        const error = field === 'email' ? validateEmail(val) : field === 'password' ? validatePassword(val) : field === 'firstName' ? validateFirstName(val) : validateLastName(val);
         setFieldErrors((prev) => ({ ...prev, [field]: error }));
     };
 
@@ -94,14 +97,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!email.trim() || !password.trim() || !name.trim()) return;
+        if (!email.trim() || !password.trim() || !firstName.trim() || !lastName.trim()) return;
         setIsSubmitting(true);
         setAuthError('');
         try {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, name, role: roleSelection }),
+                body: JSON.stringify({
+                    email,
+                    password,
+                    first_name: firstName.trim(),
+                    middle_name: middleName.trim(),
+                    last_name: lastName.trim(),
+                    role: roleSelection
+                }),
             });
             if (res.ok) {
                 const data = await res.json();
@@ -406,23 +416,59 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                         )}
 
                         <form onSubmit={handleRegister} className="flex flex-col gap-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className={labelCls} htmlFor="reg-first-name">First name</label>
+                                    <div className="relative">
+                                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
+                                        <input
+                                            id="reg-first-name"
+                                            type="text"
+                                            placeholder="e.g. Maria"
+                                            className={fieldErrors.firstName ? inputErrCls : inputCls}
+                                            value={firstName}
+                                            onChange={(e) => { setFirstName(e.target.value); setFieldErrors((p) => ({ ...p, firstName: '' })); }}
+                                            onBlur={(e) => handleFieldBlur('firstName', e.target.value)}
+                                            required
+                                            aria-describedby={fieldErrors.firstName ? 'reg-first-name-err' : undefined}
+                                        />
+                                    </div>
+                                    {fieldErrors.firstName && <p id="reg-first-name-err" className="text-[11px] text-[#A01322] font-semibold pl-1">{fieldErrors.firstName}</p>}
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <label className={labelCls} htmlFor="reg-last-name">Last name</label>
+                                    <div className="relative">
+                                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
+                                        <input
+                                            id="reg-last-name"
+                                            type="text"
+                                            placeholder="e.g. Santos"
+                                            className={fieldErrors.lastName ? inputErrCls : inputCls}
+                                            value={lastName}
+                                            onChange={(e) => { setLastName(e.target.value); setFieldErrors((p) => ({ ...p, lastName: '' })); }}
+                                            onBlur={(e) => handleFieldBlur('lastName', e.target.value)}
+                                            required
+                                            aria-describedby={fieldErrors.lastName ? 'reg-last-name-err' : undefined}
+                                        />
+                                    </div>
+                                    {fieldErrors.lastName && <p id="reg-last-name-err" className="text-[11px] text-[#A01322] font-semibold pl-1">{fieldErrors.lastName}</p>}
+                                </div>
+                            </div>
+
                             <div className="flex flex-col gap-1.5">
-                                <label className={labelCls} htmlFor="reg-name">Full name</label>
+                                <label className={labelCls} htmlFor="reg-middle-name">Middle name (Optional)</label>
                                 <div className="relative">
                                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
                                     <input
-                                        id="reg-name"
+                                        id="reg-middle-name"
                                         type="text"
-                                        placeholder="Teacher Maria / Juan Dela Cruz"
-                                        className={fieldErrors.name ? inputErrCls : inputCls}
-                                        value={name}
-                                        onChange={(e) => { setName(e.target.value); setFieldErrors((p) => ({ ...p, name: '' })); }}
-                                        onBlur={(e) => handleFieldBlur('name', e.target.value)}
-                                        required
-                                        aria-describedby={fieldErrors.name ? 'reg-name-err' : undefined}
+                                        placeholder="e.g. Dela Cruz"
+                                        className={inputCls}
+                                        value={middleName}
+                                        onChange={(e) => setMiddleName(e.target.value)}
                                     />
                                 </div>
-                                {fieldErrors.name && <p id="reg-name-err" className="text-[11px] text-[#A01322] font-semibold pl-1">{fieldErrors.name}</p>}
                             </div>
 
                             <div className="flex flex-col gap-1.5">

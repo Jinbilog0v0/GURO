@@ -17,13 +17,38 @@ import {
   Animated,
   LayoutAnimation,
   Alert,
+  Image,
 } from 'react-native';
+import {
+  Trophy,
+  Calculator,
+  BookOpen,
+  Download,
+  CheckCircle2,
+  XCircle,
+  Award,
+  Lock,
+  Flame,
+  Square,
+  Volume2,
+  Check,
+  X,
+  Inbox,
+  ChevronDown,
+  ChevronUp,
+  WifiOff,
+  ThumbsUp,
+  ThumbsDown,
+  Sparkles,
+  Trash2,
+  Lightbulb,
+  Target,
+} from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppStore, Question } from '../store/useAppStore';
 import { shuffle, MASTERY_THRESHOLD, evaluateRemediationRouting } from '../utils/engine';
-import { Trophy, Square, Volume2, Check, X, Inbox, ChevronDown, ChevronUp, WifiOff, ThumbsUp, ThumbsDown, Sparkles, Trash2, Lightbulb, BookOpen, Target } from 'lucide-react-native';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -535,7 +560,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
             {/* Celebration header */}
             {passed ? (
               <View style={{ alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <Text style={{ fontSize: 48 }}>🎉</Text>
+                <Trophy size={48} color="#EAB308" style={{ marginBottom: 4 }} />
                 <Badge label="Passed!" variant="success" style={styles.finishedBadge} />
                 <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.success, textAlign: 'center' }}>
                   Amazing work! You passed this topic.
@@ -543,7 +568,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
               </View>
             ) : (
               <View style={{ alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <Trophy size={48} color="#EAB308" style={{ marginBottom: 4 }} />
+                <BookOpen size={48} color={Colors.accentPrimary} style={{ marginBottom: 4 }} />
                 <Badge label="Keep Practicing" variant="warning" style={styles.finishedBadge} />
               </View>
             )}
@@ -636,7 +661,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
                   }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    {isMastery ? (
+                    {passed ? (
                       <Trophy size={14} color={titleColor} />
                     ) : isPrereq ? (
                       <BookOpen size={14} color={titleColor} />
@@ -975,7 +1000,8 @@ export function AssessmentScreen({ route, navigation }: Props) {
             />
             {comboStreak >= 2 && (
               <Badge
-                label={`🔥 ${comboStreak}x Combo`}
+                label={`${comboStreak}x Combo`}
+                icon={Flame}
                 variant="warning"
                 style={styles.headerBadgeGap}
               />
@@ -1046,6 +1072,15 @@ export function AssessmentScreen({ route, navigation }: Props) {
             })()
           ) : (
             <Text style={styles.questionText}>{currentQuestion.questionText}</Text>
+          )}
+          {currentQuestion.imageUrl && (
+            <View style={styles.illustrationContainer}>
+              <Image 
+                source={{ uri: currentQuestion.imageUrl }} 
+                style={styles.illustration} 
+                resizeMode="contain" 
+              />
+            </View>
           )}
         </GlassCard>
 

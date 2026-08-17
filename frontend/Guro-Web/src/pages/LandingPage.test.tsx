@@ -39,12 +39,14 @@ describe('LandingPage Portal (Web)', () => {
 
     expect(screen.getByRole('heading', { name: /Create account/i })).toBeInTheDocument();
 
-    const nameInput = screen.getByPlaceholderText(/Teacher Maria/i);
+    const firstNameInput = screen.getByPlaceholderText(/e.g. Maria/i);
+    const lastNameInput = screen.getByPlaceholderText(/e.g. Santos/i);
     const emailInput = screen.getByPlaceholderText('you@school.edu');
     const passwordInput = screen.getByPlaceholderText(/Minimum 6 characters/i);
     const registerBtn = screen.getByRole('button', { name: /Create account/i });
 
-    fireEvent.change(nameInput, { target: { value: 'Neal Claro' } });
+    fireEvent.change(firstNameInput, { target: { value: 'Neal' } });
+    fireEvent.change(lastNameInput, { target: { value: 'Claro' } });
     fireEvent.change(emailInput, { target: { value: 'nealjeanclaro@guro.dev' } });
     fireEvent.change(passwordInput, { target: { value: 'JinBilog0v0' } });
 

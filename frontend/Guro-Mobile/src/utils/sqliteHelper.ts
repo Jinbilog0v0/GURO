@@ -48,6 +48,7 @@ export async function getLocalDb(): Promise<SQLite.SQLiteDatabase> {
       introduction TEXT NOT NULL,
       definitions TEXT NOT NULL, -- JSON string array
       summary TEXT NOT NULL, -- JSON string array
+      order_index INTEGER,
       PRIMARY KEY (subject, grade_level, topic)
     );
 
@@ -59,6 +60,12 @@ export async function getLocalDb(): Promise<SQLite.SQLiteDatabase> {
     CREATE INDEX IF NOT EXISTS idx_student_progress_synced ON student_progress (synced);
     CREATE INDEX IF NOT EXISTS idx_local_item_bank_search ON local_item_bank (subject, grade_level, topic);
   `);
+
+  try {
+    await db.execAsync('ALTER TABLE local_study_content ADD COLUMN order_index INTEGER;');
+  } catch (e) {
+    // Ignore error if column already exists
+  }
 
   // Run dynamic migrations for gamified question columns if they don't exist
   try {
@@ -184,15 +191,16 @@ export async function saveLocalItemBank(itemBank: ItemBank): Promise<void> {
             const sc = topicData.studyContent;
             await db.runAsync(
               `INSERT INTO local_study_content 
-               (subject, grade_level, topic, introduction, definitions, summary)
-               VALUES (?, ?, ?, ?, ?, ?)`,
+               (subject, grade_level, topic, introduction, definitions, summary, order_index)
+               VALUES (?, ?, ?, ?, ?, ?, ?)`,
               [
                 subject,
                 parseInt(grade, 10),
                 topic,
                 sc.introduction,
                 JSON.stringify(sc.definitions),
-                JSON.stringify(sc.summary)
+                JSON.stringify(sc.summary),
+                sc.orderIndex !== undefined ? sc.orderIndex : null
               ]
             );
           }
@@ -267,6 +275,7 @@ export async function getLocalItemBank(): Promise<ItemBank | null> {
     introduction: string;
     definitions: string;
     summary: string;
+    order_index: number | null;
   }>('SELECT * FROM local_study_content');
 
   if (rows.length === 0 && studyRows.length === 0) return null;
@@ -328,7 +337,8 @@ export async function getLocalItemBank(): Promise<ItemBank | null> {
     itemBank[subject][gradeStr][topic].studyContent = {
       introduction: row.introduction,
       definitions: JSON.parse(row.definitions),
-      summary: JSON.parse(row.summary)
+      summary: JSON.parse(row.summary),
+      orderIndex: row.order_index !== null ? row.order_index : undefined
     };
   });
 

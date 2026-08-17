@@ -101,10 +101,12 @@ describe('LoginScreen', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    // Find the text input for guest name
-    const input = root.root.findByProps({ placeholder: 'e.g. Juan' });
+    // Find the text input for guest name components
+    const firstNameInput = root.root.findByProps({ placeholder: 'e.g. Juan' });
+    const lastNameInput = root.root.findByProps({ placeholder: 'e.g. Cruz' });
     act(() => {
-      input.props.onChangeText('Neal Claro');
+      firstNameInput.props.onChangeText('Neal');
+      lastNameInput.props.onChangeText('Claro');
     });
 
     // Find and press the guest session start button
@@ -133,9 +135,11 @@ describe('LoginScreen', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    const input = root.root.findByProps({ placeholder: 'e.g. Juan' });
+    const firstNameInput = root.root.findByProps({ placeholder: 'e.g. Juan' });
+    const lastNameInput = root.root.findByProps({ placeholder: 'e.g. Cruz' });
     act(() => {
-      input.props.onChangeText('Jo');
+      firstNameInput.props.onChangeText('J');
+      lastNameInput.props.onChangeText('o');
     });
 
     const startGuestBtn = root.root.findByProps({ label: 'Continue Offline →' });

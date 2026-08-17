@@ -38,14 +38,39 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
-            'name' => 'required|string',
             'role' => 'required|in:student,teacher,parent',
+            'name' => 'required_without:first_name|nullable|string',
+            'first_name' => 'required_without:name|nullable|string',
+            'last_name' => 'required_without:name|nullable|string',
+            'middle_name' => 'nullable|string',
         ]);
 
         $email = strtolower(trim($request->input('email')));
         $password = $request->input('password');
-        $name = trim($request->input('name'));
         $role = trim($request->input('role'));
+
+        $firstName = trim($request->input('first_name', ''));
+        $middleName = trim($request->input('middle_name', ''));
+        $lastName = trim($request->input('last_name', ''));
+        $name = trim($request->input('name', ''));
+
+        if ($firstName !== '' && $lastName !== '') {
+            $fullName = trim($firstName . ($middleName !== '' ? ' ' . $middleName : '') . ' ' . $lastName);
+        } else {
+            $fullName = $name;
+            $parts = explode(' ', $fullName);
+            if (count($parts) === 1) {
+                $firstName = $parts[0];
+                $lastName = '';
+            } elseif (count($parts) === 2) {
+                $firstName = $parts[0];
+                $lastName = $parts[1];
+            } else {
+                $firstName = $parts[0];
+                $lastName = $parts[count($parts) - 1];
+                $middleName = implode(' ', array_slice($parts, 1, -1));
+            }
+        }
 
         // Check duplicate email
         if (User::where('email', $email)->exists()) {
@@ -59,7 +84,10 @@ class AuthController extends Controller
             'user_id' => $userId,
             'email' => $email,
             'password_hash' => $passwordHash,
-            'name' => $name,
+            'name' => $fullName,
+            'first_name' => $firstName !== '' ? $firstName : null,
+            'middle_name' => $middleName !== '' ? $middleName : null,
+            'last_name' => $lastName !== '' ? $lastName : null,
             'role' => $role,
             'classroom_id' => null,
         ]);
@@ -73,6 +101,9 @@ class AuthController extends Controller
                 'userId' => $user->user_id,
                 'email' => $user->email,
                 'name' => $user->name,
+                'firstName' => $user->first_name,
+                'middleName' => $user->middle_name,
+                'lastName' => $user->last_name,
                 'role' => $user->role,
                 'classroomId' => $user->classroom_id,
             ],
@@ -105,6 +136,9 @@ class AuthController extends Controller
                 'userId' => $user->user_id,
                 'email' => $user->email,
                 'name' => $user->name,
+                'firstName' => $user->first_name,
+                'middleName' => $user->middle_name,
+                'lastName' => $user->last_name,
                 'role' => $user->role,
                 'classroomId' => $user->classroom_id,
             ],
@@ -124,13 +158,38 @@ class AuthController extends Controller
             'anonymousStudentId' => 'required|string',
             'email' => 'required|email',
             'password' => 'required|string',
-            'name' => 'required|string',
+            'name' => 'required_without:first_name|nullable|string',
+            'first_name' => 'required_without:name|nullable|string',
+            'last_name' => 'required_without:name|nullable|string',
+            'middle_name' => 'nullable|string',
         ]);
 
         $anonymousStudentId = $request->input('anonymousStudentId');
         $email = strtolower(trim($request->input('email')));
         $password = $request->input('password');
-        $name = trim($request->input('name'));
+
+        $firstName = trim($request->input('first_name', ''));
+        $middleName = trim($request->input('middle_name', ''));
+        $lastName = trim($request->input('last_name', ''));
+        $name = trim($request->input('name', ''));
+
+        if ($firstName !== '' && $lastName !== '') {
+            $fullName = trim($firstName . ($middleName !== '' ? ' ' . $middleName : '') . ' ' . $lastName);
+        } else {
+            $fullName = $name;
+            $parts = explode(' ', $fullName);
+            if (count($parts) === 1) {
+                $firstName = $parts[0];
+                $lastName = '';
+            } elseif (count($parts) === 2) {
+                $firstName = $parts[0];
+                $lastName = $parts[1];
+            } else {
+                $firstName = $parts[0];
+                $lastName = $parts[count($parts) - 1];
+                $middleName = implode(' ', array_slice($parts, 1, -1));
+            }
+        }
 
         // Check duplicate email
         if (User::where('email', $email)->exists()) {
@@ -138,7 +197,7 @@ class AuthController extends Controller
         }
 
         $passwordHash = $this->hashPassword($password);
-        $newStudentId = strtoupper(str_replace(' ', '-', $name));
+        $newStudentId = strtoupper(str_replace(' ', '-', $fullName));
         if (User::where('user_id', $newStudentId)->exists()) {
             $newStudentId .= '-' . strtoupper(Str::random(4));
         }
@@ -153,13 +212,16 @@ class AuthController extends Controller
         }
         $accessCode = (string) (100000 + ($sum % 900000));
 
-        return DB::transaction(function () use ($email, $passwordHash, $name, $anonymousStudentId, $newStudentId, $accessCode) {
+        return DB::transaction(function () use ($email, $passwordHash, $fullName, $firstName, $middleName, $lastName, $anonymousStudentId, $newStudentId, $accessCode) {
             // Create user with actual parent access token
             $user = User::create([
                 'user_id' => $newStudentId,
                 'email' => $email,
                 'password_hash' => $passwordHash,
-                'name' => $name,
+                'name' => $fullName,
+                'first_name' => $firstName !== '' ? $firstName : null,
+                'middle_name' => $middleName !== '' ? $middleName : null,
+                'last_name' => $lastName !== '' ? $lastName : null,
                 'role' => 'student',
                 'classroom_id' => null,
                 'parent_access_token' => $accessCode,
@@ -178,6 +240,9 @@ class AuthController extends Controller
                     'userId' => $user->user_id,
                     'email' => $user->email,
                     'name' => $user->name,
+                    'firstName' => $user->first_name,
+                    'middleName' => $user->middle_name,
+                    'lastName' => $user->last_name,
                     'role' => $user->role,
                     'classroomId' => $user->classroom_id,
                 ],
@@ -300,21 +365,46 @@ class AuthController extends Controller
         }
 
         $request->validate([
-            'name' => 'required|string',
             'email' => 'required|email',
             'password' => 'required|string|min:6',
+            'name' => 'required_without:first_name|nullable|string',
+            'first_name' => 'required_without:name|nullable|string',
+            'last_name' => 'required_without:name|nullable|string',
+            'middle_name' => 'nullable|string',
         ]);
 
         $email = strtolower(trim($request->input('email')));
         $password = $request->input('password');
-        $name = trim($request->input('name'));
+
+        $firstName = trim($request->input('first_name', ''));
+        $middleName = trim($request->input('middle_name', ''));
+        $lastName = trim($request->input('last_name', ''));
+        $name = trim($request->input('name', ''));
+
+        if ($firstName !== '' && $lastName !== '') {
+            $fullName = trim($firstName . ($middleName !== '' ? ' ' . $middleName : '') . ' ' . $lastName);
+        } else {
+            $fullName = $name;
+            $parts = explode(' ', $fullName);
+            if (count($parts) === 1) {
+                $firstName = $parts[0];
+                $lastName = '';
+            } elseif (count($parts) === 2) {
+                $firstName = $parts[0];
+                $lastName = $parts[1];
+            } else {
+                $firstName = $parts[0];
+                $lastName = $parts[count($parts) - 1];
+                $middleName = implode(' ', array_slice($parts, 1, -1));
+            }
+        }
 
         if (User::where('email', $email)->exists()) {
             return response()->json(['error' => 'Email already registered.'], 400);
         }
 
         $passwordHash = $this->hashPassword($password);
-        $newStudentId = strtoupper(str_replace(' ', '-', $name));
+        $newStudentId = strtoupper(str_replace(' ', '-', $fullName));
         if (User::where('user_id', $newStudentId)->exists()) {
             $newStudentId .= '-' . strtoupper(Str::random(4));
         }
@@ -333,7 +423,10 @@ class AuthController extends Controller
             'user_id' => $newStudentId,
             'email' => $email,
             'password_hash' => $passwordHash,
-            'name' => $name,
+            'name' => $fullName,
+            'first_name' => $firstName !== '' ? $firstName : null,
+            'middle_name' => $middleName !== '' ? $middleName : null,
+            'last_name' => $lastName !== '' ? $lastName : null,
             'role' => 'student',
             'classroom_id' => null,
             'parent_access_token' => $accessCode,
@@ -345,9 +438,54 @@ class AuthController extends Controller
                 'userId' => $student->user_id,
                 'email' => $student->email,
                 'name' => $student->name,
+                'firstName' => $student->first_name,
+                'middleName' => $student->middle_name,
+                'lastName' => $student->last_name,
                 'role' => $student->role,
                 'studentId' => $student->user_id,
                 'accessCode' => $student->parent_access_token,
+            ],
+        ]);
+    }
+
+    // POST /api/user/update-profile
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated.'], 401);
+        }
+
+        $request->validate([
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
+            'middle_name' => 'nullable|string',
+        ]);
+
+        $firstName = trim($request->input('first_name'));
+        $middleName = trim($request->input('middle_name', ''));
+        $lastName = trim($request->input('last_name'));
+
+        $fullName = trim($firstName . ($middleName !== '' ? ' ' . $middleName : '') . ' ' . $lastName);
+
+        $user->update([
+            'first_name' => $firstName,
+            'middle_name' => $middleName !== '' ? $middleName : null,
+            'last_name' => $lastName,
+            'name' => $fullName,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'user' => [
+                'userId' => $user->user_id,
+                'email' => $user->email,
+                'name' => $user->name,
+                'firstName' => $user->first_name,
+                'middleName' => $user->middle_name,
+                'lastName' => $user->last_name,
+                'role' => $user->role,
+                'classroomId' => $user->classroom_id,
             ],
         ]);
     }

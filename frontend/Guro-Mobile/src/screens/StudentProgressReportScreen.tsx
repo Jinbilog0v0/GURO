@@ -19,6 +19,11 @@ import {
   CheckCircle2,
   XCircle,
   Award,
+  Lock,
+  ClipboardList,
+  Target,
+  Cloud,
+  Clock,
 } from 'lucide-react-native';
 
 export function StudentProgressReportScreen() {
@@ -116,19 +121,21 @@ export function StudentProgressReportScreen() {
 
   // Build badge lists: unlocked if average score >= 80%, else locked
   const badgeList = useMemo(() => {
-    const badges: { topic: string; subject: string; unlocked: boolean; desc: string; emoji: string }[] = [];
+    const badges: { topic: string; subject: string; unlocked: boolean; desc: string; icon: React.ComponentType<any>; color: string }[] = [];
     
     subjectsList.forEach((sub) => {
       topicsBySubject[sub].forEach((topic) => {
         const { average } = getTopicMetrics(sub, topic);
         const unlocked = average !== null && average >= 80;
-        const emoji = sub === 'Mathematics' ? '🧮' : '📖';
+        const icon = sub === 'Mathematics' ? Calculator : BookOpen;
+        const color = sub === 'Mathematics' ? '#F59E0B' : '#8B5CF6';
         badges.push({
           topic,
           subject: sub,
           unlocked,
           desc: `${sub} G${preferredGrade}`,
-          emoji,
+          icon,
+          color,
         });
       });
     });
@@ -170,9 +177,9 @@ export function StudentProgressReportScreen() {
           topics.forEach((topic) => {
             const { count, average } = getTopicMetrics(sub, topic);
             if (count === 0 || average === null) {
-              txt += `  • ${topic} — Not attempted yet 🔒\n`;
+              txt += `  • ${topic} — Not attempted yet [Locked]\n`;
             } else {
-              const passIcon = average >= 80 ? '✅' : '❌';
+              const passIcon = average >= 80 ? '[Mastered]' : '[Keep Practicing]';
               txt += `  • ${topic} — ${count} session(s) | avg ${average}% ${passIcon}\n`;
             }
           });
@@ -190,7 +197,7 @@ export function StudentProgressReportScreen() {
         txt += `  None\n`;
       } else {
         unlockedBadges.forEach((b) => {
-          txt += `  [✅] ${b.topic} (${b.subject})\n`;
+          txt += `  [Unlocked] ${b.topic} (${b.subject})\n`;
         });
       }
 
@@ -199,7 +206,7 @@ export function StudentProgressReportScreen() {
         txt += `  None\n`;
       } else {
         lockedBadges.forEach((b) => {
-          txt += `  [🔒] ${b.topic} (${b.subject})\n`;
+          txt += `  [Locked] ${b.topic} (${b.subject})\n`;
         });
       }
 
@@ -235,25 +242,25 @@ export function StudentProgressReportScreen() {
         {/* Summary Stats Grid */}
         <View style={styles.statsGrid}>
           <View style={styles.statCardWrapper}>
-            <StatCard label="Total Sessions" value={totalSessions} icon="📝" />
+            <StatCard label="Total Sessions" value={totalSessions} icon={ClipboardList} />
           </View>
           <View style={styles.statCardWrapper}>
             <StatCard 
               label="Avg Accuracy" 
               value={`${avgAccuracy}%`} 
-              icon="🎯"
+              icon={Target}
               valueColor={avgAccuracy >= 80 ? Colors.success : avgAccuracy >= 60 ? Colors.warning : Colors.danger}
             />
           </View>
           <View style={styles.statCardWrapper}>
             {/* O8: Child-friendly labels instead of 'Synced'/'Unsynced' */}
-            <StatCard label="Shared with Teacher" value={syncedCount} icon="☁️" valueColor={Colors.success} />
+            <StatCard label="Shared with Teacher" value={syncedCount} icon={Cloud} valueColor={Colors.success} />
           </View>
           <View style={styles.statCardWrapper}>
             <StatCard 
-              label="Waiting to Share 📡"
+              label="Waiting to Share"
               value={unsyncedCount}
-              icon="🕓"
+              icon={Clock}
               valueColor={unsyncedCount > 0 ? Colors.warning : Colors.textMuted}
             />
           </View>
@@ -317,9 +324,10 @@ export function StudentProgressReportScreen() {
                               </Text>
                             </View>
                           ) : (
-                            <View style={[styles.topicBadge, { backgroundColor: Colors.border }]}>
+                            <View style={[styles.topicBadge, { backgroundColor: Colors.border, flexDirection: 'row', alignItems: 'center', gap: 2 }]}>
+                              <Lock size={10} color={Colors.textMuted} />
                               <Text style={[styles.topicBadgeText, { color: Colors.textMuted }]}>
-                                🔒 Locked
+                                Locked
                               </Text>
                             </View>
                           )}
@@ -358,9 +366,13 @@ export function StudentProgressReportScreen() {
                     }
                   ]}
                 >
-                  <Text style={[styles.badgeEmoji, { opacity: badge.unlocked ? 1 : 0.4 }]}>
-                    {badge.unlocked ? badge.emoji : '🔒'}
-                  </Text>
+                  <View style={{ height: 32, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs, opacity: badge.unlocked ? 1 : 0.4 }}>
+                    {badge.unlocked ? (
+                      <badge.icon size={28} color={badge.color} />
+                    ) : (
+                      <Lock size={28} color={Colors.textMuted} />
+                    )}
+                  </View>
                   <Text 
                     style={[
                       styles.badgeLabel, 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, BookOpen, Trophy, TrendingUp, Hand, Lock, Play, Rocket, ShoppingBag, Sparkles, X, Clock, ArrowLeft, Flame, GraduationCap, Star, Inbox } from 'lucide-react';
+import { Calculator, BookOpen, Trophy, TrendingUp, Lock, Play, Rocket, ShoppingBag, Sparkles, X, Clock, ArrowLeft, Flame, GraduationCap, Star, Inbox } from 'lucide-react';
 import { SubjectCard } from './SubjectCard';
 import { StatCard } from './StatCard';
 import { StudentProfile } from './StudentProfile';
@@ -190,49 +190,68 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                     </div>
                 )}
 
-                {/* Level Up progress bar card */}
-                <div className="w-full glass-panel rounded-3xl p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm border border-[var(--border-color)]">
-                    <div className="relative size-20 flex items-center justify-center bg-[var(--bg-input)] rounded-2xl border border-[var(--border-color)] group hover:scale-105 transition-transform duration-300">
-                        <button 
-                            onClick={() => setIsEmojiPickerOpen(true)}
-                            className="text-5xl cursor-pointer"
-                            title="Change Avatar Emoji"
-                        >
-                            {avatarEmoji}
-                        </button>
+                {/* Integrated Mascot Hero & XP Card */}
+                <div className="w-full bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-600 rounded-[32px] p-6 md:p-8 text-white relative shadow-xl shadow-blue-500/10 flex flex-col md:flex-row items-center gap-6 overflow-hidden">
+                    <div className="absolute right-0 top-0 bottom-0 opacity-10 pointer-events-none select-none">
+                        <GraduationCap className="size-60 -mr-10 -mt-10" />
+                    </div>
+                    
+                    {/* Clickable mascot avatar capsule */}
+                    <button
+                        onClick={() => setIsEmojiPickerOpen(true)}
+                        className="relative size-24 md:size-28 flex items-center justify-center bg-white/20 backdrop-blur-md rounded-[24px] border-2 border-white/30 shadow-lg shrink-0 hover:scale-105 transition-all duration-300 cursor-pointer group/avatar"
+                        title="Change Avatar Emoji"
+                    >
+                        <span className="text-6xl select-none animate-bounce">{avatarEmoji}</span>
                         {equippedOutfit && equippedOutfit.key !== 'default' && (
-                            <span className="absolute -top-2 -right-2 text-2xl drop-shadow-md">
+                            <span className="absolute -top-3 -right-3 text-3xl drop-shadow-md">
                                 {equippedOutfit.emoji}
                             </span>
                         )}
-                        <div className="absolute -bottom-2.5 px-2 py-0.5 bg-[var(--accent-primary)] text-[9px] font-black text-white rounded-full uppercase tracking-wider">
-                            Avatar
+                        <div className="absolute -bottom-2 px-2.5 py-0.5 bg-amber-500 text-[9px] font-black text-white rounded-full uppercase tracking-wider shadow-md">
+                            Change
                         </div>
-                    </div>
-
-                    <div className="flex-1 w-full flex flex-col gap-2">
-                        <div className="flex justify-between items-end">
-                            <div>
-                                <h2 className="text-xl font-extrabold text-[var(--text-main)] flex items-center gap-2">
-                                    <span>Level {level} Explorer</span>
-                                    <Sparkles className="size-4 text-amber-500 animate-pulse" />
-                                </h2>
-                                <p className="text-xs font-bold text-[var(--text-muted)]">Hydrate your mind. Complete quests to rank up.</p>
-                            </div>
-                            <span className="text-xs font-extrabold text-[var(--text-muted)]">{xpInLevel} / 100 XP</span>
-                        </div>
-                        <div className="w-full bg-[var(--border-color)] rounded-full h-3 overflow-hidden border border-[var(--border-color)]">
-                            <div className="h-full bg-gradient-to-r from-[#11428E] to-[#1c5bc0] rounded-full transition-all duration-500" style={{ width: `${xpInLevel}%` }} />
-                        </div>
-                    </div>
-
-                    <button 
-                        onClick={() => setIsShopOpen(true)}
-                        className="flex items-center gap-2 px-5 py-3.5 bg-amber-500 hover:bg-amber-600 font-extrabold text-xs text-white rounded-2xl shadow-md transition-all cursor-pointer hover:scale-[1.02]"
-                    >
-                        <ShoppingBag className="size-4 shrink-0" />
-                        <span>Mascot Shop</span>
                     </button>
+                    
+                    <div className="flex-1 text-center md:text-left w-full flex flex-col justify-center">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <span className="bg-white/25 text-white font-extrabold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full">
+                                    Student Dashboard
+                                </span>
+                                <h1 className="text-2xl md:text-3xl font-black mt-2">
+                                    Welcome back, {userName}!
+                                </h1>
+                            </div>
+                            
+                            {/* Mascot Shop button */}
+                            <button 
+                                onClick={() => setIsShopOpen(true)}
+                                className="self-center sm:self-auto flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 font-extrabold text-xs text-white rounded-xl shadow-md transition-all cursor-pointer hover:scale-[1.02] shrink-0"
+                            >
+                                <ShoppingBag className="size-3.5 shrink-0" />
+                                <span>Mascot Shop</span>
+                            </button>
+                        </div>
+                        
+                        <p className="text-xs md:text-sm font-bold text-blue-100/90 mt-2 leading-relaxed">
+                            Complete challenges, earn stars, and custom-style your companion companion!
+                        </p>
+                        
+                        {/* XP Progress Bar inside Welcome Box */}
+                        <div className="mt-4 w-full flex flex-col gap-1.5 bg-white/10 p-3.5 rounded-2xl border border-white/15">
+                            <div className="flex justify-between items-center text-xs font-extrabold text-white">
+                                <span className="flex items-center gap-1.5">
+                                    <Sparkles className="size-3.5 text-amber-300 animate-pulse" />
+                                    Level {level} Explorer
+                                </span>
+                                <span>{xpInLevel} / 100 XP</span>
+                            </div>
+                            <div className="w-full bg-white/20 rounded-full h-2.5 overflow-hidden border border-white/5">
+                                <div className="h-full bg-gradient-to-r from-amber-400 to-amber-300 rounded-full transition-all duration-500" style={{ width: `${xpInLevel}%` }} />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Classroom Pairing Card */}
@@ -279,14 +298,6 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                             </form>
                         )}
                     </div>
-                </div>
-
-                {/* Main Welcome row */}
-                <div className="flex flex-col items-center text-center mt-2">
-                    <h1 className="text-3xl md:text-4xl font-black text-[var(--text-main)] flex items-center justify-center gap-2 tracking-tight">
-                        Welcome back, {userName}! <Hand className="size-8 text-amber-500 animate-bounce inline-block shrink-0" />
-                    </h1>
-                    <p className="text-sm font-semibold text-[var(--text-muted)] mt-1">Ready for today's learning journey?</p>
                 </div>
 
                 {/* Recommendations Columns (Today's Pick & Last Activity) */}

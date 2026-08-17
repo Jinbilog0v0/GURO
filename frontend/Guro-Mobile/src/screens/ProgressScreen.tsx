@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { Text, View, ScrollView, Alert, Clipboard, TouchableOpacity, RefreshControl, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
-import { Trophy, Flame, Calculator, BookOpen, CheckCircle2, AlertCircle, Clock, Star } from 'lucide-react-native';
+import { Trophy, Flame, Calculator, BookOpen, CheckCircle2, AlertCircle, Clock, Star, Award, Zap, Lock } from 'lucide-react-native';
 import { MASTERY_THRESHOLD } from '../utils/engine';
 
 import { Colors } from '../theme/colors';
@@ -24,13 +24,13 @@ import { styles } from '../styles/ProgressScreen.styles';
 const GRADES = [4, 5, 6] as const;
 const SUBJECTS = ['Mathematics', 'English'] as const;
 
-const BADGE_INFO: Record<string, { label: string; emoji: string; desc: string }> = {
-  first_step:       { label: 'First Step',     emoji: '👣', desc: 'Completed your first lesson' },
-  perfect_score:    { label: 'Perfect 100%',   emoji: '💯', desc: 'Got 100% on any quiz' },
-  math_wizard:      { label: 'Math Wizard',    emoji: '🧮', desc: 'Perfect score in Mathematics' },
-  english_champion: { label: 'English Champ',  emoji: '📖', desc: 'Perfect score in English' },
-  streak_starter:   { label: 'Streak Starter', emoji: '🔥', desc: '3-day study streak' },
-  streak_master:    { label: 'Streak Master',  emoji: '⚡', desc: '5-day study streak' },
+const BADGE_INFO: Record<string, { label: string; icon: React.ComponentType<any>; color: string; desc: string }> = {
+  first_step:       { label: 'First Step',     icon: Award, color: '#3B82F6', desc: 'Completed your first lesson' },
+  perfect_score:    { label: 'Perfect 100%',   icon: CheckCircle2, color: '#10B981', desc: 'Got 100% on any quiz' },
+  math_wizard:      { label: 'Math Wizard',    icon: Calculator, color: '#F59E0B', desc: 'Perfect score in Mathematics' },
+  english_champion: { label: 'English Champ',  icon: BookOpen, color: '#8B5CF6', desc: 'Perfect score in English' },
+  streak_starter:   { label: 'Streak Starter', icon: Flame, color: '#EF4444', desc: '3-day study streak' },
+  streak_master:    { label: 'Streak Master',  icon: Zap, color: '#EAB308', desc: '5-day study streak' },
 };
 
 const ALL_BADGES = Object.keys(BADGE_INFO);
@@ -82,14 +82,14 @@ export function ProgressScreen() {
 
     if (unlocked) {
       Alert.alert(
-        `🏆 ${info.label}`,
-        `${info.desc}\n\nStatus: Unlocked! 🎉`,
+        info.label,
+        `${info.desc}\n\nStatus: Unlocked!`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
             text: 'Share Achievement',
             onPress: () => {
-              Clipboard.setString(`I unlocked the "${info.label}" badge on GURO by learning ${info.desc.toLowerCase()}! 🚀`);
+              Clipboard.setString(`I unlocked the "${info.label}" badge on GURO by learning ${info.desc.toLowerCase()}!`);
               toast.success('Achievement text copied to clipboard.');
             },
           },
@@ -97,7 +97,7 @@ export function ProgressScreen() {
       );
     } else {
       Alert.alert(
-        `🔒 ${info.label} (Locked)`,
+        `${info.label} (Locked)`,
         `${info.desc}\n\nKeep practicing topics with 80%+ scores to unlock this milestone!`
       );
     }
@@ -342,7 +342,13 @@ export function ProgressScreen() {
                   padding={Spacing.md}
                   style={[styles.badgeCard, { opacity: unlocked ? 1 : 0.38, width: '100%' }]}
                 >
-                  <Text style={styles.badgeEmoji}>{info.emoji}</Text>
+                  <View style={{ height: 32, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs }}>
+                    {unlocked ? (
+                      <info.icon size={28} color={info.color} />
+                    ) : (
+                      <Lock size={28} color={Colors.textMuted} />
+                    )}
+                  </View>
                   <Text style={styles.badgeLabel}>{info.label}</Text>
                   <Text style={styles.badgeDesc}>{info.desc}</Text>
                   {!unlocked && <Text style={styles.badgeLocked}>Locked</Text>}
