@@ -237,20 +237,20 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                     if (ctx.state === 'suspended') {
                         ctx.resume();
                     }
-                    const cleanupDelay = isCorrect ? 4.0 : 3.8;
+                    const cleanupDelay = 1.0;
                     setTimeout(() => ctx.close(), cleanupDelay * 1000);
 
                     if (isCorrect) {
-                        // Ascending high-pitch arpeggio for correct answer (about 3.7s total)
+                        // Bright, bubbly ascending game-like chime (E5 -> A5 -> C6)
                         const playNote = (freq: number, startTime: number, duration: number) => {
                             const osc = ctx.createOscillator();
                             const gain = ctx.createGain();
 
-                            osc.type = 'sine';
+                            osc.type = 'triangle';
                             osc.frequency.setValueAtTime(freq, startTime);
 
                             gain.gain.setValueAtTime(0, startTime);
-                            gain.gain.linearRampToValueAtTime(0.15, startTime + 0.1);
+                            gain.gain.linearRampToValueAtTime(0.12, startTime + 0.05);
                             gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
 
                             osc.connect(gain);
@@ -261,33 +261,24 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                         };
 
                         const now = ctx.currentTime;
-                        playNote(523.25, now, 2.5);        // C5
-                        playNote(659.25, now + 0.3, 2.5);  // E5
-                        playNote(783.99, now + 0.6, 2.5);  // G5
-                        playNote(987.77, now + 0.9, 2.5);  // B5
-                        playNote(1046.50, now + 1.2, 2.5); // C6
+                        playNote(659.25, now, 0.3);        // E5
+                        playNote(880.00, now + 0.08, 0.4);  // A5
+                        playNote(1046.50, now + 0.16, 0.5); // C6
                     } else {
-                        // Custom arcade double buzz for wrong answer (longer, fuller, no delay)
+                        // Softer, quicker retro double-bloop for wrong answer
                         const playBuzz = (startFreq: number, endFreq: number, startTime: number, duration: number) => {
                             const osc = ctx.createOscillator();
                             const gain = ctx.createGain();
 
-                            osc.type = 'sawtooth';
+                            osc.type = 'triangle';
                             osc.frequency.setValueAtTime(startFreq, startTime);
-                            osc.frequency.exponentialRampToValueAtTime(endFreq, startTime + duration);
+                            osc.frequency.linearRampToValueAtTime(endFreq, startTime + duration);
 
                             gain.gain.setValueAtTime(0, startTime);
-                            gain.gain.linearRampToValueAtTime(0.12, startTime + 0.05);
-                            gain.gain.setValueAtTime(0.12, startTime + duration - 0.15);
-                            gain.gain.linearRampToValueAtTime(0.0001, startTime + duration);
+                            gain.gain.linearRampToValueAtTime(0.08, startTime + 0.03);
+                            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
 
-                            const filter = ctx.createBiquadFilter();
-                            filter.type = 'lowpass';
-                            filter.frequency.setValueAtTime(320, startTime);
-                            filter.frequency.exponentialRampToValueAtTime(130, startTime + duration);
-
-                            osc.connect(filter);
-                            filter.connect(gain);
+                            osc.connect(gain);
                             gain.connect(ctx.destination);
 
                             osc.start(startTime);
@@ -295,8 +286,8 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                         };
 
                         const now = ctx.currentTime;
-                        playBuzz(150, 95, now, 0.45);
-                        playBuzz(130, 85, now + 0.55, 0.75);
+                        playBuzz(220, 147, now, 0.15); // A3 to D3
+                        playBuzz(196, 131, now + 0.10, 0.25); // G3 to C3
                     }
                 }
             } catch (e) {

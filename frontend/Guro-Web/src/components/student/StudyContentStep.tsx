@@ -481,24 +481,42 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                                                     if (AudioContextClass) {
                                                         const ctx = new AudioContextClass();
                                                         setTimeout(() => ctx.close(), 1000);
-                                                        const osc = ctx.createOscillator();
-                                                        const gain = ctx.createGain();
-                                                        osc.connect(gain);
-                                                        gain.connect(ctx.destination);
+                                                        const now = ctx.currentTime;
                                                         
                                                         if (selected === currentSlide.data.correctAnswer) {
-                                                            osc.frequency.setValueAtTime(659.25, ctx.currentTime);
-                                                            gain.gain.setValueAtTime(0.08, ctx.currentTime);
-                                                            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
-                                                            osc.start();
-                                                            osc.stop(ctx.currentTime + 0.5);
+                                                            const playNote = (freq: number, startTime: number, duration: number) => {
+                                                                const osc = ctx.createOscillator();
+                                                                const gain = ctx.createGain();
+                                                                osc.type = 'triangle';
+                                                                osc.frequency.setValueAtTime(freq, startTime);
+                                                                gain.gain.setValueAtTime(0, startTime);
+                                                                gain.gain.linearRampToValueAtTime(0.12, startTime + 0.05);
+                                                                gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+                                                                osc.connect(gain);
+                                                                gain.connect(ctx.destination);
+                                                                osc.start(startTime);
+                                                                osc.stop(startTime + duration);
+                                                            };
+                                                            playNote(659.25, now, 0.3);        // E5
+                                                            playNote(880.00, now + 0.08, 0.4);  // A5
+                                                            playNote(1046.50, now + 0.16, 0.5); // C6
                                                         } else {
-                                                            osc.type = 'sawtooth';
-                                                            osc.frequency.setValueAtTime(110, ctx.currentTime);
-                                                            gain.gain.setValueAtTime(0.08, ctx.currentTime);
-                                                            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
-                                                            osc.start();
-                                                            osc.stop(ctx.currentTime + 0.5);
+                                                            const playBuzz = (startFreq: number, endFreq: number, startTime: number, duration: number) => {
+                                                                const osc = ctx.createOscillator();
+                                                                const gain = ctx.createGain();
+                                                                osc.type = 'triangle';
+                                                                osc.frequency.setValueAtTime(startFreq, startTime);
+                                                                osc.frequency.linearRampToValueAtTime(endFreq, startTime + duration);
+                                                                gain.gain.setValueAtTime(0, startTime);
+                                                                gain.gain.linearRampToValueAtTime(0.08, startTime + 0.03);
+                                                                gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+                                                                osc.connect(gain);
+                                                                gain.connect(ctx.destination);
+                                                                osc.start(startTime);
+                                                                osc.stop(startTime + duration);
+                                                            };
+                                                            playBuzz(220, 147, now, 0.15); // A3 to D3
+                                                            playBuzz(196, 131, now + 0.10, 0.25); // G3 to C3
                                                         }
                                                     }
                                                 } catch (e) {}
