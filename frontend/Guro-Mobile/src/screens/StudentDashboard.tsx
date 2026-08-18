@@ -30,7 +30,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore, resolveServerUrl } from '../store/useAppStore';
 import {
-  Hand,
   BookOpen,
   Hourglass,
   Flame,
@@ -165,6 +164,16 @@ export function StudentDashboard() {
       const ok = await useAppStore.getState().fetchItemBankFromServer(serverUrl, code);
       if (ok) {
         setClassroomId(code);
+        
+        // Pair this student name on the server as a classroom member
+        const resolvedUrl = resolveServerUrl(serverUrl);
+        const activeStudentId = useAppStore.getState().studentId || 'GUEST';
+        await fetch(`${resolvedUrl}/api/classroom/pair`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ studentId: activeStudentId, classroomId: code }),
+        }).catch(() => {});
+
         setJoinModalVisible(false);
         setTypedCode('');
         setVerifiedClassroom(null);
@@ -268,7 +277,7 @@ export function StudentDashboard() {
           if (topic === 'studyContent') continue;
 
           // Skip if locked by 1:1 progression or English-after-Math lock rules
-          const isProgLocked = isLessonLocked(subject, grade, topic, studentProgress, preferredGrade);
+          const isProgLocked = isLessonLocked(subject, grade, topic, studentProgress, preferredGrade, itemBank);
           const isEngLocked = subject === 'English' && isEnglishLocked(grade);
           if (isProgLocked || isEngLocked) continue;
 
@@ -297,24 +306,13 @@ export function StudentDashboard() {
       {/* Header */}
       <View style={styles.headerBar}>
         <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
-            <Text style={styles.welcomeText}>Hello, {studentName}!</Text>
-            <Hand size={18} color={Colors.accentPrimary} />
-          </View>
-          {classroomId ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-              <School size={14} color={Colors.accentPrimary} />
-              <Text style={[styles.subWelcomeText, { color: Colors.accentPrimary, fontFamily: Fonts.bodyBold, marginTop: 0 }]}>
-                Paired: {classroomId}
-              </Text>
-            </View>
-          ) : (
-            <Text style={styles.subWelcomeText}>What will you learn today?</Text>
-          )}
+          <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
+            GURO
+          </Text>
         </View>
         <SyncBadge />
       </View>
-
+ 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -340,6 +338,71 @@ export function StudentDashboard() {
             </Text>
           </GlassCard>
         )}
+
+        {/* Integrated Mascot Hero & XP Card */}
+        <View
+          style={{
+            backgroundColor: Colors.accentBlue,
+            borderRadius: Radius.lg,
+            padding: Spacing.lg,
+            flexDirection: 'column',
+            gap: Spacing.md,
+            shadowColor: Colors.accentBlue,
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.15,
+            shadowRadius: 10,
+            elevation: 4,
+          }}
+        >
+          {/* Top Row: Avatar and Name */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+            {/* Clickable mascot avatar capsule */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('Me')}
+              style={{
+                position: 'relative',
+                width: 64,
+                height: 64,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                borderRadius: Radius.md,
+                borderWidth: 2,
+                borderColor: 'rgba(255,255,255,0.3)',
+              }}
+            >
+              <Text style={{ fontSize: 40 }}>{avatarEmoji}</Text>
+              {outfitEmoji ? (
+                <Text style={{ fontSize: 18, position: 'absolute', top: -5, right: -5 }}>
+                  {outfitEmoji}
+                </Text>
+              ) : null}
+            </TouchableOpacity>
+            
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.white }}>
+                Hello, {studentName}! 👋
+              </Text>
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: 'rgba(255,255,255,0.9)' }}>
+                Level {level} Explorer
+              </Text>
+            </View>
+          </View>
+          
+          {/* Bottom section: Full-width XP Progress Bar */}
+          <View style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: Spacing.sm, borderRadius: Radius.md, gap: 4 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.white }}>
+                Learning Progress
+              </Text>
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.white }}>
+                {xpInLevel} / 100 XP
+              </Text>
+            </View>
+            <ProgressBar progress={xpInLevel} height={8} color="#F59E0B" backgroundColor="rgba(255,255,255,0.25)" />
+          </View>
+        </View>
 
         {/* Onboarding / Join classroom card */}
         {!classroomId && (
@@ -372,27 +435,6 @@ export function StudentDashboard() {
             </TouchableOpacity>
           </GlassCard>
         )}
-
-        {/* Avatar + XP card */}
-        <GlassCard padding={Spacing.lg} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-          <View style={{ position: 'relative', width: 64, height: 64, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 50 }}>{avatarEmoji}</Text>
-            {outfitEmoji ? (
-              <Text style={{ fontSize: 22, position: 'absolute', top: -4, right: -4 }}>
-                {outfitEmoji}
-              </Text>
-            ) : null}
-          </View>
-          <View style={{ flex: 1, gap: Spacing.xs }}>
-            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
-              Level {level} Explorer
-            </Text>
-            <ProgressBar progress={xpInLevel} height={7} />
-            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-              {xpInLevel} / 100 XP to next level
-            </Text>
-          </View>
-        </GlassCard>
 
         {/* Stats row */}
         <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
@@ -445,7 +487,7 @@ export function StudentDashboard() {
             </Text>
             {/* U7: Personalization hint so students know this is tailored for them */}
             <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textDark, fontStyle: 'italic' }}>
-              Recommended based on your progress ✨
+              Recommended based on your progress
             </Text>
             <TouchableOpacity
               onPress={() => {
@@ -480,7 +522,7 @@ export function StudentDashboard() {
           </GlassCard>
         ) : itemBank && studentProgress.length > 0 ? (
           <GlassCard padding={Spacing.lg} style={{ alignItems: 'center', gap: Spacing.sm }}>
-            <Text style={{ fontSize: 32 }}>🏆</Text>
+            <Trophy size={32} color="#F59E0B" fill="#F59E0B" style={{ marginBottom: Spacing.xs }} />
             <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
               All caught up!
             </Text>
@@ -521,7 +563,7 @@ export function StudentDashboard() {
                     toast.warning("You've reached your daily screen time limit.");
                     return;
                   }
-                  const isProgLocked = isLessonLocked(lastActivity.subject, lastActivity.gradeLevel, lastActivity.topic, studentProgress, preferredGrade);
+                  const isProgLocked = isLessonLocked(lastActivity.subject, lastActivity.gradeLevel, lastActivity.topic, studentProgress, preferredGrade, itemBank);
                   const isEngLocked = lastActivity.subject === 'English' && isEnglishLocked(lastActivity.gradeLevel);
                   if (isProgLocked || isEngLocked) {
                     toast.info("This lesson is currently locked based on progression and grade rules.");

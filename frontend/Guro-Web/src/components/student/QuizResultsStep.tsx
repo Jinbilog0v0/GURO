@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Star, RefreshCw, LayoutDashboard, CheckCircle2, XCircle, Zap } from 'lucide-react';
+import { Trophy, Star, RefreshCw, LayoutDashboard, CheckCircle2, XCircle, Zap, ArrowLeft, Lightbulb } from 'lucide-react';
 
 interface AnsweredQuestion {
     questionText: string;
@@ -40,13 +40,13 @@ export function evaluateWebRemediation(scorePct: number, subjectName?: string, c
   if (scorePct >= 80) {
     return {
       instruction: 'advance',
-      title: 'Mastery Achieved! 🎉',
+      title: 'Mastery Achieved!',
       message: `Outstanding job! You scored ${scorePct}%. You have demonstrated solid mastery and are ready to advance.`,
     };
   } else if (scorePct >= 50) {
     return {
       instruction: 'scaffold_review',
-      title: 'Guided Micro-Review 💡',
+      title: 'Guided Micro-Review',
       message: `You scored ${scorePct}%. You are close to mastery! Review key concepts for "${currentTopicName || 'this topic'}" before retrying.`,
     };
   } else {
@@ -57,7 +57,7 @@ export function evaluateWebRemediation(scorePct: number, subjectName?: string, c
     return {
       instruction: 'prerequisite_return',
       targetLesson: prereq,
-      title: 'Foundational Re-Routing 📚',
+      title: 'Foundational Re-Routing',
       message: prereq
         ? `You scored ${scorePct}%. We detected foundational gaps. Reviewing "${prereq.topic}" (Grade ${prereq.grade}) will rebuild essential prerequisite skills before retrying ${currentTopicName || 'this topic'}.`
         : `You scored ${scorePct}%. Step back to review foundational building blocks for "${currentTopicName || 'this topic'}".`,
@@ -230,7 +230,8 @@ export const QuizResultsStep: React.FC<QuizResultsStepProps> = ({
                                         onClick={() => onSelectPrerequisite(remediation.targetLesson!.topic, remediation.targetLesson!.grade)}
                                         className="mt-1 w-full py-2.5 px-3 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                                     >
-                                        🎯 Return to Prerequisite: {remediation.targetLesson.topic} (Grade {remediation.targetLesson.grade})
+                                        <ArrowLeft className="size-3.5 shrink-0" />
+                                        Return to Prerequisite: {remediation.targetLesson.topic} (Grade {remediation.targetLesson.grade})
                                     </button>
                                 )}
                                 {isScaffold && onStudyReview && (
@@ -238,7 +239,8 @@ export const QuizResultsStep: React.FC<QuizResultsStepProps> = ({
                                         onClick={onStudyReview}
                                         className="mt-1 w-full py-2.5 px-3 text-xs font-bold text-zinc-800 bg-amber-200 hover:bg-amber-300 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                                     >
-                                        💡 Start Guided Study Review: {topicName}
+                                        <Lightbulb className="size-3.5 shrink-0" />
+                                        Start Guided Study Review: {topicName}
                                     </button>
                                 )}
                             </div>

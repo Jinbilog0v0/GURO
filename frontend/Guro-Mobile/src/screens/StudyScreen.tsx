@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   ScrollView,
   LayoutAnimation,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -34,6 +35,7 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
+  XCircle,
 } from 'lucide-react-native';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Study'>;
@@ -43,6 +45,7 @@ interface Slide {
   title: string;
   data: any;
   refresherIndex?: number;
+  imageUrl?: string;
 }
 
 export function StudyScreen({ route, navigation }: Props) {
@@ -105,6 +108,7 @@ export function StudyScreen({ route, navigation }: Props) {
         type: 'intro',
         title: 'Introduction',
         data: studyContent.introduction,
+        imageUrl: studyContent.imageUrl || undefined,
       });
     }
 
@@ -308,6 +312,15 @@ export function StudyScreen({ route, navigation }: Props) {
               <Text style={[styles.cardLabel, { marginBottom: 0 }]}>INTRODUCTION</Text>
             </View>
             <Text style={styles.introText}>{currentItem.data}</Text>
+            {currentItem.imageUrl && (
+              <View style={styles.illustrationContainer}>
+                <Image 
+                  source={{ uri: currentItem.imageUrl }} 
+                  style={styles.illustration} 
+                  resizeMode="contain" 
+                />
+              </View>
+            )}
           </GlassCard>
         )}
 
@@ -416,13 +429,23 @@ export function StudyScreen({ route, navigation }: Props) {
                 borderColor: selectedRefresherOpt[currentItem.refresherIndex ?? 0] === currentItem.data.correctAnswer ? Colors.success : Colors.danger,
                 backgroundColor: selectedRefresherOpt[currentItem.refresherIndex ?? 0] === currentItem.data.correctAnswer ? 'rgba(16,185,129,0.03)' : 'rgba(239,68,68,0.03)',
                 marginTop: 8,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
               }}>
-                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.sm, color: selectedRefresherOpt[currentItem.refresherIndex ?? 0] === currentItem.data.correctAnswer ? Colors.success : Colors.danger, marginBottom: 4 }}>
-                  {selectedRefresherOpt[currentItem.refresherIndex ?? 0] === currentItem.data.correctAnswer ? '✨ Correct!' : '❌ Keep learning!'}
-                </Text>
-                <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.sm, color: Colors.textMuted }}>
-                  {currentItem.data.explanation}
-                </Text>
+                {selectedRefresherOpt[currentItem.refresherIndex ?? 0] === currentItem.data.correctAnswer ? (
+                  <CheckCircle size={16} color={Colors.success} />
+                ) : (
+                  <XCircle size={16} color={Colors.danger} />
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.sm, color: selectedRefresherOpt[currentItem.refresherIndex ?? 0] === currentItem.data.correctAnswer ? Colors.success : Colors.danger, marginBottom: 2 }}>
+                    {selectedRefresherOpt[currentItem.refresherIndex ?? 0] === currentItem.data.correctAnswer ? 'Correct!' : 'Keep learning!'}
+                  </Text>
+                  <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.sm, color: Colors.textMuted }}>
+                    {currentItem.data.explanation}
+                  </Text>
+                </View>
               </View>
             )}
           </GlassCard>
@@ -451,7 +474,7 @@ export function StudyScreen({ route, navigation }: Props) {
               <CheckCircle size={36} color={Colors.success} />
             </View>
             <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, textAlign: 'center', marginBottom: 8 }}>
-              Lesson Completed! 🎉
+              Lesson Completed!
             </Text>
             <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.sm, color: Colors.textMuted, textAlign: 'center', paddingHorizontal: 20, lineHeight: 20 }}>
               You completed all interactive checkpoints in the guide. Good luck on your Diagnostic challenge!

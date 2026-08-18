@@ -132,7 +132,9 @@ export function ParentSpace({
   const [loading, setLoading] = useState(false);
 
   // Student creation states
-  const [newStudentName, setNewStudentName] = useState('');
+  const [newStudentFirstName, setNewStudentFirstName] = useState('');
+  const [newStudentMiddleName, setNewStudentMiddleName] = useState('');
+  const [newStudentLastName, setNewStudentLastName] = useState('');
   const [newStudentEmail, setNewStudentEmail] = useState('');
   const [newStudentPassword, setNewStudentPassword] = useState('');
   const [createStudentError, setCreateStudentError] = useState<string | null>(null);
@@ -150,7 +152,9 @@ export function ParentSpace({
       const response = await apiFetch('/api/parent/create-student', {
         method: 'POST',
         body: JSON.stringify({
-          name: newStudentName.trim(),
+          first_name: newStudentFirstName.trim(),
+          middle_name: newStudentMiddleName.trim(),
+          last_name: newStudentLastName.trim(),
           email: newStudentEmail.trim().toLowerCase(),
           password: newStudentPassword
         })
@@ -166,7 +170,9 @@ export function ParentSpace({
         setAccessCodeInput(data.student.accessCode);
         
         // Reset form
-        setNewStudentName('');
+        setNewStudentFirstName('');
+        setNewStudentMiddleName('');
+        setNewStudentLastName('');
         setNewStudentEmail('');
         setNewStudentPassword('');
       } else {
@@ -281,16 +287,41 @@ export function ParentSpace({
 
         <div className="w-full max-w-xl glass-panel p-8 shadow-xl border border-[var(--border-color)]">
           <form onSubmit={handleCreateStudent} className="flex flex-col gap-4">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">First Name</label>
+                <input
+                  type="text"
+                  placeholder="First name..."
+                  value={newStudentFirstName}
+                  onChange={(e) => setNewStudentFirstName(e.target.value)}
+                  className="form-control w-full"
+                  style={{ width: '100%' }}
+                  required
+                />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">Last Name</label>
+                <input
+                  type="text"
+                  placeholder="Last name..."
+                  value={newStudentLastName}
+                  onChange={(e) => setNewStudentLastName(e.target.value)}
+                  className="form-control w-full"
+                  style={{ width: '100%' }}
+                  required
+                />
+              </div>
+            </div>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">Student Full Name</label>
+              <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">Middle Name (Optional)</label>
               <input
                 type="text"
-                placeholder="Child's name..."
-                value={newStudentName}
-                onChange={(e) => setNewStudentName(e.target.value)}
+                placeholder="Middle name..."
+                value={newStudentMiddleName}
+                onChange={(e) => setNewStudentMiddleName(e.target.value)}
                 className="form-control w-full"
                 style={{ width: '100%' }}
-                required
               />
             </div>
             <div className="form-group" style={{ margin: 0 }}>

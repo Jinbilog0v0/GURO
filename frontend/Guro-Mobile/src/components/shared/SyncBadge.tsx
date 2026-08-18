@@ -25,6 +25,7 @@ import { Colors } from '../../theme/colors';
 import { Fonts, FontSizes } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import { useAppStore } from '../../store/useAppStore';
+import { CheckCircle2, RefreshCw, WifiOff } from 'lucide-react-native';
 
 type SyncState = 'synced' | 'pending' | 'offline';
 
@@ -90,31 +91,37 @@ export function SyncBadge() {
   }, [status]);
 
   // Child-friendly labels (O4)
-  const config: Record<SyncState, { color: string; label: string; dot: string; modalTitle: string; modalBody: string }> = {
+  const config: Record<SyncState, { color: string; label: string; dot: string; icon: React.ComponentType<any>; iconColor: string; modalTitle: string; modalBody: string }> = {
     synced: {
       color: Colors.success,
-      label: 'Connected ✓',
+      label: 'Connected',
       dot: Colors.success,
-      modalTitle: '✅ Connected',
+      icon: CheckCircle2,
+      iconColor: Colors.success,
+      modalTitle: 'Connected',
       modalBody: 'Your answers are being shared with your teacher. Great job!',
     },
     pending: {
       color: Colors.warning,
       label: `Saving… (${pendingCount})`,
       dot: Colors.warning,
-      modalTitle: '🔄 Saving Your Work',
+      icon: RefreshCw,
+      iconColor: Colors.warning,
+      modalTitle: 'Saving Your Work',
       modalBody: `You have ${pendingCount} quiz result${pendingCount !== 1 ? 's' : ''} waiting to be sent to your teacher. They will be sent automatically when your internet is working.`,
     },
     offline: {
       color: Colors.textDark,
-      label: 'No Internet 📵',
+      label: 'No Internet',
       dot: Colors.textDark,
-      modalTitle: '📵 No Internet',
+      icon: WifiOff,
+      iconColor: Colors.textMuted,
+      modalTitle: 'No Internet',
       modalBody: 'You are working offline. Don\'t worry — your answers are saved on this device and will be shared with your teacher once you\'re back online.',
     },
   };
 
-  const { color, label, dot, modalTitle, modalBody } = config[status];
+  const { color, label, dot, icon, iconColor, modalTitle, modalBody } = config[status];
 
   const flashBg = flashAnim.interpolate({
     inputRange: [0, 1],
@@ -150,7 +157,10 @@ export function SyncBadge() {
           onPress={() => setInfoVisible(false)}
         >
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>{modalTitle}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+              {React.createElement(icon, { size: 24, color: iconColor })}
+              <Text style={styles.modalTitle}>{modalTitle}</Text>
+            </View>
             <Text style={styles.modalBody}>{modalBody}</Text>
             <TouchableOpacity
               onPress={() => setInfoVisible(false)}

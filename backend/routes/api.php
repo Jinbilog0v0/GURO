@@ -13,6 +13,7 @@ Route::post('/auth/promote', [AuthController::class, 'promote']);
 Route::post('/auth/forgot-password/send-code', [AuthController::class, 'sendRecoveryCode']);
 Route::post('/auth/forgot-password/verify-code', [AuthController::class, 'verifyRecoveryCode']);
 Route::get('/classroom/verify', [ClassroomController::class, 'verifyCode']);
+Route::post('/classroom/pair', [ClassroomController::class, 'pairStudent']);
 Route::get('/classroom/active-subjects', [ClassroomController::class, 'getActiveSubjects']);
 Route::get('/item-bank', [ClassroomController::class, 'getItemBank']);
 Route::post('/sync', [SyncController::class, 'syncTelemetry']);
@@ -30,9 +31,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/classroom/claim', [ClassroomController::class, 'claimTemplateBank']);
     Route::post('/classroom/update-lesson', [ClassroomController::class, 'updateClassroomLesson']);
     Route::post('/classroom/delete-lesson', [ClassroomController::class, 'deleteClassroomLesson']);
+    Route::get('/classroom/members', [ClassroomController::class, 'getClassroomMembers']);
 
     // Parent Student Creation
     Route::post('/parent/create-student', [AuthController::class, 'createStudent']);
+
+    // User Management
+    Route::post('/user/update-profile', [AuthController::class, 'updateProfile']);
 
     // Developer — Rate Limit Management
     Route::prefix('dev')->group(function () {

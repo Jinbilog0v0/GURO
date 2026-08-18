@@ -435,6 +435,28 @@ class ClassroomController extends Controller
             }
         }
 
+        // Capture existing orderIndex if it exists
+        $existingOrderIndex = null;
+        if (isset($bank[$subject][$grade][$topic]['studyContent']['orderIndex'])) {
+            $existingOrderIndex = $bank[$subject][$grade][$topic]['studyContent']['orderIndex'];
+        }
+
+        // Find max orderIndex across all existing topics
+        $maxOrderIndex = 0;
+        foreach ($bank as $subjKey => $grades) {
+            if (!is_array($grades)) continue;
+            foreach ($grades as $gradeKey => $topics) {
+                if (!is_array($topics)) continue;
+                foreach ($topics as $topicKey => $topicData) {
+                    if (isset($topicData['studyContent']['orderIndex'])) {
+                        $maxOrderIndex = max($maxOrderIndex, (int)$topicData['studyContent']['orderIndex']);
+                    }
+                }
+            }
+        }
+
+        $newOrderIndex = $existingOrderIndex !== null ? $existingOrderIndex : ($maxOrderIndex + 1);
+
         if (! isset($bank[$subject])) {
             $bank[$subject] = [];
         }
@@ -447,7 +469,10 @@ class ClassroomController extends Controller
 
         if ($studyContent) {
             $topicNode['studyContent'] = $studyContent;
+        } else {
+            $topicNode['studyContent'] = [];
         }
+        $topicNode['studyContent']['orderIndex'] = $newOrderIndex;
 
         foreach ($questions as $q) {
             $difficulty = $q['difficulty'];
@@ -481,6 +506,7 @@ class ClassroomController extends Controller
                 'feedback' => $q['feedback'],
                 'type' => $type,
                 'matchingPairs' => $q['matchingPairs'] ?? null,
+                'imageUrl' => $q['imageUrl'] ?? null,
             ];
         }
 
@@ -533,5 +559,60 @@ class ClassroomController extends Controller
         }
 
         return response()->json(['success' => true, 'customItemBank' => $classroom->custom_item_bank]);
+    }
+
+    public function pairStudent(Request $request)
+    {
+        $request->validate([
+            'studentId' => 'required|string',
+            'classroomId' => 'required|string',
+        ]);
+
+        $studentId = $request->input('studentId');
+        $classroomId = strtoupper($request->input('classroomId'));
+
+        $classroom = Classroom::where('classroom_id', $classroomId)->first();
+        if (! $classroom) {
+            return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        // Register student to classroom
+        $member = \App\Models\ClassroomMember::firstOrCreate([
+            'classroom_id' => $classroomId,
+            'student_id' => $studentId,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'member' => $member
+        ]);
+    }
+
+    public function getClassroomMembers(Request $request)
+    {
+        $classroomId = $request->query('classroomId');
+        if (! $classroomId) {
+            return response()->json(['error' => 'Missing classroomId parameter.'], 400);
+        }
+
+        $classroom = Classroom::where('classroom_id', strtoupper($classroomId))->first();
+        if (! $classroom) {
+            return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        // Only the owner teacher can fetch members
+        if ($classroom->teacher_user_id !== $request->user()->id) {
+            return response()->json(['error' => 'Forbidden.'], 403);
+        }
+
+        $members = \App\Models\ClassroomMember::where('classroom_id', strtoupper($classroomId))
+            ->orderBy('student_id', 'asc')
+            ->get()
+            ->map(fn($m) => [
+                'studentId' => $m->student_id,
+                'joinedAt' => $m->created_at->toIso8601String(),
+            ]);
+
+        return response()->json($members);
     }
 }

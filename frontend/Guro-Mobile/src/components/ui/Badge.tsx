@@ -13,6 +13,7 @@ interface BadgeProps {
   label: string;
   variant: BadgeVariant;
   style?: StyleProp<ViewStyle>;
+  icon?: React.ComponentType<any>;
 }
 
 const variantStyles: Record<BadgeVariant, { bg: object; text: object }> = {
@@ -22,10 +23,12 @@ const variantStyles: Record<BadgeVariant, { bg: object; text: object }> = {
   indigo: { bg: Badges.indigo, text: Badges.indigoText },
 };
 
-export function Badge({ label, variant, style }: BadgeProps) {
+export function Badge({ label, variant, style, icon: Icon }: BadgeProps) {
   const { bg, text } = variantStyles[variant];
+  const iconColor = (text as any).color;
   return (
-    <View style={[Badges.base, bg, style]}>
+    <View style={[Badges.base, bg, style, Icon ? { gap: 4 } : {}]}>
+      {Icon && <Icon size={12} color={iconColor} />}
       <Text style={[Badges.text, text]}>{label}</Text>
     </View>
   );

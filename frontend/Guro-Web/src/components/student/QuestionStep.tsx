@@ -41,6 +41,8 @@ interface QuestionStepProps {
     answeredHistory?: { isCorrect: boolean }[];
     avatarEmoji?: string;
     outfitEmoji?: string;
+    imageUrl?: string;
+    subject?: string;
 }
 
 const matchColorClasses = [
@@ -66,7 +68,10 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
     answeredHistory = [],
     avatarEmoji = '🦉',
     outfitEmoji = '',
+    imageUrl,
+    subject = 'English',
 }) => {
+    const isMath = subject === 'Mathematics';
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [shadedSlices, setShadedSlices] = useState<number[]>([]);
@@ -201,13 +206,13 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
     const getBuddyComment = () => {
         if (!isSubmitted) {
             if (comboStreak >= 2) {
-                return `Awesome! You are on a ${comboStreak}-question streak! Keep it up! 🔥`;
+                return `Awesome! You are on a ${comboStreak}-question streak! Keep it up!`;
             }
-            return "Read the question carefully. I know you've got this! 🤔";
+            return "Read the question carefully. I know you've got this!";
         }
         return isCorrect 
-            ? "Fantastic! That is the correct answer! 🎉🥳" 
-            : "Nice try! Read the explanation below to learn this concept, and let's try the next one! 💪";
+            ? "Fantastic! That is the correct answer!" 
+            : "Nice try! Read the explanation below to learn this concept, and let's try the next one!";
     };
 
     const progressPercentage = (currentQuestionIndex / totalQuestions) * 100;
@@ -554,6 +559,16 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                         questionText
                     )}
                 </h2>
+
+                {imageUrl && (
+                    <div className="w-full max-h-56 rounded-2xl overflow-hidden bg-zinc-50 border border-zinc-100 flex items-center justify-center p-3 mb-4 mt-2">
+                        <img 
+                            src={imageUrl} 
+                            alt="Question Illustration" 
+                            className="max-h-[190px] w-auto object-contain rounded-lg shadow-sm"
+                        />
+                    </div>
+                )}
 
                 {/* Options List / Matching Columns */}
                 <div className="w-full">
@@ -932,8 +947,16 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                         </div>
                         <div className="flex-1 flex flex-col gap-1.5 min-w-0">
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center lg:text-left">Quiz Buddy</span>
-                            <div className="relative bg-white border border-slate-100 p-3 rounded-2xl text-[12px] font-bold text-slate-600 leading-relaxed shadow-sm">
-                                <div className="hidden lg:block absolute -left-1.5 top-7 w-3 h-3 bg-white border-l border-b border-slate-100 rotate-45 transform" />
+                            <div className={`relative border p-3.5 rounded-2xl text-[12px] font-bold leading-relaxed shadow-sm ${
+                                isMath 
+                                    ? 'bg-sky-50/50 border-sky-100 text-sky-900' 
+                                    : 'bg-purple-50/50 border-purple-100 text-purple-900'
+                            }`}>
+                                <div className={`hidden lg:block absolute -left-1.5 top-7 w-3 h-3 border-l border-b rotate-45 transform ${
+                                    isMath 
+                                        ? 'bg-sky-50 border-sky-100' 
+                                        : 'bg-purple-50 border-purple-100'
+                                }`} />
                                 <p className="text-center lg:text-left">{getBuddyComment()}</p>
                             </div>
                         </div>

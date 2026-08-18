@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import {
     Trophy, Flame, Calculator, BookOpen, Zap, Star,
-    Clock, TrendingUp, CheckCircle2, AlertCircle, Activity,
+    Clock, TrendingUp, CheckCircle2, AlertCircle, Activity, Award,
 } from 'lucide-react';
 
 interface ProgressEvent {
@@ -23,13 +23,13 @@ interface ProgressViewProps {
 const SUBJECTS = ['Mathematics', 'English'] as const;
 const GRADES = [4, 5, 6] as const;
 
-const BADGE_INFO: Record<string, { emoji: string; label: string; desc: string }> = {
-    first_step:       { emoji: '👣', label: 'First Step',     desc: 'Completed your first lesson' },
-    perfect_score:    { emoji: '💯', label: 'Perfect 100%',   desc: 'Got 100% on any quiz' },
-    math_wizard:      { emoji: '🧮', label: 'Math Wizard',    desc: 'Perfect score in Mathematics' },
-    english_champion: { emoji: '📖', label: 'English Champ',  desc: 'Perfect score in English' },
-    streak_starter:   { emoji: '🔥', label: 'Streak Starter', desc: '3-day study streak' },
-    streak_master:    { emoji: '⚡', label: 'Streak Master',  desc: '5-day study streak' },
+const BADGE_INFO: Record<string, { icon: React.ComponentType<any>; color: string; label: string; desc: string }> = {
+    first_step:       { icon: Award, color: '#3B82F6', label: 'First Step',     desc: 'Completed your first lesson' },
+    perfect_score:    { icon: CheckCircle2, color: '#10B981', label: 'Perfect 100%',   desc: 'Got 100% on any quiz' },
+    math_wizard:      { icon: Calculator, color: '#F59E0B', label: 'Math Wizard',    desc: 'Perfect score in Mathematics' },
+    english_champion: { icon: BookOpen, color: '#8B5CF6', label: 'English Champ',  desc: 'Perfect score in English' },
+    streak_starter:   { icon: Flame, color: '#EF4444', label: 'Streak Starter', desc: '3-day study streak' },
+    streak_master:    { icon: Zap, color: '#EAB308', label: 'Streak Master',  desc: '5-day study streak' },
 };
 
 function deriveWebBadges(progress: ProgressEvent[], streak: number): string[] {
@@ -114,9 +114,17 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
             <div className="max-w-4xl mx-auto flex flex-col gap-6">
 
                 {/* Page header */}
-                <div>
-                    <h1 className="text-2xl font-extrabold text-zinc-800 tracking-tight">My Progress</h1>
-                    <p className="text-sm text-zinc-500 mt-0.5">Track your learning journey</p>
+                <div className="w-full bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-600 rounded-[32px] p-6 text-white shadow-xl shadow-blue-500/10 flex items-center gap-5 relative overflow-hidden">
+                    <div className="absolute right-0 top-0 bottom-0 opacity-10 pointer-events-none select-none">
+                        <Trophy className="size-48 -mr-8 -mt-8" />
+                    </div>
+                    <div className="size-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30 shrink-0 animate-pulse">
+                        <Trophy className="size-8 text-amber-300 fill-amber-300" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-black">My Learning Quest Room</h1>
+                        <p className="text-xs font-bold text-blue-50/90 mt-0.5">Check out your levels, streak calendar, and earned trophies!</p>
+                    </div>
                 </div>
 
                 {/* Summary stat cards */}
@@ -127,10 +135,10 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                         { icon: <Flame className="size-5 text-orange-500" />, value: streakCount, label: 'Day Streak' },
                         { icon: <Zap className="size-5 text-amber-400" />, value: xpPoints, label: 'Total XP' },
                     ].map(({ icon, value, label }) => (
-                        <div key={label} className="bg-white rounded-2xl p-4 shadow-sm border border-zinc-100 flex flex-col gap-2">
-                            {icon}
-                            <span className="text-2xl font-black text-zinc-800">{value}</span>
-                            <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
+                        <div key={label} className="bg-white rounded-3xl p-5 shadow-md border border-zinc-100 flex flex-col gap-2 transition-transform hover:scale-105 duration-200 cursor-default">
+                            <div className="size-9 bg-zinc-50 rounded-xl flex items-center justify-center border border-zinc-100 w-fit p-2">{icon}</div>
+                            <span className="text-3xl font-black text-zinc-800 mt-1">{value}</span>
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{label}</span>
                         </div>
                     ))}
                 </div>
@@ -272,7 +280,9 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                                             : 'bg-zinc-50 border-zinc-100 opacity-45'
                                     }`}
                                 >
-                                    <span className="text-3xl">{info.emoji}</span>
+                                    <div className="size-10 flex items-center justify-center mb-1">
+                                        <info.icon className="size-8" style={{ color: unlocked ? info.color : '#A1A1AA' }} />
+                                    </div>
                                     <span className="text-xs font-extrabold text-zinc-700 text-center">{info.label}</span>
                                     <span className="text-[10px] text-zinc-400 text-center leading-snug">{info.desc}</span>
                                     {!unlocked && (

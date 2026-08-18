@@ -39,6 +39,7 @@ export interface StudyContent {
   }>;
   summary: string[];
   refresherQuiz?: Array<{ questionText: string; options: string[]; correctAnswer: string; explanation: string; id?: string; feedback?: any }>;
+  orderIndex?: number;
 }
 
 export interface TopicData {
@@ -137,7 +138,7 @@ interface AppState {
   clearProgress: () => Promise<void>;
   syncProgressNow: (serverUrl: string) => Promise<{ success: boolean; syncedCount: number; message: string }>;
   updateParentalControls: (controls: Partial<AppState['parentalControls']>) => void;
-  registerAndPromote: (email: string, password: string, name: string) => Promise<{ success: boolean; message: string }>;
+  registerAndPromote: (email: string, password: string, name: string, firstName?: string, middleName?: string, lastName?: string) => Promise<{ success: boolean; message: string }>;
   loginToCloud: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   logoutFromCloud: () => void;
   trackActiveMinutes: (minutes: number) => void;
@@ -257,7 +258,7 @@ export const useAppStore = create<AppState>()(
         }));
         get().addLog('Parental control settings updated.');
       },
-      registerAndPromote: async (email, password, name) => {
+      registerAndPromote: async (email, password, name, firstName, middleName, lastName) => {
         const anonymousStudentId = get().studentId;
         const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
         const resolvedUrl = resolveServerUrl(rawUrl);
@@ -265,7 +266,15 @@ export const useAppStore = create<AppState>()(
           const res = await fetch(`${resolvedUrl}/api/auth/promote`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ anonymousStudentId, email, password, name })
+            body: JSON.stringify({
+              anonymousStudentId,
+              email,
+              password,
+              name,
+              first_name: firstName,
+              middle_name: middleName,
+              last_name: lastName
+            })
           });
           if (res.ok) {
             const data = await res.json();

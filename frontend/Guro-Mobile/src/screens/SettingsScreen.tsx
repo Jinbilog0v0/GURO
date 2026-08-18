@@ -85,15 +85,39 @@ export function SettingsScreen({ navigation }: Props) {
   const [activeCategory, setActiveCategory] = useState<Category>('profile');
 
   // Account promotion (Go Online) form states
-  const [promoteName, setPromoteName] = useState(guestName ?? '');
+  const [promoteFirstName, setPromoteFirstName] = useState('');
+  const [promoteMiddleName, setPromoteMiddleName] = useState('');
+  const [promoteLastName, setPromoteLastName] = useState('');
   const [promoteEmail, setPromoteEmail] = useState('');
   const [promotePassword, setPromotePassword] = useState('');
   const [promoteConfirmPassword, setPromoteConfirmPassword] = useState('');
   const [isPromoting, setIsPromoting] = useState(false);
 
+  // Edit Profile form states
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileFirstName, setProfileFirstName] = useState('');
+  const [profileMiddleName, setProfileMiddleName] = useState('');
+  const [profileLastName, setProfileLastName] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
   // Prefill name if guestName changes
   useEffect(() => {
-    setPromoteName(guestName ?? '');
+    if (guestName) {
+      const parts = guestName.split(' ');
+      if (parts.length === 1) {
+        setPromoteFirstName(parts[0]);
+        setPromoteLastName('');
+        setPromoteMiddleName('');
+      } else if (parts.length === 2) {
+        setPromoteFirstName(parts[0]);
+        setPromoteLastName(parts[1]);
+        setPromoteMiddleName('');
+      } else {
+        setPromoteFirstName(parts[0]);
+        setPromoteLastName(parts[parts.length - 1]);
+        setPromoteMiddleName(parts.slice(1, -1).join(' '));
+      }
+    }
   }, [guestName]);
 
   // ── Intercept Back Press ──────────────────────────────────────────────────
@@ -111,12 +135,14 @@ export function SettingsScreen({ navigation }: Props) {
 
   // ── Submit Account promotion ──────────────────────────────────────────────
   const handlePromoteAccount = async () => {
-    const name = promoteName.trim();
+    const fName = promoteFirstName.trim();
+    const mName = promoteMiddleName.trim();
+    const lName = promoteLastName.trim();
     const email = promoteEmail.trim();
     const password = promotePassword;
     const confirm = promoteConfirmPassword;
 
-    if (!name || !email || !password || !confirm) {
+    if (!fName || !lName || !email || !password || !confirm) {
       toast.error('Please fill in all fields to register.');
       return;
     }
@@ -131,11 +157,13 @@ export function SettingsScreen({ navigation }: Props) {
       return;
     }
 
+    const fullName = (fName + (mName !== '' ? ' ' + mName : '') + ' ' + lName).trim();
+
     setIsPromoting(true);
     try {
       const registerAndPromoteAction = useAppStore.getState().registerAndPromote;
       const setAppModeAction = useAppStore.getState().setAppMode;
-      const result = await registerAndPromoteAction(email, password, name);
+      const result = await registerAndPromoteAction(email, password, fullName, fName, mName, lName);
       if (result.success) {
         setAppModeAction('online');
         toast.success('Your account has been created and synced online!');
@@ -149,6 +177,88 @@ export function SettingsScreen({ navigation }: Props) {
       toast.error(e.message ?? 'Failed to connect to server.');
     } finally {
       setIsPromoting(false);
+    }
+  const handleStartEditProfile = () => {
+    const currentName = guestName || currentUser?.name || '';
+    let fName = currentUser?.firstName || '';
+    let mName = currentUser?.middleName || '';
+    let lName = currentUser?.lastName || '';
+
+    if (!fName && !lName && currentName) {
+      const parts = currentName.split(' ');
+      if (parts.length === 1) {
+        fName = parts[0];
+      } else if (parts.length === 2) {
+        fName = parts[0];
+        lName = parts[1];
+      } else {
+        fName = parts[0];
+        lName = parts[parts.length - 1];
+        mName = parts.slice(1, -1).join(' ');
+      }
+    }
+    
+    setProfileFirstName(fName);
+    setProfileMiddleName(mName);
+    setProfileLastName(lName);
+    setIsEditingProfile(true);
+  };
+
+  const handleSaveProfile = async () => {
+    const fName = profileFirstName.trim();
+    const mName = profileMiddleName.trim();
+    const lName = profileLastName.trim();
+    
+    if (!fName || !lName) {
+      toast.error('First and Last names are required.');
+      return;
+    }
+    
+    const fullName = (fName + (mName !== '' ? ' ' + mName : '') + ' ' + lName).trim();
+    
+    setIsSavingProfile(true);
+    try {
+      if (appMode === 'offline') {
+        const setGuestNameAction = useAppStore.getState().setGuestName;
+        setGuestNameAction(fullName);
+        const setStudentIdAction = useAppStore.getState().setStudentId;
+        const trimmedOfflineEmail = useAppStore.getState().email || '';
+        const primaryId = trimmedOfflineEmail || fullName;
+        setStudentIdAction(primaryId.replace(/\s+/g, '-').toUpperCase() + '-GUEST');
+        
+        toast.success('Offline guest profile name updated!');
+        setIsEditingProfile(false);
+      } else {
+        const token = useAppStore.getState().token;
+        const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+        const resolvedUrl = resolveServerUrl(rawUrl);
+        
+        const response = await fetch(`${resolvedUrl}/api/user/update-profile`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            first_name: fName,
+            middle_name: mName,
+            last_name: lName
+          })
+        });
+        
+        const data = await response.json();
+        if (response.ok && data.success) {
+          useAppStore.setState({ currentUser: data.user });
+          toast.success('Online profile updated successfully!');
+          setIsEditingProfile(false);
+        } else {
+          toast.error(data.error || 'Failed to update profile.');
+        }
+      }
+    } catch {
+      toast.error('Connection error: Failed to update profile.');
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
@@ -249,6 +359,101 @@ export function SettingsScreen({ navigation }: Props) {
                 <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: 4 }}>
                   Device Access Code: <Text style={{ fontFamily: Fonts.bodyBold }}>{getParentAccessCode(studentId)}</Text>
                 </Text>
+
+                {!isEditingProfile ? (
+                  <TouchableOpacity
+                    onPress={handleStartEditProfile}
+                    style={{
+                      marginTop: Spacing.md,
+                      paddingVertical: Spacing.xs,
+                      paddingHorizontal: Spacing.sm,
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                      borderRadius: Radius.xs,
+                      backgroundColor: 'transparent',
+                      alignItems: 'center',
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      gap: 4
+                    }}
+                  >
+                    <User size={13} color={Colors.textMuted} />
+                    <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                      Edit Name Settings
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={{ marginTop: Spacing.md, gap: Spacing.xs }}>
+                    <Text style={{ fontFamily: Fonts.display, fontSize: 9, color: Colors.accentSecondary, letterSpacing: 1 }}>
+                      EDIT NAME FIELDS
+                    </Text>
+                    
+                    <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                      <View style={{ flex: 1 }}>
+                        <ThemedTextInput
+                          label="First Name"
+                          value={profileFirstName}
+                          onChangeText={setProfileFirstName}
+                          placeholder="First name..."
+                          autoCapitalize="words"
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedTextInput
+                          label="Last Name"
+                          value={profileLastName}
+                          onChangeText={setProfileLastName}
+                          placeholder="Last name..."
+                          autoCapitalize="words"
+                        />
+                      </View>
+                    </View>
+                    
+                    <ThemedTextInput
+                      label="Middle Name (Optional)"
+                      value={profileMiddleName}
+                      onChangeText={setProfileMiddleName}
+                      placeholder="Middle name..."
+                      autoCapitalize="words"
+                    />
+                    
+                    <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs }}>
+                      <TouchableOpacity
+                        onPress={() => setIsEditingProfile(false)}
+                        style={{
+                          flex: 1,
+                          paddingVertical: Spacing.sm,
+                          borderWidth: 1,
+                          borderColor: Colors.border,
+                          borderRadius: Radius.xs,
+                          backgroundColor: Colors.bgInput,
+                          alignItems: 'center'
+                        }}
+                      >
+                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                          Cancel
+                        </Text>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity
+                        onPress={handleSaveProfile}
+                        disabled={isSavingProfile}
+                        style={{
+                          flex: 1,
+                          paddingVertical: Spacing.sm,
+                          borderRadius: Radius.xs,
+                          backgroundColor: Colors.accentPrimary,
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#fff' }}>
+                          {isSavingProfile ? 'Saving...' : 'Save'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
               </View>
 
               {appMode === 'offline' && (
@@ -260,11 +465,34 @@ export function SettingsScreen({ navigation }: Props) {
                     Register a cloud account to sync lessons progress across all your devices.
                   </Text>
 
+                  <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                    <View style={{ flex: 1 }}>
+                      <ThemedTextInput
+                        label="First Name"
+                        value={promoteFirstName}
+                        onChangeText={setPromoteFirstName}
+                        placeholder="e.g. Juan"
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <ThemedTextInput
+                        label="Last Name"
+                        value={promoteLastName}
+                        onChangeText={setPromoteLastName}
+                        placeholder="e.g. Cruz"
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                      />
+                    </View>
+                  </View>
+
                   <ThemedTextInput
-                    label="Full Name"
-                    value={promoteName}
-                    onChangeText={setPromoteName}
-                    placeholder="e.g. Neal"
+                    label="Middle Name (Optional)"
+                    value={promoteMiddleName}
+                    onChangeText={setPromoteMiddleName}
+                    placeholder="e.g. Dela"
                     autoCapitalize="words"
                     autoCorrect={false}
                   />

@@ -15,7 +15,59 @@ interface Question {
     en: string;
     fil: string;
   };
+  imageUrl?: string;
 }
+
+const ImageUploadInput: React.FC<{
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+}> = ({ label, value, onChange }) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onChange(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2 p-3 bg-zinc-50 border border-dashed border-zinc-200 rounded-xl mt-2">
+      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{label}</span>
+      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+        <input 
+          type="file" 
+          accept="image/*" 
+          onChange={handleFileChange} 
+          className="text-xs text-zinc-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 cursor-pointer" 
+        />
+        <span className="text-xs text-zinc-400 text-center sm:text-left">or</span>
+        <input 
+          type="text" 
+          placeholder="Paste HTTPS image link..." 
+          value={value.startsWith('data:') ? '' : value}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 py-1.5 px-3 border border-zinc-200 rounded-lg text-xs bg-white text-zinc-800 focus:outline-none" 
+        />
+      </div>
+      {value && (
+        <div className="mt-2 relative group w-fit">
+          <img src={value} alt="Preview" className="max-h-24 object-contain rounded-lg border border-zinc-200" />
+          <button 
+            type="button" 
+            onClick={() => onChange('')} 
+            className="absolute -top-1.5 -right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full size-4 flex items-center justify-center text-[9px] font-bold cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface ManualLessonBuilderProps {
   classroomId?: string | null;
@@ -25,12 +77,12 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
   const getCategoriesAndTypes = (currentSubject: string, currentGrade: string | number) => {
     const gNum = Number(currentGrade);
     let categories: string[] = [];
-    let types = ['multiple-choice', 'fill-in-the-blank', 'drag-drop-matching', 'true-false'];
+    let types = ['multiple-choice', 'fill-in-the-blank', 'drag-drop-matching', 'true-false', 'swipe-card'];
 
     if (currentSubject.toLowerCase() === 'mathematics') {
+      types.push('fraction-builder');
       if (gNum === 4) {
         categories = ['Fractions'];
-        types.push('fraction-builder');
       } else if (gNum === 5) {
         categories = ['Decimals'];
       } else {
@@ -39,7 +91,6 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
     } else { // English
       if (gNum === 4) {
         categories = ['Figures of Speech'];
-        types.push('swipe-card');
       } else if (gNum === 5) {
         categories = ['Reading/Paragraph Comprehension'];
       } else {
@@ -53,6 +104,7 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
   const [grade, setGrade] = useState('5');
   const [topic, setTopic] = useState('');
   const [lessonText, setLessonText] = useState('');
+  const [lessonImage, setLessonImage] = useState('');
 
   const [refresherQuestions, setRefresherQuestions] = useState<{
     questionText: string;
@@ -72,7 +124,8 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
       questionText: '',
       options: ['', '', '', ''],
       correctAnswer: '',
-      feedback: { en: '', fil: '' }
+      feedback: { en: '', fil: '' },
+      imageUrl: ''
     }
   ]);
 
@@ -138,7 +191,8 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
       questionText: '',
       options: ['', '', '', ''],
       correctAnswer: '',
-      feedback: { en: '', fil: '' }
+      feedback: { en: '', fil: '' },
+      imageUrl: ''
     };
     setQuestions([...questions, newQ]);
   };
@@ -276,7 +330,8 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
             introduction: lessonText.trim(), 
             vocabulary: [], 
             summary: [],
-            refresherQuiz: validRefreshers
+            refresherQuiz: validRefreshers,
+            imageUrl: lessonImage.trim() || undefined
           }
         : null;
       const payload = classroomId
@@ -302,6 +357,7 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
       // Reset forms
       setTopic('');
       setLessonText('');
+      setLessonImage('');
       setQuestions([
         {
           id: 'ENG-G5-TOPIC-001',
@@ -310,7 +366,8 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
           questionText: '',
           options: ['', '', '', ''],
           correctAnswer: '',
-          feedback: { en: '', fil: '' }
+          feedback: { en: '', fil: '' },
+          imageUrl: ''
         }
       ]);
     } catch (err: any) {
@@ -368,6 +425,12 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
               required
             />
           </div>
+
+          <ImageUploadInput
+            label="Lesson Summary Visualization"
+            value={lessonImage}
+            onChange={setLessonImage}
+          />
 
           <div className="form-group border-t border-[var(--border-color)] pt-4 mt-2.5">
             <div className="flex justify-between items-center mb-3">
@@ -557,6 +620,12 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
                       required
                     />
                   </div>
+
+                  <ImageUploadInput
+                    label="Question Image / Visualization"
+                    value={q.imageUrl || ''}
+                    onChange={(val) => handleUpdateField(idx, 'imageUrl', val)}
+                  />
 
                   <div className="form-group mt-3">
                     <label>Question Type / Format</label>

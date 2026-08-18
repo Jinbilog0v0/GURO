@@ -67,14 +67,19 @@ export function LoginScreen({ navigation }: Props) {
   const [selectedRole, setSelectedRole] = useState<Role | null>('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [offlineName, setOfflineName] = useState('');
+  const [offlineFirstName, setOfflineFirstName] = useState('');
+  const [offlineMiddleName, setOfflineMiddleName] = useState('');
+  const [offlineLastName, setOfflineLastName] = useState('');
+  const [offlineSection, setOfflineSection] = useState('');
   const [offlineEmailOrId, setOfflineEmailOrId] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<number>(4);
   const [selectedOfflineGrade, setSelectedOfflineGrade] = useState<number>(4);
   const [loading, setLoading] = useState(false);
+  const [isOfflineSubmitting, setIsOfflineSubmitting] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [offlineNameError, setOfflineNameError] = useState('');
+  const [offlineFirstNameError, setOfflineFirstNameError] = useState('');
+  const [offlineLastNameError, setOfflineLastNameError] = useState('');
   const [isOnline, setIsOnline] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [logoTapCount, setLogoTapCount] = useState(0);
@@ -340,32 +345,47 @@ export function LoginScreen({ navigation }: Props) {
   };
 
   const handleStartOffline = () => {
-    setOfflineNameError('');
-    const trimmedOfflineName = offlineName.trim();
+    setOfflineFirstNameError('');
+    setOfflineLastNameError('');
+    const trimmedOfflineFirstName = offlineFirstName.trim();
+    const trimmedOfflineMiddleName = offlineMiddleName.trim();
+    const trimmedOfflineLastName = offlineLastName.trim();
+    const trimmedOfflineSection = offlineSection.trim();
     const trimmedOfflineEmail = offlineEmailOrId.trim();
     
-    if (!trimmedOfflineName) {
-      setOfflineNameError('Please enter a name.');
-      toast.error('Name is required to start offline.');
+    if (!trimmedOfflineFirstName) {
+      setOfflineFirstNameError('First Name is required.');
+      toast.error('First Name is required to start offline.');
+      return;
+    }
+    if (!trimmedOfflineLastName) {
+      setOfflineLastNameError('Last Name is required.');
+      toast.error('Last Name is required to start offline.');
       return;
     }
     
-    if (trimmedOfflineName.length < 3) {
-      setOfflineNameError('Please enter a name (min 3 chars).');
+    const fullName = (trimmedOfflineFirstName + (trimmedOfflineMiddleName !== '' ? ' ' + trimmedOfflineMiddleName : '') + ' ' + trimmedOfflineLastName).trim();
+    
+    if (fullName.replace(/\s+/g, '').length < 3) {
+      setOfflineFirstNameError('Name must be at least 3 characters.');
       toast.warning('Name must be at least 3 characters.');
       return;
     }
     
-    const primaryId = trimmedOfflineEmail || trimmedOfflineName;
+    const formattedName = trimmedOfflineSection 
+      ? `${fullName} (${trimmedOfflineSection})` 
+      : fullName;
+      
+    const primaryId = trimmedOfflineEmail || formattedName;
     setAppMode('offline');
     if (trimmedOfflineEmail) {
-      setGuestName(trimmedOfflineName, trimmedOfflineEmail);
+      setGuestName(formattedName, trimmedOfflineEmail);
     } else {
-      setGuestName(trimmedOfflineName);
+      setGuestName(formattedName);
     }
     setStudentId(primaryId.replace(/\s+/g, '-').toUpperCase() + '-GUEST');
     setPreferredGrade(selectedOfflineGrade);
-    toast.success(`Welcome, ${trimmedOfflineName}! Started offline session.`);
+    toast.success(`Welcome, ${formattedName}! Started offline session.`);
     navigation.replace('StudentDashboard');
   };
 
@@ -558,13 +578,42 @@ export function LoginScreen({ navigation }: Props) {
             </View>
             <Text style={styles.sectionSubtitle}>No account needed</Text>
 
+             <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+               <View style={[styles.formGroup, { flex: 1 }]}>
+                  <ThemedTextInput
+                     label="First Name"
+                     placeholder="e.g. Juan"
+                     value={offlineFirstName}
+                     onChangeText={(t) => { setOfflineFirstName(t); setOfflineFirstNameError(''); }}
+                     error={offlineFirstNameError}
+                  />
+               </View>
+               <View style={[styles.formGroup, { flex: 1 }]}>
+                  <ThemedTextInput
+                     label="Last Name"
+                     placeholder="e.g. Cruz"
+                     value={offlineLastName}
+                     onChangeText={(t) => { setOfflineLastName(t); setOfflineLastNameError(''); }}
+                     error={offlineLastNameError}
+                  />
+               </View>
+             </View>
+
+             <View style={styles.formGroup}>
+                <ThemedTextInput
+                   label="Middle Name (Optional)"
+                   placeholder="e.g. Dela"
+                   value={offlineMiddleName}
+                   onChangeText={setOfflineMiddleName}
+                />
+             </View>
+
             <View style={styles.formGroup}>
                <ThemedTextInput
-                  label="Your name"
-                  placeholder="e.g. Juan"
-                  value={offlineName}
-                  onChangeText={(t) => { setOfflineName(t); setOfflineNameError(''); }}
-                  error={offlineNameError}
+                  label="Section (Optional)"
+                  placeholder="e.g. Rizal, Bonifacio, Section A"
+                  value={offlineSection}
+                  onChangeText={setOfflineSection}
                />
             </View>
 

@@ -158,11 +158,15 @@ Mobile Client                          Laravel API
 │     email (varchar, UNIQUE)   │    │    │     classroom_id (varchar, UNIQUE)  │
 │     password_hash (varchar)   │◄───┘    │     teacher_name (varchar)          │
 │     name (varchar)            │         │     subject (varchar)               │
-│     role (enum: student,      │         │     grade_level (int)               │
-│           teacher, parent)    │         │     custom_item_bank (JSON)         │
-│     classroom_id (nullable)   │         │     expires_at (datetime, nullable) │
-│     parent_access_token       │         │     created_at, updated_at          │
-│     created_at, updated_at    │         └─────────────────────────────────────┘
+│     first_name (varchar)      │         │     grade_level (int)               │
+│     middle_name (varchar,     │         │     custom_item_bank (JSON)         │
+│                  nullable)    │         │     expires_at (datetime, nullable) │
+│     last_name (varchar)       │         │     created_at, updated_at          │
+│     role (enum: student,      │         └─────────────────────────────────────┘
+│           teacher, parent)    │
+│     classroom_id (nullable)   │
+│     parent_access_token       │
+│     created_at, updated_at    │
 └───────────────────────────────┘
            │ 1
            │
@@ -463,6 +467,8 @@ The authentication module supports four flows: standard registration, login with
 #### 4.1.2 Classroom Management Module
 
 Teachers can create classrooms identified by a structured code (e.g., `ENG-G5-ABC`) with an optional expiry timestamp. The system generates a 5-character alphanumeric join code. Teachers may lock the classroom at any time, immediately setting `expires_at` to the current timestamp. A global template bank can be selectively claimed into a classroom's `custom_item_bank` JSON column, giving teachers control over which lessons are visible to their students.
+
+To enforce structured, self-paced progress, the classroom module implements an adaptive chronological sequencing locker. When a teacher customizes the classroom lessons, the system dynamically registers an incrementing `orderIndex` to each lesson topic based on the timestamp and creation sequence. On the client, the adaptive locker evaluates the student's progress telemetry: a student is locked out of Lesson $N$ until they achieve a score threshold of $\ge 80\%$ on Lesson $N-1$ (based on chronological sequence order), showing explicit lock justifications (e.g., "Score 80%+ in Lesson Topic first!") in the UI.
 
 #### 4.1.3 AI Lesson Generation Module
 

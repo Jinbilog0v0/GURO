@@ -52,12 +52,12 @@ class GeminiService
         $parts[] = ['text' => $prompt];
 
         $categories = [];
-        $types = ['multiple-choice', 'fill-in-the-blank', 'drag-drop-matching', 'true-false'];
+        $types = ['multiple-choice', 'fill-in-the-blank', 'drag-drop-matching', 'true-false', 'swipe-card'];
 
         if (strtolower($subject) === 'mathematics') {
+            $types[] = 'fraction-builder';
             if ($grade === 4) {
                 $categories = ['Fractions'];
-                $types[] = 'fraction-builder';
             } elseif ($grade === 5) {
                 $categories = ['Decimals'];
             } else {
@@ -66,7 +66,6 @@ class GeminiService
         } else { // English
             if ($grade === 4) {
                 $categories = ['Figures of Speech'];
-                $types[] = 'swipe-card';
             } elseif ($grade === 5) {
                 $categories = ['Reading/Paragraph Comprehension'];
             } else {

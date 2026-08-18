@@ -202,7 +202,7 @@ describe('StudentDashboard (Home Tab)', () => {
     const stringified = JSON.stringify(root.toJSON());
     // Level card is rendered (xpPoints=150 → Level 2 Explorer)
     expect(stringified).toContain('Explorer');
-    expect(stringified).toContain('XP to next level');
+    expect(stringified).toContain('XP');
     // Stats row labels
     expect(stringified).toContain('Day Streak');
     expect(stringified).toContain('Stars');

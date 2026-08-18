@@ -24,6 +24,7 @@ interface QuestionItem {
     };
     type?: 'multiple-choice' | 'fill-in-the-blank' | 'drag-drop-matching' | 'true-false' | 'swipe-card' | 'fraction-builder';
     matchingPairs?: Record<string, string>;
+    imageUrl?: string;
 }
 
 interface ItemBank {
@@ -724,6 +725,14 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                 localStorage.setItem(`guro_student_classroom_id_${activeStudentId}`, data.classroomId);
                 localStorage.setItem('guro_student_teacher_name', data.teacherName || '');
                 localStorage.setItem(`guro_student_teacher_name_${activeStudentId}`, data.teacherName || '');
+                
+                // Pair this student name on the server as a classroom member
+                await apiFetch('/api/classroom/pair', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ studentId: activeStudentId, classroomId: data.classroomId })
+                }).catch(() => {});
+
                 toast.success(`Successfully joined ${data.teacherName ? `${data.teacherName}'s ` : ''}classroom!`);
                 fetchItemBank(data.classroomId);
                 return true;
@@ -1430,6 +1439,8 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                     answeredHistory={answeredHistory}
                     avatarEmoji={avatarEmoji}
                     outfitEmoji={outfitEmoji}
+                    imageUrl={questions[currentQuestionIndex].imageUrl}
+                    subject={selectedSubject}
                 />
             )}
 

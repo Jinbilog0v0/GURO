@@ -23,6 +23,7 @@ interface SyncedEvent {
 
 interface TeacherSpaceProps {
   progressLogs: SyncedEvent[];
+  classroomMembers?: string[];
   lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null;
   refreshLogs: () => Promise<void>;
   loading: boolean;
@@ -59,6 +60,7 @@ const getCategoriesAndTypes = (currentSubject: string, currentGrade: string | nu
 
 export function TeacherSpace({ 
   progressLogs, 
+  classroomMembers = [],
   lastUpdatedCell, 
   refreshLogs, 
   loading,
@@ -68,6 +70,7 @@ export function TeacherSpace({
   const [filterText, setFilterText] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('All');
+  const [selectedSection, setSelectedSection] = useState('All');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   
   const [localActiveSubTab, setLocalActiveSubTab] = useState<'analytics' | 'manual-lesson' | 'classroom-pairing'>('analytics');
@@ -379,18 +382,68 @@ export function TeacherSpace({
     return Math.round(totalPercentage / filteredLogs.length);
   };
 
-  // Get unique students list (filtered by classroom and search query if active)
-  const uniqueStudents = Array.from(new Set(
-    progressLogs
-      .filter((log) => {
-        const matchesClassroom = !classroomCode || log.classroomId === classroomCode;
-        const matchesSearch = !filterText || 
-          log.studentId.toLowerCase().includes(filterText.toLowerCase()) ||
-          log.topic.toLowerCase().includes(filterText.toLowerCase());
-        return matchesClassroom && matchesSearch;
-      })
+  const parseStudentId = (id: string) => {
+    let cleaned = id.replace(/-/g, ' ').trim();
+    cleaned = cleaned.replace(/\s+GUEST$/i, '');
+    cleaned = cleaned.replace(/\s+LOCAL$/i, '');
+    cleaned = cleaned.trim();
+
+    const sectionMatch = cleaned.match(/(.*)\s*\(([^)]+)\)/);
+    if (sectionMatch) {
+      const name = toTitleCase(sectionMatch[1].trim());
+      const section = sectionMatch[2].trim().toUpperCase();
+      return { name, section };
+    }
+    
+    return { name: toTitleCase(cleaned), section: '' };
+  };
+
+  const toTitleCase = (str: string) => {
+    return str.replace(/\w\S*/g, (txt) => {
+      return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    });
+  };
+
+  // Class List: include all registered members and anyone with logs in this classroom
+  const allStudentIds = Array.from(new Set([
+    ...classroomMembers,
+    ...progressLogs
+      .filter(log => !classroomCode || log.classroomId === classroomCode)
       .map(l => l.studentId)
-  ));
+  ])).sort();
+
+  // Extract all unique sections
+  const uniqueSections = Array.from(new Set(
+    allStudentIds
+      .map(id => parseStudentId(id).section)
+      .filter(sec => sec !== '')
+  )).sort();
+
+  // Filter students by section & search query
+  const uniqueStudents = allStudentIds.filter((studentId) => {
+    const { name, section } = parseStudentId(studentId);
+    
+    // 1. Filter by Section
+    if (selectedSection !== 'All') {
+      if (selectedSection === 'No Section') {
+        if (section !== '') return false;
+      } else {
+        if (section !== selectedSection) return false;
+      }
+    }
+
+    // 2. Filter by Search Query
+    if (filterText) {
+      const lowerSearch = filterText.toLowerCase();
+      const matchesName = name.toLowerCase().includes(lowerSearch) || studentId.toLowerCase().includes(lowerSearch);
+      const matchesLogs = progressLogs.some(
+        log => log.studentId === studentId && log.topic.toLowerCase().includes(lowerSearch)
+      );
+      if (!matchesName && !matchesLogs) return false;
+    }
+
+    return true;
+  });
 
   const handleSelectStudent = (studentId: string) => {
     if (selectedStudentId === studentId) {
@@ -1811,7 +1864,12 @@ export function TeacherSpace({
           {/* Interactive Student profile cards grid */}
           {!loading && uniqueStudents.length > 0 && (
             <div className="flex flex-col gap-3">
-              <h3 className="text-base font-bold text-[var(--text-main)]">Students Telemetry Profiles</h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-base font-bold text-[var(--text-main)]">Students Telemetry Profiles</h3>
+                <span className="text-xs font-semibold text-[var(--text-muted)] bg-[var(--border-color)]/30 px-3 py-1 rounded-full border border-[var(--border-color)]">
+                  {allStudentIds.length} Paired Roster Members
+                </span>
+              </div>
               <div className="grid grid-cols-4 gap-4">
                 {uniqueStudents.map(studentId => {
                   const studentLogs = progressLogs.filter(l => l.studentId === studentId);
@@ -1825,6 +1883,20 @@ export function TeacherSpace({
                     />
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {!loading && uniqueStudents.length === 0 && (
+            <div className="glass-panel p-8 text-center border border-[var(--border-color)] flex flex-col items-center justify-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#11428E]/10 flex items-center justify-center text-[#11428E]">
+                <User size={22} />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-[var(--text-main)]">No Students Found</h4>
+                <p className="text-xs text-[var(--text-muted)] mt-1.5 max-w-sm mx-auto">
+                  No students are connected to this classroom matching your search or section filters yet. Share your classroom code from the Setup tab to let students link their devices.
+                </p>
               </div>
             </div>
           )}
@@ -1884,6 +1956,16 @@ export function TeacherSpace({
                 <option value="All">All Subjects</option>
                 <option value="Mathematics">Mathematics</option>
                 <option value="English">English</option>
+              </select>
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label>Filter by Section</label>
+              <select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)}>
+                <option value="All">All Sections</option>
+                {uniqueSections.map(sec => (
+                  <option key={sec} value={sec}>{sec}</option>
+                ))}
+                <option value="No Section">No Section / Guest</option>
               </select>
             </div>
             {selectedStudentId && (

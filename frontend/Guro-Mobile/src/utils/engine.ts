@@ -187,8 +187,55 @@ export function isLessonLocked(
   gradeLevel: number,
   topic: string,
   studentProgress: ProgressLogItem[],
-  preferredGrade: number
+  preferredGrade: number,
+  itemBank?: any | null
 ): boolean {
+  // Rebuild the chronological sequence of lessons from the custom item bank if available
+  let customSequence: { subject: string; gradeLevel: number; topic: string; orderIndex: number }[] = [];
+  if (itemBank) {
+    for (const sub of Object.keys(itemBank)) {
+      const subData = itemBank[sub];
+      if (!subData || typeof subData !== 'object') continue;
+      for (const gr of Object.keys(subData)) {
+        const grData = subData[gr];
+        if (!grData || typeof grData !== 'object') continue;
+        for (const top of Object.keys(grData)) {
+          const topicData = grData[top];
+          if (topicData?.studyContent?.orderIndex !== undefined) {
+            customSequence.push({
+              subject: sub,
+              gradeLevel: parseInt(gr, 10),
+              topic: top,
+              orderIndex: topicData.studyContent.orderIndex,
+            });
+          }
+        }
+      }
+    }
+    // Sort chronologically by orderIndex ascending
+    customSequence.sort((a, b) => a.orderIndex - b.orderIndex);
+  }
+
+  if (customSequence.length > 0) {
+    const index = customSequence.findIndex(
+      (item) => item.subject === subject && item.gradeLevel === gradeLevel && item.topic === topic
+    );
+    // If the topic is not even in the sequence, let it be unlocked
+    if (index <= 0) return false;
+
+    // The student needs to pass the previous lesson in the custom sequence
+    const prevLesson = customSequence[index - 1];
+    const hasPassedPrev = studentProgress.some(
+      (p) =>
+        p.subject === prevLesson.subject &&
+        p.gradeLevel === prevLesson.gradeLevel &&
+        p.topic === prevLesson.topic &&
+        p.totalQuestions > 0 &&
+        (p.score / p.totalQuestions) >= 0.8
+    );
+    return !hasPassedPrev;
+  }
+
   const seq = LESSON_SEQUENCE[subject];
   if (!seq) return false;
 

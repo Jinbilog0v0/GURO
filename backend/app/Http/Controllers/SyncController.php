@@ -21,6 +21,13 @@ class SyncController extends Controller
         $events = $request->input('events');
         $classroomId = $request->input('classroomId');
 
+        if ($classroomId) {
+            \App\Models\ClassroomMember::firstOrCreate([
+                'classroom_id' => strtoupper($classroomId),
+                'student_id' => $studentId,
+            ]);
+        }
+
         $newEventsAppended = [];
         $eventIds = array_column($events, 'eventId');
 

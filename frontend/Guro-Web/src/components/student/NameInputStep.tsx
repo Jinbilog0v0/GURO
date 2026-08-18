@@ -18,6 +18,7 @@ const GuroLogoGraphic: React.FC = () => (
 
 export const NameInputStep: React.FC<NameInputStepProps> = ({ onBack, onStartLearning }) => {
     const [name, setName] = useState('');
+    const [section, setSection] = useState('');
     const [emailOrId, setEmailOrId] = useState('');
     const [savedName, setSavedName] = useState<string | null>(null);
 
@@ -33,11 +34,13 @@ export const NameInputStep: React.FC<NameInputStepProps> = ({ onBack, onStartLea
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!isInputEmpty) {
-            localStorage.setItem(STORAGE_KEY_NAME, name.trim());
+            const finalName = name.trim();
+            localStorage.setItem(STORAGE_KEY_NAME, finalName);
             if (emailOrId.trim()) {
                 localStorage.setItem(STORAGE_KEY_EMAIL_ID, emailOrId.trim());
             }
-            onStartLearning(name.trim());
+            const resolvedName = section.trim() ? `${finalName} (${section.trim()})` : finalName;
+            onStartLearning(resolvedName);
         }
     };
 
@@ -123,6 +126,21 @@ export const NameInputStep: React.FC<NameInputStepProps> = ({ onBack, onStartLea
                                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-300 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all"
                                 maxLength={30}
                                 autoFocus={!savedName}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Section (Optional)</label>
+                        <div className="relative">
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-extrabold select-none">#</span>
+                            <input
+                                type="text"
+                                value={section}
+                                onChange={(e) => setSection(e.target.value)}
+                                placeholder="e.g. Rizal, Bonifacio, Section A"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-300 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all"
+                                maxLength={20}
                             />
                         </div>
                     </div>

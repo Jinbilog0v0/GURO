@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, BookOpen, Calculator, ChevronRight, Lightbulb, ListChecks, AlignLeft, Volume2, Square, Sparkles, CheckCircle2, ChevronLeft, HelpCircle } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calculator, ChevronRight, Lightbulb, ListChecks, AlignLeft, Volume2, Square, Sparkles, CheckCircle2, ChevronLeft, HelpCircle, XCircle } from 'lucide-react';
 
 interface Definition {
     term: string;
@@ -19,6 +19,7 @@ interface StudyContent {
     definitions: Definition[];
     summary: string[];
     refresherQuiz?: RefresherQuestion[];
+    imageUrl?: string;
 }
 
 interface StudyContentStepProps {
@@ -37,6 +38,7 @@ interface Slide {
     title: string;
     data: any;
     refresherIndex?: number;
+    imageUrl?: string;
 }
 
 export const StudyContentStep: React.FC<StudyContentStepProps> = ({
@@ -71,6 +73,7 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                 type: 'intro',
                 title: 'Introduction',
                 data: studyContent.introduction,
+                imageUrl: studyContent.imageUrl || undefined,
             });
         }
 
@@ -198,20 +201,20 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
     const progressPercent = ((currentSlideIndex + 1) / slides.length) * 100;
 
     const getBuddyComment = () => {
-        if (!currentSlide) return "Let's learn together! 🌟";
+        if (!currentSlide) return "Let's learn together!";
         switch (currentSlide.type) {
             case 'intro':
-                return "Let's read this introduction first to get a quick overview! 📚";
+                return "Let's read this introduction first to get a quick overview!";
             case 'definition':
-                return `Here's an important key term: "${currentSlide.data.term}". Let's check out its definition and examples! 💡`;
+                return `Here's an important key term: "${currentSlide.data.term}". Let's check out its definition and examples!`;
             case 'refresher':
-                return "Time for a quick refresher! Try to answer this question to check your understanding. You've got this! 🎯";
+                return "Time for a quick refresher! Try to answer this question to check your understanding. You've got this!";
             case 'summary':
-                return "Amazing! Here is a summary of what we just covered. Let's read through the main points to wrap up! 📝";
+                return "Amazing! Here is a summary of what we just covered. Let's read through the main points to wrap up!";
             case 'completed':
-                return "Perfect! We've completed the study slides. Now, let's start the quiz to test your mastery! 🏆🎉";
+                return "Perfect! We've completed the study slides. Now, let's start the quiz to test your mastery!";
             default:
-                return "Let's keep going, you are doing awesome! 🚀";
+                return "Let's keep going, you are doing awesome!";
         }
     };
 
@@ -286,6 +289,15 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                                 <p className="text-[var(--text-main)] text-sm sm:text-base leading-relaxed font-medium mt-2">
                                     {currentSlide.data}
                                 </p>
+                                {currentSlide.imageUrl && (
+                                    <div className="w-full max-h-[220px] rounded-2xl overflow-hidden bg-zinc-50 border border-zinc-200/50 flex items-center justify-center p-3 mt-4">
+                                        <img 
+                                            src={currentSlide.imageUrl} 
+                                            alt="Visualization" 
+                                            className="max-h-[190px] w-auto object-contain rounded-lg shadow-sm"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -368,15 +380,22 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                                 </div>
 
                                 {refresherChecked[currentSlide.refresherIndex ?? 0] && (
-                                    <div className={`mt-2 p-4 rounded-2xl border text-xs sm:text-sm leading-relaxed ${
+                                    <div className={`mt-2 p-4 rounded-2xl border text-xs sm:text-sm leading-relaxed flex items-start gap-2.5 ${
                                         selectedRefresherOpt[currentSlide.refresherIndex ?? 0] === currentSlide.data.correctAnswer
                                             ? 'bg-emerald-50/50 border-emerald-200 text-emerald-800' 
                                             : 'bg-rose-50/50 border-rose-200 text-rose-800'
                                     }`}>
-                                        <p className="font-extrabold mb-1">
-                                            {selectedRefresherOpt[currentSlide.refresherIndex ?? 0] === currentSlide.data.correctAnswer ? '✨ Correct!' : '❌ Keep learning!'}
-                                        </p>
-                                        <p className="font-medium text-zinc-600">{currentSlide.data.explanation}</p>
+                                        {selectedRefresherOpt[currentSlide.refresherIndex ?? 0] === currentSlide.data.correctAnswer ? (
+                                            <CheckCircle2 className="size-5 shrink-0 text-emerald-600 mt-0.5" />
+                                        ) : (
+                                            <XCircle className="size-5 shrink-0 text-rose-600 mt-0.5" />
+                                        )}
+                                        <div>
+                                            <p className="font-extrabold mb-1">
+                                                {selectedRefresherOpt[currentSlide.refresherIndex ?? 0] === currentSlide.data.correctAnswer ? 'Correct!' : 'Keep learning!'}
+                                            </p>
+                                            <p className="font-medium text-zinc-600">{currentSlide.data.explanation}</p>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -534,8 +553,16 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                     </div>
                     <div className="flex-1 flex flex-col gap-1.5 min-w-0">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center lg:text-left">Study Buddy</span>
-                        <div className="relative bg-white border border-slate-100 p-3 rounded-2xl text-[12px] font-bold text-slate-600 leading-relaxed shadow-sm">
-                            <div className="hidden lg:block absolute -left-1.5 top-7 w-3 h-3 bg-white border-l border-b border-slate-100 rotate-45 transform" />
+                        <div className={`relative border p-3.5 rounded-2xl text-[12px] font-bold leading-relaxed shadow-sm ${
+                            isMath 
+                                ? 'bg-sky-50/50 border-sky-100 text-sky-900' 
+                                : 'bg-purple-50/50 border-purple-100 text-purple-900'
+                        }`}>
+                            <div className={`hidden lg:block absolute -left-1.5 top-7 w-3 h-3 border-l border-b rotate-45 transform ${
+                                isMath 
+                                    ? 'bg-sky-50 border-sky-100' 
+                                    : 'bg-purple-50 border-purple-100'
+                            }`} />
                             <p className="text-center lg:text-left">{getBuddyComment()}</p>
                         </div>
                     </div>
