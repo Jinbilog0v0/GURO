@@ -438,27 +438,148 @@ export function AssessmentScreen({ route, navigation }: Props) {
     ]);
     addLog(`Submitted answer for ${currentQuestion.id}. Correct: ${correct}`);
 
-    // Dynamic voice feedback
+    // Dynamic voice feedback and sound effects
     const soundEnabled = useAppStore.getState().soundEffectsEnabled;
     if (soundEnabled) {
-      const guide = useAppStore.getState().voiceGuideTheme || 'astronaut';
-      const rate = useAppStore.getState().speechRate || 1.0;
-      let pitch = 1.0;
-      let text = '';
-      
-      if (guide === 'robot') pitch = 0.65;
-      else if (guide === 'owl') pitch = 1.25;
-      
-      if (correct) {
-        const successes = ["Excellent!", "Correct!", "Nice job!", "You got it!"];
-        text = successes[Math.floor(Math.random() * successes.length)];
-      } else {
-        const tries = ["Try again next time!", "Let's review this later!", "Keep going, you'll get it!", "Not quite, but good effort!"];
-        text = tries[Math.floor(Math.random() * tries.length)];
+      // 1. Play synthesized sound effect if running on web browser
+      try {
+        const AudioContextClass = typeof window !== 'undefined' && (window.AudioContext || (window as any).webkitAudioContext);
+        if (AudioContextClass) {
+          const ctx = new AudioContextClass();
+          if (ctx.state === 'suspended') {
+            ctx.resume();
+          }
+          setTimeout(() => ctx.close(), 1500);
+
+          const theme = useAppStore.getState().correctSoundTheme || 'ding';
+          const now = ctx.currentTime;
+
+          if (correct) {
+            if (theme === 'ding') {
+              // Classic E5 -> A5 -> C6
+              const playNote = (freq: number, start: number, dur: number) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, start);
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.12, start + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + dur);
+              };
+              playNote(659.25, now, 0.3);
+              playNote(880.00, now + 0.08, 0.4);
+              playNote(1046.50, now + 0.16, 0.5);
+            } else if (theme === 'arcade') {
+              // Retro coin
+              const playNote = (freq: number, start: number, dur: number) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(freq, start);
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.08, start + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + dur);
+              };
+              playNote(987.77, now, 0.08);
+              playNote(1318.51, now + 0.08, 0.25);
+            } else if (theme === 'laser') {
+              // Sci-fi zap up
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(880, now);
+              osc.frequency.exponentialRampToValueAtTime(1760, now + 0.15);
+              gain.gain.setValueAtTime(0, now);
+              gain.gain.linearRampToValueAtTime(0.12, now + 0.03);
+              gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(now);
+              osc.stop(now + 0.15);
+            }
+          } else {
+            if (theme === 'ding') {
+              // Classic double-bloop (Triangle)
+              const playBuzz = (startFreq: number, endFreq: number, start: number, dur: number) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(startFreq, start);
+                osc.frequency.linearRampToValueAtTime(endFreq, start + dur);
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.08, start + 0.03);
+                gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(start);
+                osc.stop(start + dur);
+              };
+              playBuzz(220, 147, now, 0.15);
+              playBuzz(196, 131, now + 0.10, 0.25);
+            } else if (theme === 'arcade') {
+              // Retro zap down
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = 'sawtooth';
+              osc.frequency.setValueAtTime(300, now);
+              osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+              gain.gain.setValueAtTime(0, now);
+              gain.gain.linearRampToValueAtTime(0.08, now + 0.02);
+              gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(now);
+              osc.stop(now + 0.25);
+            } else if (theme === 'laser') {
+              // Sci-fi zap down
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = 'triangle';
+              osc.frequency.setValueAtTime(600, now);
+              osc.frequency.exponentialRampToValueAtTime(150, now + 0.25);
+              gain.gain.setValueAtTime(0, now);
+              gain.gain.linearRampToValueAtTime(0.12, now + 0.03);
+              gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(now);
+              osc.stop(now + 0.25);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('AudioContext failed:', e);
       }
-      
-      Speech.stop();
-      Speech.speak(text, { rate, pitch });
+
+      // 2. Play speech feedback after a tiny delay so it doesn't overlap the sound effect
+      setTimeout(() => {
+        const guide = useAppStore.getState().voiceGuideTheme || 'astronaut';
+        const rate = useAppStore.getState().speechRate || 1.0;
+        let pitch = 1.0;
+        let text = '';
+        
+        if (guide === 'robot') pitch = 0.65;
+        else if (guide === 'owl') pitch = 1.25;
+        
+        if (correct) {
+          const successes = ["Excellent!", "Correct!", "Nice job!", "You got it!"];
+          text = successes[Math.floor(Math.random() * successes.length)];
+        } else {
+          const tries = ["Try again next time!", "Let's review this later!", "Keep going, you'll get it!", "Not quite, but good effort!"];
+          text = tries[Math.floor(Math.random() * tries.length)];
+        }
+        
+        Speech.stop();
+        Speech.speak(text, { rate, pitch });
+      }, 300);
     }
   };
 
