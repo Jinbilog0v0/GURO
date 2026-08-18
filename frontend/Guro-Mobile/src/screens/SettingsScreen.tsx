@@ -178,6 +178,8 @@ export function SettingsScreen({ navigation }: Props) {
     } finally {
       setIsPromoting(false);
     }
+  };
+
   const handleStartEditProfile = () => {
     const currentName = guestName || currentUser?.name || '';
     let fName = currentUser?.firstName || '';
