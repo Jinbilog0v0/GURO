@@ -94,7 +94,7 @@ for para in doc.paragraphs:
     if 'web-based application GURO: Guided Unified Remote Online' in t:
         new_t = t.replace(
             'web-based application GURO: Guided Unified Remote Online - A Rule-Based Adaptive Tutoring Web Application',
-            'cross-platform application GURO: Guided Unified Remote Online – A Rule-Based Adaptive Tutoring Cross-Platform Application'
+            'cross-platform application GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION – A Rule-Based Adaptive Tutoring Cross-Platform Application'
         )
         replace_para_text(para, new_t)
         print('[FIX 1] Ch2 intro web-based -> cross-platform done')
@@ -149,7 +149,7 @@ for para in doc.paragraphs:
     t = get_text(para)
     if t.startswith('The scope of this project is on the design and development of the Guided Unified Remote Online (GURO)'):
         replace_para_text(para,
-            'The scope of this project is on the design and development of the Guided Unified Remote Online (GURO) cross-platform application, which is a rule-based adaptive tutoring system targeting Grade 4–6 elementary students in Mathematics and English. The system encompasses three client layers: (1) an offline-first React Native mobile application for student-facing learning, assessment, and progress tracking; (2) a React + Vite web portal providing teacher analytics, classroom management, lesson ingestion, and parent monitoring dashboards; and (3) a Laravel 11 REST API backend with a MySQL relational database that handles authentication, classroom management, AI-powered content generation via Google Gemini 2.5 Flash, item bank storage, and progress telemetry synchronization. The application supports adaptive tutoring, outcome-driven assessments, predictive performance analysis, and randomized content delivery. Implementation includes a client-side rule-based adaptive engine, an AI-assisted server-side content generation pipeline, a classroom invite-code pairing system, offline-first SQLite local storage with background sync, a gamification layer (XP points, virtual stars, streak counters, collectible badges, and a mascot outfit shop), and a parental control module. System evaluation will include structured system testing, UAT with Grade 4–6 teachers and students, and performance benchmarking on low-cost Android devices. [1, 4, 6]'
+            'The scope of this project is on the design and development of the GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION cross-platform application, which is a rule-based adaptive tutoring system targeting Grade 4–6 elementary students in Mathematics and English. The system encompasses three client layers: (1) an offline-first React Native mobile application for student-facing learning, assessment, and progress tracking; (2) a React + Vite web portal providing teacher analytics, classroom management, lesson ingestion, and parent monitoring dashboards; and (3) a Laravel 11 REST API backend with a MySQL relational database that handles authentication, classroom management, AI-powered content generation via Google Gemini 2.5 Flash, item bank storage, and progress telemetry synchronization. The application supports adaptive tutoring, outcome-driven assessments, predictive performance analysis, and randomized content delivery. Implementation includes a client-side rule-based adaptive engine, an AI-assisted server-side content generation pipeline, a classroom invite-code pairing system, offline-first SQLite local storage with background sync, a gamification layer (XP points, virtual stars, streak counters, collectible badges, and a mascot outfit shop), and a parental control module. System evaluation will include structured system testing, UAT with Grade 4–6 teachers and students, and performance benchmarking on low-cost Android devices. [1, 4, 6]'
         )
         print('[FIX 5a] Scope paragraph updated')
         break
@@ -480,4 +480,4 @@ if last_fr_para:
 # Save
 # ──────────────────────────────────────────────────────────────
 doc.save(DST)
-print(f'\n✓ Saved updated document to: {DST}')
+print(f'\n[SUCCESS] Saved updated document to: {DST}')

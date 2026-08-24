@@ -400,7 +400,7 @@ export function ParentDashboard({ navigation }: Props) {
     const studentName = searchStudentId || 'Student';
     const dateStr = new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    let text = `GURO Learning Progress Report\n`;
+    let text = `GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Learning Progress Report\n`;
     text += `Student ID: ${studentName}\n`;
     text += `Generated: ${dateStr}\n`;
     text += `\n--- Summary ---\n`;
@@ -414,10 +414,10 @@ export function ParentDashboard({ navigation }: Props) {
       text += `\n--- Parent Tip ---\n${report.tips}\n`;
     }
 
-    text += `\nPowered by GURO — DepEd-Aligned Learning`;
+    text += `\nPowered by GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION — DepEd-Aligned Learning`;
 
     try {
-      await Share.share({ message: text, title: `GURO Progress Report — ${studentName}` });
+      await Share.share({ message: text, title: `GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Progress Report — ${studentName}` });
     } catch (e: any) {
       toast.error('Failed to open share sheet.');
     }

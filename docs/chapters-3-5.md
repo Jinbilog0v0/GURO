@@ -1,4 +1,4 @@
-# GURO — Updated Thesis Documentation
+# GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION — Updated Thesis Documentation
 ## Chapters 3–5
 *Last updated based on system state as of July 8, 2026*
 

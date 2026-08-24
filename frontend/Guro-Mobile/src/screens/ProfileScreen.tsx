@@ -402,7 +402,7 @@ export function ProfileScreen() {
         <TouchableOpacity
           onPress={() =>
             Alert.alert(
-              'Log out from GURO?',
+              'Log out from GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION?',
               'Your progress is saved on this device and will sync when you reconnect.',
               [
                 { text: 'Cancel', style: 'cancel' },

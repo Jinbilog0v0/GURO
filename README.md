@@ -1,4 +1,4 @@
-# GURO Educational Platform
+# GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Educational Platform
 
 GURO is a secure, interactive learning ecosystem designed to bridge offline, gamified learning for primary school students with real-time telemetry analytics for parents and teachers. The platform is structured as a multi-client workspace powered by a Laravel backend API.
 

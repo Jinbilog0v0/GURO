@@ -1,4 +1,4 @@
-# GURO Developer Setup Guide
+# GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Developer Setup Guide
 
 This guide provides step-by-step instructions for setting up the **GURO** project locally. The application consists of three main components:
 1. 📱 **Guro-Mobile**: An offline-first React Native mobile client.

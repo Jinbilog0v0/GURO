@@ -307,7 +307,7 @@ export function StudentDashboard() {
       <View style={styles.headerBar}>
         <View style={{ flex: 1 }}>
           <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
-            GURO
+            GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION
           </Text>
         </View>
         <SyncBadge />

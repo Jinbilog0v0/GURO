@@ -84,7 +84,7 @@ describe('LoginScreen', () => {
 
     const rootJSON = root.toJSON();
     expect(findTextInJSON(rootJSON, 'GURO')).toBe(true);
-    expect(findTextInJSON(rootJSON, 'Guided Unified Remote Online')).toBe(true);
+    expect(findTextInJSON(rootJSON, 'GUIDED UNIFIED RESOURCE OPTIMIZATION')).toBe(true);
 
     act(() => {
       root.unmount();

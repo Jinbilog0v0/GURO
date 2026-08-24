@@ -231,7 +231,7 @@ export function TeacherDashboardScreen() {
             )}
             <View style={styles.headerLeft}>
               <Text style={styles.screenTitle} numberOfLines={1}>{isPinMode ? 'Teacher Evaluation' : 'Teacher Dashboard'}</Text>
-              <Text style={styles.screenSubtitle}>{isPinMode ? `Reviewing: ${formatStudentName(studentId)}` : 'GURO Diagnostics & Reports'}</Text>
+              <Text style={styles.screenSubtitle}>{isPinMode ? `Reviewing: ${formatStudentName(studentId)}` : 'GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Diagnostics & Reports'}</Text>
             </View>
           </View>
           <View style={styles.headerRight}>

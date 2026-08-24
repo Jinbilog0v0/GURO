@@ -429,7 +429,7 @@ export function LoginScreen({ navigation }: Props) {
           <TouchableOpacity onPress={handleLogoPress} activeOpacity={1} style={styles.logoSection}>
             <GuroLogoGraphic />
             <Text style={styles.logoText}>GURO</Text>
-            <Text style={styles.logoTagline}>Guided Unified Remote Online</Text>
+            <Text style={styles.logoTagline}>GUIDED UNIFIED RESOURCE OPTIMIZATION</Text>
             <Text style={styles.logoDescription}>
               Your Learning Companion for Math & English
             </Text>
