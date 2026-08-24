@@ -428,7 +428,7 @@ function App() {
           <div className="w-[42px] h-[42px] shrink-0 rounded-[12px] bg-gradient-to-br from-[#11428E] to-[#1C5BC0] flex items-center justify-center text-white font-extrabold text-sm shadow-[0_6px_16px_rgba(17,66,142,0.34)]">GU</div>
           {isSidebarOpen && (
             <div className="leading-tight overflow-hidden">
-              <div className="font-['Space_Grotesk',sans-serif] text-[18px] font-extrabold text-[var(--text-main)]">GURO</div>
+              <div className="font-['Space_Grotesk',sans-serif] text-[18px] font-extrabold text-[var(--text-main)]">GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION</div>
               <div className={`text-[12px] font-semibold ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--text-muted)]'}`}>
                 {isAdmin ? 'Admin Console' 
                   : currentUser?.role === 'parent' ? 'Parent Portal' 
@@ -612,7 +612,7 @@ function App() {
               {isSidebarOpen ? <X size={15} /> : <Menu size={15} />}
             </button>
             <div className="flex items-center gap-1.5 text-xs font-medium">
-              <span className="text-[var(--text-muted)] font-bold">{isAdmin ? 'GURO Admin' : 'GURO'}</span>
+              <span className="text-[var(--text-muted)] font-bold">{isAdmin ? 'GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Admin' : 'GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION'}</span>
               <span className="text-[var(--border-color)]">/</span>
               {activeTab === 'teacher' ? (
                 <>

@@ -89,7 +89,7 @@ export function ProgressScreen() {
           {
             text: 'Share Achievement',
             onPress: () => {
-              Clipboard.setString(`I unlocked the "${info.label}" badge on GURO by learning ${info.desc.toLowerCase()}!`);
+              Clipboard.setString(`I unlocked the "${info.label}" badge on GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION by learning ${info.desc.toLowerCase()}!`);
               toast.success('Achievement text copied to clipboard.');
             },
           },

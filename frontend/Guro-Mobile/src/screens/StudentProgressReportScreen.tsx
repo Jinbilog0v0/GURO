@@ -150,7 +150,7 @@ export function StudentProgressReportScreen() {
       const dateStr = new Date().toISOString().split('T')[0];
       
       // Build plain text report
-      let txt = `GURO Student Progress Report\n`;
+      let txt = `GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Student Progress Report\n`;
       txt += `==============================\n`;
       txt += `Generated : ${dateStr}\n`;
       txt += `Student   : ${displayName}\n`;
@@ -211,7 +211,7 @@ export function StudentProgressReportScreen() {
       }
 
       txt += `\n==============================\n`;
-      txt += `Saved by GURO Mobile App\n`;
+      txt += `Saved by GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Mobile App\n`;
 
       // Save file
       const safeName = displayName.replace(/[^a-zA-Z0-9]/g, '_');

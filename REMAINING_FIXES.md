@@ -1,4 +1,4 @@
-# GURO — Remaining Fixes Plan
+# GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION — Remaining Fixes Plan
 **Date:** 2026-07-06  
 **Scope:** P1–P2 findings from cross-role workflow audit  
 **Status:** COMPLETE ✅

@@ -70,7 +70,7 @@ export default function App() {
     return (
       <View style={splashStyles.screen}>
         <View style={splashStyles.badge}>
-          <Text style={splashStyles.badgeText}>GURO</Text>
+          <Text style={splashStyles.badgeText}>GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION</Text>
         </View>
         <Text style={splashStyles.loading}>Loading…</Text>
       </View>

@@ -284,10 +284,10 @@ class AuthController extends Controller
                 'Authorization' => 'Bearer ' . $apiKey,
                 'Content-Type' => 'application/json',
             ])->post('https://api.resend.com/emails', [
-                'from' => 'GURO Recovery <onboarding@resend.dev>',
+                'from' => 'GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Recovery <onboarding@resend.dev>',
                 'to' => [$email],
-                'subject' => 'GURO Account Password Reset Code',
-                'html' => '<h3>Reset Your Password</h3><p>Hello,</p><p>You requested a password reset for your GURO account. Use the verification code below to proceed:</p><h2 style="color: #11428E; letter-spacing: 2px;">' . $code . '</h2><p>This code is valid for 15 minutes.</p><p>If you did not request this, you can safely ignore this email.</p><br><p>Best regards,<br>The GURO Team</p>',
+                'subject' => 'GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Account Password Reset Code',
+                'html' => '<h3>Reset Your Password</h3><p>Hello,</p><p>You requested a password reset for your GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION account. Use the verification code below to proceed:</p><h2 style="color: #11428E; letter-spacing: 2px;">' . $code . '</h2><p>This code is valid for 15 minutes.</p><p>If you did not request this, you can safely ignore this email.</p><br><p>Best regards,<br>The GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Team</p>',
             ]);
 
             if ($response->failed()) {
