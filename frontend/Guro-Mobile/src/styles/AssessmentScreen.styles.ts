@@ -36,9 +36,9 @@ export const styles = StyleSheet.create({
   },
   headerTopic: {
     fontFamily: Fonts.display,
-    fontSize: FontSizes['2xl'],
+    fontSize: FontSizes.xl,
     color: Colors.textMain,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
     letterSpacing: -0.5,
   },
   progressBarContainer: {
@@ -63,13 +63,13 @@ export const styles = StyleSheet.create({
 
   // ── Question card ─────────────────────────────────────────────────────────
   questionCard: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.sm,
   },
   questionCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: 6,
   },
   questionLabelNoMargin: {
     marginBottom: 0,
@@ -78,12 +78,12 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    paddingHorizontal: Spacing.md,
-    minHeight: 36,
+    paddingHorizontal: Spacing.sm,
+    minHeight: 32,
     borderRadius: Radius.full,
   },
   listenButtonText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: Fonts.bodyBold,
   },
   questionLabel: {
@@ -92,30 +92,30 @@ export const styles = StyleSheet.create({
     color: Colors.textDark,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    marginBottom: Spacing.sm,
+    marginBottom: 4,
   },
   questionText: {
     fontFamily: Fonts.display,
-    fontSize: FontSizes.xl,
+    fontSize: FontSizes.lg,
     color: Colors.textMain,
-    lineHeight: FontSizes.xl * 1.45,
+    lineHeight: FontSizes.lg * 1.4,
     letterSpacing: -0.3,
   },
 
   // ── Options ───────────────────────────────────────────────────────────────
   optionsContainer: {
-    gap: Spacing.sm,
-    marginBottom: Spacing.lg,
+    gap: 6,
+    marginBottom: Spacing.md,
   },
   optionBase: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-    padding: Spacing.md,
-    borderRadius: Radius.lg,
-    borderWidth: 1.5,
-    gap: Spacing.md,
+    minHeight: 40,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: 1.2,
+    gap: Spacing.sm,
     ...Shadow.card,
   },
   // Default state
@@ -140,8 +140,8 @@ export const styles = StyleSheet.create({
   },
   // Letter badge
   optionLetterBadge: {
-    width: 28,
-    height: 28,
+    width: 24,
+    height: 24,
     borderRadius: Radius.full,
     backgroundColor: Colors.bgInput,
     alignItems: 'center',
@@ -156,10 +156,10 @@ export const styles = StyleSheet.create({
   // Option text
   optionText: {
     fontFamily: Fonts.body,
-    fontSize: FontSizes.base,
+    fontSize: FontSizes.sm,
     color: Colors.textMain,
     flex: 1,
-    lineHeight: FontSizes.base * 1.5,
+    lineHeight: FontSizes.sm * 1.4,
   },
   optionTextSelected: {
     color: Colors.accentPrimary,
@@ -176,7 +176,7 @@ export const styles = StyleSheet.create({
 
   // ── Feedback card ─────────────────────────────────────────────────────────
   feedbackCard: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.sm,
     borderColor: Colors.accentSecondary,
     borderWidth: 1,
   },
@@ -188,7 +188,7 @@ export const styles = StyleSheet.create({
   },
   langPill: {
     paddingHorizontal: Spacing.md,
-    minHeight: 48,
+    minHeight: 36,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: Radius.full,
@@ -228,9 +228,9 @@ export const styles = StyleSheet.create({
   },
   feedbackText: {
     fontFamily: Fonts.body,
-    fontSize: FontSizes.base,
+    fontSize: FontSizes.sm,
     color: Colors.textMuted,
-    lineHeight: FontSizes.base * 1.7,
+    lineHeight: FontSizes.sm * 1.4,
   },
 
   // ── Action buttons ────────────────────────────────────────────────────────
@@ -329,22 +329,22 @@ export const styles = StyleSheet.create({
 
   // ── Misc ──────────────────────────────────────────────────────────────────
   bottomSpacer: {
-    height: Spacing['3xl'],
+    height: Spacing.md,
   },
   illustrationContainer: {
     width: '100%',
-    maxHeight: 200,
+    maxHeight: 130,
     backgroundColor: '#fff',
     borderColor: Colors.border,
     borderWidth: 1,
     borderRadius: Radius.md,
-    marginVertical: Spacing.md,
+    marginVertical: Spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.xs,
   },
   illustration: {
     width: '100%',
-    height: 180,
+    height: 110,
   },
 });

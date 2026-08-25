@@ -26,6 +26,13 @@ class SyncController extends Controller
                 'classroom_id' => strtoupper($classroomId),
                 'student_id' => $studentId,
             ]);
+
+            // Also update the student user's classroom_id column if the user exists
+            $studentUser = User::where('user_id', $studentId)->first();
+            if ($studentUser && $studentUser->classroom_id !== strtoupper($classroomId)) {
+                $studentUser->classroom_id = strtoupper($classroomId);
+                $studentUser->save();
+            }
         }
 
         $newEventsAppended = [];

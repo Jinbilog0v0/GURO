@@ -359,27 +359,10 @@ export function TeacherSpace({
     return !!(bank[subject] && bank[subject][grade] && bank[subject][grade][topic]);
   };
 
-  // Filter logs based on search, dropdown selections, selected student tile, and classroom
-  const filteredLogs = progressLogs.filter((log) => {
-    const matchesClassroom = !classroomCode || log.classroomId === classroomCode;
-    
-    const matchesSearch =
-      log.studentId.toLowerCase().includes(filterText.toLowerCase()) ||
-      log.topic.toLowerCase().includes(filterText.toLowerCase());
-    
-    const matchesSubject = selectedSubject === 'All' || log.subject === selectedSubject;
-    const matchesStudent = !selectedStudentId || log.studentId === selectedStudentId;
-    
-    return matchesClassroom && matchesSearch && matchesSubject && matchesStudent;
-  });
-
-  // Math helper
-  const getAverageAccuracy = () => {
-    if (filteredLogs.length === 0) return 0;
-    const totalPercentage = filteredLogs.reduce((sum, log) => {
-      return sum + (log.score / log.totalQuestions) * 100;
-    }, 0);
-    return Math.round(totalPercentage / filteredLogs.length);
+  const toTitleCase = (str: string) => {
+    return str.replace(/\w\S*/g, (txt) => {
+      return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    });
   };
 
   const parseStudentId = (id: string) => {
@@ -398,10 +381,37 @@ export function TeacherSpace({
     return { name: toTitleCase(cleaned), section: '' };
   };
 
-  const toTitleCase = (str: string) => {
-    return str.replace(/\w\S*/g, (txt) => {
-      return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-    });
+  // Filter logs based on search, dropdown selections, selected student tile, and classroom
+  const filteredLogs = progressLogs.filter((log) => {
+    const matchesClassroom = !classroomCode || log.classroomId === classroomCode;
+    
+    const matchesSearch =
+      log.studentId.toLowerCase().includes(filterText.toLowerCase()) ||
+      log.topic.toLowerCase().includes(filterText.toLowerCase());
+    
+    const matchesSubject = selectedSubject === 'All' || log.subject === selectedSubject;
+    const matchesStudent = !selectedStudentId || log.studentId === selectedStudentId;
+
+    let matchesSection = true;
+    if (selectedSection !== 'All') {
+      const { section } = parseStudentId(log.studentId);
+      if (selectedSection === 'No Section') {
+        matchesSection = (section === '');
+      } else {
+        matchesSection = (section === selectedSection);
+      }
+    }
+    
+    return matchesClassroom && matchesSearch && matchesSubject && matchesStudent && matchesSection;
+  });
+
+  // Math helper
+  const getAverageAccuracy = () => {
+    if (filteredLogs.length === 0) return 0;
+    const totalPercentage = filteredLogs.reduce((sum, log) => {
+      return sum + (log.score / log.totalQuestions) * 100;
+    }, 0);
+    return Math.round(totalPercentage / filteredLogs.length);
   };
 
   // Class List: include all registered members and anyone with logs in this classroom

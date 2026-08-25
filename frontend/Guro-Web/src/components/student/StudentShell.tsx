@@ -50,7 +50,7 @@ export const StudentShell: React.FC<StudentShellProps> = ({
                     <div className="size-8 rounded-xl bg-gradient-to-br from-[#11428E] to-[#A01322] flex items-center justify-center">
                         <GraduationCap className="size-4 text-white" />
                     </div>
-                    <span className="font-black text-base text-[var(--text-main)] tracking-tight">GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION</span>
+                    <span className="font-black text-lg text-[var(--text-main)] tracking-tight">GURO</span>
                 </div>
 
                 {/* Nav items */}

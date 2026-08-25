@@ -123,6 +123,7 @@ export function StudyScreen({ route, navigation }: Props) {
           type: 'definition',
           title: `Concept: ${definitions[i].term}`,
           data: definitions[i],
+          imageUrl: definitions[i].imageUrl || undefined,
         });
       }
       if (i < refreshers.length) {
@@ -339,6 +340,16 @@ export function StudyScreen({ route, navigation }: Props) {
                 {currentItem.data.definition}
               </Text>
             </View>
+
+            {currentItem.imageUrl && (
+              <View style={[styles.illustrationContainer, { marginBottom: 16 }]}>
+                <Image 
+                  source={{ uri: currentItem.imageUrl }} 
+                  style={styles.illustration} 
+                  resizeMode="contain" 
+                />
+              </View>
+            )}
 
             {currentItem.data.examples && currentItem.data.examples.length > 0 && (
               <View style={styles.examplesContainer}>

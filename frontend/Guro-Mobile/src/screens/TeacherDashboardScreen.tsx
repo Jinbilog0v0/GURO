@@ -50,6 +50,7 @@ export function TeacherDashboardScreen() {
   const [telemetrySearchInput, setTelemetrySearchInput] = useState('');
   const [telemetryFilterText, setTelemetryFilterText] = useState('');
   const [telemetrySelectedSubject, setTelemetrySelectedSubject] = useState<'All' | 'Mathematics' | 'English'>('All');
+  const [telemetrySelectedSection, setTelemetrySelectedSection] = useState('All');
   const [refreshing, setRefreshing] = useState(false);
 
   const isPinMode = currentUser?.role === 'student';
@@ -62,14 +63,31 @@ export function TeacherDashboardScreen() {
     setRefreshing(false);
   };
 
-  const formatStudentName = (id: string) => {
-    if (!id) return '';
-    if (id === 'GURO-STUDENT-LOCAL') return 'Local Student';
-    const cleanId = id.endsWith('-GUEST') ? id.slice(0, -6) : id;
-    return cleanId
-      .split('-')
+  const parseStudentId = (id: string) => {
+    if (!id) return { name: '', section: '' };
+    let cleaned = id.replace(/-/g, ' ').trim();
+    cleaned = cleaned.replace(/\s+GUEST$/i, '');
+    cleaned = cleaned.replace(/\s+LOCAL$/i, '');
+    cleaned = cleaned.trim();
+
+    const sectionMatch = cleaned.match(/(.*)\s*\(([^)]+)\)/);
+    if (sectionMatch) {
+      const name = sectionMatch[1].trim()
+        .split(' ')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      const section = sectionMatch[2].trim().toUpperCase();
+      return { name, section };
+    }
+    const name = cleaned
+      .split(' ')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
+    return { name, section: '' };
+  };
+
+  const formatStudentName = (id: string) => {
+    return parseStudentId(id).name;
   };
 
   const fetchClassroomTelemetry = async () => {
@@ -179,10 +197,26 @@ export function TeacherDashboardScreen() {
             totalCompleted
         );
 
+  const uniqueSections = Array.from(new Set(
+    classroomTelemetry
+      .map(evt => parseStudentId(evt.studentId).section)
+      .filter(sec => sec !== '')
+  )).sort();
+
   const filteredTelemetry = classroomTelemetry.filter((evt) => {
     if (telemetrySelectedSubject !== 'All' && evt.subject !== telemetrySelectedSubject) {
       return false;
     }
+
+    if (telemetrySelectedSection !== 'All') {
+      const { section } = parseStudentId(evt.studentId);
+      if (telemetrySelectedSection === 'No Section') {
+        if (section !== '') return false;
+      } else {
+        if (section !== telemetrySelectedSection) return false;
+      }
+    }
+
     if (telemetryFilterText.trim()) {
       const query = telemetryFilterText.trim().toLowerCase();
       const matchId = evt.studentId.toLowerCase().includes(query);
@@ -231,7 +265,7 @@ export function TeacherDashboardScreen() {
             )}
             <View style={styles.headerLeft}>
               <Text style={styles.screenTitle} numberOfLines={1}>{isPinMode ? 'Teacher Evaluation' : 'Teacher Dashboard'}</Text>
-              <Text style={styles.screenSubtitle}>{isPinMode ? `Reviewing: ${formatStudentName(studentId)}` : 'GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Diagnostics & Reports'}</Text>
+              <Text style={styles.screenSubtitle}>{isPinMode ? `Reviewing: ${formatStudentName(studentId)}` : 'GURO Diagnostics & Reports'}</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
@@ -456,6 +490,50 @@ export function TeacherDashboardScreen() {
                   );
                 })}
               </View>
+
+              {/* Section Filter Pills */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Filter by Section
+                </Text>
+              </View>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                contentContainerStyle={{ gap: Spacing.xs, paddingBottom: Spacing.xs, marginBottom: Spacing.md }}
+              >
+                {['All', ...uniqueSections, 'No Section'].map((sec) => {
+                  const active = telemetrySelectedSection === sec;
+                  const label = sec === 'All' ? 'All Sections' : sec === 'No Section' ? 'No Section / Guest' : sec;
+                  return (
+                    <TouchableOpacity
+                      key={sec}
+                      onPress={() => setTelemetrySelectedSection(sec)}
+                      activeOpacity={0.75}
+                      style={{
+                        paddingHorizontal: Spacing.sm,
+                        paddingVertical: Spacing.xs,
+                        borderRadius: Radius.full,
+                        backgroundColor: active ? 'rgba(6,182,212,0.1)' : 'rgba(255,255,255,0.03)',
+                        borderWidth: 1,
+                        borderColor: active ? Colors.accentSecondary : Colors.border,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: active ? Fonts.bodyBold : Fonts.body,
+                          fontSize: FontSizes.xs,
+                          color: active ? Colors.accentSecondary : Colors.textMuted,
+                        }}
+                      >
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
               
               {loadingTelemetry ? (
                 <ActivityIndicator size="small" color={Colors.accentPrimary} style={{ marginVertical: Spacing.md }} />

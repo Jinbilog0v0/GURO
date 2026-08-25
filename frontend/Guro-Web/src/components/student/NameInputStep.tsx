@@ -75,8 +75,8 @@ export const NameInputStep: React.FC<NameInputStepProps> = ({ onBack, onStartLea
                 {/* Brand */}
                 <div className="flex flex-col items-center gap-1 text-center">
                     <GuroLogoGraphic />
-                    <h1 className="text-5xl font-extrabold tracking-tight text-[#11428E] mt-1">GURO</h1>
-                    <p className="text-base font-semibold text-[#A01322]">GUIDED UNIFIED RESOURCE OPTIMIZATION</p>
+                    <h1 className="text-4xl font-extrabold tracking-tight text-[#11428E] mt-1">GURO</h1>
+                    <p className="text-xs font-bold text-[#A01322] tracking-wider">GUIDED UNIFIED RESOURCE OPTIMIZATION</p>
                     <p className="text-sm text-slate-400 mt-0.5">Your Learning Companion for Math &amp; English</p>
                 </div>
 
