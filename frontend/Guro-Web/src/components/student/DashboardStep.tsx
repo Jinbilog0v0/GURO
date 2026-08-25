@@ -121,6 +121,22 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
     const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
     const [joinCodeInput, setJoinCodeInput] = useState('');
     const [isJoining, setIsJoining] = useState(false);
+    const [mascotMessage, setMascotMessage] = useState('');
+
+    React.useEffect(() => {
+        const msgs = [
+            "You're doing amazing! Ready to learn something new today? 🚀",
+            "Learning is a superpower, and you're doing great! 🌟",
+            "Stuck on a topic? Review the concept cards anytime! 📚",
+            "Each correct answer is a step closer to mastery! Keep going! 🎯",
+            "Don't forget to visit the Mascot Shop to dress me up! 🎓👑",
+            "Consistency is key! Let's keep our daily streak alive! 🔥",
+            "Make sure to read the lesson guides carefully, they have cool pictures now! 🖼️",
+            "You're leveling up fast! Keep it up, explorer! 🎖️"
+        ];
+        const randomMsg = msgs[Math.floor(Math.random() * msgs.length)];
+        setMascotMessage(randomMsg);
+    }, []);
 
     const handleJoinSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -237,6 +253,14 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                         <p className="text-xs md:text-sm font-bold text-blue-100/90 mt-2 leading-relaxed">
                             Complete challenges, earn stars, and custom-style your companion companion!
                         </p>
+
+                        <div className="mt-3 relative bg-white/10 border border-white/20 rounded-2xl p-3 text-xs font-extrabold leading-normal text-white flex items-center gap-2 max-w-xl">
+                            <Sparkles className="size-3.5 text-amber-300 shrink-0" />
+                            <p className="margin-0 text-left">
+                                <span className="text-amber-300">🦉 Mascot: </span>
+                                "{mascotMessage}"
+                            </p>
+                        </div>
                         
                         {/* XP Progress Bar inside Welcome Box */}
                         <div className="mt-4 w-full flex flex-col gap-1.5 bg-white/10 p-3.5 rounded-2xl border border-white/15">

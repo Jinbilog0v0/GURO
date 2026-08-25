@@ -92,6 +92,22 @@ export function StudentDashboard() {
   const [verifying, setVerifying] = React.useState(false);
   const [verifiedClassroom, setVerifiedClassroom] = React.useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [mascotMessage, setMascotMessage] = useState('');
+
+  useEffect(() => {
+    const msgs = [
+      "You're doing amazing! Ready to learn something new today? 🚀",
+      "Learning is a superpower, and you're doing great! 🌟",
+      "Stuck on a topic? Review the concept cards anytime! 📚",
+      "Each correct answer is a step closer to mastery! Keep going! 🎯",
+      "Don't forget to visit the Mascot Shop to dress me up! 🎓👑",
+      "Consistency is key! Let's keep our daily streak alive! 🔥",
+      "Make sure to read the lesson guides carefully, they have cool pictures now! 🖼️",
+      "You're leveling up fast! Keep it up, explorer! 🎖️"
+    ];
+    const randomMsg = msgs[Math.floor(Math.random() * msgs.length)];
+    setMascotMessage(randomMsg);
+  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -393,6 +409,19 @@ export function StudentDashboard() {
                 Level {level} Explorer
               </Text>
             </View>
+          </View>
+
+          {/* Mascot speech bubble */}
+          <View style={{
+            backgroundColor: 'rgba(255,255,255,0.12)',
+            borderRadius: Radius.sm,
+            padding: Spacing.sm,
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.2)',
+          }}>
+            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.white, lineHeight: 16 }}>
+              🦉 Companion: <Text style={{ fontFamily: Fonts.bodyMedium, color: '#FEF3C7' }}>"{mascotMessage}"</Text>
+            </Text>
           </View>
           
           {/* Bottom section: Full-width XP Progress Bar */}
