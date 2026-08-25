@@ -142,7 +142,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
     return list;
   };
 
-  const [questions] = useState<Question[]>(() => {
+  const [questions, setQuestions] = useState<Question[]>(() => {
     const rawQuestions = getQuestions();
     return shuffle(rawQuestions).map((q) => ({
       ...q,
@@ -208,7 +208,9 @@ export function AssessmentScreen({ route, navigation }: Props) {
               toValue: { x: 320, y: gestureState.dy },
               duration: 200,
               useNativeDriver: false,
-            }).start();
+            }).start(() => {
+              Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+            });
           } else {
             Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
           }
@@ -220,7 +222,9 @@ export function AssessmentScreen({ route, navigation }: Props) {
               toValue: { x: -320, y: gestureState.dy },
               duration: 200,
               useNativeDriver: false,
-            }).start();
+            }).start(() => {
+              Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+            });
           } else {
             Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
           }
@@ -237,7 +241,9 @@ export function AssessmentScreen({ route, navigation }: Props) {
       toValue: { x: isRight ? 320 : -320, y: 0 },
       duration: 250,
       useNativeDriver: false,
-    }).start();
+    }).start(() => {
+      Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+    });
   };
 
   useEffect(() => {
@@ -588,6 +594,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
       setCurrentIndex(currentIndex + 1);
       setSelectedOption(null);
       setIsAnswered(false);
+      pan.setValue({ x: 0, y: 0 });
     } else {
       const finalScore = score;
       const isPerfect = finalScore === questions.length;
@@ -660,6 +667,35 @@ export function AssessmentScreen({ route, navigation }: Props) {
       addLog(
         `Completed quiz for topic "${topic}". Final Score: ${finalScore}/${questions.length}`,
       );
+    }
+  };
+
+  const handleTryAgain = () => {
+    const rawQuestions = getQuestions();
+    const shuffled = shuffle(rawQuestions).map((q) => ({
+      ...q,
+      options: shuffle(q.options),
+    }));
+    setQuestions(shuffled);
+    setCurrentIndex(0);
+    setSelectedOption(null);
+    setIsAnswered(false);
+    setScore(0);
+    setQuizFinished(false);
+    setShowAnswerReview(false);
+    setLevelUpLevel(null);
+    setShadedSlices([]);
+    setAnswerLog([]);
+    setCurrentMatches({});
+    setSelectedLeft(null);
+    setRightOptionsShuffled([]);
+    setLeftOptionsShuffled([]);
+    pan.setValue({ x: 0, y: 0 });
+    setSpelledLetters([]);
+    const nextQ = shuffled[0];
+    if (nextQ && nextQ.type === 'letter-pop') {
+      const letters = shuffle((nextQ.correctAnswer || '').replace(/\s+/g, '').split(''));
+      setLetterPool(letters.map((char, index) => ({ id: `${char}-${index}-${Math.random()}`, letter: char, selected: false })));
     }
   };
 
@@ -856,11 +892,33 @@ export function AssessmentScreen({ route, navigation }: Props) {
               );
             })()}
 
-            <PrimaryButton
-              label="Back to Topics"
-              onPress={() => navigation.goBack()}
-              style={styles.finishedBtn}
-            />
+            {passed ? (
+              <View style={{ width: '100%', gap: 10, marginTop: Spacing['2xl'] }}>
+                <PrimaryButton
+                  label="Back to Topics"
+                  onPress={() => navigation.goBack()}
+                  style={{ width: '100%' }}
+                />
+                <SecondaryButton
+                  label="Try Again"
+                  onPress={handleTryAgain}
+                  style={{ width: '100%' }}
+                />
+              </View>
+            ) : (
+              <View style={{ width: '100%', gap: 10, marginTop: Spacing['2xl'] }}>
+                <PrimaryButton
+                  label="Try Again"
+                  onPress={handleTryAgain}
+                  style={{ width: '100%' }}
+                />
+                <SecondaryButton
+                  label="Back to Topics"
+                  onPress={() => navigation.goBack()}
+                  style={{ width: '100%' }}
+                />
+              </View>
+            )}
 
             {/* Answer Review Toggle */}
             {answerLog.length > 0 && (
@@ -1228,18 +1286,18 @@ export function AssessmentScreen({ route, navigation }: Props) {
                           onPress={() => handleLeftSelect(item)}
                           style={{
                             backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.15)' : Colors.bgCard,
-                            borderWidth: 2,
-                            borderBottomWidth: 5,
+                            borderWidth: 1.5,
+                            borderBottomWidth: 3,
                             borderColor: isSelected ? Colors.accentPrimary : Colors.border,
                             borderRadius: Radius.md || 12,
-                            paddingVertical: 12,
+                            paddingVertical: 8,
                             paddingHorizontal: 10,
                             alignItems: 'center',
                             justifyContent: 'center',
                             opacity: 1,
                           }}
                         >
-                          <Text style={{ textAlign: 'center', fontFamily: Fonts.bodyBold, fontSize: FontSizes.base, color: isSelected ? Colors.accentPrimary : Colors.textMain }}>
+                          <Text style={{ textAlign: 'center', fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: isSelected ? Colors.accentPrimary : Colors.textMain }}>
                             {item}
                           </Text>
                         </TouchableOpacity>
@@ -1274,18 +1332,18 @@ export function AssessmentScreen({ route, navigation }: Props) {
                           onPress={() => handleRightSelect(item)}
                           style={{
                             backgroundColor: btnColor,
-                            borderWidth: 2,
-                            borderBottomWidth: 5,
+                            borderWidth: 1.5,
+                            borderBottomWidth: 3,
                             borderColor: borderColor,
                             borderRadius: Radius.md || 12,
-                            paddingVertical: 12,
+                            paddingVertical: 8,
                             paddingHorizontal: 10,
                             alignItems: 'center',
                             justifyContent: 'center',
                             opacity: !selectedLeft ? 0.6 : 1,
                           }}
                         >
-                          <Text style={{ textAlign: 'center', fontFamily: Fonts.bodyBold, fontSize: FontSizes.base, color: textColor }}>
+                          <Text style={{ textAlign: 'center', fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: textColor }}>
                             {item}
                           </Text>
                         </TouchableOpacity>
@@ -1388,24 +1446,24 @@ export function AssessmentScreen({ route, navigation }: Props) {
                     style={{
                       flex: 1,
                       backgroundColor: btnColor,
-                      borderWidth: 2,
-                      borderBottomWidth: 5,
+                      borderWidth: 1.5,
+                      borderBottomWidth: 3,
                       borderColor: borderColor,
                       borderRadius: Radius.md || 12,
-                      paddingVertical: 20,
+                      paddingVertical: 12,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: 8,
+                      gap: 6,
                     }}
                   >
-                    <View style={{ height: 28, justifyContent: 'center', alignItems: 'center' }}>
+                    <View style={{ height: 20, justifyContent: 'center', alignItems: 'center' }}>
                       {option === 'True' ? (
-                        <ThumbsUp size={28} color={textColor} />
+                        <ThumbsUp size={20} color={textColor} />
                       ) : (
-                        <ThumbsDown size={28} color={textColor} />
+                        <ThumbsDown size={20} color={textColor} />
                       )}
                     </View>
-                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.base, color: textColor }}>
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: textColor }}>
                       {option}
                     </Text>
                   </TouchableOpacity>
@@ -1415,18 +1473,18 @@ export function AssessmentScreen({ route, navigation }: Props) {
           ) : currentQuestion.type === 'swipe-card' ? (
             <View style={{ alignItems: 'center', width: '100%', marginVertical: 10 }}>
               {/* Category Indicators */}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 20 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 16 }}>
                 <View style={{
                   padding: 10,
                   borderRadius: 12,
                   borderWidth: 2,
-                  borderColor: Colors.border,
-                  backgroundColor: Colors.bgCard,
+                  borderColor: selectedOption === currentQuestion.options[0] ? Colors.accentPrimary : Colors.border,
+                  backgroundColor: selectedOption === currentQuestion.options[0] ? 'rgba(99, 102, 241, 0.08)' : Colors.bgCard,
                   alignItems: 'center',
                   minWidth: 110,
                 }}>
                   <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.textMuted, textTransform: 'uppercase' }}>◀ Swipe Left</Text>
-                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.base, color: Colors.danger, marginTop: 4 }}>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.base, color: Colors.accentPrimary, marginTop: 4 }}>
                     {currentQuestion.options[0]}
                   </Text>
                 </View>
@@ -1435,20 +1493,20 @@ export function AssessmentScreen({ route, navigation }: Props) {
                   padding: 10,
                   borderRadius: 12,
                   borderWidth: 2,
-                  borderColor: Colors.border,
-                  backgroundColor: Colors.bgCard,
+                  borderColor: selectedOption === currentQuestion.options[1] ? Colors.accentSecondary : Colors.border,
+                  backgroundColor: selectedOption === currentQuestion.options[1] ? 'rgba(6, 182, 212, 0.08)' : Colors.bgCard,
                   alignItems: 'center',
                   minWidth: 110,
                 }}>
                   <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.textMuted, textTransform: 'uppercase' }}>Swipe Right ▶</Text>
-                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.base, color: Colors.success, marginTop: 4 }}>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.base, color: Colors.accentSecondary, marginTop: 4 }}>
                     {currentQuestion.options[1]}
                   </Text>
                 </View>
               </View>
 
               {/* Swipe Deck Card */}
-              <View style={{ height: 230, width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ height: 180, width: '100%', alignItems: 'center', justifyContent: 'center' }}>
                 <Animated.View
                   {...panResponder.panHandlers}
                   style={{
@@ -1462,17 +1520,19 @@ export function AssessmentScreen({ route, navigation }: Props) {
                         })
                       }
                     ],
-                    width: 220,
-                    height: 220,
+                    width: 170,
+                    height: 170,
                     borderRadius: 24,
-                    borderWidth: 4,
+                    borderWidth: 3,
                     borderColor: isAnswered 
                       ? selectedOption === currentQuestion.correctAnswer 
                         ? Colors.success 
                         : Colors.danger
-                      : Colors.border,
+                      : selectedOption
+                        ? Colors.accentPrimary
+                        : Colors.border,
                     backgroundColor: Colors.bgCard,
-                    padding: 20,
+                    padding: 12,
                     alignItems: 'center',
                     justifyContent: 'center',
                     elevation: 5,
@@ -1482,61 +1542,101 @@ export function AssessmentScreen({ route, navigation }: Props) {
                     shadowRadius: 6,
                   }}
                 >
-                  <Sparkles size={32} color={Colors.accentPrimary} style={{ marginBottom: 12, alignSelf: 'center' }} />
+                  {currentQuestion.imageUrl ? (
+                    <View style={{ width: 100, height: 60, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: Colors.border, marginBottom: 8 }}>
+                      <Image 
+                        source={{ uri: currentQuestion.imageUrl }} 
+                        style={{ width: '100%', height: '100%' }} 
+                        resizeMode="cover" 
+                      />
+                    </View>
+                  ) : (
+                    <Sparkles size={24} color={Colors.accentPrimary} style={{ marginBottom: 8, alignSelf: 'center' }} />
+                  )}
                   <Text style={{
                     fontFamily: Fonts.bodyBold,
-                    fontSize: FontSizes.base,
+                    fontSize: FontSizes.sm,
                     color: Colors.textMain,
                     textAlign: 'center',
-                    lineHeight: 22,
+                    lineHeight: 18,
+                    marginBottom: selectedOption ? 16 : 0,
                   }}>
                     {currentQuestion.questionText}
                   </Text>
+
+                  {selectedOption && (
+                    <View style={{
+                      position: 'absolute',
+                      bottom: 12,
+                      backgroundColor: isAnswered 
+                        ? (selectedOption === currentQuestion.correctAnswer ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)')
+                        : 'rgba(99, 102, 241, 0.08)',
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: isAnswered
+                        ? (selectedOption === currentQuestion.correctAnswer ? Colors.success : Colors.danger)
+                        : Colors.accentPrimary,
+                    }}>
+                      <Text style={{
+                        fontSize: 9,
+                        fontFamily: Fonts.bodyBold,
+                        color: isAnswered
+                          ? (selectedOption === currentQuestion.correctAnswer ? Colors.success : Colors.danger)
+                          : Colors.accentPrimary,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                      }}>
+                        Selected: {selectedOption}
+                      </Text>
+                    </View>
+                  )}
                 </Animated.View>
               </View>
 
               {/* Manual Selection Action Buttons */}
               {!isAnswered && (
-                <View style={{ flexDirection: 'row', gap: 40, marginTop: 25 }}>
+                <View style={{ flexDirection: 'row', gap: 40, marginTop: 20 }}>
                   <TouchableOpacity
                     onPress={() => handleMobileButtonSelect(currentQuestion.options[0], false)}
                     style={{
-                      width: 55,
-                      height: 55,
-                      borderRadius: 28,
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
                       borderWidth: 2,
-                      borderColor: '#FDA4AF',
-                      backgroundColor: '#FFE4E6',
+                      borderColor: selectedOption === currentQuestion.options[0] ? Colors.accentPrimary : Colors.border,
+                      backgroundColor: selectedOption === currentQuestion.options[0] ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.05)',
                       alignItems: 'center',
                       justifyContent: 'center',
                       elevation: 2,
                     }}
                   >
-                    <X size={20} color={Colors.danger} />
+                    <ChevronLeft size={24} color={Colors.accentPrimary} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleMobileButtonSelect(currentQuestion.options[1], true)}
                     style={{
-                      width: 55,
-                      height: 55,
-                      borderRadius: 28,
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
                       borderWidth: 2,
-                      borderColor: '#A7F3D0',
-                      backgroundColor: '#D1FAE5',
+                      borderColor: selectedOption === currentQuestion.options[1] ? Colors.accentSecondary : Colors.border,
+                      backgroundColor: selectedOption === currentQuestion.options[1] ? 'rgba(6, 182, 212, 0.15)' : 'rgba(6, 182, 212, 0.05)',
                       alignItems: 'center',
                       justifyContent: 'center',
                       elevation: 2,
                     }}
                   >
-                    <Check size={20} color={Colors.success} />
+                    <ChevronRight size={24} color={Colors.accentSecondary} />
                   </TouchableOpacity>
                 </View>
               )}
             </View>
           ) : currentQuestion.type === 'fraction-builder' ? (
-            <View style={{ alignItems: 'center', width: '100%', marginVertical: 15, gap: 20 }}>
-              <GlassCard style={{ padding: 20, alignItems: 'center', justifyContent: 'center', width: 240, height: 240, borderRadius: 32, borderWidth: 1, borderColor: Colors.border }}>
-                <Svg width="200" height="200" viewBox="0 0 200 200">
+            <View style={{ alignItems: 'center', width: '100%', marginVertical: 10, gap: 15 }}>
+              <GlassCard style={{ padding: 12, alignItems: 'center', justifyContent: 'center', width: 180, height: 180, borderRadius: 24, borderWidth: 1, borderColor: Colors.border }}>
+                <Svg width="150" height="150" viewBox="0 0 200 200">
                   {Array.from({ length: parseInt(currentQuestion.options[1] || '4') }).map((_, idx) => {
                     const denominator = parseInt(currentQuestion.options[1] || '4');
                     const isShaded = shadedSlices.includes(idx);
@@ -1709,16 +1809,16 @@ export function AssessmentScreen({ route, navigation }: Props) {
                         setSelectedOption(nextSpelled.join(''));
                       }}
                       style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 24,
-                        borderWidth: 2,
-                        borderBottomWidth: item.selected ? 2 : 5,
+                        width: 38,
+                        height: 38,
+                        borderRadius: 19,
+                        borderWidth: 1.5,
+                        borderBottomWidth: item.selected ? 1.5 : 4,
                         borderColor: item.selected ? 'transparent' : Colors.accentSecondary,
                         backgroundColor: item.selected ? 'rgba(255, 255, 255, 0.03)' : Colors.bgCard,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        transform: [{ translateY: item.selected ? 3 : 0 }],
+                        transform: [{ translateY: item.selected ? 2 : 0 }],
                         shadowColor: Colors.accentSecondary,
                         shadowOffset: { width: 0, height: item.selected ? 0 : 2 },
                         shadowOpacity: item.selected ? 0 : 0.2,
@@ -1728,7 +1828,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
                     >
                       <Text style={{
                         fontFamily: Fonts.display,
-                        fontSize: FontSizes.lg,
+                        fontSize: FontSizes.md,
                         color: item.selected ? Colors.textMuted : Colors.textMain,
                       }}>
                         {item.letter}

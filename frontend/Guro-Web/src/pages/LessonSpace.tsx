@@ -57,14 +57,20 @@ export function LessonSpace({
 
   const [stagedStudyContent, setStagedStudyContent] = useState<{
     introduction: string;
-    definitions: { term: string; definition: string; examples: string[] }[];
+    definitions: { term: string; definition: string; examples: string[]; imageUrl?: string }[];
     summary: string[];
+    imageUrl?: string;
   } | null>(null);
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'study' | 'questions'>('study');
 
   const updateIntro = (val: string) => {
     if (!stagedStudyContent) return;
     setStagedStudyContent({ ...stagedStudyContent, introduction: val });
+  };
+
+  const updateIntroImageUrl = (val: string) => {
+    if (!stagedStudyContent) return;
+    setStagedStudyContent({ ...stagedStudyContent, imageUrl: val });
   };
 
   const updateDefinitionTerm = (idx: number, termVal: string) => {
@@ -87,6 +93,13 @@ export function LessonSpace({
     const examples = [...defs[defIdx].examples];
     examples[exIdx] = val;
     defs[defIdx] = { ...defs[defIdx], examples };
+    setStagedStudyContent({ ...stagedStudyContent, definitions: defs });
+  };
+
+  const updateDefinitionImageUrl = (idx: number, urlVal: string) => {
+    if (!stagedStudyContent) return;
+    const defs = [...stagedStudyContent.definitions];
+    defs[idx] = { ...defs[idx], imageUrl: urlVal };
     setStagedStudyContent({ ...stagedStudyContent, definitions: defs });
   };
 
@@ -713,6 +726,16 @@ export function LessonSpace({
                               style={{ width: '100%', minHeight: '80px', resize: 'vertical' }}
                             />
                           </div>
+                          <div className="form-group" style={{ margin: '12px 0 0 0' }}>
+                            <label style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Introduction Image URL (Optional)</label>
+                            <input
+                              type="text"
+                              value={stagedStudyContent.imageUrl || ''}
+                              onChange={(e) => updateIntroImageUrl(e.target.value)}
+                              placeholder="https://images.unsplash.com/photo-..."
+                              style={{ width: '100%', marginTop: '4px', padding: '8px 12px' }}
+                            />
+                          </div>
                         </div>
 
                         {/* Definitions Card */}
@@ -739,6 +762,16 @@ export function LessonSpace({
                                       type="text"
                                       value={def.definition}
                                       onChange={(e) => updateDefinitionText(defIdx, e.target.value)}
+                                      style={{ width: '100%', marginTop: '4px', padding: '8px 12px' }}
+                                    />
+                                  </div>
+                                  <div className="form-group md:col-span-2" style={{ margin: 0 }}>
+                                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Visual Aid Image URL (Optional)</label>
+                                    <input
+                                      type="text"
+                                      value={def.imageUrl || ''}
+                                      onChange={(e) => updateDefinitionImageUrl(defIdx, e.target.value)}
+                                      placeholder="https://images.unsplash.com/photo-..."
                                       style={{ width: '100%', marginTop: '4px', padding: '8px 12px' }}
                                     />
                                   </div>

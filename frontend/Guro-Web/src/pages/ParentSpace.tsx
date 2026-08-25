@@ -135,6 +135,7 @@ export function ParentSpace({
   const [newStudentFirstName, setNewStudentFirstName] = useState('');
   const [newStudentMiddleName, setNewStudentMiddleName] = useState('');
   const [newStudentLastName, setNewStudentLastName] = useState('');
+  const [newStudentSection, setNewStudentSection] = useState('');
   const [newStudentEmail, setNewStudentEmail] = useState('');
   const [newStudentPassword, setNewStudentPassword] = useState('');
   const [createStudentError, setCreateStudentError] = useState<string | null>(null);
@@ -156,7 +157,8 @@ export function ParentSpace({
           middle_name: newStudentMiddleName.trim(),
           last_name: newStudentLastName.trim(),
           email: newStudentEmail.trim().toLowerCase(),
-          password: newStudentPassword
+          password: newStudentPassword,
+          section: newStudentSection.trim(),
         })
       });
 
@@ -173,6 +175,7 @@ export function ParentSpace({
         setNewStudentFirstName('');
         setNewStudentMiddleName('');
         setNewStudentLastName('');
+        setNewStudentSection('');
         setNewStudentEmail('');
         setNewStudentPassword('');
       } else {
@@ -320,6 +323,17 @@ export function ParentSpace({
                 placeholder="Middle name..."
                 value={newStudentMiddleName}
                 onChange={(e) => setNewStudentMiddleName(e.target.value)}
+                className="form-control w-full"
+                style={{ width: '100%' }}
+              />
+            </div>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">Section (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g. Bonifacio, Rizal, Section A..."
+                value={newStudentSection}
+                onChange={(e) => setNewStudentSection(e.target.value)}
                 className="form-control w-full"
                 style={{ width: '100%' }}
               />

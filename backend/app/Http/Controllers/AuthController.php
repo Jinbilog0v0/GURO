@@ -129,6 +129,14 @@ class AuthController extends Controller
 
         $token = $user->createToken('app')->plainTextToken;
 
+        $classroomId = $user->classroom_id;
+        if ($user->role === 'student' && !$classroomId) {
+            $member = \App\Models\ClassroomMember::where('student_id', $user->user_id)->first();
+            if ($member) {
+                $classroomId = $member->classroom_id;
+            }
+        }
+
         return response()->json([
             'success' => true,
             'token' => $token,
@@ -140,7 +148,7 @@ class AuthController extends Controller
                 'middleName' => $user->middle_name,
                 'lastName' => $user->last_name,
                 'role' => $user->role,
-                'classroomId' => $user->classroom_id,
+                'classroomId' => $classroomId,
             ],
             'studentId' => $user->role === 'student' ? $user->user_id : null,
         ]);
@@ -371,6 +379,7 @@ class AuthController extends Controller
             'first_name' => 'required_without:name|nullable|string',
             'last_name' => 'required_without:name|nullable|string',
             'middle_name' => 'nullable|string',
+            'section' => 'nullable|string',
         ]);
 
         $email = strtolower(trim($request->input('email')));
@@ -380,6 +389,7 @@ class AuthController extends Controller
         $middleName = trim($request->input('middle_name', ''));
         $lastName = trim($request->input('last_name', ''));
         $name = trim($request->input('name', ''));
+        $section = trim($request->input('section', ''));
 
         if ($firstName !== '' && $lastName !== '') {
             $fullName = trim($firstName . ($middleName !== '' ? ' ' . $middleName : '') . ' ' . $lastName);
@@ -397,6 +407,10 @@ class AuthController extends Controller
                 $lastName = $parts[count($parts) - 1];
                 $middleName = implode(' ', array_slice($parts, 1, -1));
             }
+        }
+
+        if ($section !== '') {
+            $fullName = "{$fullName} ({$section})";
         }
 
         if (User::where('email', $email)->exists()) {
@@ -467,6 +481,14 @@ class AuthController extends Controller
         $lastName = trim($request->input('last_name'));
 
         $fullName = trim($firstName . ($middleName !== '' ? ' ' . $middleName : '') . ' ' . $lastName);
+
+        if ($user->role === 'student') {
+            preg_match('/\(([^)]+)\)/', $user->user_id, $matches);
+            if (!empty($matches)) {
+                $section = $matches[1];
+                $fullName = "{$fullName} ({$section})";
+            }
+        }
 
         $user->update([
             'first_name' => $firstName,

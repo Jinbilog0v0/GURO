@@ -24,7 +24,7 @@ export const styles = StyleSheet.create({
   },
   logoText: {
     fontFamily: Fonts.display,
-    fontSize: 40,
+    fontSize: 32,
     color: '#11428E', // Navy color same as web logo text
     letterSpacing: LetterSpacing.tight,
     fontWeight: '900',
@@ -32,7 +32,7 @@ export const styles = StyleSheet.create({
   },
   logoTagline: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 15,
+    fontSize: 12,
     color: '#A01322', // Red color same as web tagline
     textAlign: 'center',
     fontWeight: '700',

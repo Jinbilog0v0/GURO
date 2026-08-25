@@ -47,7 +47,8 @@ class GeminiService
                   "Ensure the studyContent uses simple, engaging, age-appropriate language for Grade {$grade} students.\n".
                   "The questions should span Easy, Average, and Difficult tiers.\n".
                   "Include a diverse mix of question types: 'multiple-choice', 'fill-in-the-blank' (using one '[[blank]]' inside the sentence), and 'drag-drop-matching' (matching antonyms, synonyms, or translations).\n".
-                  "Enforce feedback explaining the answer in English (both en and fil feedback fields must be populated with the English explanation).";
+                  "Enforce feedback explaining the answer in English (both en and fil feedback fields must be populated with the English explanation).\n".
+                  "Include public educational illustration or photo URLs from Unsplash for studyContent.imageUrl, optionally for studyContent.definitions[i].imageUrl (to visualize specific vocabulary terms or rules), and optionally for questions.imageUrl (if visual helper is needed). The URL must use format: https://images.unsplash.com/photo-[id]?auto=format&fit=crop&w=600&q=80. For example: photo-1509228468518-180dd4864904 (Mathematics), photo-1456513080510-7bf3a84b82f8 (Reading/Writing), photo-1583912267550-d44d7a125e7e (Fractions/Shapes). Choose a highly relevant, real photo ID.";
 
         $parts[] = ['text' => $prompt];
 
@@ -84,9 +85,13 @@ class GeminiService
                             'type' => 'STRING',
                             'description' => 'A welcoming, engaging, child-friendly introduction to the topic suitable for Grade ' . $grade . ' students.'
                         ],
+                        'imageUrl' => [
+                            'type' => 'STRING',
+                            'description' => 'Optional. A valid high-quality educational illustration or photo URL from Unsplash representing the topic.'
+                        ],
                         'definitions' => [
                             'type' => 'ARRAY',
-                            'description' => 'Key terms, concepts, or rules introduced in the lesson, with clear definitions and examples.',
+                            'description' => 'Key terms, concepts, or rules introduced in the lesson, with clear definitions, examples, and optional visual aid URLs.',
                             'items' => [
                                 'type' => 'OBJECT',
                                 'properties' => [
@@ -102,7 +107,11 @@ class GeminiService
                                         'type' => 'ARRAY',
                                         'description' => '2-3 simple, relatable real-world examples illustrating the term.',
                                         'items' => ['type' => 'STRING']
-                                    ]
+                                    ],
+                                    'imageUrl' => [
+                                        'type' => 'STRING',
+                                        'description' => 'Optional. A valid high-quality educational illustration or photo URL from Unsplash representing this term/concept.'
+                                    ],
                                 ],
                                 'required' => ['term', 'definition', 'examples']
                             ]
@@ -140,7 +149,7 @@ class GeminiService
                             ]
                         ]
                     ],
-                    'required' => ['introduction', 'definitions', 'summary', 'refresherQuiz']
+                    'required' => ['introduction', 'definitions', 'summary', 'refresherQuiz', 'imageUrl']
                 ],
                 'questions' => [
                     'type' => 'ARRAY',
@@ -153,15 +162,29 @@ class GeminiService
                             'category' => ['type' => 'STRING', 'enum' => $categories],
                             'type' => ['type' => 'STRING', 'enum' => $types],
                             'questionText' => ['type' => 'STRING', 'description' => 'The question text. For fill-in-the-blank, include exactly one "[[blank]]" placeholder.'],
+                            'imageUrl' => ['type' => 'STRING', 'description' => 'Optional. A valid Unsplash photo URL representing visual aids for the question. Only include if visual helper is beneficial.'],
                             'options' => [
                                 'type' => 'ARRAY',
                                 'items' => ['type' => 'STRING'],
                                 'description' => 'For multiple-choice and fill-in-the-blank, exactly 4 options. For true-false and swipe-card, exactly 2 options. For drag-drop-matching, list all matching items. For fraction-builder, exactly 2 items representing the target numerator at index 0 and denominator at index 1 (e.g. ["3", "4"]).',
                             ],
                             'matchingPairs' => [
-                                'type' => 'OBJECT',
-                                'description' => 'Optional. For drag-drop-matching questions. Key-value pairs representing correct matches (e.g., {"Hot": "Cold", "Fast": "Slow"}).',
-                                'properties' => (object)[],
+                                'type' => 'ARRAY',
+                                'description' => 'Optional. For drag-drop-matching questions. A list of key-value pairs representing correct matches (e.g., [{"key": "Hot", "value": "Cold"}]). Must contain exactly 3 to 4 pairs.',
+                                'items' => [
+                                    'type' => 'OBJECT',
+                                    'properties' => [
+                                        'key' => [
+                                            'type' => 'STRING',
+                                            'description' => 'The word or phrase on the left side.'
+                                        ],
+                                        'value' => [
+                                            'type' => 'STRING',
+                                            'description' => 'The matching word or phrase on the right side.'
+                                        ],
+                                    ],
+                                    'required' => ['key', 'value'],
+                                ],
                             ],
                             'correctAnswer' => ['type' => 'STRING', 'description' => 'For multiple-choice and fill-in-the-blank, the correct option string. For drag-drop-matching, a string summary of correct pairs.'],
                             'feedback' => [
@@ -204,7 +227,23 @@ class GeminiService
 
         $data = $response->json();
         $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '{}';
+        $result = json_decode($text, true) ?: [];
 
-        return json_decode($text, true);
+        // Convert matchingPairs from array of {"key": "...", "value": "..."} to associative array
+        if (isset($result['questions']) && is_array($result['questions'])) {
+            foreach ($result['questions'] as &$q) {
+                if (isset($q['matchingPairs']) && is_array($q['matchingPairs'])) {
+                    $pairs = [];
+                    foreach ($q['matchingPairs'] as $item) {
+                        if (isset($item['key'], $item['value'])) {
+                            $pairs[$item['key']] = $item['value'];
+                        }
+                    }
+                    $q['matchingPairs'] = $pairs;
+                }
+            }
+        }
+
+        return $result;
     }
 }

@@ -199,6 +199,7 @@ class ClassroomController extends Controller
                     'feedback' => $q['feedback'],
                     'type' => $type,
                     'matchingPairs' => $q['matchingPairs'] ?? null,
+                    'imageUrl' => $q['imageUrl'] ?? null,
                 ];
             }
 
@@ -581,6 +582,13 @@ class ClassroomController extends Controller
             'classroom_id' => $classroomId,
             'student_id' => $studentId,
         ]);
+
+        // Also update the student user's classroom_id column if the user exists
+        $studentUser = \App\Models\User::where('user_id', $studentId)->first();
+        if ($studentUser) {
+            $studentUser->classroom_id = $classroomId;
+            $studentUser->save();
+        }
 
         return response()->json([
             'success' => true,

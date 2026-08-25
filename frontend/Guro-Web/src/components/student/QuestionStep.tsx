@@ -759,9 +759,15 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                         </div>
                                     )}
 
-                                    <div className="w-16 h-16 rounded-3xl bg-[#F0FDF4] border border-[#DCFCE7] flex items-center justify-center mb-4 animate-bounce">
-                                        <Sparkles className="w-8 h-8 text-emerald-500" />
-                                    </div>
+                                    {imageUrl ? (
+                                        <div className="w-24 h-24 rounded-2xl overflow-hidden mb-3 border border-zinc-200 shrink-0">
+                                            <img src={imageUrl} alt="Visual Aid" className="w-full h-full object-cover" />
+                                        </div>
+                                    ) : (
+                                        <div className="w-16 h-16 rounded-3xl bg-[#F0FDF4] border border-[#DCFCE7] flex items-center justify-center mb-4 animate-bounce shrink-0">
+                                            <Sparkles className="w-8 h-8 text-emerald-500" />
+                                        </div>
+                                    )}
                                     <p className="text-lg font-extrabold leading-snug">
                                         {questionText}
                                     </p>

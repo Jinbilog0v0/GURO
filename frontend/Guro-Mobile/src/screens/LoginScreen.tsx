@@ -324,7 +324,19 @@ export function LoginScreen({ navigation }: Props) {
         } else {
            setAppMode('online');
            if (user.role === 'student') {
-             setPreferredGrade(selectedGrade);
+             let resolvedGrade = selectedGrade;
+             const serverClassroomId = user.classroomId;
+             if (serverClassroomId) {
+               const gradeMatch = serverClassroomId.match(/-G([4-6])-/i);
+               if (gradeMatch) {
+                 const classGrade = parseInt(gradeMatch[1], 10);
+                 if (classGrade !== selectedGrade) {
+                   toast.info(`Logged in to Grade ${classGrade} based on your assigned classroom.`);
+                 }
+                 resolvedGrade = classGrade;
+               }
+             }
+             setPreferredGrade(resolvedGrade);
            }
            toast.success(`Welcome back, ${user.name}! Logged in as ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}.`);
            routeByRole(user.role);

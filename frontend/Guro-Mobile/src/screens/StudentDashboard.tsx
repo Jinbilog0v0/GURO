@@ -165,6 +165,11 @@ export function StudentDashboard() {
       if (ok) {
         setClassroomId(code);
         
+        // Update the student's preferred grade based on the classroom joined
+        if (verifiedClassroom && verifiedClassroom.gradeLevel) {
+          useAppStore.getState().setPreferredGrade(verifiedClassroom.gradeLevel);
+        }
+
         // Pair this student name on the server as a classroom member
         const resolvedUrl = resolveServerUrl(serverUrl);
         const activeStudentId = useAppStore.getState().studentId || 'GUEST';
@@ -307,7 +312,7 @@ export function StudentDashboard() {
       <View style={styles.headerBar}>
         <View style={{ flex: 1 }}>
           <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
-            GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION
+            GURO
           </Text>
         </View>
         <SyncBadge />

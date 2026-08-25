@@ -5,6 +5,7 @@ interface Definition {
     term: string;
     definition: string;
     examples: string[];
+    imageUrl?: string;
 }
 
 interface RefresherQuestion {
@@ -88,6 +89,7 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                     type: 'definition',
                     title: `Concept: ${definitions[i].term}`,
                     data: definitions[i],
+                    imageUrl: definitions[i].imageUrl || undefined,
                 });
             }
             if (i < refreshers.length) {
@@ -315,6 +317,15 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                                         {currentSlide.data.definition}
                                     </p>
                                 </div>
+                                {currentSlide.imageUrl && (
+                                    <div className="w-full max-h-[220px] rounded-2xl overflow-hidden bg-zinc-50 border border-zinc-200/50 flex items-center justify-center p-3 mt-2">
+                                        <img 
+                                            src={currentSlide.imageUrl} 
+                                            alt="Concept Visualization" 
+                                            className="max-h-[190px] w-auto object-contain rounded-lg shadow-sm"
+                                        />
+                                    </div>
+                                )}
                                 {currentSlide.data.examples && currentSlide.data.examples.length > 0 && (
                                     <div className="flex flex-col gap-2 mt-2">
                                         <span className="text-[10px] font-extrabold text-[var(--text-dark)] uppercase tracking-widest">Examples</span>
