@@ -1,0 +1,13 @@
+# Ignore non-mobile folders to speed up EAS Build uploads
+backend/
+docs/
+sample-landing-pages/
+scripts/
+frontend/Guro-Web/
+
+# Ignore local mobile caches and dependencies
+frontend/Guro-Mobile/node_modules/
+frontend/Guro-Mobile/.expo/
+frontend/Guro-Mobile/dist/
+frontend/Guro-Mobile/web-build/
+frontend/Guro-Mobile/__mocks__/

@@ -109,8 +109,8 @@ function App() {
         setActiveSubTab('parent-explorer');
       }
       else if (currentUser.role === 'student') setActiveTab('student');
-      else if (currentUser.role === 'admin') setActiveTab('dashboard');
-      else if (currentUser.role === 'lesson-builder' || currentUser.role === 'developer') setActiveTab('lesson-builder');
+      else if (currentUser.role === 'admin' || currentUser.role === 'developer') setActiveTab('dashboard');
+      else if (currentUser.role === 'lesson-builder') setActiveTab('lesson-builder');
     }
   }, [currentUser, activeTab]);
 
@@ -301,8 +301,8 @@ function App() {
           if (user.role === 'teacher') setActiveTab('dashboard');
           else if (user.role === 'parent') setActiveTab('parent');
           else if (user.role === 'student') setActiveTab('student');
-          else if (user.role === 'admin') setActiveTab('dashboard');
-          else if (user.role === 'lesson-builder' || user.role === 'developer') setActiveTab('lesson-builder');
+          else if (user.role === 'admin' || user.role === 'developer') setActiveTab('dashboard');
+          else if (user.role === 'lesson-builder') setActiveTab('lesson-builder');
         }}
       />
     );
@@ -385,7 +385,7 @@ function App() {
     }
   };
 
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'developer';
   const isTeacherView = ['teacher', 'dashboard', 'lesson-builder'].includes(activeTab);
 
   const toggleSidebar = () => {

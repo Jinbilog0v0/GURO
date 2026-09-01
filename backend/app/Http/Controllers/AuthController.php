@@ -38,7 +38,8 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
-            'role' => 'required|in:student,teacher,parent',
+            'role' => 'required|in:student,teacher,parent,admin,developer',
+            'admin_secret' => 'nullable|string',
             'name' => 'required_without:first_name|nullable|string',
             'first_name' => 'required_without:name|nullable|string',
             'last_name' => 'required_without:name|nullable|string',
@@ -48,6 +49,14 @@ class AuthController extends Controller
         $email = strtolower(trim($request->input('email')));
         $password = $request->input('password');
         $role = trim($request->input('role'));
+
+        if ($role === 'admin' || $role === 'developer') {
+            $expectedKey = env('ADMIN_REGISTRATION_KEY', 'GURO_ADMIN_SECRET_2026');
+            $providedKey = trim($request->input('admin_secret', ''));
+            if ($providedKey === '' || $providedKey !== $expectedKey) {
+                return response()->json(['error' => 'Invalid or missing admin security passkey.'], 403);
+            }
+        }
 
         $firstName = trim($request->input('first_name', ''));
         $middleName = trim($request->input('middle_name', ''));

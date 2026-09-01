@@ -51,6 +51,23 @@ Category dropdown options and interactive question types in the manual lesson bu
 ### 5. Adaptive Student Dashboard Layout
 * **Layout Grid Optimization:** If a student only has one active subject offered by their teacher, Guro-Web renders the active subject card side-by-side with the statistics panel in a responsive grid. This optimizes space usage and avoids stack stretching.
 
+### 6. Staff & IT Administration Console
+* **Discreet Authentication Gateway:** Accessible via a subtle 3-dots button (`•••`) located in the header of the web authentication portal. Toggling switches the interface into the **Staff & IT Console**.
+* **Smart Role Auto-Detection:** Logins automatically identify the authenticated user's role from the server, routing `admin` and `developer` users directly to the Admin Console without role mismatch interruptions.
+* **Passkey-Gated Admin Registration:** While public registration is limited strictly to Teachers and Parents, administrative accounts require an **Admin Security Passkey** (`admin_secret`), verified against `ADMIN_REGISTRATION_KEY` on the backend.
+* **AI Rate Limits & Token Governance:** Real-time configuration of sliding window durations and maximum generation request limits per role (`/api/dev/rate-limits`) to protect against Gemini API quota exhaustion.
+* **Master Item Bank Governance:** Real-time tree browser and inspector for global subjects, topics, and question pools that seed all new classrooms.
+
+---
+
+## Default Administrative Credentials (Seeded)
+
+For local development and testing, default administrative credentials can be seeded via `php artisan db:seed --class=DeveloperUserSeeder`:
+* **Email:** `nealjeanclaro@guro.dev`
+* **Password:** `JinBilog0v0`
+* **Role:** `developer` / `admin`
+* **Default Admin Passkey:** `GURO_ADMIN_SECRET_2026` (configurable via `ADMIN_REGISTRATION_KEY` in `.env`)
+
 ---
 
 ## Project Structure
