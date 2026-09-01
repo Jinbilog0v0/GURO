@@ -72,4 +72,35 @@ describe('LandingPage Portal (Web)', () => {
 
     expect(mockSelectRole).toHaveBeenCalledWith('student', 4);
   });
+
+  test('can toggle admin mode via 3-dots button and authenticate as admin', async () => {
+    (global.fetch as jest.Mock).mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true, token: 'dev-token-123', user: { name: 'Guro Developer', role: 'developer' } })
+      })
+    );
+
+    const mockSelectRole = jest.fn();
+    const mockLoginSuccess = jest.fn();
+    render(<LandingPage onSelectRole={mockSelectRole} onLoginSuccess={mockLoginSuccess} />);
+
+    const threeDotsBtn = screen.getByLabelText(/Staff & IT Console/i);
+    fireEvent.click(threeDotsBtn);
+
+    expect(screen.getByText(/Staff & IT Console/i)).toBeInTheDocument();
+    expect(screen.getByText(/System Authorization/i)).toBeInTheDocument();
+
+    const emailInput = screen.getByPlaceholderText('admin@guro.dev');
+    const passwordInput = screen.getByPlaceholderText('••••••••');
+    const submitBtn = screen.getByRole('button', { name: /Authenticate as Admin/i });
+
+    fireEvent.change(emailInput, { target: { value: 'nealjeanclaro@guro.dev' } });
+    fireEvent.change(passwordInput, { target: { value: 'JinBilog0v0' } });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockLoginSuccess).toHaveBeenCalledWith(expect.objectContaining({ role: 'developer' }));
+    });
+  });
 });

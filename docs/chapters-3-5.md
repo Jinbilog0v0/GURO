@@ -111,9 +111,9 @@ Mobile Client                          Laravel API
 
 | No. | Requirement |
 |-----|-------------|
-| FR-01 | The system shall allow students, teachers, and parents to register with email and password. |
+| FR-01 | The system shall allow teachers and parents to self-register. Student account creation shall be restricted to authenticated parents, and administrative registration shall require an authorization passkey. |
 | FR-02 | The system shall allow existing anonymous students to promote their local account to a registered cloud account, migrating all local progress logs. |
-| FR-03 | The system shall authenticate users via email/password and issue a Sanctum bearer token for protected API access. |
+| FR-03 | The system shall authenticate users via email/password, automatically identify their registered role, and issue a Sanctum bearer token for protected API access. |
 | FR-04 | The system shall support password recovery via a 6-digit OTP delivered to the user's email through the Resend API, valid for 15 minutes. |
 | FR-05 | The system shall allow teachers to create a classroom with a unique invite code (format: SUBJECT-GRADENUMBER-XXXXX) and an optional join expiry time. |
 | FR-06 | The system shall allow teachers to lock a classroom, immediately invalidating the join link. |
@@ -127,8 +127,9 @@ Mobile Client                          Laravel API
 | FR-14 | The system shall allow parents to monitor their child's progress using a 6-digit parent access code derived from the student's ID. |
 | FR-15 | The system shall allow parents to configure parental controls, including daily usage limits and priority topic settings. |
 | FR-16 | The web dashboard shall display a mastery matrix, live activity feed, and diagnostic alerts for teachers. |
-| FR-17 | The system shall support developer-only access to rate limit configuration and usage monitoring. |
+| FR-17 | The system shall provide a discreet Staff & IT Administration Console for runtime rate limit management, usage auditing, and master item bank governance. |
 | FR-18 | The system shall display a sync status badge on the mobile client indicating whether progress data has been pushed to the server. |
+| FR-19 | The system shall enforce server-side security passkey validation (`ADMIN_REGISTRATION_KEY`) for any user attempting to register with `admin` or `developer` roles. |
 
 #### 3.3.2 Non-Functional Requirements
 
@@ -323,10 +324,11 @@ Mobile Client                          Laravel API
                         │  └─────────────────────────────────────────────┘   │
                         │                                                     │
  ┌───────────┐          │  ┌─────────────────────────────────────────────┐   │
- │ Developer ├─────────►│  │ Admin / Dev Panel                           │   │
- └───────────┘          │  │  ○ View rate limit configurations           │   │
-                        │  │  ○ Create / update rate limits by role      │   │
-                        │  │  ○ Monitor per-user AI generation usage     │   │
+ │ Developer ├─────────►│  │ Staff & IT Console (Admin / Dev Panel)      │   │
+ └───────────┘          │  │  ○ Discreet 3-dots gate & passkey register  │   │
+                        │  │  ○ View & manage rate limits by role        │   │
+                        │  │  ○ Monitor per-user AI generation telemetry │   │
+                        │  │  ○ Master Item Bank governance & inspector  │   │
                         │  └─────────────────────────────────────────────┘   │
                         └─────────────────────────────────────────────────────┘
 ```
@@ -364,8 +366,8 @@ Mobile Client                          Laravel API
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| POST | `/api/auth/register` | Public | Create new user account |
-| POST | `/api/auth/login` | Public | Authenticate, returns Sanctum token |
+| POST | `/api/auth/register` | Public (Passkey for Admin) | Create user account; requires `admin_secret` for admin/developer roles |
+| POST | `/api/auth/login` | Public | Authenticate with smart role detection, returns Sanctum token |
 | POST | `/api/auth/promote` | Public | Promote anonymous student, migrate progress |
 | POST | `/api/auth/forgot-password/send-code` | Public | Send 6-digit OTP via Resend API |
 | POST | `/api/auth/forgot-password/verify-code` | Public | Verify OTP and reset password |

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap, Eye, EyeOff } from 'lucide-react';
+import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap, Eye, EyeOff, Shield, KeyRound, MoreVertical, Terminal } from 'lucide-react';
 import { RoleCard, type RoleCardProps } from '../components/landing/RoleCard';
 import { FeatureCard, type FeatureCardProps } from '../components/landing/FeatureCard';
 import { setAuthToken } from '../utils/api';
@@ -36,6 +36,8 @@ const pageStyle: React.CSSProperties = {
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginSuccess }) => {
     const [view, setView] = useState<ViewType>('login');
+    const [isAdminMode, setIsAdminMode] = useState(false);
+    const [adminSecretKey, setAdminSecretKey] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -45,7 +47,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
     const [roleSelection, setRoleSelection] = useState('teacher');
     const [loginRole, setLoginRole] = useState<'student' | 'teacher' | 'parent'>('teacher');
     const [loginGrade, setLoginGrade] = useState<number>(4);
-    const [registerGrade, setRegisterGrade] = useState<number>(4);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [authError, setAuthError] = useState('');
 
@@ -75,15 +76,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
             });
             if (res.ok) {
                 const data = await res.json();
-                if (data.user.role.toLowerCase() !== loginRole.toLowerCase()) {
-                    setAuthError(`Role Mismatch: This account is registered as a ${data.user.role}, not a ${loginRole}.`);
-                } else {
-                    if (data.token) setAuthToken(data.token);
-                    if (loginRole === 'student') {
-                        localStorage.setItem('guro_student_grade', String(loginGrade));
-                    }
-                    onLoginSuccess(data.user);
+                const userRole = (data.user?.role || '').toLowerCase();
+                if (data.token) setAuthToken(data.token);
+                if (userRole === 'student') {
+                    localStorage.setItem('guro_student_grade', String(loginGrade));
                 }
+                onLoginSuccess(data.user);
             } else {
                 const err = await res.json();
                 setAuthError(err.error || 'Authentication failed.');
@@ -98,9 +96,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email.trim() || !password.trim() || !firstName.trim() || !lastName.trim()) return;
+        if (isAdminMode && !adminSecretKey.trim()) {
+            setAuthError('Admin security passkey is required.');
+            return;
+        }
         setIsSubmitting(true);
         setAuthError('');
         try {
+            const effectiveRole = isAdminMode ? 'developer' : roleSelection;
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -110,15 +113,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                     first_name: firstName.trim(),
                     middle_name: middleName.trim(),
                     last_name: lastName.trim(),
-                    role: roleSelection
+                    role: effectiveRole,
+                    admin_secret: isAdminMode ? adminSecretKey.trim() : undefined,
                 }),
             });
             if (res.ok) {
                 const data = await res.json();
                 if (data.token) setAuthToken(data.token);
-                if (roleSelection === 'student') {
-                    localStorage.setItem('guro_student_grade', String(registerGrade));
-                }
                 onLoginSuccess(data.user);
             } else {
                 const err = await res.json();
@@ -258,10 +259,43 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
                 {/* ── Login ── */}
                 {view === 'login' && (
-                    <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl shadow-[rgba(17,66,142,0.08)] flex flex-col gap-6 border border-slate-100/80">
-                        <div className="text-center">
-                            <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Welcome back</h2>
-                            <p className="text-sm text-slate-400 mt-1">Sign in to sync your classroom progress</p>
+                    <div className={`w-full max-w-md bg-white rounded-3xl p-8 shadow-xl shadow-[rgba(17,66,142,0.08)] flex flex-col gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/30 ring-2 ring-[#CE1126]/10' : 'border-slate-100/80'}`}>
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                                {isAdminMode ? (
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-1.5 text-[#CE1126] font-bold text-xs uppercase tracking-wider">
+                                            <Shield className="size-4" />
+                                            <span>Staff &amp; IT Console</span>
+                                        </div>
+                                        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">System Authorization</h2>
+                                        <p className="text-xs text-slate-400">Authenticate for developer &amp; admin controls</p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Welcome back</h2>
+                                        <p className="text-sm text-slate-400 mt-1">Sign in to sync your classroom progress</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Discreet 3-Dots Menu Button */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsAdminMode(!isAdminMode);
+                                    setAuthError('');
+                                }}
+                                className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                                    isAdminMode
+                                        ? 'bg-[#CE1126]/10 border-[#CE1126]/30 text-[#CE1126]'
+                                        : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+                                }`}
+                                title={isAdminMode ? "Switch to standard portal" : "Staff & IT Console"}
+                                aria-label={isAdminMode ? "Switch to standard portal" : "Staff & IT Console"}
+                            >
+                                {isAdminMode ? <Shield className="size-4 text-[#CE1126]" /> : <MoreVertical className="size-4" />}
+                            </button>
                         </div>
 
                         {authError && (
@@ -272,33 +306,49 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
                         <form onSubmit={handleLogin} className="flex flex-col gap-4">
                             {/* Role selection for Sign In */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className={labelCls}>Specify Role</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {(['teacher', 'student', 'parent'] as const).map((r) => {
-                                        const active = loginRole === r;
-                                        const IconComponent = r === 'teacher' ? School : r === 'student' ? GraduationCap : Users;
-                                        return (
-                                            <button
-                                                key={r}
-                                                type="button"
-                                                onClick={() => { setLoginRole(r); setAuthError(''); }}
-                                                className={`py-2 px-3 rounded-xl border text-xs font-bold capitalize cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
-                                                    active
-                                                        ? 'bg-[#11428E]/10 border-[#11428E] text-[#11428E]'
-                                                        : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
-                                                }`}
-                                            >
-                                                <IconComponent size={14} className={active ? 'text-[#11428E]' : 'text-slate-400'} />
-                                                <span>{r}</span>
-                                            </button>
-                                        );
-                                    })}
+                            {isAdminMode ? (
+                                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 text-white text-xs font-semibold">
+                                    <div className="flex items-center gap-2">
+                                        <Terminal className="size-4 text-emerald-400" />
+                                        <span>Administrator / Developer Mode</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsAdminMode(false)}
+                                        className="text-slate-400 hover:text-white text-[11px] underline cursor-pointer"
+                                    >
+                                        Standard Mode
+                                    </button>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="flex flex-col gap-1.5">
+                                    <label className={labelCls}>Specify Role</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {(['teacher', 'student', 'parent'] as const).map((r) => {
+                                            const active = loginRole === r;
+                                            const IconComponent = r === 'teacher' ? School : r === 'student' ? GraduationCap : Users;
+                                            return (
+                                                <button
+                                                    key={r}
+                                                    type="button"
+                                                    onClick={() => { setLoginRole(r); setAuthError(''); }}
+                                                    className={`py-2 px-3 rounded-xl border text-xs font-bold capitalize cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
+                                                        active
+                                                            ? 'bg-[#11428E]/10 border-[#11428E] text-[#11428E]'
+                                                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                                                    }`}
+                                                >
+                                                    <IconComponent size={14} className={active ? 'text-[#11428E]' : 'text-slate-400'} />
+                                                    <span>{r}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Grade level selection for student role */}
-                            {loginRole === 'student' && (
+                            {!isAdminMode && loginRole === 'student' && (
                                 <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
                                     <label className={labelCls}>Specify Grade Level</label>
                                     <div className="grid grid-cols-3 gap-2">
@@ -330,7 +380,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                     <input
                                         id="login-email"
                                         type="email"
-                                        placeholder="you@school.edu"
+                                        placeholder={isAdminMode ? "admin@guro.dev" : "you@school.edu"}
                                         className={fieldErrors.email ? inputErrCls : inputCls}
                                         value={email}
                                         onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: '' })); }}
@@ -373,9 +423,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                 type="submit"
                                 disabled={isSubmitting}
                                 className="w-full py-3.5 rounded-xl text-white text-sm font-bold tracking-wide shadow-lg shadow-[#11428E]/25 transition-all disabled:opacity-60 cursor-pointer hover:opacity-90 active:scale-[0.99]"
-                                style={{ background: 'linear-gradient(135deg, #11428E 0%, #A01322 100%)' }}
+                                style={{
+                                    background: isAdminMode 
+                                        ? 'linear-gradient(135deg, #0F172A 0%, #CE1126 100%)' 
+                                        : 'linear-gradient(135deg, #11428E 0%, #A01322 100%)'
+                                }}
                             >
-                                {isSubmitting ? 'Signing in…' : 'Sign in'}
+                                {isSubmitting ? 'Authenticating…' : isAdminMode ? 'Authenticate as Admin' : 'Sign in'}
                             </button>
                         </form>
 
@@ -403,10 +457,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
                 {/* ── Register ── */}
                 {view === 'register' && (
-                    <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl shadow-[rgba(17,66,142,0.08)] flex flex-col gap-6 border border-slate-100/80">
-                        <div className="text-center">
-                            <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Create account</h2>
-                            <p className="text-sm text-slate-400 mt-1">Register to start managing classes and tracking logs</p>
+                    <div className={`w-full max-w-md bg-white rounded-3xl p-8 shadow-xl shadow-[rgba(17,66,142,0.08)] flex flex-col gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/30 ring-2 ring-[#CE1126]/10' : 'border-slate-100/80'}`}>
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                                {isAdminMode ? (
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-1.5 text-[#CE1126] font-bold text-xs uppercase tracking-wider">
+                                            <KeyRound className="size-4" />
+                                            <span>Staff Passkey Required</span>
+                                        </div>
+                                        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Register System Admin</h2>
+                                        <p className="text-xs text-slate-400">Authorized personnel registration with security key</p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Create account</h2>
+                                        <p className="text-sm text-slate-400 mt-1">Register to start managing classes and tracking logs</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsAdminMode(!isAdminMode);
+                                    setAuthError('');
+                                }}
+                                className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                                    isAdminMode 
+                                        ? 'bg-[#CE1126]/10 border-[#CE1126]/30 text-[#CE1126]' 
+                                        : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+                                }`}
+                                title={isAdminMode ? "Switch to standard registration" : "Staff & IT Registration"}
+                                aria-label={isAdminMode ? "Switch to standard registration" : "Staff & IT Registration"}
+                            >
+                                {isAdminMode ? <Shield className="size-4 text-[#CE1126]" /> : <MoreVertical className="size-4" />}
+                            </button>
                         </div>
 
                         {authError && (
@@ -478,7 +564,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                     <input
                                         id="reg-email"
                                         type="email"
-                                        placeholder="you@school.edu"
+                                        placeholder={isAdminMode ? "admin@guro.dev" : "you@school.edu"}
                                         className={fieldErrors.email ? inputErrCls : inputCls}
                                         value={email}
                                         onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: '' })); }}
@@ -520,50 +606,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                 )}
                             </div>
 
-                            <div className="flex flex-col gap-1.5">
-                                <label className={labelCls}>Account role</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {(['teacher', 'parent'] as const).map((r) => {
-                                        const active = roleSelection === r;
-                                        const IconComponent = r === 'teacher' ? School : Users;
-                                        return (
-                                            <button
-                                                key={r}
-                                                type="button"
-                                                onClick={() => { setRoleSelection(r); setAuthError(''); }}
-                                                className={`py-2 px-3 rounded-xl border text-xs font-bold capitalize cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
-                                                    active
-                                                        ? 'bg-[#11428E]/10 border-[#11428E] text-[#11428E]'
-                                                        : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
-                                                }`}
-                                            >
-                                                <IconComponent size={14} className={active ? 'text-[#11428E]' : 'text-slate-400'} />
-                                                <span>{r}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Grade level selection for student role during registration */}
-                            {roleSelection === 'student' && (
+                            {/* Role selection vs Admin Passkey */}
+                            {isAdminMode ? (
                                 <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
-                                    <label className={labelCls}>Specify Grade Level</label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {[4, 5, 6].map((g) => {
-                                            const active = registerGrade === g;
+                                    <label className={labelCls} htmlFor="reg-admin-secret">Admin Security Passkey</label>
+                                    <div className="relative">
+                                        <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[#CE1126]" aria-hidden="true" />
+                                        <input
+                                            id="reg-admin-secret"
+                                            type="password"
+                                            placeholder="System security passkey..."
+                                            className="w-full pl-10 pr-4 py-3 bg-red-50/50 border border-[#CE1126]/30 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#CE1126] focus:ring-2 focus:ring-[#CE1126]/20 focus:bg-white transition-all font-mono"
+                                            value={adminSecretKey}
+                                            onChange={(e) => setAdminSecretKey(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                    <p className="text-[11px] text-slate-400 pl-1">Authorized key defined in server environment configuration.</p>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-1.5">
+                                    <label className={labelCls}>Account role</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {(['teacher', 'parent'] as const).map((r) => {
+                                            const active = roleSelection === r;
+                                            const IconComponent = r === 'teacher' ? School : Users;
                                             return (
                                                 <button
-                                                    key={g}
+                                                    key={r}
                                                     type="button"
-                                                    onClick={() => setRegisterGrade(g)}
-                                                    className={`py-2 px-3 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
+                                                    onClick={() => { setRoleSelection(r); setAuthError(''); }}
+                                                    className={`py-2 px-3 rounded-xl border text-xs font-bold capitalize cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
                                                         active
                                                             ? 'bg-[#11428E]/10 border-[#11428E] text-[#11428E]'
                                                             : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
                                                     }`}
                                                 >
-                                                    Grade {g}
+                                                    <IconComponent size={14} className={active ? 'text-[#11428E]' : 'text-slate-400'} />
+                                                    <span>{r}</span>
                                                 </button>
                                             );
                                         })}
@@ -575,9 +655,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                 type="submit"
                                 disabled={isSubmitting}
                                 className="w-full py-3.5 rounded-xl text-white text-sm font-bold tracking-wide shadow-lg shadow-[#11428E]/25 transition-all disabled:opacity-60 cursor-pointer hover:opacity-90 active:scale-[0.99]"
-                                style={{ background: 'linear-gradient(135deg, #11428E 0%, #A01322 100%)' }}
+                                style={{
+                                    background: isAdminMode 
+                                        ? 'linear-gradient(135deg, #0F172A 0%, #CE1126 100%)' 
+                                        : 'linear-gradient(135deg, #11428E 0%, #A01322 100%)'
+                                }}
                             >
-                                {isSubmitting ? 'Creating account…' : 'Create account'}
+                                {isSubmitting ? 'Creating account…' : isAdminMode ? 'Register System Admin' : 'Create account'}
                             </button>
                         </form>
 
