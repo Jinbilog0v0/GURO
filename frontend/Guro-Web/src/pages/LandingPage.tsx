@@ -329,11 +329,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                 {/* ── Login ── */}
                 {view === 'login' && (
                     <div className={`w-full max-w-md glass-panel rounded-3xl p-8 shadow-2xl flex flex-col gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/40 ring-2 ring-[#CE1126]/20' : 'border-[var(--border-color)]'}`}>
-                        <div className="flex items-start justify-between">
-                            <div className="flex-1">
+                        <div className="flex flex-col items-center justify-center text-center w-full">
+                            <div className="w-full text-center">
                                 {isAdminMode ? (
-                                    <div className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-1.5 text-[#CE1126] font-bold text-xs uppercase tracking-wider">
+                                    <div className="flex flex-col items-center gap-1 text-center">
+                                        <div className="flex items-center justify-center gap-1.5 text-[#CE1126] font-bold text-xs uppercase tracking-wider">
                                             <Shield className="size-4" />
                                             <span>Staff &amp; IT Console</span>
                                         </div>
@@ -341,7 +341,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                         <p className="text-xs text-[var(--text-muted)]">Authenticate for developer &amp; admin controls</p>
                                     </div>
                                 ) : (
-                                    <div>
+                                    <div className="text-center">
                                         <h2 className="text-2xl font-extrabold text-[var(--text-main)] tracking-tight">Welcome back</h2>
                                         <p className="text-sm text-[var(--text-muted)] mt-1">Sign in to sync your classroom progress</p>
                                     </div>
@@ -483,11 +483,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                 {/* ── Register ── */}
                 {view === 'register' && (
                     <div className={`w-full max-w-md glass-panel rounded-3xl p-8 shadow-2xl flex flex-col gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/40 ring-2 ring-[#CE1126]/20' : 'border-[var(--border-color)]'}`}>
-                        <div className="flex items-start justify-between">
-                            <div className="flex-1">
+                        <div className="flex flex-col items-center justify-center text-center w-full">
+                            <div className="w-full text-center">
                                 {isAdminMode ? (
-                                    <div className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-1.5 text-[#CE1126] font-bold text-xs uppercase tracking-wider">
+                                    <div className="flex flex-col items-center gap-1 text-center">
+                                        <div className="flex items-center justify-center gap-1.5 text-[#CE1126] font-bold text-xs uppercase tracking-wider">
                                             <KeyRound className="size-4" />
                                             <span>Staff Passkey Required</span>
                                         </div>
@@ -495,7 +495,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                         <p className="text-xs text-[var(--text-muted)]">Authorized personnel registration with security key</p>
                                     </div>
                                 ) : (
-                                    <div>
+                                    <div className="text-center">
                                         <h2 className="text-2xl font-extrabold text-[var(--text-main)] tracking-tight">Create account</h2>
                                         <p className="text-sm text-[var(--text-muted)] mt-1">Register to start managing classes and tracking logs</p>
                                     </div>
