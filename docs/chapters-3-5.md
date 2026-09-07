@@ -499,7 +499,9 @@ A parent accesses their child's data using a 6-digit access code. This code is d
 
 The web dashboard (`React + Vite + Tailwind CSS 4`) serves teachers, parents, and students through role-specific pages. Key teacher components include:
 
-- **MasteryMatrix** — heatmap of student mastery per topic, with search and filter
+- **MasteryMatrix** — heatmap of student mastery per topic, with search and filter by quarter (Q1–Q4) and assessment type (pre-test, post-test, practice)
+- **PrePostTestAnalytics** — diagnostic baseline vs summative post-test comparative growth analytics and normalized gain ($g$) metrics
+- **EosyPromotionConsole** — End-of-School-Year DepEd Form 138 / SF9 promotion console computing general final averages ($\ge 75\%$ standard), batch promotions, and printable transcript reports
 - **DiagnosticAlerts** — accordion-style alerts flagging students below performance thresholds
 - **LiveActivityTicker** — real-time feed of recent student activity
 - **ManualLessonBuilder** — CRUD interface for lesson management without AI
@@ -607,11 +609,12 @@ Specifically, the study concludes:
 | Section | What Changed |
 |---|---|
 | Ch 3 Architecture | Added `ai_generation_logs` and `rate_limit_configs` tables; added `RateLimitController`; added GeminiService to architecture diagram |
-| Ch 3 API Table | Added 4 `/api/dev/rate-limits` dev-only endpoints; added `promote` and OTP routes |
-| Ch 3 ERD | Added `ai_generation_logs` table (FK to users, cascade delete); added `rate_limit_configs` standalone table |
-| Ch 3 Screen Map | Updated to reflect `StudentTabNavigator`, `TeacherTabNavigator`, `StudentProgressReportScreen`, `TeacherIngestionScreen`, `TeacherLessonBuilderScreen` |
-| Ch 3 FR | Added FR-08 (rate limiting), FR-13 (gamification), FR-17 (developer panel), FR-18 (sync badge) |
+| Ch 3 API Table | Added 4 `/api/dev/rate-limits` dev-only endpoints; added `promote` and OTP routes; added `/api/classroom/eosy-report`, `/api/classroom/promote`, and `/api/student/academic-history` |
+| Ch 3 ERD | Added `ai_generation_logs` table (FK to users, cascade delete); added `rate_limit_configs` standalone table; added `student_academic_records` permanent SF9 transcript table |
+| Ch 3 Screen Map | Updated to reflect `StudentTabNavigator`, `TeacherTabNavigator`, `StudentProgressReportScreen`, `TeacherIngestionScreen`, `TeacherLessonBuilderScreen`, `PrePostTestAnalytics`, `EosyPromotionConsole` |
+| Ch 3 FR | Added FR-08 (rate limiting), FR-13 (gamification), FR-17 (developer panel), FR-18 (sync badge), FR-19 (pre/post-test diagnostic tracking), FR-20 (DepEd academic period and EOSY promotion) |
 | Ch 3 Tech Stack | Added Gemini 2.5 Flash, Resend, PBKDF2-SHA512, expo-haptics, expo-speech, Lucide RN, react-hot-toast |
 | Ch 4 Sec 4.1.3 | New: AI generation module with rate limiting detail |
 | Ch 4 Sec 4.1.6 | New: parent access code derivation mechanism documented |
+| Ch 4 Sec 4.1.7 | New: DepEd Academic Year, Diagnostic Pre/Post-Test Normalized Gain, and EOSY Promotion Console |
 | Ch 5 Recommendations | Added LLM alternatives rec, EAS distribution rec, rate limit policy rec |

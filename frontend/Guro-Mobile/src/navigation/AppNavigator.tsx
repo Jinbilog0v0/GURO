@@ -19,7 +19,7 @@ export type RootStackParamList = {
   StudentDashboard: undefined;
   TeacherDashboard: undefined;
   ParentDashboard: undefined;
-  Assessment: { subject: string; gradeLevel: number; topic: string };
+  Assessment: { subject: string; gradeLevel: number; topic: string; assessmentType?: 'pre-test' | 'post-test' | 'practice' };
   Study: { subject: string; gradeLevel: number; topic: string };
   Details: { fileName: string; content: string };
   Settings: undefined;

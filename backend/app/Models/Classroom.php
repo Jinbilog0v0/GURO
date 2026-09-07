@@ -12,6 +12,8 @@ class Classroom extends Model
         'teacher_name',
         'subject',
         'grade_level',
+        'school_year',
+        'term',
         'custom_item_bank',
         'expires_at',
     ];

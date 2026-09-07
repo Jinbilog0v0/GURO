@@ -24,7 +24,7 @@ import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
 import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { toast } from '../components';
 import { styles } from '../styles/LoginScreen.styles';
-import { School, Users, GraduationCap, Cloud, WifiOff } from 'lucide-react-native';
+import { School, Users, GraduationCap, Cloud, WifiOff, Shield, MoreVertical, Terminal, KeyRound } from 'lucide-react-native';
 import * as Network from 'expo-network';
 
 const GuroLogoGraphic = () => (
@@ -64,6 +64,7 @@ const ROLES: { id: Role; title: string; icon: React.ComponentType<any> }[] = [
 export function LoginScreen({ navigation }: Props) {
   const { loginToCloud, currentUser, appMode, guestName, setAppMode, setGuestName, setStudentId, serverUrl, setServerUrl, setPreferredGrade } = useAppStore();
 
+  const [isAdminMode, setIsAdminMode] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -72,7 +73,6 @@ export function LoginScreen({ navigation }: Props) {
   const [offlineLastName, setOfflineLastName] = useState('');
   const [offlineSection, setOfflineSection] = useState('');
   const [offlineEmailOrId, setOfflineEmailOrId] = useState('');
-  const [selectedGrade, setSelectedGrade] = useState<number>(4);
   const [selectedOfflineGrade, setSelectedOfflineGrade] = useState<number>(4);
   const [loading, setLoading] = useState(false);
   const [isOfflineSubmitting, setIsOfflineSubmitting] = useState(false);
@@ -82,7 +82,6 @@ export function LoginScreen({ navigation }: Props) {
   const [offlineLastNameError, setOfflineLastNameError] = useState('');
   const [isOnline, setIsOnline] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [logoTapCount, setLogoTapCount] = useState(0);
   const [showServerUrlConfig, setShowServerUrlConfig] = useState(false);
 
   // Forgot password state
@@ -166,26 +165,29 @@ export function LoginScreen({ navigation }: Props) {
     }
   };
 
-  useEffect(() => {
-    if (logoTapCount > 0) {
-      const timer = setTimeout(() => setLogoTapCount(0), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [logoTapCount]);
+  const logoTapCountRef = useRef(0);
+  const logoTimerRef = useRef<any>(null);
 
   const handleLogoPress = () => {
-    setLogoTapCount((prev) => {
-      const next = prev + 1;
-      if (next >= 5) {
-        setShowServerUrlConfig((show) => {
-          const nextShow = !show;
-          toast.info(nextShow ? 'Developer mode enabled: Server URL configuration revealed.' : 'Developer mode disabled: Server URL hidden.');
-          return nextShow;
-        });
-        return 0;
-      }
-      return next;
-    });
+    if (logoTimerRef.current) clearTimeout(logoTimerRef.current);
+    logoTapCountRef.current += 1;
+    if (logoTapCountRef.current >= 5) {
+      logoTapCountRef.current = 0;
+      setIsAdminMode((admin) => {
+        const nextAdmin = !admin;
+        setShowServerUrlConfig(nextAdmin);
+        if (nextAdmin) {
+          toast.success('Staff & IT Console unlocked.');
+        } else {
+          toast.info('Returned to standard portal.');
+        }
+        return nextAdmin;
+      });
+    } else {
+      logoTimerRef.current = setTimeout(() => {
+        logoTapCountRef.current = 0;
+      }, 2500);
+    }
   };
 
   const handleSendCode = async () => {
@@ -277,7 +279,7 @@ export function LoginScreen({ navigation }: Props) {
 
   const routeByRole = (role: string) => {
     if (role === 'student') navigation.replace('StudentDashboard');
-    else if (role === 'teacher') navigation.replace('TeacherDashboard');
+    else if (role === 'teacher' || role === 'admin' || role === 'developer') navigation.replace('TeacherDashboard');
     else if (role === 'parent') navigation.replace('ParentDashboard');
     else navigation.replace('StudentDashboard');
   };
@@ -287,7 +289,7 @@ export function LoginScreen({ navigation }: Props) {
     setEmailError('');
     setPasswordError('');
 
-    if (!selectedRole) {
+    if (!isAdminMode && !selectedRole) {
       toast.warning('Please select a role (Teacher, Student, or Parent) before signing in.');
       valid = false;
     }
@@ -318,27 +320,25 @@ export function LoginScreen({ navigation }: Props) {
     if (result.success) {
       const user = useAppStore.getState().currentUser;
       if (user) {
-        if (user.role !== selectedRole) {
+        const isAdminOrDev = user.role === 'admin' || user.role === 'developer';
+        if (user.role !== selectedRole && !isAdminOrDev && !isAdminMode) {
           useAppStore.getState().logoutFromCloud();
           toast.error(`Role Mismatch: This account is registered as a ${user.role}, not a ${selectedRole}.`);
         } else {
            setAppMode('online');
            if (user.role === 'student') {
-             let resolvedGrade = selectedGrade;
-             const serverClassroomId = user.classroomId;
-             if (serverClassroomId) {
-               const gradeMatch = serverClassroomId.match(/-G([4-6])-/i);
-               if (gradeMatch) {
-                 const classGrade = parseInt(gradeMatch[1], 10);
-                 if (classGrade !== selectedGrade) {
-                   toast.info(`Logged in to Grade ${classGrade} based on your assigned classroom.`);
-                 }
-                 resolvedGrade = classGrade;
-               }
-             }
-             setPreferredGrade(resolvedGrade);
-           }
-           toast.success(`Welcome back, ${user.name}! Logged in as ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}.`);
+              let resolvedGrade = 4;
+              const serverClassroomId = user.classroomId;
+              if (serverClassroomId) {
+                const gradeMatch = serverClassroomId.match(/-G([4-6])-/i);
+                if (gradeMatch) {
+                  resolvedGrade = parseInt(gradeMatch[1], 10);
+                }
+              }
+              setPreferredGrade(resolvedGrade);
+            }
+           const roleDisplay = isAdminOrDev ? 'Staff / Administrator' : ((selectedRole || user.role).charAt(0).toUpperCase() + (selectedRole || user.role).slice(1));
+           toast.success(`Welcome back, ${user.name}! Logged in as ${roleDisplay}.`);
            routeByRole(user.role);
         }
       }
@@ -448,47 +448,75 @@ export function LoginScreen({ navigation }: Props) {
           </TouchableOpacity>
 
           {/* ── Section A: Sign In ── */}
-          <GlassCard padding={Spacing['2xl']} style={styles.sectionCard}>
+          <GlassCard padding={Spacing['2xl']} style={[styles.sectionCard, isAdminMode && { borderColor: 'rgba(206,17,38,0.4)', borderWidth: 1.5 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: Spacing.md }}>
-              <Cloud size={20} color="#94A3B8" />
-              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Sign In with Account</Text>
+              {isAdminMode ? <Shield size={20} color="#CE1126" /> : <Cloud size={20} color="#94A3B8" />}
+              <Text style={[styles.sectionTitle, { marginBottom: 0 }, isAdminMode && { color: '#CE1126' }]}>
+                {isAdminMode ? 'Staff & IT Console' : 'Sign In with Account'}
+              </Text>
             </View>
-            
-            <View style={styles.rolesRow}>
-              {ROLES.map((role) => {
-                const isSelected = selectedRole === role.id;
-                const IconComponent = role.icon;
-                
-                let activeColor: string = Colors.accentPrimary;
-                let activeBg: string = 'rgba(17,66,142,0.08)';
-                if (role.id === 'teacher') {
-                  activeColor = Colors.accentSecondary;
-                  activeBg = 'rgba(160,19,34,0.08)';
-                } else if (role.id === 'parent') {
-                  activeColor = '#F59E0B';
-                  activeBg = 'rgba(245,158,11,0.08)';
-                }
 
-                return (
-                  <TouchableOpacity
-                    key={role.id}
-                    onPress={() => setSelectedRole(role.id)}
-                    activeOpacity={0.8}
-                    style={[
-                      styles.rolePill,
-                      isSelected && {
-                        backgroundColor: activeBg,
-                        borderColor: activeColor,
-                      },
-                      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }
-                    ]}
-                  >
-                     <IconComponent size={16} color={isSelected ? activeColor : '#94A3B8'} />
-                     <Text style={[styles.rolePillText, isSelected && { color: activeColor, fontFamily: Fonts.bodySemiBold }]}>{role.title}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            {isAdminMode ? (
+              <View style={{
+                backgroundColor: '#0F172A',
+                borderRadius: 14,
+                padding: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: Spacing.md,
+                borderWidth: 1,
+                borderColor: '#1E293B',
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Terminal size={16} color="#10B981" />
+                  <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: '#FFFFFF' }}>
+                    Administrator Mode
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => setIsAdminMode(false)}>
+                  <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.xs, color: '#94A3B8', textDecorationLine: 'underline' }}>
+                    Standard Mode
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.rolesRow}>
+                {ROLES.map((role) => {
+                  const isSelected = selectedRole === role.id;
+                  const IconComponent = role.icon;
+                  
+                  let activeColor: string = Colors.accentPrimary;
+                  let activeBg: string = 'rgba(17,66,142,0.08)';
+                  if (role.id === 'teacher') {
+                    activeColor = Colors.accentSecondary;
+                    activeBg = 'rgba(160,19,34,0.08)';
+                  } else if (role.id === 'parent') {
+                    activeColor = '#F59E0B';
+                    activeBg = 'rgba(245,158,11,0.08)';
+                  }
+
+                  return (
+                    <TouchableOpacity
+                      key={role.id}
+                      onPress={() => setSelectedRole(role.id)}
+                      activeOpacity={0.8}
+                      style={[
+                        styles.rolePill,
+                        isSelected && {
+                          backgroundColor: activeBg,
+                          borderColor: activeColor,
+                        },
+                        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }
+                      ]}
+                    >
+                       <IconComponent size={16} color={isSelected ? activeColor : '#94A3B8'} />
+                       <Text style={[styles.rolePillText, isSelected && { color: activeColor, fontFamily: Fonts.bodySemiBold }]}>{role.title}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
 
             <View style={styles.formGroup}>
               <ThemedTextInput
@@ -533,38 +561,6 @@ export function LoginScreen({ navigation }: Props) {
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
-              </View>
-            )}
-
-            {selectedRole === 'student' && (
-              <View style={{ marginTop: Spacing.md }}>
-                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.textMain, marginBottom: Spacing.xs }}>
-                  Select Grade Level
-                </Text>
-                <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-                  {[4, 5, 6].map((grade) => {
-                    const isSelected = selectedGrade === grade;
-                    return (
-                      <TouchableOpacity
-                        key={grade}
-                        onPress={() => setSelectedGrade(grade)}
-                        activeOpacity={0.8}
-                        style={[
-                          styles.rolePill,
-                          isSelected && {
-                            backgroundColor: 'rgba(17,66,142,0.08)',
-                            borderColor: '#11428E',
-                          },
-                          { flex: 1, alignItems: 'center', justifyContent: 'center' }
-                        ]}
-                      >
-                        <Text style={[styles.rolePillText, isSelected && { color: '#11428E', fontFamily: Fonts.bodySemiBold }]}>
-                          Grade {grade}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
               </View>
             )}
 

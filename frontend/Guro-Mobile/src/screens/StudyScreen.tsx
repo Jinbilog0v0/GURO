@@ -155,9 +155,16 @@ export function StudyScreen({ route, navigation }: Props) {
     return list;
   }, [studyContent]);
 
-  const handleStartQuiz = () => {
+  const studentProgress = useAppStore((s) => s.studentProgress) || [];
+  const existingPreTest = Array.isArray(studentProgress)
+    ? studentProgress.find(
+        (p) => p.subject === subject && p.gradeLevel === gradeLevel && p.topic === topic && p.assessmentType === 'pre-test'
+      )
+    : undefined;
+
+  const handleStartQuiz = (type: 'pre-test' | 'post-test' | 'practice' = 'post-test') => {
     Speech.stop();
-    navigation.navigate('Assessment', { subject, gradeLevel, topic });
+    navigation.navigate('Assessment', { subject, gradeLevel, topic, assessmentType: type });
   };
 
   const toggleSpeech = () => {
@@ -313,6 +320,29 @@ export function StudyScreen({ route, navigation }: Props) {
               <Text style={[styles.cardLabel, { marginBottom: 0 }]}>INTRODUCTION</Text>
             </View>
             <Text style={styles.introText}>{currentItem.data}</Text>
+            {existingPreTest ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(6,182,212,0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginTop: 12 }}>
+                <Sparkles size={14} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                  Pre-Test Baseline: {Math.round((existingPreTest.score / existingPreTest.totalQuestions) * 100)}%
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={() => handleStartQuiz('pre-test')}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(17,66,142,0.08)', borderWidth: 1, borderColor: 'rgba(17,66,142,0.2)', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, marginTop: 14 }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.primary }}>
+                    Take Diagnostic Pre-Test 📝
+                  </Text>
+                  <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted, marginTop: 2 }}>
+                    Record your baseline score before studying this topic!
+                  </Text>
+                </View>
+                <ChevronRight size={14} color={Colors.primary} />
+              </TouchableOpacity>
+            )}
             {currentItem.imageUrl && (
               <View style={styles.illustrationContainer}>
                 <Image 
@@ -515,7 +545,7 @@ export function StudyScreen({ route, navigation }: Props) {
             <PrimaryButton
               label="Start Quiz!"
               icon={<ChevronRight size={16} color={Colors.white} />}
-              onPress={handleStartQuiz}
+              onPress={() => handleStartQuiz('post-test')}
               style={{ flex: 1.3 }}
             />
           ) : currentItem.type === 'refresher' ? (

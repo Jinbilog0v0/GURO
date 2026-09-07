@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
-import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap, Eye, EyeOff, Shield, KeyRound, MoreVertical, Terminal } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap, Eye, EyeOff, Shield, KeyRound, Terminal, Sun, Moon } from 'lucide-react';
 import { RoleCard, type RoleCardProps } from '../components/landing/RoleCard';
 import { FeatureCard, type FeatureCardProps } from '../components/landing/FeatureCard';
 import { setAuthToken } from '../utils/api';
+import { toast } from '../utils/toast';
 
 // ─── Logo ────────────────────────────────────────────────────────────────────
 
-const GuroLogoGraphic: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' }) => {
+const GuroLogoGraphic: React.FC<{ size?: 'sm' | 'md' | 'lg'; onClick?: () => void }> = ({ size = 'md', onClick }) => {
     const dimensions = size === 'lg' ? 'size-20' : size === 'sm' ? 'size-12' : 'size-16';
     const iconSize = size === 'lg' ? 'size-11' : size === 'sm' ? 'size-6' : 'size-9';
     return (
-        <div className={`relative flex ${dimensions} items-center justify-center rounded-3xl bg-gradient-to-tr from-[#11428E] via-[#2563EB] to-[#A01322] text-white shadow-xl shadow-[#11428E]/25 border border-white/30 transform hover:scale-105 transition-all duration-300`}>
+        <div 
+            onClick={onClick}
+            role={onClick ? "button" : undefined}
+            tabIndex={onClick ? 0 : undefined}
+            onKeyDown={(e) => { if (onClick && (e.key === 'Enter' || e.key === ' ')) onClick(); }}
+            aria-label="GURO Logo"
+            className={`relative flex ${dimensions} items-center justify-center rounded-3xl bg-gradient-to-tr from-[#11428E] via-[#2563EB] to-[#A01322] text-white shadow-xl shadow-[#11428E]/25 border border-white/30 transform hover:scale-105 active:scale-95 transition-all duration-300 ${onClick ? 'cursor-pointer select-none' : ''}`}
+        >
             <GraduationCap className={iconSize} strokeWidth={2.3} />
             <span className="absolute -top-1.5 -right-1.5 text-xs text-amber-300 animate-pulse">✦</span>
         </div>
@@ -22,19 +30,15 @@ const GuroLogoGraphic: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' 
 interface LandingPageProps {
     onSelectRole: (role: 'student' | 'teacher' | 'parent' | 'lesson-builder', grade?: number) => void;
     onLoginSuccess: (user: { userId: string; email: string; name: string; role: string; classroomId?: string | null }) => void;
+    isDarkMode?: boolean;
+    onToggleTheme?: () => void;
 }
 
 type ViewType = 'login' | 'register' | 'guest-roles';
 
-// ─── Shared page background ───────────────────────────────────────────────────
-
-const pageStyle: React.CSSProperties = {
-    background: 'linear-gradient(160deg, #eef3fb 0%, #fcf2f2 100%)',
-};
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginSuccess }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginSuccess, isDarkMode = false, onToggleTheme }) => {
     const [view, setView] = useState<ViewType>('login');
     const [isAdminMode, setIsAdminMode] = useState(false);
     const [adminSecretKey, setAdminSecretKey] = useState('');
@@ -46,9 +50,49 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
     const [lastName, setLastName] = useState('');
     const [roleSelection, setRoleSelection] = useState('teacher');
     const [loginRole, setLoginRole] = useState<'student' | 'teacher' | 'parent'>('teacher');
-    const [loginGrade, setLoginGrade] = useState<number>(4);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [authError, setAuthError] = useState('');
+
+    // Secret 5-tap gesture on logo to toggle Admin Mode
+    const clickCountRef = useRef(0);
+    const logoTimerRef = useRef<any>(null);
+
+    const handleLogoClick = () => {
+        if (logoTimerRef.current) clearTimeout(logoTimerRef.current);
+        clickCountRef.current += 1;
+        if (clickCountRef.current >= 5) {
+            clickCountRef.current = 0;
+            setIsAdminMode((prev) => {
+                const nextMode = !prev;
+                if (nextMode) toast.success('Staff & IT Console unlocked.');
+                else toast('Returned to standard portal.');
+                return nextMode;
+            });
+            setAuthError('');
+        } else {
+            logoTimerRef.current = setTimeout(() => {
+                clickCountRef.current = 0;
+            }, 2500);
+        }
+    };
+
+    // Keyboard shortcut for IT Staff (Ctrl+Shift+A or Alt+A)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') || (e.altKey && e.key.toLowerCase() === 'a')) {
+                e.preventDefault();
+                setIsAdminMode((prev) => {
+                    const nextMode = !prev;
+                    if (nextMode) toast.success('Staff & IT Console unlocked.');
+                    else toast('Returned to standard portal.');
+                    return nextMode;
+                });
+                setAuthError('');
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     // Inline field validation errors
     const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; firstName?: string; lastName?: string }>({});
@@ -79,7 +123,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                 const userRole = (data.user?.role || '').toLowerCase();
                 if (data.token) setAuthToken(data.token);
                 if (userRole === 'student') {
-                    localStorage.setItem('guro_student_grade', String(loginGrade));
+                    let resolvedGrade = data.user?.grade_level || 4;
+                    if (data.user?.classroomId) {
+                        const m = data.user.classroomId.match(/-G([4-6])-/i);
+                        if (m) resolvedGrade = parseInt(m[1], 10);
+                    }
+                    localStorage.setItem('guro_student_grade', String(resolvedGrade));
                 }
                 onLoginSuccess(data.user);
             } else {
@@ -214,20 +263,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
     const Brand = () => (
         <div className="flex flex-col items-center gap-1 text-center">
-            <GuroLogoGraphic />
+            <GuroLogoGraphic onClick={handleLogoClick} />
             <h1 className="text-5xl font-extrabold tracking-tight text-[#11428E] mt-1">GURO</h1>
             <p className="text-base font-semibold text-[#A01322]">GUIDED UNIFIED RESOURCE OPTIMIZATION</p>
-            <p className="text-sm text-slate-400 mt-0.5">Your Learning Companion for Math &amp; English</p>
+            <p className="text-sm text-[var(--text-muted)] mt-0.5">Your Learning Companion for Math &amp; English</p>
         </div>
     );
 
     // ── Input field helper ────────────────────────────────────────────────────
 
-    const inputCls = "w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all";
-    const inputErrCls = "w-full pl-10 pr-4 py-3 bg-slate-50 border border-[#A01322] rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#A01322] focus:ring-2 focus:ring-[#A01322]/20 focus:bg-white transition-all";
-    const passwordInputCls = "w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all";
-    const passwordInputErrCls = "w-full pl-10 pr-10 py-3 bg-slate-50 border border-[#A01322] rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#A01322] focus:ring-2 focus:ring-[#A01322]/20 focus:bg-white transition-all";
-    const labelCls = "text-[11px] font-bold text-slate-400 uppercase tracking-wider";
+    const inputCls = "w-full pl-10 pr-4 py-3 bg-[var(--bg-main)]/60 border border-[var(--border-color)] rounded-xl text-[var(--text-main)] placeholder-[var(--text-dark)] text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 transition-all";
+    const inputErrCls = "w-full pl-10 pr-4 py-3 bg-[var(--bg-main)]/60 border border-[#A01322] rounded-xl text-[var(--text-main)] placeholder-[var(--text-dark)] text-sm focus:outline-none focus:border-[#A01322] focus:ring-2 focus:ring-[#A01322]/20 transition-all";
+    const passwordInputCls = "w-full pl-10 pr-10 py-3 bg-[var(--bg-main)]/60 border border-[var(--border-color)] rounded-xl text-[var(--text-main)] placeholder-[var(--text-dark)] text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 transition-all";
+    const passwordInputErrCls = "w-full pl-10 pr-10 py-3 bg-[var(--bg-main)]/60 border border-[#A01322] rounded-xl text-[var(--text-main)] placeholder-[var(--text-dark)] text-sm focus:outline-none focus:border-[#A01322] focus:ring-2 focus:ring-[#A01322]/20 transition-all";
+    const labelCls = "text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider";
+
+    const pageStyle: React.CSSProperties = {
+        background: isDarkMode 
+            ? 'linear-gradient(160deg, #060913 0%, #0a1122 50%, #150913 100%)' 
+            : 'linear-gradient(160deg, #eef3fb 0%, #fcf2f2 100%)',
+    };
 
     // ── Views ─────────────────────────────────────────────────────────────────
 
@@ -236,18 +291,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
             className="min-h-screen w-full flex flex-col items-center justify-center p-8 relative overflow-hidden select-none"
             style={pageStyle}
         >
+            {/* ── Theme Toggle floating button ── */}
+            {onToggleTheme && (
+                <div className="absolute top-6 right-6 md:top-8 md:right-8 z-30">
+                    <button
+                        type="button"
+                        onClick={onToggleTheme}
+                        aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                        className="p-2.5 rounded-2xl glass-panel border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all shadow-md cursor-pointer hover:scale-105 active:scale-95"
+                        title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                    >
+                        {isDarkMode ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-[#11428E]" />}
+                    </button>
+                </div>
+            )}
 
             {/* ── Guest role top nav ── */}
             {view === 'guest-roles' && (
                 <div className="absolute top-6 left-6 right-6 md:top-10 md:left-10 md:right-10 flex items-center justify-between z-20">
                     <button
                         onClick={() => setView('login')}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-full shadow-sm text-slate-600 hover:bg-slate-50 transition-all font-semibold text-xs cursor-pointer"
+                        className="flex items-center gap-2 px-4 py-2 glass-panel border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all font-semibold text-xs cursor-pointer"
                     >
-                        <ArrowLeft className="size-3 text-slate-400" strokeWidth={2.5} />
+                        <ArrowLeft className="size-3 text-[var(--text-muted)]" strokeWidth={2.5} />
                         Back to sign in
                     </button>
-                    <div className="px-3 py-1.5 bg-[#11428E]/10 border border-[#11428E]/20 rounded-full text-[#11428E] font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                    <div className="px-3 py-1.5 bg-[#11428E]/10 border border-[#11428E]/20 rounded-full text-[#3b82f6] font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
                         <Sparkles className="size-3" /> Guest session
                     </div>
                 </div>
@@ -259,7 +328,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
                 {/* ── Login ── */}
                 {view === 'login' && (
-                    <div className={`w-full max-w-md bg-white rounded-3xl p-8 shadow-xl shadow-[rgba(17,66,142,0.08)] flex flex-col gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/30 ring-2 ring-[#CE1126]/10' : 'border-slate-100/80'}`}>
+                    <div className={`w-full max-w-md glass-panel rounded-3xl p-8 shadow-2xl flex flex-col gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/40 ring-2 ring-[#CE1126]/20' : 'border-[var(--border-color)]'}`}>
                         <div className="flex items-start justify-between">
                             <div className="flex-1">
                                 {isAdminMode ? (
@@ -268,34 +337,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                             <Shield className="size-4" />
                                             <span>Staff &amp; IT Console</span>
                                         </div>
-                                        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">System Authorization</h2>
-                                        <p className="text-xs text-slate-400">Authenticate for developer &amp; admin controls</p>
+                                        <h2 className="text-2xl font-extrabold text-[var(--text-main)] tracking-tight">System Authorization</h2>
+                                        <p className="text-xs text-[var(--text-muted)]">Authenticate for developer &amp; admin controls</p>
                                     </div>
                                 ) : (
                                     <div>
-                                        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Welcome back</h2>
-                                        <p className="text-sm text-slate-400 mt-1">Sign in to sync your classroom progress</p>
+                                        <h2 className="text-2xl font-extrabold text-[var(--text-main)] tracking-tight">Welcome back</h2>
+                                        <p className="text-sm text-[var(--text-muted)] mt-1">Sign in to sync your classroom progress</p>
                                     </div>
                                 )}
                             </div>
-
-                            {/* Discreet 3-Dots Menu Button */}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsAdminMode(!isAdminMode);
-                                    setAuthError('');
-                                }}
-                                className={`p-2 rounded-xl border transition-all cursor-pointer ${
-                                    isAdminMode
-                                        ? 'bg-[#CE1126]/10 border-[#CE1126]/30 text-[#CE1126]'
-                                        : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-100'
-                                }`}
-                                title={isAdminMode ? "Switch to standard portal" : "Staff & IT Console"}
-                                aria-label={isAdminMode ? "Switch to standard portal" : "Staff & IT Console"}
-                            >
-                                {isAdminMode ? <Shield className="size-4 text-[#CE1126]" /> : <MoreVertical className="size-4" />}
-                            </button>
                         </div>
 
                         {authError && (
@@ -307,7 +358,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                         <form onSubmit={handleLogin} className="flex flex-col gap-4">
                             {/* Role selection for Sign In */}
                             {isAdminMode ? (
-                                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 text-white text-xs font-semibold">
+                                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-semibold">
                                     <div className="flex items-center gap-2">
                                         <Terminal className="size-4 text-emerald-400" />
                                         <span>Administrator / Developer Mode</span>
@@ -334,38 +385,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                                     onClick={() => { setLoginRole(r); setAuthError(''); }}
                                                     className={`py-2 px-3 rounded-xl border text-xs font-bold capitalize cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
                                                         active
-                                                            ? 'bg-[#11428E]/10 border-[#11428E] text-[#11428E]'
-                                                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                                                            ? 'bg-[#11428E]/20 border-[#11428E] text-[#3b82f6]'
+                                                            : 'bg-[var(--bg-main)]/50 border-[var(--border-color)] text-[var(--text-muted)] hover:bg-[var(--bg-main)]'
                                                     }`}
                                                 >
-                                                    <IconComponent size={14} className={active ? 'text-[#11428E]' : 'text-slate-400'} />
+                                                    <IconComponent size={14} className={active ? 'text-[#3b82f6]' : 'text-[var(--text-dark)]'} />
                                                     <span>{r}</span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Grade level selection for student role */}
-                            {!isAdminMode && loginRole === 'student' && (
-                                <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
-                                    <label className={labelCls}>Specify Grade Level</label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {[4, 5, 6].map((g) => {
-                                            const active = loginGrade === g;
-                                            return (
-                                                <button
-                                                    key={g}
-                                                    type="button"
-                                                    onClick={() => setLoginGrade(g)}
-                                                    className={`py-2 px-3 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
-                                                        active
-                                                            ? 'bg-[#11428E]/10 border-[#11428E] text-[#11428E]'
-                                                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
-                                                    }`}
-                                                >
-                                                    Grade {g}
                                                 </button>
                                             );
                                         })}
@@ -376,7 +401,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                             <div className="flex flex-col gap-1.5">
                                 <label className={labelCls} htmlFor="login-email">Email address</label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
+                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[var(--text-dark)]" aria-hidden="true" />
                                     <input
                                         id="login-email"
                                         type="email"
@@ -395,7 +420,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                             <div className="flex flex-col gap-1.5">
                                 <label className={labelCls} htmlFor="login-password">Password</label>
                                 <div className="relative">
-                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
+                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[var(--text-dark)]" aria-hidden="true" />
                                     <input
                                         id="login-password"
                                         type={showPassword ? "text" : "password"}
@@ -410,7 +435,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none flex items-center justify-center p-1 rounded-md hover:bg-slate-100 transition-colors"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-dark)] hover:text-[var(--text-main)] focus:outline-none flex items-center justify-center p-1 rounded-md hover:bg-[var(--bg-main)] transition-colors"
                                         aria-label={showPassword ? "Hide password" : "Show password"}
                                     >
                                         {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -436,20 +461,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                         <div className="flex flex-col items-center gap-3">
                             <button
                                  onClick={() => setView('register')}
-                                 className="text-xs font-bold text-[#11428E] hover:text-[#11428E]/80 cursor-pointer"
+                                 className="text-xs font-bold text-[#3b82f6] hover:text-[#2563eb] cursor-pointer"
                             >
                                 Need an account? Create one here
                             </button>
                             <div className="w-full flex items-center gap-3">
-                                <div className="flex-1 h-px bg-slate-100" />
-                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">or</span>
-                                <div className="flex-1 h-px bg-slate-100" />
+                                <div className="flex-1 h-px bg-[var(--border-color)]" />
+                                <span className="text-[10px] font-bold text-[var(--text-dark)] uppercase tracking-widest">or</span>
+                                <div className="flex-1 h-px bg-[var(--border-color)]" />
                             </div>
                             <button
                                 onClick={() => setView('guest-roles')}
-                                className="w-full flex items-center justify-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold py-3 rounded-xl transition-all text-sm cursor-pointer"
+                                className="w-full flex items-center justify-center gap-2 border border-[var(--border-color)] hover:bg-[var(--bg-main)] text-[var(--text-main)] font-semibold py-3 rounded-xl transition-all text-sm cursor-pointer shadow-sm"
                             >
-                                 <Rocket className="size-4 text-[#11428E]" /> Continue as guest / try demo
+                                 <Rocket className="size-4 text-[#3b82f6]" /> Continue as guest / try demo
                             </button>
                         </div>
                     </div>
@@ -457,7 +482,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
                 {/* ── Register ── */}
                 {view === 'register' && (
-                    <div className={`w-full max-w-md bg-white rounded-3xl p-8 shadow-xl shadow-[rgba(17,66,142,0.08)] flex flex-col gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/30 ring-2 ring-[#CE1126]/10' : 'border-slate-100/80'}`}>
+                    <div className={`w-full max-w-md glass-panel rounded-3xl p-8 shadow-2xl flex flex-col gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/40 ring-2 ring-[#CE1126]/20' : 'border-[var(--border-color)]'}`}>
                         <div className="flex items-start justify-between">
                             <div className="flex-1">
                                 {isAdminMode ? (
@@ -466,33 +491,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                             <KeyRound className="size-4" />
                                             <span>Staff Passkey Required</span>
                                         </div>
-                                        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Register System Admin</h2>
-                                        <p className="text-xs text-slate-400">Authorized personnel registration with security key</p>
+                                        <h2 className="text-2xl font-extrabold text-[var(--text-main)] tracking-tight">Register System Admin</h2>
+                                        <p className="text-xs text-[var(--text-muted)]">Authorized personnel registration with security key</p>
                                     </div>
                                 ) : (
                                     <div>
-                                        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Create account</h2>
-                                        <p className="text-sm text-slate-400 mt-1">Register to start managing classes and tracking logs</p>
+                                        <h2 className="text-2xl font-extrabold text-[var(--text-main)] tracking-tight">Create account</h2>
+                                        <p className="text-sm text-[var(--text-muted)] mt-1">Register to start managing classes and tracking logs</p>
                                     </div>
                                 )}
                             </div>
-
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsAdminMode(!isAdminMode);
-                                    setAuthError('');
-                                }}
-                                className={`p-2 rounded-xl border transition-all cursor-pointer ${
-                                    isAdminMode 
-                                        ? 'bg-[#CE1126]/10 border-[#CE1126]/30 text-[#CE1126]' 
-                                        : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-100'
-                                }`}
-                                title={isAdminMode ? "Switch to standard registration" : "Staff & IT Registration"}
-                                aria-label={isAdminMode ? "Switch to standard registration" : "Staff & IT Registration"}
-                            >
-                                {isAdminMode ? <Shield className="size-4 text-[#CE1126]" /> : <MoreVertical className="size-4" />}
-                            </button>
                         </div>
 
                         {authError && (
@@ -506,7 +514,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                 <div className="flex flex-col gap-1.5">
                                     <label className={labelCls} htmlFor="reg-first-name">First name</label>
                                     <div className="relative">
-                                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
+                                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[var(--text-dark)]" aria-hidden="true" />
                                         <input
                                             id="reg-first-name"
                                             type="text"
@@ -525,7 +533,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                 <div className="flex flex-col gap-1.5">
                                     <label className={labelCls} htmlFor="reg-last-name">Last name</label>
                                     <div className="relative">
-                                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
+                                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[var(--text-dark)]" aria-hidden="true" />
                                         <input
                                             id="reg-last-name"
                                             type="text"
@@ -545,7 +553,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                             <div className="flex flex-col gap-1.5">
                                 <label className={labelCls} htmlFor="reg-middle-name">Middle name (Optional)</label>
                                 <div className="relative">
-                                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
+                                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[var(--text-dark)]" aria-hidden="true" />
                                     <input
                                         id="reg-middle-name"
                                         type="text"
@@ -560,7 +568,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                             <div className="flex flex-col gap-1.5">
                                 <label className={labelCls} htmlFor="reg-email">Email address</label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
+                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[var(--text-dark)]" aria-hidden="true" />
                                     <input
                                         id="reg-email"
                                         type="email"
@@ -579,7 +587,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                             <div className="flex flex-col gap-1.5">
                                 <label className={labelCls} htmlFor="reg-password">Password</label>
                                 <div className="relative">
-                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" aria-hidden="true" />
+                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[var(--text-dark)]" aria-hidden="true" />
                                     <input
                                         id="reg-password"
                                         type={showPassword ? "text" : "password"}
@@ -594,7 +602,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none flex items-center justify-center p-1 rounded-md hover:bg-slate-100 transition-colors"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-dark)] hover:text-[var(--text-main)] focus:outline-none flex items-center justify-center p-1 rounded-md hover:bg-[var(--bg-main)] transition-colors"
                                         aria-label={showPassword ? "Hide password" : "Show password"}
                                     >
                                         {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -602,7 +610,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                 </div>
                                 {fieldErrors.password && <p id="reg-pw-err" className="text-[11px] text-[#A01322] font-semibold pl-1">{fieldErrors.password}</p>}
                                 {password.length > 0 && password.length < 6 && !fieldErrors.password && (
-                                    <p className="text-[11px] text-slate-400 pl-1">{password.length}/6 characters minimum</p>
+                                    <p className="text-[11px] text-[var(--text-dark)] pl-1">{password.length}/6 characters minimum</p>
                                 )}
                             </div>
 
@@ -616,13 +624,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                             id="reg-admin-secret"
                                             type="password"
                                             placeholder="System security passkey..."
-                                            className="w-full pl-10 pr-4 py-3 bg-red-50/50 border border-[#CE1126]/30 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#CE1126] focus:ring-2 focus:ring-[#CE1126]/20 focus:bg-white transition-all font-mono"
+                                            className="w-full pl-10 pr-4 py-3 bg-red-950/20 border border-[#CE1126]/30 rounded-xl text-[var(--text-main)] placeholder-[var(--text-dark)] text-sm focus:outline-none focus:border-[#CE1126] focus:ring-2 focus:ring-[#CE1126]/20 transition-all font-mono"
                                             value={adminSecretKey}
                                             onChange={(e) => setAdminSecretKey(e.target.value)}
                                             required
                                         />
                                     </div>
-                                    <p className="text-[11px] text-slate-400 pl-1">Authorized key defined in server environment configuration.</p>
+                                    <p className="text-[11px] text-[var(--text-muted)] pl-1">Authorized key defined in server environment configuration.</p>
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-1.5">
@@ -638,11 +646,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                                     onClick={() => { setRoleSelection(r); setAuthError(''); }}
                                                     className={`py-2 px-3 rounded-xl border text-xs font-bold capitalize cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
                                                         active
-                                                            ? 'bg-[#11428E]/10 border-[#11428E] text-[#11428E]'
-                                                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                                                            ? 'bg-[#11428E]/20 border-[#11428E] text-[#3b82f6]'
+                                                            : 'bg-[var(--bg-main)]/50 border-[var(--border-color)] text-[var(--text-muted)] hover:bg-[var(--bg-main)]'
                                                     }`}
                                                 >
-                                                    <IconComponent size={14} className={active ? 'text-[#11428E]' : 'text-slate-400'} />
+                                                    <IconComponent size={14} className={active ? 'text-[#3b82f6]' : 'text-[var(--text-dark)]'} />
                                                     <span>{r}</span>
                                                 </button>
                                             );
@@ -667,7 +675,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
                         <button
                             onClick={() => setView('login')}
-                            className="text-xs font-bold text-slate-400 hover:text-slate-600 text-center cursor-pointer"
+                            className="text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] text-center cursor-pointer"
                         >
                             Already have an account? Sign in here
                         </button>

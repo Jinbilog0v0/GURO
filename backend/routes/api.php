@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\SyncController;
 use App\Http\Controllers\RateLimitController;
+use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [AuthController::class, 'unauthorized'])->name('login');
@@ -19,7 +20,7 @@ Route::get('/item-bank', [ClassroomController::class, 'getItemBank']);
 Route::post('/sync', [SyncController::class, 'syncTelemetry']);
 Route::get('/progress', [SyncController::class, 'getProgress']);
 
-// Protected — valid Sanctum token required for Teachers
+// Protected — valid Sanctum token required for Teachers & Admins
 Route::middleware('auth:sanctum')->group(function () {
     // Item Bank & Generation
     Route::post('/generate', [ClassroomController::class, 'generateLesson']);
@@ -32,6 +33,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/classroom/update-lesson', [ClassroomController::class, 'updateClassroomLesson']);
     Route::post('/classroom/delete-lesson', [ClassroomController::class, 'deleteClassroomLesson']);
     Route::get('/classroom/members', [ClassroomController::class, 'getClassroomMembers']);
+    Route::get('/classroom/eosy-report', [ClassroomController::class, 'getEosyReport']);
+    Route::post('/classroom/promote', [ClassroomController::class, 'promoteStudents']);
+    Route::get('/student/academic-history', [ClassroomController::class, 'getStudentAcademicHistory']);
 
     // Parent Student Creation
     Route::post('/parent/create-student', [AuthController::class, 'createStudent']);
@@ -45,5 +49,21 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/rate-limits/{role}',   [RateLimitController::class, 'upsert']);
         Route::delete('/rate-limits/{role}',[RateLimitController::class, 'destroy']);
         Route::get('/rate-limits/usage',    [RateLimitController::class, 'usage']);
+    });
+
+    // Admin & IT Governance Suite
+    Route::prefix('admin')->group(function () {
+        Route::get('/overview',                         [AdminController::class, 'overview']);
+        Route::post('/cache-purge',                     [AdminController::class, 'purgeCache']);
+        Route::get('/users',                            [AdminController::class, 'getUsers']);
+        Route::post('/users/{id}/update-role',          [AdminController::class, 'updateUserRole']);
+        Route::post('/users/{id}/reset-password',       [AdminController::class, 'resetUserPassword']);
+        Route::delete('/users/{id}',                    [AdminController::class, 'deleteUser']);
+        Route::get('/classrooms',                       [AdminController::class, 'getClassrooms']);
+        Route::post('/classrooms/{id}/toggle-lock',     [AdminController::class, 'toggleLockClassroom']);
+        Route::post('/classrooms/{id}/reassign',        [AdminController::class, 'reassignClassroom']);
+        Route::delete('/classrooms/{id}',               [AdminController::class, 'deleteClassroom']);
+        Route::get('/reports/summary',                  [AdminController::class, 'getReportsSummary']);
+        Route::get('/sync-logs',                        [AdminController::class, 'getSyncTelemetry']);
     });
 });

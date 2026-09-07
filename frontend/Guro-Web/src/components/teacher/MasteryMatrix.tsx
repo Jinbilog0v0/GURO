@@ -10,6 +10,9 @@ interface SyncedEvent {
   score: number;
   totalQuestions: number;
   difficulty?: string;
+  assessmentType?: string;
+  schoolYear?: string;
+  term?: string;
   timestamp: string;
 }
 
@@ -22,6 +25,8 @@ interface MasteryMatrixProps {
 export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, lastUpdatedCell, onGoToClassroomSetup }) => {
   const [studentSearch, setStudentSearch] = useState('');
   const [topicFilter, setTopicFilter] = useState('All');
+  const [termFilter, setTermFilter] = useState('All');
+  const [typeFilter, setTypeFilter] = useState('All');
 
   const allStudents = Array.from(new Set(progressLogs.map((log) => log.studentId)));
   const allTopics = Array.from(new Set(progressLogs.map((log) => log.topic)));
@@ -33,7 +38,13 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
   const visibleTopics = topicFilter === 'All' ? allTopics : allTopics.filter((t) => t === topicFilter);
 
   const getBestScoreDetails = (studentId: string, topic: string) => {
-    const logs = progressLogs.filter((l) => l.studentId === studentId && l.topic === topic);
+    let logs = progressLogs.filter((l) => l.studentId === studentId && l.topic === topic);
+    if (termFilter !== 'All') {
+      logs = logs.filter((l) => l.term === termFilter);
+    }
+    if (typeFilter !== 'All') {
+      logs = logs.filter((l) => (l.assessmentType || 'practice') === typeFilter);
+    }
     if (logs.length === 0) return null;
     
     // Find log with highest score percentage
@@ -114,9 +125,36 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
                 {allTopics.map((t) => <option key={t} value={t}>Topic: {t}</option>)}
               </select>
             </div>
-            {(studentSearch || topicFilter !== 'All') && (
+            <div className="relative">
+              <select
+                value={termFilter}
+                onChange={(e) => setTermFilter(e.target.value)}
+                aria-label="Filter by term / quarter"
+                className="px-3 py-2 text-xs rounded-lg bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
+              >
+                <option value="All">All Quarters</option>
+                <option value="Quarter 1">Quarter 1</option>
+                <option value="Quarter 2">Quarter 2</option>
+                <option value="Quarter 3">Quarter 3</option>
+                <option value="Quarter 4">Quarter 4</option>
+              </select>
+            </div>
+            <div className="relative">
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                aria-label="Filter by assessment type"
+                className="px-3 py-2 text-xs rounded-lg bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
+              >
+                <option value="All">All Test Types</option>
+                <option value="pre-test">Pre-Test (Diagnostic)</option>
+                <option value="post-test">Post-Test (Summative)</option>
+                <option value="practice">Practice Quiz</option>
+              </select>
+            </div>
+            {(studentSearch || topicFilter !== 'All' || termFilter !== 'All' || typeFilter !== 'All') && (
               <button
-                onClick={() => { setStudentSearch(''); setTopicFilter('All'); }}
+                onClick={() => { setStudentSearch(''); setTopicFilter('All'); setTermFilter('All'); setTypeFilter('All'); }}
                 className="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold transition-colors"
               >
                 Clear filters

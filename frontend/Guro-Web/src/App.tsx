@@ -27,6 +27,7 @@ import {
   Sun,
   Moon,
   GraduationCap,
+  Target,
   Shield,
   Menu,
   X
@@ -286,6 +287,8 @@ function App() {
   if (activeTab === 'landing') {
     return (
       <LandingPage 
+        isDarkMode={isDarkMode}
+        onToggleTheme={toggleTheme}
         onSelectRole={(role, grade) => {
           setCurrentUser(null);
           if (grade) {
@@ -481,6 +484,12 @@ function App() {
                   <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'analytics')} aria-current={activeTab === 'teacher' && activeSubTab === 'analytics' ? 'page' : undefined}>
                     <TrendingUp size={17} className="shrink-0" /><span>Classroom Analytics</span>
                   </button>
+                  <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('pre-post-test'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'pre-post-test')} aria-current={activeTab === 'teacher' && activeSubTab === 'pre-post-test' ? 'page' : undefined}>
+                    <Target size={17} className="shrink-0" /><span>Pre/Post Growth</span>
+                  </button>
+                  <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('eosy-promotion'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'eosy-promotion')} aria-current={activeTab === 'teacher' && activeSubTab === 'eosy-promotion' ? 'page' : undefined}>
+                    <GraduationCap size={17} className="shrink-0" /><span>EOSY & Promotion</span>
+                  </button>
                   <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('classroom-pairing'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'classroom-pairing')} aria-current={activeTab === 'teacher' && activeSubTab === 'classroom-pairing' ? 'page' : undefined}>
                     <Key size={17} className="shrink-0" /><span>Classroom Setup</span>
                   </button>
@@ -492,6 +501,8 @@ function App() {
             ) : (
               <>
                 <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'analytics')} title="Classroom Analytics" aria-label="Classroom Analytics"><TrendingUp size={18} /></button>
+                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('pre-post-test'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'pre-post-test')} title="Pre/Post Growth" aria-label="Pre/Post Growth"><Target size={18} /></button>
+                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('eosy-promotion'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'eosy-promotion')} title="EOSY & Promotion" aria-label="EOSY & Promotion"><GraduationCap size={18} /></button>
                 <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('classroom-pairing'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'classroom-pairing')} title="Classroom Setup" aria-label="Classroom Setup"><Key size={18} /></button>
                 <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('manual-lesson'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'manual-lesson')} title="Create Lesson Manually" aria-label="Create Lesson Manually"><PlusCircle size={18} /></button>
               </>
@@ -620,6 +631,8 @@ function App() {
                   <span className="text-[var(--border-color)]">/</span>
                   <span className="text-[var(--text-main)] font-bold">
                     {activeSubTab === 'analytics' && 'Classroom Analytics'}
+                    {activeSubTab === 'pre-post-test' && 'Pre/Post-Test Growth'}
+                    {activeSubTab === 'eosy-promotion' && 'EOSY & Promotion'}
                     {activeSubTab === 'classroom-pairing' && 'Classroom Setup'}
                     {activeSubTab === 'manual-lesson' && 'Create Lesson Manually'}
                   </span>

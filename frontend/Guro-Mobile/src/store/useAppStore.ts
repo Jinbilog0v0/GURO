@@ -69,6 +69,9 @@ export interface ProgressEvent {
   score: number;
   totalQuestions: number;
   difficulty?: string;
+  assessmentType?: 'pre-test' | 'post-test' | 'practice';
+  schoolYear?: string;
+  term?: string;
   timestamp: string;
   synced: boolean;
 }
@@ -82,6 +85,8 @@ interface AppState {
   studentId: string;
   classroomId: string | null;
   activeSubjects: string[];
+  activeSchoolYear: string;
+  activeTerm: string;
   streakCount: number;
   bestStreak: number;
   unlockedBadges: string[];
@@ -118,6 +123,8 @@ interface AppState {
   setVoiceGuideTheme: (theme: string) => void;
   setCorrectSoundTheme: (theme: string) => void;
   setPreferredGrade: (grade: number) => void;
+  setActiveSchoolYear: (sy: string) => void;
+  setActiveTerm: (term: string) => void;
   setToken: (token: string | null) => void;
   addLog: (message: string) => void;
   clearLogs: () => void;
@@ -173,6 +180,8 @@ export const useAppStore = create<AppState>()(
       studentId: 'GURO-STUDENT-LOCAL',
       classroomId: null,
       activeSubjects: ['Mathematics', 'English'],
+      activeSchoolYear: '2026-2027',
+      activeTerm: 'Quarter 1',
       streakCount: 0,
       bestStreak: 0,
       unlockedBadges: [],
@@ -202,6 +211,8 @@ export const useAppStore = create<AppState>()(
       serverUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000',
       adaptiveTiers: {},
       consecutiveFailures: {},
+      setActiveSchoolYear: (sy) => set({ activeSchoolYear: sy }),
+      setActiveTerm: (term) => set({ activeTerm: term }),
       setServerUrl: (url) => set({ serverUrl: url }),
       setToken: (token) => set({ token }),
       setAppMode: (mode) => set({ appMode: mode }),
@@ -431,8 +442,12 @@ export const useAppStore = create<AppState>()(
         return false;
       },
       recordProgress: async (event) => {
+        const state = get();
         const newEvent: ProgressEvent = {
           ...event,
+          assessmentType: event.assessmentType || 'practice',
+          schoolYear: event.schoolYear || state.activeSchoolYear || '2026-2027',
+          term: event.term || state.activeTerm || 'Quarter 1',
           eventId: `EVT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
           timestamp: new Date().toISOString(),
           synced: false,
@@ -508,9 +523,9 @@ export const useAppStore = create<AppState>()(
         get().addLog(`Recorded local progress for "${event.topic}" (${event.score}/${event.totalQuestions}) (+${earnedXP} XP, +${earnedStars} Stars)`);
 
         // Trigger background sync in online mode to sync with web immediately
-        const state = get();
-        if (state.appMode === 'online') {
-          get().syncProgressNow(state.serverUrl).catch((err) => {
+        const currentState = get();
+        if (currentState.appMode === 'online') {
+          get().syncProgressNow(currentState.serverUrl).catch((err) => {
             console.warn('[Sync] Background sync failed:', err);
           });
         }
@@ -626,6 +641,9 @@ export const useAppStore = create<AppState>()(
         parentPin: state.parentPin,
         studentProgress: state.studentProgress,
         studentId: state.studentId,
+        activeSubjects: state.activeSubjects,
+        activeSchoolYear: state.activeSchoolYear,
+        activeTerm: state.activeTerm,
         classroomId: state.classroomId,
         streakCount: state.streakCount,
         unlockedBadges: state.unlockedBadges,

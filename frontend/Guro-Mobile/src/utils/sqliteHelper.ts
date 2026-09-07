@@ -21,6 +21,10 @@ export async function getLocalDb(): Promise<SQLite.SQLiteDatabase> {
       topic TEXT NOT NULL,
       score INTEGER NOT NULL,
       total_questions INTEGER NOT NULL,
+      difficulty TEXT DEFAULT 'Average',
+      assessment_type TEXT DEFAULT 'practice',
+      school_year TEXT DEFAULT '2026-2027',
+      term TEXT DEFAULT 'Quarter 1',
       timestamp TEXT NOT NULL,
       synced INTEGER DEFAULT 0
     );
@@ -67,6 +71,28 @@ export async function getLocalDb(): Promise<SQLite.SQLiteDatabase> {
     // Ignore error if column already exists
   }
 
+  // Run dynamic migrations for assessment_type, school_year, term in student_progress
+  try {
+    await db.execAsync("ALTER TABLE student_progress ADD COLUMN difficulty TEXT DEFAULT 'Average';");
+  } catch (e) {
+    // Column already exists
+  }
+  try {
+    await db.execAsync("ALTER TABLE student_progress ADD COLUMN assessment_type TEXT DEFAULT 'practice';");
+  } catch (e) {
+    // Column already exists
+  }
+  try {
+    await db.execAsync("ALTER TABLE student_progress ADD COLUMN school_year TEXT DEFAULT '2026-2027';");
+  } catch (e) {
+    // Column already exists
+  }
+  try {
+    await db.execAsync("ALTER TABLE student_progress ADD COLUMN term TEXT DEFAULT 'Quarter 1';");
+  } catch (e) {
+    // Column already exists
+  }
+
   // Run dynamic migrations for gamified question columns if they don't exist
   try {
     await db.execAsync("ALTER TABLE local_item_bank ADD COLUMN type TEXT DEFAULT 'multiple-choice';");
@@ -88,8 +114,8 @@ export async function getLocalDb(): Promise<SQLite.SQLiteDatabase> {
 export async function saveLocalProgress(event: ProgressEvent): Promise<void> {
   const db = await getLocalDb();
   await db.runAsync(
-    `INSERT INTO student_progress (event_id, subject, grade_level, topic, score, total_questions, timestamp, synced)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO student_progress (event_id, subject, grade_level, topic, score, total_questions, difficulty, assessment_type, school_year, term, timestamp, synced)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       event.eventId,
       event.subject,
@@ -97,6 +123,10 @@ export async function saveLocalProgress(event: ProgressEvent): Promise<void> {
       event.topic,
       event.score,
       event.totalQuestions,
+      event.difficulty || 'Average',
+      event.assessmentType || 'practice',
+      event.schoolYear || '2026-2027',
+      event.term || 'Quarter 1',
       event.timestamp,
       event.synced ? 1 : 0
     ]
@@ -112,6 +142,10 @@ export async function getLocalProgress(): Promise<ProgressEvent[]> {
     topic: string;
     score: number;
     total_questions: number;
+    difficulty: string | null;
+    assessment_type: string | null;
+    school_year: string | null;
+    term: string | null;
     timestamp: string;
     synced: number;
   }>('SELECT * FROM student_progress ORDER BY timestamp DESC');
@@ -123,6 +157,10 @@ export async function getLocalProgress(): Promise<ProgressEvent[]> {
     topic: row.topic,
     score: row.score,
     totalQuestions: row.total_questions,
+    difficulty: row.difficulty || 'Average',
+    assessmentType: (row.assessment_type as any) || 'practice',
+    schoolYear: row.school_year || '2026-2027',
+    term: row.term || 'Quarter 1',
     timestamp: row.timestamp,
     synced: row.synced === 1,
   }));
@@ -137,6 +175,10 @@ export async function getUnsyncedProgress(): Promise<ProgressEvent[]> {
     topic: string;
     score: number;
     total_questions: number;
+    difficulty: string | null;
+    assessment_type: string | null;
+    school_year: string | null;
+    term: string | null;
     timestamp: string;
     synced: number;
   }>('SELECT * FROM student_progress WHERE synced = 0');
@@ -148,6 +190,10 @@ export async function getUnsyncedProgress(): Promise<ProgressEvent[]> {
     topic: row.topic,
     score: row.score,
     totalQuestions: row.total_questions,
+    difficulty: row.difficulty || 'Average',
+    assessmentType: (row.assessment_type as any) || 'practice',
+    schoolYear: row.school_year || '2026-2027',
+    term: row.term || 'Quarter 1',
     timestamp: row.timestamp,
     synced: false,
   }));

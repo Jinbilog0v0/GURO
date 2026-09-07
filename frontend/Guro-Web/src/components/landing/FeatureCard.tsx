@@ -17,12 +17,12 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
     gradient = 'from-[#11428E] to-blue-600',
 }) => {
     return (
-        <div className="group flex flex-col items-center text-center gap-3 rounded-[24px] bg-white/95 backdrop-blur-md p-5 shadow-lg shadow-zinc-200/60 border border-zinc-100/80 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-200/80 relative overflow-hidden">
+        <div className="group flex flex-col items-center text-center gap-3 rounded-[24px] glass-panel p-5 shadow-lg border border-[var(--border-color)] transition-all duration-300 hover:-translate-y-1 hover:border-[var(--accent-primary)] relative overflow-hidden">
             {/* Top decorative accent line */}
             <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${gradient}`} />
 
             {badge && (
-                <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-50 text-[#11428E] border border-blue-100">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#11428E]/10 text-[#3b82f6] border border-[#11428E]/20">
                     {badge}
                 </span>
             )}
@@ -34,11 +34,11 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
 
             {/* Content Labels */}
             <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-extrabold text-zinc-800 tracking-tight leading-snug">
+                <span className="text-sm font-extrabold text-[var(--text-main)] tracking-tight leading-snug">
                     {label}
                 </span>
                 {description && (
-                    <span className="text-xs font-medium text-zinc-500 leading-relaxed">
+                    <span className="text-xs font-medium text-[var(--text-muted)] leading-relaxed">
                         {description}
                     </span>
                 )}

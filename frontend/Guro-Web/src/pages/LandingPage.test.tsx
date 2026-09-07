@@ -73,7 +73,7 @@ describe('LandingPage Portal (Web)', () => {
     expect(mockSelectRole).toHaveBeenCalledWith('student', 4);
   });
 
-  test('can toggle admin mode via 3-dots button and authenticate as admin', async () => {
+  test('can toggle admin mode via 5-tap logo gesture and authenticate as admin', async () => {
     (global.fetch as jest.Mock).mockImplementation(() =>
       Promise.resolve({
         ok: true,
@@ -85,8 +85,13 @@ describe('LandingPage Portal (Web)', () => {
     const mockLoginSuccess = jest.fn();
     render(<LandingPage onSelectRole={mockSelectRole} onLoginSuccess={mockLoginSuccess} />);
 
-    const threeDotsBtn = screen.getByLabelText(/Staff & IT Console/i);
-    fireEvent.click(threeDotsBtn);
+    const logoBtn = screen.getByLabelText(/GURO Logo/i);
+    // Click logo 5 times to unlock Admin mode
+    fireEvent.click(logoBtn);
+    fireEvent.click(logoBtn);
+    fireEvent.click(logoBtn);
+    fireEvent.click(logoBtn);
+    fireEvent.click(logoBtn);
 
     expect(screen.getByText(/Staff & IT Console/i)).toBeInTheDocument();
     expect(screen.getByText(/System Authorization/i)).toBeInTheDocument();
