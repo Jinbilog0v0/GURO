@@ -145,7 +145,9 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   const fetchLogs = useCallback(async (isBackground = false) => {
-    const classCode = currentUser?.classroomId || localStorage.getItem('guro_teacher_classroom_code');
+    const classCode = currentUser?.classroomId || 
+      (currentUser?.userId ? localStorage.getItem(`guro_teacher_classroom_code_${currentUser.userId}`) : null) || 
+      localStorage.getItem('guro_teacher_classroom_code');
     if (!classCode) {
       setProgressLogs([]);
       setClassroomMembers([]);
@@ -334,6 +336,7 @@ function App() {
       case 'teacher':
         return (
           <TeacherSpace
+            currentUser={currentUser}
             progressLogs={progressLogs}
             classroomMembers={classroomMembers}
             lastUpdatedCell={lastUpdatedCell}
@@ -376,6 +379,7 @@ function App() {
       default:
         return (
           <TeacherSpace
+            currentUser={currentUser}
             progressLogs={progressLogs}
             classroomMembers={classroomMembers}
             lastUpdatedCell={lastUpdatedCell}
@@ -431,7 +435,7 @@ function App() {
           <div className="w-[42px] h-[42px] shrink-0 rounded-[12px] bg-gradient-to-br from-[#11428E] to-[#1C5BC0] flex items-center justify-center text-white font-extrabold text-sm shadow-[0_6px_16px_rgba(17,66,142,0.34)]">GU</div>
           {isSidebarOpen && (
             <div className="leading-tight overflow-hidden">
-              <div className="font-['Space_Grotesk',sans-serif] text-[18px] font-extrabold text-[var(--text-main)]">GURO</div>
+              <div className="text-[18px] font-extrabold text-[var(--text-main)]">GURO</div>
               <div className={`text-[12px] font-semibold ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--text-muted)]'}`}>
                 {isAdmin ? 'Admin Console' 
                   : currentUser?.role === 'parent' ? 'Parent Portal' 
@@ -691,6 +695,12 @@ function App() {
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={() => {
           setIsLogoutModalOpen(false);
+          if (currentUser?.userId) {
+            localStorage.removeItem(`guro_teacher_classroom_code_${currentUser.userId}`);
+            localStorage.removeItem(`guro_teacher_classroom_history_${currentUser.userId}`);
+          }
+          localStorage.removeItem('guro_teacher_classroom_code');
+          localStorage.removeItem('guro_teacher_classroom_history');
           localStorage.removeItem('guro_user_session');
           localStorage.removeItem('guro_active_tab');
           localStorage.removeItem('guro_active_sub_tab');

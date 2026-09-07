@@ -69,6 +69,7 @@ export function ProfileScreen() {
   const setSoundEffectsEnabled = useAppStore((s) => s.setSoundEffectsEnabled);
   const appMode             = useAppStore((s) => s.appMode);
   const classroomId         = useAppStore((s) => s.classroomId);
+  const teacherName         = useAppStore((s) => s.teacherName);
   const setClassroomId      = useAppStore((s) => s.setClassroomId);
   const fetchItemBankFromServer = useAppStore((s) => s.fetchItemBankFromServer);
   const parentPin           = useAppStore((s) => s.parentPin);
@@ -339,10 +340,17 @@ export function ProfileScreen() {
           {classroomId ? (
             <View style={{ gap: Spacing.sm }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-                <School size={18} color={Colors.accentPrimary} />
-                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.textMain, flex: 1 }}>
-                  {classroomId}
-                </Text>
+                <School size={20} color={Colors.accentPrimary} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  {teacherName ? (
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }}>
+                      Teacher: <Text style={{ color: Colors.accentPrimary }}>{teacherName}</Text>
+                    </Text>
+                  ) : null}
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                    Classroom Code: {classroomId}
+                  </Text>
+                </View>
               </View>
               <TouchableOpacity onPress={handleUnlinkClassroom} activeOpacity={0.75} style={{ alignSelf: 'flex-start' }}>
                 <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.dangerText }}>

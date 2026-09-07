@@ -13,6 +13,10 @@ interface UserRecord {
   role: string;
   classroomId?: string | null;
   parentAccessToken?: string | null;
+  verificationStatus?: 'pending' | 'approved' | 'rejected';
+  schoolName?: string | null;
+  schoolIdNumber?: string | null;
+  rejectionReason?: string | null;
   createdAt?: string | null;
 }
 
@@ -100,8 +104,8 @@ export function AdminUserDirectory() {
   };
 
   const handleResetPassword = async () => {
-    if (!resettingUser || newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters.');
+    if (!resettingUser || !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(newPassword)) {
+      toast.error('Password must be at least 8 characters and contain letters, numbers, and at least one special symbol.');
       return;
     }
     setSubmittingReset(true);
@@ -232,13 +236,33 @@ export function AdminUserDirectory() {
                           <div className="flex flex-col">
                             <span className="font-extrabold text-[var(--text-main)] text-xs">{u.name || 'Anonymous User'}</span>
                             <span className="text-[11px] text-[var(--text-muted)]">{u.email}</span>
+                            {u.schoolName && (
+                              <span className="text-[10px] text-[var(--text-dark)] font-medium">🏫 {u.schoolName}</span>
+                            )}
                           </div>
                         </div>
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${badge.bg} ${badge.text}`}>
-                          {badge.label}
-                        </span>
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${badge.bg} ${badge.text}`}>
+                            {badge.label}
+                          </span>
+                          {u.role === 'teacher' && (
+                            u.verificationStatus === 'pending' ? (
+                              <span className="text-[9px] font-extrabold text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                ⏳ Pending
+                              </span>
+                            ) : u.verificationStatus === 'rejected' ? (
+                              <span className="text-[9px] font-extrabold text-rose-600 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+                                ✕ Rejected
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                ✓ Verified
+                              </span>
+                            )
+                          )}
+                        </div>
                       </td>
                       <td className="py-3.5 px-4 font-mono text-[11px] text-[var(--text-muted)]">
                         {u.userId}

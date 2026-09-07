@@ -79,13 +79,24 @@ export function LessonsScreen() {
   const getTopics = (): { gradeLevel: number; topic: string }[] => {
     if (!itemBank || !itemBank[selectedSubject]) return [];
     const result: { gradeLevel: number; topic: string }[] = [];
-    const grades = ['4', '5', '6'];
-    for (const g of grades) {
-      const gradeData = itemBank[selectedSubject][g];
-      if (gradeData) {
-        for (const topic of Object.keys(gradeData)) {
-          if (topic === 'studyContent') continue;
-          result.push({ gradeLevel: parseInt(g, 10), topic });
+    const targetGrade = preferredGrade.toString();
+    const gradeData = itemBank[selectedSubject][targetGrade];
+    if (gradeData) {
+      for (const topic of Object.keys(gradeData)) {
+        if (topic === 'studyContent') continue;
+        result.push({ gradeLevel: preferredGrade, topic });
+      }
+    }
+    // If no lessons for preferred grade, check other grades in itemBank
+    if (result.length === 0) {
+      const grades = ['4', '5', '6'];
+      for (const g of grades) {
+        const otherData = itemBank[selectedSubject][g];
+        if (otherData) {
+          for (const topic of Object.keys(otherData)) {
+            if (topic === 'studyContent') continue;
+            result.push({ gradeLevel: parseInt(g, 10), topic });
+          }
         }
       }
     }

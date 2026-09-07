@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap, Eye, EyeOff, Shield, KeyRound, Terminal, Sun, Moon } from 'lucide-react';
+import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap, Eye, EyeOff, Shield, KeyRound, Terminal, Sun, Moon, Upload, CheckCircle2, Clock, X } from 'lucide-react';
 import { RoleCard, type RoleCardProps } from '../components/landing/RoleCard';
 import { FeatureCard, type FeatureCardProps } from '../components/landing/FeatureCard';
 import { setAuthToken } from '../utils/api';
@@ -48,10 +48,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
     const [firstName, setFirstName] = useState('');
     const [middleName, setMiddleName] = useState('');
     const [lastName, setLastName] = useState('');
+    const [schoolName, setSchoolName] = useState('');
+    const [schoolIdNumber, setSchoolIdNumber] = useState('');
+    const [idDocument, setIdDocument] = useState<string | null>(null);
+    const [idDocumentName, setIdDocumentName] = useState('');
     const [roleSelection, setRoleSelection] = useState('teacher');
     const [loginRole, setLoginRole] = useState<'student' | 'teacher' | 'parent'>('teacher');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [authError, setAuthError] = useState('');
+    const [pendingNotice, setPendingNotice] = useState<string | null>(null);
 
     // Secret 5-tap gesture on logo to toggle Admin Mode
     const clickCountRef = useRef(0);
@@ -98,7 +103,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
     const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; firstName?: string; lastName?: string }>({});
 
     const validateEmail = (val: string) => !val.includes('@') || val.length < 5 ? 'Enter a valid email address.' : '';
-    const validatePassword = (val: string) => val.length < 6 ? 'Password must be at least 6 characters.' : '';
+    const validatePassword = (val: string) => {
+        if (val.length < 8) return 'Password must be at least 8 characters.';
+        if (!/[a-zA-Z]/.test(val)) return 'Password must include at least one letter.';
+        if (!/\d/.test(val)) return 'Password must include at least one number.';
+        if (!/[\W_]/.test(val)) return 'Password must include at least one special symbol (e.g. !@#$%^&*).';
+        return '';
+    };
     const validateFirstName = (val: string) => val.trim().length < 2 ? 'First name is required.' : '';
     const validateLastName = (val: string) => val.trim().length < 2 ? 'Last name is required.' : '';
 
@@ -116,7 +127,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ 
+                    email: email.trim(), 
+                    password,
+                    role: isAdminMode ? 'admin' : loginRole
+                }),
             });
             if (res.ok) {
                 const data = await res.json();
@@ -129,10 +144,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                         if (m) resolvedGrade = parseInt(m[1], 10);
                     }
                     localStorage.setItem('guro_student_grade', String(resolvedGrade));
+                } else if (userRole === 'teacher') {
+                    localStorage.removeItem('guro_teacher_classroom_code');
+                    localStorage.removeItem('guro_teacher_classroom_history');
                 }
+                setPendingNotice(null);
                 onLoginSuccess(data.user);
             } else {
-                const err = await res.json();
+                const err = await res.json().catch(() => ({}));
                 setAuthError(err.error || 'Authentication failed.');
             }
         } catch {
@@ -142,12 +161,41 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
         }
     };
 
+    const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('File size exceeds 5MB limit. Please upload a smaller document.');
+            return;
+        }
+        setIdDocumentName(file.name);
+        const reader = new FileReader();
+        reader.onload = () => {
+            setIdDocument(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    };
+
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email.trim() || !password.trim() || !firstName.trim() || !lastName.trim()) return;
         if (isAdminMode && !adminSecretKey.trim()) {
             setAuthError('Admin security passkey is required.');
             return;
+        }
+        if (!isAdminMode && roleSelection === 'teacher') {
+            if (!schoolName.trim()) {
+                setAuthError('School / Institution name is required for teacher registration.');
+                return;
+            }
+            if (!schoolIdNumber.trim()) {
+                setAuthError('DepEd School ID or PRC License number is required.');
+                return;
+            }
+            if (!idDocument) {
+                setAuthError('Please upload a copy of your DepEd School ID or PRC License.');
+                return;
+            }
         }
         setIsSubmitting(true);
         setAuthError('');
@@ -157,21 +205,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    email,
+                    email: email.trim(),
                     password,
                     first_name: firstName.trim(),
                     middle_name: middleName.trim(),
                     last_name: lastName.trim(),
                     role: effectiveRole,
                     admin_secret: isAdminMode ? adminSecretKey.trim() : undefined,
+                    school_name: roleSelection === 'teacher' ? schoolName.trim() : undefined,
+                    school_id_number: roleSelection === 'teacher' ? schoolIdNumber.trim() : undefined,
+                    id_document: roleSelection === 'teacher' ? idDocument : undefined,
                 }),
             });
             if (res.ok) {
                 const data = await res.json();
+                
+                // If this is a teacher account, they must wait for admin verification
+                if (data.pendingVerification || data.user?.verificationStatus === 'pending' || effectiveRole === 'teacher') {
+                    setView('login');
+                    setLoginRole('teacher');
+                    setPendingNotice('Teacher registration submitted! Your institutional credentials are now pending System Admin verification. Please wait for admin approval before logging in.');
+                    toast.success('Registration submitted! Please wait for admin approval before signing in.', { duration: 6000 });
+                    setPassword('');
+                    setFirstName('');
+                    setMiddleName('');
+                    setLastName('');
+                    setSchoolName('');
+                    setSchoolIdNumber('');
+                    setIdDocument(null);
+                    setIdDocumentName('');
+                    return;
+                }
+
                 if (data.token) setAuthToken(data.token);
                 onLoginSuccess(data.user);
             } else {
-                const err = await res.json();
+                const err = await res.json().catch(() => ({}));
                 setAuthError(err.error || 'Registration failed.');
             }
         } catch {
@@ -348,6 +417,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                 )}
                             </div>
                         </div>
+
+                        {pendingNotice && (
+                            <div className="bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 p-4 rounded-2xl flex items-start gap-3 text-xs leading-relaxed animate-in fade-in slide-in-from-top-2 duration-300">
+                                <Clock className="size-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                                <div className="flex-1">
+                                    <h4 className="font-extrabold text-amber-800 dark:text-amber-200 mb-0.5">Verification in Progress</h4>
+                                    <p>{pendingNotice}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setPendingNotice(null)}
+                                    className="text-amber-600 dark:text-amber-400 hover:text-amber-800 p-0.5 cursor-pointer"
+                                    aria-label="Dismiss notice"
+                                >
+                                    <X className="size-4" />
+                                </button>
+                            </div>
+                        )}
 
                         {authError && (
                             <div className="bg-[#A01322]/10 border border-[#A01322]/20 text-[#A01322] text-xs font-semibold p-3.5 rounded-xl text-center flex items-center justify-center gap-1.5">
@@ -591,7 +678,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                     <input
                                         id="reg-password"
                                         type={showPassword ? "text" : "password"}
-                                        placeholder="Minimum 6 characters"
+                                        placeholder="Min. 8 chars (letters, numbers, symbols)"
                                         className={fieldErrors.password ? passwordInputErrCls : passwordInputCls}
                                         value={password}
                                         onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: '' })); }}
@@ -609,8 +696,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                     </button>
                                 </div>
                                 {fieldErrors.password && <p id="reg-pw-err" className="text-[11px] text-[#A01322] font-semibold pl-1">{fieldErrors.password}</p>}
-                                {password.length > 0 && password.length < 6 && !fieldErrors.password && (
-                                    <p className="text-[11px] text-[var(--text-dark)] pl-1">{password.length}/6 characters minimum</p>
+                                {password.length > 0 && !fieldErrors.password && !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(password) && (
+                                    <p className="text-[11px] text-[var(--text-dark)] pl-1">Requires letters, numbers, and at least 1 symbol (e.g. !@#$%)</p>
                                 )}
                             </div>
 
@@ -655,6 +742,71 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                                 </button>
                                             );
                                         })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Teacher Verification Institutional Inputs */}
+                            {roleSelection === 'teacher' && !isAdminMode && (
+                                <div className="flex flex-col gap-3 p-3.5 bg-[var(--bg-main)]/50 border border-[var(--border-color)] rounded-2xl animate-in fade-in duration-200">
+                                    <div className="flex items-center gap-2">
+                                        <School className="size-4 text-[#11428E]" />
+                                        <span className="text-xs font-bold text-[var(--text-main)]">Teacher Identity &amp; School Verification</span>
+                                    </div>
+
+                                    <div className="flex flex-col gap-1">
+                                        <label className={labelCls} htmlFor="reg-school-name">School / Institution Name</label>
+                                        <input
+                                            id="reg-school-name"
+                                            type="text"
+                                            placeholder="e.g. Manila Science Elementary School"
+                                            className={inputCls}
+                                            value={schoolName}
+                                            onChange={(e) => setSchoolName(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-col gap-1">
+                                        <label className={labelCls} htmlFor="reg-school-id">School ID / PRC License Number</label>
+                                        <input
+                                            id="reg-school-id"
+                                            type="text"
+                                            placeholder="e.g. DepEd ID 109283 / PRC 0928341"
+                                            className={inputCls}
+                                            value={schoolIdNumber}
+                                            onChange={(e) => setSchoolIdNumber(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-col gap-1">
+                                        <label className={labelCls}>Upload DepEd ID / PRC Credential Document</label>
+                                        <div className="relative border border-dashed border-[var(--border-color)] hover:border-[#11428E] rounded-xl p-3 text-center bg-[var(--bg-card)] transition-colors cursor-pointer">
+                                            <input
+                                                type="file"
+                                                accept="image/*,application/pdf"
+                                                onChange={handleDocumentChange}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                required={!idDocument}
+                                            />
+                                            {idDocument ? (
+                                                <div className="flex items-center justify-center gap-2 text-xs font-bold text-emerald-600">
+                                                    <CheckCircle2 size={16} />
+                                                    <span className="truncate max-w-[200px]">{idDocumentName || 'Document Attached'}</span>
+                                                    <span className="text-[10px] text-[var(--text-muted)]">(Click to replace)</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center gap-1 text-[var(--text-muted)]">
+                                                    <Upload size={16} className="text-[#11428E]" />
+                                                    <span className="text-xs font-semibold">Select image or PDF (DepEd / School ID)</span>
+                                                    <span className="text-[10px] text-[var(--text-dark)]">Max file size: 5MB</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <p className="text-[10px] text-[var(--text-dark)] mt-0.5">
+                                            To protect learners (DO 40, s. 2012), new teacher accounts are approved by school administrators before live classroom pairing.
+                                        </p>
                                     </div>
                                 </div>
                             )}

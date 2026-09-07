@@ -76,8 +76,8 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
     selectedGrade = 4,
     onBack,
     onSelectSubject,
-    mathTopics = ['Whole Numbers', 'Fractions', 'Geometry'],
-    englishTopics = ['Reading', 'Grammar', 'Figures of Speech'],
+    mathTopics = [],
+    englishTopics = [],
     mathProgress = 65,
     englishProgress = 72,
     stats = {
@@ -285,13 +285,20 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                             <GraduationCap className="size-5 text-[#11428E] shrink-0" />
                             <span>My Classroom Connection</span>
                         </h3>
-                        <p className="text-xs font-semibold text-[var(--text-muted)]">
+                        <div className="text-xs font-semibold text-[var(--text-muted)] flex flex-wrap items-center gap-2">
                             {classroomCode ? (
-                                <>Paired with Classroom: <strong className="text-[#11428E]">{classroomCode}</strong> {teacherName ? `(Teacher: ${teacherName})` : ''}</>
+                                <>
+                                    <span>Class Code: <strong className="text-[#11428E]">{classroomCode}</strong></span>
+                                    {teacherName ? (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#11428E]/10 text-[#3b82f6] font-bold text-[11px] border border-[#11428E]/20">
+                                            Teacher: {teacherName}
+                                        </span>
+                                    ) : null}
+                                </>
                             ) : (
-                                "Not connected to any classroom. Enter your teacher's code to sync practice lessons."
+                                <span>Not connected to any classroom. Enter your teacher's code to sync practice lessons.</span>
                             )}
-                        </p>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-3 w-full md:w-auto justify-end">

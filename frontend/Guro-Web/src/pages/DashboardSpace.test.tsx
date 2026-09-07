@@ -113,4 +113,28 @@ describe('DashboardSpace Component', () => {
     // Question details should be removed from view
     expect(screen.queryByText('What is the sum of 1/4 and 2/4?')).not.toBeInTheDocument();
   });
+
+  test('renders clean blank dashboard for newly created teacher with no classroom', async () => {
+    localStorage.clear();
+
+    render(
+      <DashboardSpace
+        currentUser={{ userId: 'USR-NEW', email: 'newteacher@guro.com', name: 'New Teacher', role: 'teacher', classroomId: null }}
+        stagedQuestionsCount={0}
+        progressLogs={[]}
+        progressLoading={false}
+        onNavigate={jest.fn()}
+      />
+    );
+
+    // Should display blank / empty state prompt
+    expect(await screen.findByText('No active classroom session or lessons found.')).toBeInTheDocument();
+
+    // Verify stats are 0
+    const topicsCard = screen.getByText('Classroom Topics').parentElement;
+    expect(topicsCard).toHaveTextContent('0');
+
+    // Button to setup classroom is present
+    expect(screen.getByText('Go to Classroom Setup')).toBeInTheDocument();
+  });
 });

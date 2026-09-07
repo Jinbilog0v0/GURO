@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/save', [ClassroomController::class, 'saveToItemBank']);
 
     // Classroom Management
+    Route::get('/classroom/my-classrooms', [ClassroomController::class, 'getMyClassrooms']);
     Route::post('/classroom/create', [ClassroomController::class, 'createClassroom']);
     Route::post('/classroom/lock', [ClassroomController::class, 'lockClassroom']);
     Route::post('/classroom/claim', [ClassroomController::class, 'claimTemplateBank']);
@@ -65,5 +66,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/classrooms/{id}',               [AdminController::class, 'deleteClassroom']);
         Route::get('/reports/summary',                  [AdminController::class, 'getReportsSummary']);
         Route::get('/sync-logs',                        [AdminController::class, 'getSyncTelemetry']);
+        Route::get('/teacher-verifications',            [AdminController::class, 'getTeacherVerifications']);
+        Route::post('/teacher-verifications/{id}/review',[AdminController::class, 'reviewTeacherVerification']);
+        Route::delete('/teacher-verifications/{id}',     [AdminController::class, 'deleteTeacherVerification']);
     });
 });

@@ -37,13 +37,16 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required|string',
+            'password' => ['required', 'string', 'min:8', 'regex:/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$/'],
             'role' => 'required|in:student,teacher,parent,admin,developer',
             'admin_secret' => 'nullable|string',
             'name' => 'required_without:first_name|nullable|string',
             'first_name' => 'required_without:name|nullable|string',
             'last_name' => 'required_without:name|nullable|string',
             'middle_name' => 'nullable|string',
+        ], [
+            'password.regex' => 'Password must contain alphanumeric characters and at least one special symbol.',
+            'password.min' => 'Password must be at least 8 characters long.',
         ]);
 
         $email = strtolower(trim($request->input('email')));
@@ -62,6 +65,10 @@ class AuthController extends Controller
         $middleName = trim($request->input('middle_name', ''));
         $lastName = trim($request->input('last_name', ''));
         $name = trim($request->input('name', ''));
+
+        $schoolName = trim($request->input('school_name', ''));
+        $schoolIdNumber = trim($request->input('school_id_number', ''));
+        $idDocument = $request->input('id_document') ?: $request->input('id_document_path');
 
         if ($firstName !== '' && $lastName !== '') {
             $fullName = trim($firstName . ($middleName !== '' ? ' ' . $middleName : '') . ' ' . $lastName);
@@ -89,6 +96,9 @@ class AuthController extends Controller
         $userId = 'USR-'.strtoupper(Str::random(7));
         $passwordHash = $this->hashPassword($password);
 
+        // Newly registered teachers enter pending verification state for admin review
+        $verificationStatus = ($role === 'teacher') ? 'pending' : 'approved';
+
         $user = User::create([
             'user_id' => $userId,
             'email' => $email,
@@ -99,7 +109,34 @@ class AuthController extends Controller
             'last_name' => $lastName !== '' ? $lastName : null,
             'role' => $role,
             'classroom_id' => null,
+            'verification_status' => $verificationStatus,
+            'school_name' => $schoolName !== '' ? $schoolName : null,
+            'school_id_number' => $schoolIdNumber !== '' ? $schoolIdNumber : null,
+            'id_document_path' => $idDocument ?: null,
         ]);
+
+        // Teachers do NOT receive an active token until confirmed by administrator
+        if ($role === 'teacher') {
+            return response()->json([
+                'success' => true,
+                'pendingVerification' => true,
+                'message' => 'Teacher registration submitted successfully. Your account is pending administrator verification before you can log in.',
+                'user' => [
+                    'userId' => $user->user_id,
+                    'email' => $user->email,
+                    'name' => $user->name,
+                    'firstName' => $user->first_name,
+                    'middleName' => $user->middle_name,
+                    'lastName' => $user->last_name,
+                    'role' => $user->role,
+                    'classroomId' => null,
+                    'verificationStatus' => 'pending',
+                    'schoolName' => $user->school_name,
+                    'schoolIdNumber' => $user->school_id_number,
+                    'rejectionReason' => null,
+                ],
+            ]);
+        }
 
         $token = $user->createToken('app')->plainTextToken;
 
@@ -115,6 +152,10 @@ class AuthController extends Controller
                 'lastName' => $user->last_name,
                 'role' => $user->role,
                 'classroomId' => $user->classroom_id,
+                'verificationStatus' => $user->verification_status ?? 'approved',
+                'schoolName' => $user->school_name,
+                'schoolIdNumber' => $user->school_id_number,
+                'rejectionReason' => $user->rejection_reason,
             ],
         ]);
     }
@@ -125,6 +166,7 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
+            'role' => 'nullable|string',
         ]);
 
         $email = strtolower(trim($request->input('email')));
@@ -134,6 +176,36 @@ class AuthController extends Controller
 
         if (! $user || ! $this->verifyPassword($password, $user->password_hash)) {
             return response()->json(['error' => 'Invalid email or password.'], 401);
+        }
+
+        // Strict role validation if specified by caller
+        if ($request->filled('role')) {
+            $expectedRole = strtolower(trim($request->input('role')));
+            if ($expectedRole === 'admin') {
+                if (!in_array($user->role, ['admin', 'developer'])) {
+                    return response()->json(['error' => "Access denied: This account is registered as a {$user->role}, not an administrator."], 403);
+                }
+            } elseif ($expectedRole !== strtolower($user->role)) {
+                return response()->json(['error' => "Role mismatch: This account is registered as a {$user->role}, not a {$expectedRole}."], 403);
+            }
+        }
+
+        // Strict Teacher Verification Enforcement: Pending or rejected teachers cannot log in
+        if ($user->role === 'teacher') {
+            $status = $user->verification_status ?? 'pending';
+            if ($status === 'pending') {
+                return response()->json([
+                    'error' => 'Your teacher account is pending administrator verification. Please wait for approval before logging in.',
+                    'verification_status' => 'pending',
+                ], 403);
+            }
+            if ($status === 'rejected') {
+                $reason = $user->rejection_reason ?: 'Institutional credentials could not be validated.';
+                return response()->json([
+                    'error' => "Your teacher account registration was not approved. Reason: {$reason}",
+                    'verification_status' => 'rejected',
+                ], 403);
+            }
         }
 
         $token = $user->createToken('app')->plainTextToken;
@@ -158,6 +230,10 @@ class AuthController extends Controller
                 'lastName' => $user->last_name,
                 'role' => $user->role,
                 'classroomId' => $classroomId,
+                'verificationStatus' => $user->verification_status ?? 'approved',
+                'schoolName' => $user->school_name,
+                'schoolIdNumber' => $user->school_id_number,
+                'rejectionReason' => $user->rejection_reason,
             ],
             'studentId' => $user->role === 'student' ? $user->user_id : null,
         ]);
@@ -174,11 +250,14 @@ class AuthController extends Controller
         $request->validate([
             'anonymousStudentId' => 'required|string',
             'email' => 'required|email',
-            'password' => 'required|string',
+            'password' => ['required', 'string', 'min:8', 'regex:/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$/'],
             'name' => 'required_without:first_name|nullable|string',
             'first_name' => 'required_without:name|nullable|string',
             'last_name' => 'required_without:name|nullable|string',
             'middle_name' => 'nullable|string',
+        ], [
+            'password.regex' => 'Password must contain alphanumeric characters and at least one special symbol.',
+            'password.min' => 'Password must be at least 8 characters long.',
         ]);
 
         $anonymousStudentId = $request->input('anonymousStudentId');
@@ -340,7 +419,10 @@ class AuthController extends Controller
             'email' => 'required|email',
             'role' => 'required|in:student,teacher,parent',
             'code' => 'required|string|size:6',
-            'new_password' => 'required|string|min:6',
+            'new_password' => ['required', 'string', 'min:8', 'regex:/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$/'],
+        ], [
+            'new_password.regex' => 'Password must contain alphanumeric characters and at least one special symbol.',
+            'new_password.min' => 'Password must be at least 8 characters long.',
         ]);
 
         $email = strtolower(trim($request->input('email')));
@@ -383,12 +465,15 @@ class AuthController extends Controller
 
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required|string|min:6',
+            'password' => ['required', 'string', 'min:8', 'regex:/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$/'],
             'name' => 'required_without:first_name|nullable|string',
             'first_name' => 'required_without:name|nullable|string',
             'last_name' => 'required_without:name|nullable|string',
             'middle_name' => 'nullable|string',
             'section' => 'nullable|string',
+        ], [
+            'password.regex' => 'Password must contain alphanumeric characters and at least one special symbol.',
+            'password.min' => 'Password must be at least 8 characters long.',
         ]);
 
         $email = strtolower(trim($request->input('email')));
@@ -517,6 +602,10 @@ class AuthController extends Controller
                 'lastName' => $user->last_name,
                 'role' => $user->role,
                 'classroomId' => $user->classroom_id,
+                'verificationStatus' => $user->verification_status ?? 'approved',
+                'schoolName' => $user->school_name,
+                'schoolIdNumber' => $user->school_id_number,
+                'rejectionReason' => $user->rejection_reason,
             ],
         ]);
     }

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
-import { BarChart3, RotateCw, Loader2, FolderOpen, Inbox, Calculator, BookOpen, School, GraduationCap, Clock, ChevronDown, ChevronUp, Shield, Users, Layers, Award, Zap } from 'lucide-react';
+import { BarChart3, RotateCw, Loader2, FolderOpen, Inbox, Calculator, BookOpen, School, GraduationCap, Clock, ChevronDown, ChevronUp, Shield, Users, Layers, Award, Zap, ShieldCheck, Key } from 'lucide-react';
 import { RateLimitPanel } from '../components/developer/RateLimitPanel';
 import { AdminOverview } from '../components/admin/AdminOverview';
 import { AdminUserDirectory } from '../components/admin/AdminUserDirectory';
+import { AdminTeacherVerifications } from '../components/admin/AdminTeacherVerifications';
 import { AdminClassroomsDirectory } from '../components/admin/AdminClassroomsDirectory';
 import { AdminCurriculumManager } from '../components/admin/AdminCurriculumManager';
 import { AdminReportsView } from '../components/admin/AdminReportsView';
@@ -74,7 +75,7 @@ export function DashboardSpace({
   onNavigate
 }: DashboardSpaceProps) {
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'developer';
-  const [adminTab, setAdminTab] = useState<'overview' | 'users' | 'classrooms' | 'curriculum' | 'rate-limits' | 'reports'>('overview');
+  const [adminTab, setAdminTab] = useState<'overview' | 'users' | 'verifications' | 'classrooms' | 'curriculum' | 'rate-limits' | 'reports'>('overview');
 
   const [loading, setLoading] = useState(true);
   const [dbStats, setDbStats] = useState({
@@ -126,21 +127,35 @@ export function DashboardSpace({
   };
 
   const isTeacher = currentUser?.role === 'teacher';
-  const classCode = isTeacher ? (currentUser?.classroomId || localStorage.getItem('guro_teacher_classroom_code')) : null;
+  const getTeacherClassCode = () => {
+    if (!isTeacher) return null;
+    if (currentUser?.classroomId) return currentUser.classroomId;
+    if (currentUser?.userId) {
+      const userScoped = localStorage.getItem(`guro_teacher_classroom_code_${currentUser.userId}`);
+      if (userScoped) return userScoped;
+    }
+    const legacy = localStorage.getItem('guro_teacher_classroom_code');
+    return legacy || null;
+  };
+  const classCode = getTeacherClassCode();
 
   const fetchStats = async () => {
     setLoading(true);
     try {
       let db: any = {};
-      let response;
-      if (isTeacher && classCode) {
-        response = await apiFetch(`/api/classroom/verify?code=${classCode}`);
-        if (response.ok) {
-          const data = await response.json();
-          db = data.customItemBank || {};
+      if (isTeacher) {
+        if (classCode) {
+          const response = await apiFetch(`/api/classroom/verify?code=${encodeURIComponent(classCode)}`);
+          if (response.ok) {
+            const data = await response.json();
+            db = data.customItemBank || {};
+          }
+        } else {
+          // Brand new teacher with no classroom has an empty item bank / clean blank dashboard
+          db = {};
         }
       } else {
-        response = await apiFetch('/api/item-bank');
+        const response = await apiFetch('/api/item-bank');
         if (response.ok) {
           db = await response.json();
         }
@@ -256,6 +271,7 @@ export function DashboardSpace({
           {[
             { id: 'overview', label: 'Overview & Health', icon: BarChart3 },
             { id: 'users', label: 'User Directory', icon: Users },
+            { id: 'verifications', label: 'Teacher Verifications', icon: ShieldCheck },
             { id: 'classrooms', label: 'School Classrooms', icon: School },
             { id: 'curriculum', label: 'Master Curriculum', icon: Layers },
             { id: 'rate-limits', label: 'AI & Rate Limits', icon: Shield },
@@ -283,6 +299,7 @@ export function DashboardSpace({
         {/* Active Sub-Tab Content */}
         {adminTab === 'overview' && <AdminOverview onNavigateTab={t => setAdminTab(t as any)} />}
         {adminTab === 'users' && <AdminUserDirectory />}
+        {adminTab === 'verifications' && <AdminTeacherVerifications />}
         {adminTab === 'classrooms' && <AdminClassroomsDirectory />}
         {adminTab === 'curriculum' && <AdminCurriculumManager />}
         {adminTab === 'rate-limits' && <RateLimitPanel />}
@@ -360,8 +377,25 @@ export function DashboardSpace({
           ) : Object.keys(itemBankData).length === 0 ? (
             <div className="text-center p-10 border border-dashed border-[var(--border-color)] rounded-[14px] bg-[var(--bg-main)] flex flex-col items-center gap-3">
               <Inbox className="size-10 text-[var(--text-dark)]" />
-              <p className="text-[var(--text-muted)] text-sm font-semibold">Item bank is currently empty.</p>
-              <p className="text-[var(--text-dark)] text-xs">Use the Lesson Ingestor to populate subjects and topics.</p>
+              <p className="text-[var(--text-muted)] text-sm font-semibold">
+                {isTeacher
+                  ? (classCode ? 'No custom lessons assigned to this classroom yet.' : 'No active classroom session or lessons found.')
+                  : 'Item bank is currently empty.'}
+              </p>
+              <p className="text-[var(--text-dark)] text-xs">
+                {isTeacher
+                  ? (classCode ? 'Go to Classroom Setup or Lesson Ingestor to claim or build lessons for your students.' : 'Create a classroom in Teacher Console to assign curriculum lessons.')
+                  : 'Use the Lesson Ingestor to populate subjects and topics.'}
+              </p>
+              {isTeacher && onNavigate && (
+                <button
+                  onClick={() => onNavigate('teacher', 'classroom-pairing')}
+                  className="btn btn-primary text-xs px-4 py-2 font-bold flex items-center gap-2 cursor-pointer mt-1"
+                >
+                  <Key size={14} />
+                  <span>Go to Classroom Setup</span>
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-[18px]">

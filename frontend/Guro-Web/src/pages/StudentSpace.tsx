@@ -572,13 +572,17 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     };
 
     const getRecommendedLesson = () => {
+        const availableSubjects = activeSubjects.filter((s): s is 'Mathematics' | 'English' => s === 'Mathematics' || s === 'English');
+        if (availableSubjects.length === 0) return null;
+
         const mathAvg = computeSubjectAvg('Mathematics', selectedGrade);
         const engAvg = computeSubjectAvg('English', selectedGrade);
-        const subjectOrder = mathAvg <= engAvg ? ['Mathematics', 'English'] : ['English', 'Mathematics'];
+        const defaultOrder: ('Mathematics' | 'English')[] = mathAvg <= engAvg ? ['Mathematics', 'English'] : ['English', 'Mathematics'];
+        const subjectOrder = defaultOrder.filter((s) => (availableSubjects as string[]).includes(s));
         
         for (const subject of subjectOrder) {
             if (subject === 'English' && isEnglishLocked) continue;
-            const topics = getTopicsForCurrentSelection(subject as 'Mathematics' | 'English');
+            const topics = getTopicsForCurrentSelection(subject);
             
             // Priority 1: Needs Improvement (40% - 79%)
             for (const topic of topics) {
@@ -604,7 +608,12 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     const getLastActivity = () => {
         try {
             const raw = localStorage.getItem('guro_last_activity');
-            if (raw) return JSON.parse(raw);
+            if (raw) {
+                const act = JSON.parse(raw);
+                if (act && act.subject && activeSubjects.includes(act.subject) && Number(act.gradeLevel) === Number(selectedGrade)) {
+                    return act;
+                }
+            }
         } catch {}
         return null;
     };
@@ -703,6 +712,19 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                         setActiveSubjects(subData.subjects);
                     }
                 }
+
+                // Auto-verify and populate teacherName if not already cached
+                try {
+                    const verRes = await apiFetch(`/api/classroom/verify?code=${encodeURIComponent(activeCode.trim().toUpperCase())}`);
+                    if (verRes.ok) {
+                        const verData = await verRes.json();
+                        if (verData.teacherName) {
+                            setTeacherName(verData.teacherName);
+                            localStorage.setItem('guro_student_teacher_name', verData.teacherName);
+                            localStorage.setItem(`guro_student_teacher_name_${activeStudentId}`, verData.teacherName);
+                        }
+                    }
+                } catch (e) {}
             } else {
                 setActiveSubjects(['Mathematics', 'English']);
             }
@@ -719,6 +741,13 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
             const res = await apiFetch(`/api/classroom/verify?code=${encodeURIComponent(code.trim().toUpperCase())}`);
             if (res.ok) {
                 const data = await res.json();
+                
+                // Strict Grade Level Enforcement
+                if (data.gradeLevel && Number(data.gradeLevel) !== Number(selectedGrade)) {
+                    toast.error(`Grade Level Mismatch: Classroom "${data.classroomId}" is strictly for Grade ${data.gradeLevel} students only. Your profile is currently set to Grade ${selectedGrade}.`);
+                    return false;
+                }
+
                 setClassroomCode(data.classroomId);
                 setTeacherName(data.teacherName || '');
                 localStorage.setItem('guro_student_classroom_id', data.classroomId);
@@ -727,13 +756,19 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                 localStorage.setItem(`guro_student_teacher_name_${activeStudentId}`, data.teacherName || '');
                 
                 // Pair this student name on the server as a classroom member
-                await apiFetch('/api/classroom/pair', {
+                const pairRes = await apiFetch('/api/classroom/pair', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ studentId: activeStudentId, classroomId: data.classroomId })
-                }).catch(() => {});
+                    body: JSON.stringify({ studentId: activeStudentId, classroomId: data.classroomId, gradeLevel: selectedGrade })
+                }).catch(() => null);
 
-                toast.success(`Successfully joined ${data.teacherName ? `${data.teacherName}'s ` : ''}classroom!`);
+                if (pairRes && !pairRes.ok) {
+                    const pairErr = await pairRes.json().catch(() => ({}));
+                    toast.error(pairErr.error || 'Failed to enroll in classroom.');
+                    return false;
+                }
+
+                toast.success(`Successfully joined ${data.teacherName ? `${data.teacherName}'s ` : ''}Grade ${data.gradeLevel} classroom!`);
                 fetchItemBank(data.classroomId);
                 return true;
             } else {
@@ -844,6 +879,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
 
     // Helper to get available topics for a subject & grade level
     const getTopicsForCurrentSelection = (subject: 'Mathematics' | 'English'): string[] => {
+        if (activeSubjects && !activeSubjects.includes(subject)) return [];
         const gradeStr = selectedGrade.toString();
         const subjectNode = itemBank[subject];
         if (!subjectNode) return [];
@@ -1204,7 +1240,24 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                     userName={userName}
                     email={currentUser?.email}
                     selectedGrade={selectedGrade}
-                    onGradeChange={(grade) => { setSelectedGrade(grade); localStorage.setItem(STORAGE_KEY_GRADE, String(grade)); setStep('dashboard'); }}
+                    onGradeChange={(grade) => {
+                        if (classroomCode) {
+                            const classGradeMatch = classroomCode.match(/-G([4-6])-/i);
+                            const classGrade = classGradeMatch ? parseInt(classGradeMatch[1], 10) : null;
+                            if (classGrade && classGrade !== grade) {
+                                if (window.confirm(`You are currently enrolled in a Grade ${classGrade} classroom (${classroomCode}). Switching to Grade ${grade} will leave this classroom. Do you want to proceed?`)) {
+                                    handleLeaveClassroom();
+                                    setSelectedGrade(grade);
+                                    localStorage.setItem(STORAGE_KEY_GRADE, String(grade));
+                                    setStep('dashboard');
+                                }
+                                return;
+                            }
+                        }
+                        setSelectedGrade(grade);
+                        localStorage.setItem(STORAGE_KEY_GRADE, String(grade));
+                        setStep('dashboard');
+                    }}
                     onLogout={handleLogout}
                     isOnline={isOnline}
                     currentView={step === 'dashboard' ? 'dashboard' : step === 'topics' ? 'lessons' : step === 'progress' ? 'progress' : 'classroom'}
@@ -1221,8 +1274,8 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                             selectedGrade={selectedGrade}
                             onBack={() => currentUser ? handleLogout() : setStep('name')}
                             onSelectSubject={handleSelectSubject}
-                            mathTopics={mathTopicsList.length > 0 ? mathTopicsList : ['Fractions']}
-                            englishTopics={englishTopicsList.length > 0 ? englishTopicsList : ['Short Stories']}
+                            mathTopics={mathTopicsList}
+                            englishTopics={englishTopicsList}
                             mathProgress={liveMathProgress || (selectedGrade === 4 ? 65 : selectedGrade === 5 ? 40 : 15)}
                             englishProgress={liveEnglishProgress || (selectedGrade === 4 ? 75 : selectedGrade === 5 ? 55 : 30)}
                             stats={{

@@ -501,15 +501,15 @@ export function ParentSpace({
             <div className="grid grid-cols-3 gap-5">
               <div className="glass-panel p-5 flex flex-col gap-1.5 items-center">
                 <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.5px]">Completed Quests</span>
-                <span className="font-['Space_Grotesk',sans-serif] text-[26px] font-bold text-[var(--text-main)]">{totalQuizzes}</span>
+                <span className="text-[26px] font-bold text-[var(--text-main)]">{totalQuizzes}</span>
               </div>
               <div className="glass-panel p-5 flex flex-col gap-1.5 items-center">
                 <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.5px]">Average Accuracy</span>
-                <span className="font-['Space_Grotesk',sans-serif] text-[26px] font-bold text-[#10B981]">{avgScore}%</span>
+                <span className="text-[26px] font-bold text-[#10B981]">{avgScore}%</span>
               </div>
               <div className="glass-panel p-5 flex flex-col gap-1.5 items-center">
                 <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.5px]">Learning Status</span>
-                <span className="font-['Space_Grotesk',sans-serif] font-bold flex items-center justify-center gap-1.5" style={{ color: avgScore >= 80 ? '#10B981' : (avgScore >= 50 ? '#F59E0B' : '#EF4444'), fontFamily: 'sans-serif', fontSize: 22 }}>
+                <span className="font-bold flex items-center justify-center gap-1.5" style={{ color: avgScore >= 80 ? '#10B981' : (avgScore >= 50 ? '#F59E0B' : '#EF4444'), fontSize: 22 }}>
                   <span>{avgScore >= 80 ? 'Advanced' : avgScore >= 50 ? 'Progressing' : 'Remedial'}</span>
                   {avgScore >= 80 ? (
                     <Star size={18} className="text-[#10B981] fill-[#10B981] shrink-0" />

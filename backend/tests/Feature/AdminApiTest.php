@@ -111,7 +111,7 @@ it('can update a user role and reset password', function () {
     // Reset Password
     $pwRes = $this->withHeader('Authorization', "Bearer {$token}")
         ->postJson("/api/admin/users/{$target->id}/reset-password", [
-            'password' => 'newSecretPassword123',
+            'password' => 'NewSecretPassword123!',
         ]);
     $pwRes->assertStatus(200)->assertJson(['success' => true]);
     expect($target->fresh()->password_hash)->toContain(':');
@@ -179,3 +179,138 @@ it('can compute aggregated institutional report summaries', function () {
             'topicMastery',
         ]);
 });
+
+it('registers teacher with pending verification and blocks classroom creation until approved', function () {
+    // 1. Register new teacher
+    $regRes = $this->postJson('/api/auth/register', [
+        'email' => 'newteacher@school.edu',
+        'password' => 'TeacherPass123!',
+        'first_name' => 'Corazon',
+        'last_name' => 'Aquino',
+        'role' => 'teacher',
+        'school_name' => 'Manila Central High',
+        'school_id_number' => 'DEPED-102938',
+        'id_document' => 'data:image/png;base64,sampleIdDocumentData',
+    ]);
+
+    $regRes->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'user' => [
+                'role' => 'teacher',
+                'verificationStatus' => 'pending',
+                'schoolName' => 'Manila Central High',
+                'schoolIdNumber' => 'DEPED-102938',
+            ],
+        ]);
+
+    $teacherId = $regRes->json('user.userId');
+
+    // 2. Attempt logging in while pending -> Should return 403 Forbidden
+    $loginPendingRes = $this->postJson('/api/auth/login', [
+        'email' => 'newteacher@school.edu',
+        'password' => 'TeacherPass123!',
+    ]);
+
+    $loginPendingRes->assertStatus(403)
+        ->assertJson([
+            'verification_status' => 'pending',
+        ]);
+
+    // 3. Admin views pending verifications
+    $admin = createAdminUser();
+    $adminToken = $admin->createToken('test')->plainTextToken;
+
+    $this->flushHeaders();
+    app('auth')->forgetGuards();
+    $verifListRes = $this->withHeader('Authorization', "Bearer {$adminToken}")
+        ->getJson('/api/admin/teacher-verifications?status=pending');
+
+    $verifListRes->assertStatus(200)
+        ->assertJsonStructure([
+            'verifications' => [
+                '*' => ['id', 'userId', 'email', 'name', 'schoolName', 'schoolIdNumber', 'verificationStatus', 'idDocumentPath'],
+            ],
+            'counts' => ['pending', 'approved', 'rejected', 'total'],
+        ]);
+    expect($verifListRes->json('counts.pending'))->toBeGreaterThanOrEqual(1);
+
+    // 4. Admin approves teacher verification
+    $userModel = User::where('user_id', $teacherId)->first();
+    $this->flushHeaders();
+    app('auth')->forgetGuards();
+    $reviewRes = $this->withHeader('Authorization', "Bearer {$adminToken}")
+        ->postJson("/api/admin/teacher-verifications/{$userModel->id}/review", [
+            'action' => 'approve',
+        ]);
+
+    $reviewRes->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'user' => [
+                'verificationStatus' => 'approved',
+            ],
+        ]);
+
+    expect($userModel->fresh()->verification_status)->toBe('approved');
+
+    // 4.5. Admin fetches verification queue with approved status
+    $this->flushHeaders();
+    app('auth')->forgetGuards();
+    $postApproveQueueRes = $this->withHeader('Authorization', "Bearer {$adminToken}")
+        ->getJson('/api/admin/teacher-verifications?status=all');
+    $postApproveQueueRes->assertStatus(200)
+        ->assertJsonStructure([
+            'verifications' => [
+                '*' => ['id', 'userId', 'email', 'name', 'verificationStatus', 'verifiedAt'],
+            ],
+            'counts' => ['pending', 'approved', 'rejected', 'total'],
+        ]);
+    expect($postApproveQueueRes->json('counts.approved'))->toBeGreaterThanOrEqual(1);
+
+    // 5. Approved teacher can now log in and create classrooms
+    $this->flushHeaders();
+    app('auth')->forgetGuards();
+    $loginApprovedRes = $this->postJson('/api/auth/login', [
+        'email' => 'newteacher@school.edu',
+        'password' => 'TeacherPass123!',
+    ]);
+    $loginApprovedRes->assertStatus(200);
+    $approvedToken = $loginApprovedRes->json('token');
+
+    $classResApproved = $this->withHeader('Authorization', "Bearer {$approvedToken}")
+        ->postJson('/api/classroom/create', [
+            'teacherName' => 'Teacher Corazon',
+            'subject' => 'Mathematics',
+            'gradeLevel' => 4,
+        ]);
+
+    $classResApproved->assertStatus(200)
+        ->assertJsonStructure(['classroomId', 'teacherName', 'subject', 'gradeLevel']);
+});
+
+it('can delete a teacher verification application from admin side', function () {
+    $teacher = User::create([
+        'user_id' => 'USR-DEL-TEACH',
+        'email' => 'deleteteacher@school.edu',
+        'password_hash' => 'hash',
+        'name' => 'Teacher To Delete',
+        'role' => 'teacher',
+        'verification_status' => 'rejected',
+        'rejection_reason' => 'Retry',
+    ]);
+
+    $admin = createAdminUser();
+    $adminToken = $admin->createToken('test')->plainTextToken;
+
+    $res = $this->withHeader('Authorization', "Bearer {$adminToken}")
+        ->deleteJson("/api/admin/teacher-verifications/{$teacher->id}");
+
+    $res->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+        ]);
+
+    expect(User::where('user_id', 'USR-DEL-TEACH')->exists())->toBeFalse();
+});
+

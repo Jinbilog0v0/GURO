@@ -7,7 +7,7 @@ import { ManualLessonBuilder } from '../components/teacher/ManualLessonBuilder';
 import { PrePostTestAnalytics } from '../components/teacher/PrePostTestAnalytics';
 import { EosyPromotionConsole } from '../components/teacher/EosyPromotionConsole';
 import { SkeletonStatCards, SkeletonCard, SkeletonTable } from '../components/shared/SkeletonLoader';
-import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock, Search, User, Trash2, Target, GraduationCap } from 'lucide-react';
+import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock, Search, User, Trash2, Target, GraduationCap, Clock, AlertCircle } from 'lucide-react';
 import { toast } from '../utils/toast';
 import { apiFetch } from '../utils/api';
 
@@ -24,6 +24,17 @@ interface SyncedEvent {
 }
 
 interface TeacherSpaceProps {
+  currentUser?: {
+    userId: string;
+    email: string;
+    name: string;
+    role: string;
+    classroomId?: string | null;
+    verificationStatus?: 'pending' | 'approved' | 'rejected';
+    schoolName?: string | null;
+    schoolIdNumber?: string | null;
+    rejectionReason?: string | null;
+  } | null;
   progressLogs: SyncedEvent[];
   classroomMembers?: string[];
   lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null;
@@ -61,6 +72,7 @@ const getCategoriesAndTypes = (currentSubject: string, currentGrade: string | nu
 };
 
 export function TeacherSpace({ 
+  currentUser,
   progressLogs, 
   classroomMembers = [],
   lastUpdatedCell, 
@@ -69,6 +81,17 @@ export function TeacherSpace({
   activeSubTab: propActiveSubTab,
   setActiveSubTab: propSetActiveSubTab
 }: TeacherSpaceProps) {
+  const user = currentUser || (() => {
+    try {
+      const saved = localStorage.getItem('guro_user_session');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const verificationStatus = user?.verificationStatus || 'approved';
+  const isPendingVerification = verificationStatus === 'pending';
+  const isRejectedVerification = verificationStatus === 'rejected';
   const [filterText, setFilterText] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('All');
@@ -79,7 +102,7 @@ export function TeacherSpace({
   const activeSubTab = propActiveSubTab !== undefined ? propActiveSubTab : localActiveSubTab;
   const setActiveSubTab = propSetActiveSubTab !== undefined ? propSetActiveSubTab : setLocalActiveSubTab;
 
-  // List of all classrooms created by the teacher (stored in localStorage)
+  // List of all classrooms created by the teacher (scoped to current user)
   const [classroomHistory, setClassroomHistory] = useState<{
     id: string;
     teacherName: string;
@@ -90,8 +113,11 @@ export function TeacherSpace({
     expiresAt?: string | null;
   }[]>(() => {
     try {
-      const saved = localStorage.getItem('guro_teacher_classroom_history');
-      return saved ? JSON.parse(saved) : [];
+      if (user?.userId) {
+        const saved = localStorage.getItem(`guro_teacher_classroom_history_${user.userId}`);
+        if (saved) return JSON.parse(saved);
+      }
+      return [];
     } catch {
       return [];
     }
@@ -99,7 +125,11 @@ export function TeacherSpace({
 
   // Classroom setup state
   const [classroomCode, setClassroomCode] = useState<string | null>(() => {
-    return localStorage.getItem('guro_teacher_classroom_code') || null;
+    if (user?.userId) {
+      const scoped = localStorage.getItem(`guro_teacher_classroom_code_${user.userId}`);
+      if (scoped) return scoped;
+    }
+    return null;
   });
   const [classroomData, setClassroomData] = useState<{
     teacherName: string;
@@ -123,7 +153,7 @@ export function TeacherSpace({
 
   const fetchClassroomData = async (code: string) => {
     try {
-      const res = await apiFetch(`/api/classroom/verify?code=${code}`);
+      const res = await apiFetch(`/api/classroom/verify?code=${encodeURIComponent(code)}`);
       if (res.ok) {
         const data = await res.json();
         setClassroomData(data);
@@ -138,17 +168,24 @@ export function TeacherSpace({
             gradeLevel: data.gradeLevel,
             expiresAt: data.expiresAt
           }];
-          localStorage.setItem('guro_teacher_classroom_history', JSON.stringify(updated));
+          if (user?.userId) {
+            localStorage.setItem(`guro_teacher_classroom_history_${user.userId}`, JSON.stringify(updated));
+          }
           return updated;
         });
       } else if (res.status === 404) {
+        if (user?.userId) {
+          localStorage.removeItem(`guro_teacher_classroom_code_${user.userId}`);
+        }
         localStorage.removeItem('guro_teacher_classroom_code');
         setClassroomCode(null);
         setClassroomData(null);
         // Also remove from history
         setClassroomHistory((prev) => {
           const updated = prev.filter(c => c.id !== code);
-          localStorage.setItem('guro_teacher_classroom_history', JSON.stringify(updated));
+          if (user?.userId) {
+            localStorage.setItem(`guro_teacher_classroom_history_${user.userId}`, JSON.stringify(updated));
+          }
           return updated;
         });
       }
@@ -156,6 +193,53 @@ export function TeacherSpace({
       console.error('Error fetching classroom data:', e);
     }
   };
+
+  const fetchMyClassrooms = async () => {
+    try {
+      const res = await apiFetch('/api/classroom/my-classrooms');
+      if (res.ok) {
+        const data = await res.json();
+        const serverClassrooms = (data.classrooms || []).map((c: any) => ({
+          id: c.classroomId,
+          teacherName: c.teacherName,
+          subject: c.subject,
+          gradeLevel: c.gradeLevel,
+          schoolYear: c.schoolYear,
+          term: c.term,
+          expiresAt: c.expiresAt
+        }));
+        setClassroomHistory(serverClassrooms);
+        if (user?.userId) {
+          localStorage.setItem(`guro_teacher_classroom_history_${user.userId}`, JSON.stringify(serverClassrooms));
+        }
+        if (serverClassrooms.length === 0) {
+          setClassroomCode(null);
+          setClassroomData(null);
+          if (user?.userId) {
+            localStorage.removeItem(`guro_teacher_classroom_code_${user.userId}`);
+          }
+          localStorage.removeItem('guro_teacher_classroom_code');
+        } else {
+          const currentCode = classroomCode || (user?.userId ? localStorage.getItem(`guro_teacher_classroom_code_${user.userId}`) : null) || serverClassrooms[0].id;
+          const match = serverClassrooms.find((c: any) => c.id === currentCode) || serverClassrooms[0];
+          setClassroomCode(match.id);
+          if (user?.userId) {
+            localStorage.setItem(`guro_teacher_classroom_code_${user.userId}`, match.id);
+          }
+          localStorage.setItem('guro_teacher_classroom_code', match.id);
+          fetchClassroomData(match.id);
+        }
+      }
+    } catch (e) {
+      console.error('Error loading teacher classrooms:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.userId) {
+      fetchMyClassrooms();
+    }
+  }, [user?.userId]);
 
   useEffect(() => {
     if (classroomCode) {
@@ -1338,6 +1422,38 @@ export function TeacherSpace({
 
   return (
     <div className="fade-in flex flex-col gap-6 w-full">
+      {/* Teacher Verification Status Notice Banner */}
+      {isPendingVerification && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-start gap-3.5 text-amber-900 dark:text-amber-200">
+          <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div className="flex-1 text-xs sm:text-sm">
+            <div className="font-bold text-amber-700 dark:text-amber-300 mb-0.5 flex items-center gap-1.5 flex-wrap">
+              <span>Teacher Institutional Verification Pending Approval</span>
+              {user?.schoolName && <span className="opacity-75 font-normal">• {user.schoolName}</span>}
+            </div>
+            <p className="text-xs text-amber-800/90 dark:text-amber-300/80 leading-relaxed m-0">
+              Your institutional credentials and valid ID have been submitted to System Administrators for DepEd child protection compliance. While pending, you may explore student analytics and curriculum creation in sandbox mode. Live classroom invite generation will unlock once verified.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isRejectedVerification && (
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 flex items-start gap-3.5 text-rose-900 dark:text-rose-200">
+          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+          <div className="flex-1 text-xs sm:text-sm">
+            <div className="font-bold text-rose-700 dark:text-rose-300 mb-0.5">
+              Teacher Institutional Verification Requires Attention
+            </div>
+            <p className="text-xs text-rose-800/90 dark:text-rose-300/80 leading-relaxed m-0">
+              {user?.rejectionReason 
+                ? `Admin Feedback: "${user.rejectionReason}". Please contact support or your school administrator to re-verify your institutional credentials.`
+                : 'Your verification was not approved. Please contact your system administrator or re-upload a valid institutional ID.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {propActiveSubTab === undefined && (
         <div className="flex justify-between items-center flex-wrap gap-3">
           <div className="flex items-center gap-[20px] flex-wrap">
@@ -1441,6 +1557,9 @@ export function TeacherSpace({
                       <button
                         key={c.id}
                         onClick={() => {
+                          if (user?.userId) {
+                            localStorage.setItem(`guro_teacher_classroom_code_${user.userId}`, c.id);
+                          }
                           localStorage.setItem('guro_teacher_classroom_code', c.id);
                           setClassroomCode(c.id);
                           setClassroomData({
@@ -1570,8 +1689,16 @@ export function TeacherSpace({
               <button 
                 type="button" 
                 className="btn btn-primary"
-                disabled={isCreatingClass}
+                disabled={isCreatingClass || isPendingVerification || isRejectedVerification}
                 onClick={async () => {
+                  if (isPendingVerification) {
+                    toast.error('Classroom generation is restricted until teacher verification is approved by an administrator.');
+                    return;
+                  }
+                  if (isRejectedVerification) {
+                    toast.error('Classroom generation is disabled for rejected accounts. Please contact support.');
+                    return;
+                  }
                   if (!setupName.trim()) {
                     toast.error('Please enter your name.');
                     return;
@@ -1592,6 +1719,9 @@ export function TeacherSpace({
                     });
                     if (res.ok) {
                       const data = await res.json();
+                      if (user?.userId) {
+                        localStorage.setItem(`guro_teacher_classroom_code_${user.userId}`, data.classroomId);
+                      }
                       localStorage.setItem('guro_teacher_classroom_code', data.classroomId);
                       setClassroomCode(data.classroomId);
                       setClassroomData(data);
@@ -1610,11 +1740,15 @@ export function TeacherSpace({
                           term: data.term,
                           expiresAt: data.expiresAt
                         }];
+                        if (user?.userId) {
+                          localStorage.setItem(`guro_teacher_classroom_history_${user.userId}`, JSON.stringify(updated));
+                        }
                         localStorage.setItem('guro_teacher_classroom_history', JSON.stringify(updated));
                         return updated;
                       });
                     } else {
-                      throw new Error('Failed to create classroom.');
+                      const errData = await res.json().catch(() => null);
+                      throw new Error(errData?.error || 'Failed to create classroom.');
                     }
                   } catch (e: any) {
                     toast.error(e.message || 'Error occurred.');
@@ -1624,7 +1758,17 @@ export function TeacherSpace({
                 }}
                 style={{ marginTop: '5px' }}
               >
-                {isCreatingClass ? 'Generating Code...' : (
+                {isCreatingClass ? 'Generating Code...' : isPendingVerification ? (
+                  <span className="flex items-center justify-center gap-1.5 opacity-80">
+                    <Lock size={14} className="shrink-0" />
+                    <span>Verification Pending (Classroom Locked)</span>
+                  </span>
+                ) : isRejectedVerification ? (
+                  <span className="flex items-center justify-center gap-1.5 opacity-80">
+                    <Lock size={14} className="shrink-0" />
+                    <span>Verification Rejected</span>
+                  </span>
+                ) : (
                   <span className="flex items-center justify-center gap-1.5">
                     <Zap size={14} className="shrink-0" />
                     <span>Generate Classroom Invite Code</span>
@@ -1645,6 +1789,9 @@ export function TeacherSpace({
                   </h3>
                   <button
                     onClick={() => {
+                      if (user?.userId) {
+                        localStorage.removeItem(`guro_teacher_classroom_code_${user.userId}`);
+                      }
                       localStorage.removeItem('guro_teacher_classroom_code');
                       setClassroomCode(null);
                       setClassroomData(null);

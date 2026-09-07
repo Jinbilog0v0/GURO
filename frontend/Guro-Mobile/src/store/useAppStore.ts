@@ -84,6 +84,7 @@ interface AppState {
   studentProgress: ProgressEvent[];
   studentId: string;
   classroomId: string | null;
+  teacherName: string | null;
   activeSubjects: string[];
   activeSchoolYear: string;
   activeTerm: string;
@@ -96,7 +97,17 @@ interface AppState {
     forcedBilingual: boolean;
     priorityTopic: string | null;
   };
-  currentUser: { userId: string; email: string; name: string; role: string; classroomId?: string } | null;
+  currentUser: {
+    userId: string;
+    email: string;
+    name: string;
+    role: string;
+    classroomId?: string;
+    verificationStatus?: 'pending' | 'approved' | 'rejected';
+    schoolName?: string | null;
+    schoolIdNumber?: string | null;
+    rejectionReason?: string | null;
+  } | null;
   appMode: 'online' | 'offline';
   guestName: string | null;
   dailyMinutesUsed: number;
@@ -131,7 +142,8 @@ interface AppState {
   loadItemBankSync: () => Promise<void>;
   setParentPin: (pin: string | null) => void;
   setStudentId: (id: string) => void;
-  setClassroomId: (id: string | null) => void;
+  setClassroomId: (id: string | null, teacherName?: string | null) => void;
+  setTeacherName: (name: string | null) => void;
   adaptiveTiers: Record<string, 'Easy' | 'Average' | 'Difficult'>;
   consecutiveFailures: Record<string, number>;
   setAdaptiveTier: (topicKey: string, tier: 'Easy' | 'Average' | 'Difficult') => void;
@@ -146,7 +158,7 @@ interface AppState {
   syncProgressNow: (serverUrl: string) => Promise<{ success: boolean; syncedCount: number; message: string }>;
   updateParentalControls: (controls: Partial<AppState['parentalControls']>) => void;
   registerAndPromote: (email: string, password: string, name: string, firstName?: string, middleName?: string, lastName?: string) => Promise<{ success: boolean; message: string }>;
-  loginToCloud: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
+  loginToCloud: (email: string, password: string, role?: string) => Promise<{ success: boolean; message: string }>;
   logoutFromCloud: () => void;
   trackActiveMinutes: (minutes: number) => void;
   resetDailyMinutes: () => void;
@@ -179,6 +191,7 @@ export const useAppStore = create<AppState>()(
       studentProgress: [],
       studentId: 'GURO-STUDENT-LOCAL',
       classroomId: null,
+      teacherName: null,
       activeSubjects: ['Mathematics', 'English'],
       activeSchoolYear: '2026-2027',
       activeTerm: 'Quarter 1',
@@ -304,23 +317,25 @@ export const useAppStore = create<AppState>()(
           return { success: false, message: e.message || 'Connection error.' };
         }
       },
-      loginToCloud: async (email, password) => {
+      loginToCloud: async (email, password, role) => {
         const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
         const resolvedUrl = resolveServerUrl(rawUrl);
         try {
           const res = await fetch(`${resolvedUrl}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password, ...(role ? { role } : {}) })
           });
           if (res.ok) {
             const data = await res.json();
             const serverClassroomId = data.user?.classroomId || data.classroomId;
+            const serverTeacherName = data.user?.teacherName || data.teacherName;
             set({
               currentUser: data.user,
               studentId: data.studentId ?? data.user.name.replace(/\s+/g, '-').toUpperCase(),
               token: data.token,
               ...(serverClassroomId ? { classroomId: serverClassroomId } : {}),
+              ...(serverTeacherName ? { teacherName: serverTeacherName } : {}),
             });
             get().addLog(`Logged in as: ${data.user.email}`);
             return { success: true, message: `Successfully logged in as ${data.user.name}` };
@@ -397,12 +412,18 @@ export const useAppStore = create<AppState>()(
         set({ studentId: sanitized });
         get().addLog(`Student Device ID configured to: ${sanitized}`);
       },
-      setClassroomId: (id) => {
-        set({ classroomId: id });
+      setClassroomId: (id, teacherName) => {
+        set({
+          classroomId: id,
+          teacherName: teacherName !== undefined ? teacherName : (id ? get().teacherName : null),
+        });
         if (!id) {
-          set({ activeSubjects: ['Mathematics', 'English'] });
+          set({ activeSubjects: ['Mathematics', 'English'], teacherName: null });
         }
         get().addLog(id ? `Linked device to classroom invite code: ${id}` : 'Unlinked device from classroom invite code.');
+      },
+      setTeacherName: (name) => {
+        set({ teacherName: name });
       },
       setActiveSubjects: (subjects) => {
         set({ activeSubjects: subjects });
@@ -419,7 +440,7 @@ export const useAppStore = create<AppState>()(
               set({ itemBank: bank });
               await saveLocalItemBank(bank);
               
-              // Also fetch active subjects offered by the teacher
+              // Also fetch active subjects and classroom details offered by the teacher
               try {
                 const subRes = await fetch(`${resolvedUrl}/api/classroom/active-subjects?classroomId=${id}`);
                 if (subRes.ok) {
@@ -430,6 +451,19 @@ export const useAppStore = create<AppState>()(
                 }
               } catch (subErr) {
                 console.error('[Store] Failed to fetch active subjects:', subErr);
+              }
+
+              // Auto-fetch teacher name if not already cached
+              try {
+                const verRes = await fetch(`${resolvedUrl}/api/classroom/verify?code=${encodeURIComponent(id)}`);
+                if (verRes.ok) {
+                  const verData = await verRes.json();
+                  if (verData.teacherName) {
+                    set({ teacherName: verData.teacherName });
+                  }
+                }
+              } catch (verErr) {
+                console.error('[Store] Failed to verify teacher name:', verErr);
               }
 
               get().addLog(`Downloaded custom classroom item bank from server for: ${id}`);

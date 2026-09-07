@@ -29,7 +29,7 @@ describe('LandingPage Portal (Web)', () => {
     expect(screen.getByText('GURO')).toBeInTheDocument();
   });
 
-  test('can navigate to register screen and submit new registration', async () => {
+  test('can navigate to register screen and submit new registration as parent', async () => {
     const mockSelectRole = jest.fn();
     const mockLoginSuccess = jest.fn();
     render(<LandingPage onSelectRole={mockSelectRole} onLoginSuccess={mockLoginSuccess} />);
@@ -39,22 +39,82 @@ describe('LandingPage Portal (Web)', () => {
 
     expect(screen.getByRole('heading', { name: /Create account/i })).toBeInTheDocument();
 
+    const parentRoleBtn = screen.getByRole('button', { name: /parent/i });
+    fireEvent.click(parentRoleBtn);
+
     const firstNameInput = screen.getByPlaceholderText(/e.g. Maria/i);
     const lastNameInput = screen.getByPlaceholderText(/e.g. Santos/i);
     const emailInput = screen.getByPlaceholderText('you@school.edu');
-    const passwordInput = screen.getByPlaceholderText(/Minimum 6 characters/i);
+    const passwordInput = screen.getByPlaceholderText(/Min. 8 chars/i);
     const registerBtn = screen.getByRole('button', { name: /Create account/i });
 
     fireEvent.change(firstNameInput, { target: { value: 'Neal' } });
     fireEvent.change(lastNameInput, { target: { value: 'Claro' } });
     fireEvent.change(emailInput, { target: { value: 'nealjeanclaro@guro.dev' } });
-    fireEvent.change(passwordInput, { target: { value: 'JinBilog0v0' } });
+    fireEvent.change(passwordInput, { target: { value: 'JinBilog0v0!' } });
 
     fireEvent.click(registerBtn);
 
     await waitFor(() => {
       expect(mockLoginSuccess).toHaveBeenCalledWith(expect.objectContaining({ name: 'Neal' }));
     });
+  });
+
+  test('requires and submits institutional details when registering as teacher', async () => {
+    const originalFileReader = global.FileReader;
+    class MockFileReader {
+      onload: any = null;
+      result: string = 'data:image/png;base64,ZmFrZS1pZA==';
+      readAsDataURL() {
+        if (this.onload) {
+          this.onload({ target: { result: this.result } });
+        }
+      }
+    }
+    global.FileReader = MockFileReader as any;
+
+    try {
+      const mockSelectRole = jest.fn();
+      const mockLoginSuccess = jest.fn();
+      render(<LandingPage onSelectRole={mockSelectRole} onLoginSuccess={mockLoginSuccess} />);
+
+      const registerLink = screen.getByText(/Create one here/i);
+      fireEvent.click(registerLink);
+
+      const firstNameInput = screen.getByPlaceholderText(/e.g. Maria/i);
+      const lastNameInput = screen.getByPlaceholderText(/e.g. Santos/i);
+      const emailInput = screen.getByPlaceholderText('you@school.edu');
+      const passwordInput = screen.getByPlaceholderText(/Min. 8 chars/i);
+      const schoolNameInput = screen.getByPlaceholderText(/Manila Science Elementary School/i);
+      const schoolIdInput = screen.getByPlaceholderText(/DepEd ID 109283/i);
+      const registerBtn = screen.getByRole('button', { name: /Create account/i });
+
+      fireEvent.change(firstNameInput, { target: { value: 'Teacher' } });
+      fireEvent.change(lastNameInput, { target: { value: 'Maria' } });
+      fireEvent.change(emailInput, { target: { value: 'teacher@deped.gov.ph' } });
+      fireEvent.change(passwordInput, { target: { value: 'Password123!' } });
+      fireEvent.change(schoolNameInput, { target: { value: 'Manila Central School' } });
+      fireEvent.change(schoolIdInput, { target: { value: 'PRC-0918234' } });
+
+      const file = new File(['fake-id-content'], 'deped_id.png', { type: 'image/png' });
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) {
+        fireEvent.change(fileInput, { target: { files: [file] } });
+      }
+
+      fireEvent.click(registerBtn);
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith('/api/auth/register', expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('Manila Central School')
+        }));
+        expect(mockLoginSuccess).not.toHaveBeenCalled();
+        expect(screen.getByText(/Verification in Progress/i)).toBeInTheDocument();
+      });
+    } finally {
+      global.FileReader = originalFileReader;
+    }
   });
 
   test('can select a role card in the guest section', () => {
