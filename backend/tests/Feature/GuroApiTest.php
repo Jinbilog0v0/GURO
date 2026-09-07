@@ -10,7 +10,7 @@ uses(RefreshDatabase::class);
 it('can register a new user with PBKDF2 hashing', function () {
     $response = $this->postJson('/api/auth/register', [
         'email' => 'teacher@example.com',
-        'password' => 'securepassword123',
+        'password' => 'SecurePassword123!',
         'name' => 'John Doe',
         'role' => 'teacher'
     ]);
@@ -31,7 +31,7 @@ it('can login an existing user', function () {
     // Register first
     $this->postJson('/api/auth/register', [
         'email' => 'parent@example.com',
-        'password' => 'parentpassword',
+        'password' => 'ParentPassword123!',
         'name' => 'Jane Smith',
         'role' => 'parent'
     ]);
@@ -39,7 +39,7 @@ it('can login an existing user', function () {
     // Attempt login
     $response = $this->postJson('/api/auth/login', [
         'email' => 'parent@example.com',
-        'password' => 'parentpassword'
+        'password' => 'ParentPassword123!'
     ]);
 
     $response->assertStatus(200)
@@ -68,7 +68,7 @@ it('can promote a guest student to a registered account and migrate logs', funct
     $response = $this->postJson('/api/auth/promote', [
         'anonymousStudentId' => 'GUEST-XYZ',
         'email' => 'student@example.com',
-        'password' => 'studentpass',
+        'password' => 'StudentPassword123!',
         'name' => 'Alex Brown'
     ]);
 
@@ -311,7 +311,7 @@ it('can request and verify recovery code for teacher@guro.dev', function () {
         'email' => 'teacher@guro.dev',
         'role' => 'teacher',
         'code' => $code,
-        'new_password' => 'newsecurepassword123'
+        'new_password' => 'NewSecurePassword123!'
     ]);
 
     $verifyResponse->assertStatus(200)
@@ -356,3 +356,124 @@ it('can update user profile names', function () {
     expect($user->middle_name)->toBe('Jean');
     expect($user->last_name)->toBe('Claro');
 });
+
+it('enforces strict grade level matching when pairing student to a classroom', function () {
+    $teacher = User::create([
+        'user_id' => 'USR-TEACH-G6',
+        'email' => 'teacherg6@guro.dev',
+        'password_hash' => 'hash',
+        'name' => 'Teacher J',
+        'role' => 'teacher',
+        'verification_status' => 'approved'
+    ]);
+
+    $classroom = Classroom::create([
+        'classroom_id' => 'ENG-G6-TEST',
+        'teacher_user_id' => $teacher->id,
+        'teacher_name' => 'Teacher J',
+        'subject' => 'English',
+        'grade_level' => 6,
+        'school_year' => '2026-2027',
+        'term' => 'Quarter 1',
+        'custom_item_bank' => (object) []
+    ]);
+
+    // Attempt pairing with mismatched Grade 4 -> Expect 422
+    $failResponse = $this->postJson('/api/classroom/pair', [
+        'studentId' => 'STUDENT-G4',
+        'classroomId' => 'ENG-G6-TEST',
+        'gradeLevel' => 4,
+    ]);
+    $failResponse->assertStatus(422)
+        ->assertJson([
+            'error' => 'Grade mismatch. This classroom is strictly for Grade 6 students only.'
+        ]);
+
+    // Attempt pairing with matching Grade 6 -> Expect 200
+    $successResponse = $this->postJson('/api/classroom/pair', [
+        'studentId' => 'STUDENT-G6',
+        'classroomId' => 'ENG-G6-TEST',
+        'gradeLevel' => 6,
+    ]);
+    $successResponse->assertStatus(200)
+        ->assertJson([
+            'success' => true,
+            'classroom' => [
+                'classroomId' => 'ENG-G6-TEST',
+                'teacherName' => 'Teacher J',
+                'subject' => 'English',
+                'gradeLevel' => 6
+            ]
+        ]);
+});
+
+it('returns dynamic active subjects scoped to teacher grade level setup', function () {
+    $teacher = User::create([
+        'user_id' => 'USR-TEACH-SUBJ',
+        'email' => 'teachersubj@guro.dev',
+        'password_hash' => 'hash',
+        'name' => 'Teacher Maria',
+        'role' => 'teacher',
+        'verification_status' => 'approved'
+    ]);
+
+    $engClass = Classroom::create([
+        'classroom_id' => 'ENG-G6-SUBJ',
+        'teacher_user_id' => $teacher->id,
+        'teacher_name' => 'Teacher Maria',
+        'subject' => 'English',
+        'grade_level' => 6,
+        'school_year' => '2026-2027',
+        'term' => 'Quarter 1',
+        'custom_item_bank' => (object) []
+    ]);
+
+    // When teacher only has English for Grade 6
+    $res1 = $this->getJson('/api/classroom/active-subjects?classroomId=ENG-G6-SUBJ');
+    $res1->assertStatus(200)
+        ->assertJson([
+            'subjects' => ['English']
+        ]);
+
+    // If teacher also creates a Mathematics classroom for Grade 6
+    Classroom::create([
+        'classroom_id' => 'MTH-G6-SUBJ',
+        'teacher_user_id' => $teacher->id,
+        'teacher_name' => 'Teacher Maria',
+        'subject' => 'Mathematics',
+        'grade_level' => 6,
+        'school_year' => '2026-2027',
+        'term' => 'Quarter 1',
+        'custom_item_bank' => (object) []
+    ]);
+
+    $res2 = $this->getJson('/api/classroom/active-subjects?classroomId=ENG-G6-SUBJ');
+    $res2->assertStatus(200);
+    $subjects = $res2->json('subjects');
+    expect($subjects)->toContain('English');
+    expect($subjects)->toContain('Mathematics');
+});
+
+it('returns empty list for newly created teacher with no classrooms', function () {
+    $newTeacher = User::create([
+        'user_id' => 'USR-NEW-TEACH',
+        'email' => 'newteacherblank@guro.dev',
+        'password_hash' => 'hash',
+        'name' => 'Brand New Teacher',
+        'role' => 'teacher',
+        'verification_status' => 'approved'
+    ]);
+
+    $token = $newTeacher->createToken('test')->plainTextToken;
+
+    $res = $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson('/api/classroom/my-classrooms');
+
+    $res->assertStatus(200)
+        ->assertJson([
+            'classrooms' => []
+        ]);
+
+    expect($res->json('classrooms'))->toHaveCount(0);
+});
+

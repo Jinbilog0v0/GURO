@@ -6,6 +6,7 @@ import { toast } from '../../utils/toast';
 interface OverviewMetrics {
   totalUsers: number;
   rolesBreakdown: Record<string, number>;
+  pendingVerifications?: number;
   totalClassrooms: number;
   activeClassrooms: number;
   totalProgressLogs: number;
@@ -169,6 +170,34 @@ export function AdminOverview({ onNavigateTab }: AdminOverviewProps) {
           </div>
         </div>
       </div>
+
+      {/* ── Pending Teacher Verification Alert Banner ── */}
+      {(metrics?.pendingVerifications ?? 0) > 0 && (
+        <div 
+          onClick={() => onNavigateTab('verifications')}
+          className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:bg-amber-500/15 transition-all shadow-xs"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-extrabold text-sm">
+              {metrics?.pendingVerifications}
+            </div>
+            <div>
+              <h4 className="font-extrabold text-sm text-[var(--text-main)] m-0">
+                Teacher Accounts Awaiting Identity Verification
+              </h4>
+              <p className="text-xs text-[var(--text-muted)] m-0 mt-0.5">
+                {metrics?.pendingVerifications} institutional credential {metrics?.pendingVerifications === 1 ? 'submission needs' : 'submissions need'} administrator review.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="px-3.5 py-1.5 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-700 transition-all cursor-pointer shadow-xs"
+          >
+            Review Queue
+          </button>
+        </div>
+      )}
 
       {/* ── System Health & Quick Operations ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

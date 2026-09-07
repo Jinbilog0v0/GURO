@@ -85,7 +85,9 @@ export function StudentDashboard() {
   const mascotOutfit = useAppStore((s) => s.mascotOutfit || 'default');
   const preferredGrade = useAppStore((s) => s.preferredGrade || 4);
   const classroomId = useAppStore((s) => s.classroomId);
+  const teacherName = useAppStore((s) => s.teacherName);
   const setClassroomId = useAppStore((s) => s.setClassroomId);
+  const activeSubjects = useAppStore((s) => s.activeSubjects || ['Mathematics', 'English']);
 
   const [joinModalVisible, setJoinModalVisible] = React.useState(false);
   const [typedCode, setTypedCode] = React.useState('');
@@ -158,6 +160,14 @@ export function StudentDashboard() {
       const res = await fetch(`${resolvedUrl}/api/classroom/verify?code=${encodeURIComponent(code)}`);
       if (res.ok) {
         const data = await res.json();
+        
+        // Strict Grade Level Enforcement
+        if (data.gradeLevel && Number(data.gradeLevel) !== Number(preferredGrade)) {
+          toast.error(`Grade Level Mismatch: This classroom is strictly for Grade ${data.gradeLevel} students. Your profile is set to Grade ${preferredGrade}.`);
+          setVerifiedClassroom(null);
+          return;
+        }
+
         setVerifiedClassroom(data);
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -172,6 +182,10 @@ export function StudentDashboard() {
 
   const handleConfirmJoin = async () => {
     if (!verifiedClassroom) return;
+    if (verifiedClassroom.gradeLevel && Number(verifiedClassroom.gradeLevel) !== Number(preferredGrade)) {
+      toast.error(`Grade Level Mismatch: This classroom is strictly for Grade ${verifiedClassroom.gradeLevel} students. Your profile is set to Grade ${preferredGrade}.`);
+      return;
+    }
     const code = verifiedClassroom.classroomId;
     const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -179,7 +193,7 @@ export function StudentDashboard() {
     try {
       const ok = await useAppStore.getState().fetchItemBankFromServer(serverUrl, code);
       if (ok) {
-        setClassroomId(code);
+        setClassroomId(code, verifiedClassroom?.teacherName || null);
         
         // Update the student's preferred grade based on the classroom joined
         if (verifiedClassroom && verifiedClassroom.gradeLevel) {
@@ -192,7 +206,7 @@ export function StudentDashboard() {
         await fetch(`${resolvedUrl}/api/classroom/pair`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ studentId: activeStudentId, classroomId: code }),
+          body: JSON.stringify({ studentId: activeStudentId, classroomId: code, gradeLevel: preferredGrade }),
         }).catch(() => {});
 
         setJoinModalVisible(false);
@@ -282,10 +296,14 @@ export function StudentDashboard() {
       return logs.reduce((acc, p) => acc + p.score / p.totalQuestions, 0) / logs.length;
     };
 
+    const availableSubjects = activeSubjects.filter((s) => s === 'Mathematics' || s === 'English');
+    if (availableSubjects.length === 0) return null;
+
     const gradeOrder = [preferredGrade, ...[4, 5, 6].filter((g) => g !== preferredGrade)];
     const mathAvg = getSubjectAvg('Mathematics');
     const engAvg = getSubjectAvg('English');
-    const subjectOrder = mathAvg <= engAvg ? ['Mathematics', 'English'] : ['English', 'Mathematics'];
+    const subjectOrder = (mathAvg <= engAvg ? ['Mathematics', 'English'] : ['English', 'Mathematics'])
+      .filter((s) => availableSubjects.includes(s));
 
     let improvable: { subject: string; gradeLevel: number; topic: string } | null = null;
     let unattempted: { subject: string; gradeLevel: number; topic: string } | null = null;
@@ -316,10 +334,9 @@ export function StudentDashboard() {
   })();
 
   // Most recent quiz attempt for "Continue Learning" card
-  const lastActivity = studentProgress.length > 0
-    ? studentProgress.reduce((a, b) =>
-        new Date(a.timestamp) > new Date(b.timestamp) ? a : b,
-      )
+  const filteredProgress = studentProgress.filter((p) => activeSubjects.includes(p.subject) && p.gradeLevel === preferredGrade);
+  const lastActivity = filteredProgress.length > 0
+    ? filteredProgress.reduce((a, b) => (new Date(a.timestamp) > new Date(b.timestamp) ? a : b))
     : null;
 
   return (
@@ -438,8 +455,34 @@ export function StudentDashboard() {
           </View>
         </View>
 
-        {/* Onboarding / Join classroom card */}
-        {!classroomId && (
+        {/* Connected Classroom Card vs Connect Onboarding */}
+        {classroomId ? (
+          <GlassCard padding={Spacing.lg} style={{ gap: Spacing.sm, borderColor: 'rgba(16,185,129,0.3)', borderWidth: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                <School size={20} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
+                  My Classroom
+                </Text>
+              </View>
+              <View style={{ backgroundColor: 'rgba(16,185,129,0.12)', paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.full, borderWidth: 1, borderColor: 'rgba(16,185,129,0.25)' }}>
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.success }}>
+                  Connected
+                </Text>
+              </View>
+            </View>
+            <View style={{ gap: 2 }}>
+              {teacherName ? (
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }}>
+                  Teacher: <Text style={{ color: Colors.accentPrimary }}>{teacherName}</Text>
+                </Text>
+              ) : null}
+              <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                Class Code: {classroomId}
+              </Text>
+            </View>
+          </GlassCard>
+        ) : (
           <GlassCard padding={Spacing.lg} style={{ gap: Spacing.sm, borderColor: 'rgba(17,66,142,0.15)', borderWidth: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
               <Users size={20} color={Colors.accentPrimary} />

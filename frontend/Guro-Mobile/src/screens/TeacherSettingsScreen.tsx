@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAppStore } from '../store/useAppStore';
+import { useAppStore, resolveServerUrl } from '../store/useAppStore';
 import { FileService } from '../services/fileService';
 import { toast } from '../components';
 import { Colors } from '../theme/colors';
@@ -38,7 +38,6 @@ import {
   History,
   CheckCircle2,
 } from 'lucide-react-native';
-import { resolveServerUrl } from '../store/useAppStore';
 
 export function TeacherSettingsScreen() {
   const navigation = useNavigation<any>();
@@ -147,12 +146,41 @@ export function TeacherSettingsScreen() {
       checkClassroomStatus();
       loadClassroomHistory();
     }
-  }, [currentUser?.classroomId]);
+  }, [currentUser?.classroomId, currentUser?.userId]);
 
   const loadClassroomHistory = async () => {
     try {
-      const raw = await AsyncStorage.getItem('guro_teacher_classroom_history');
+      const token = useAppStore.getState().cloudToken;
+      const resolvedUrl = resolveServerUrl(useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000');
+      const cleanUrl = resolvedUrl.replace(/\/+$/, '');
+
+      if (token) {
+        const res = await fetch(`${cleanUrl}/api/classroom/my-classrooms`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const serverClassrooms: ClassroomRecord[] = (data.classrooms || []).map((c: any) => ({
+            id: c.classroomId,
+            subject: c.subject,
+            gradeLevel: c.gradeLevel,
+            createdAt: c.createdAt || new Date().toISOString(),
+          }));
+          setClassroomHistory(serverClassrooms);
+          if (currentUser?.userId) {
+            await AsyncStorage.setItem(`guro_teacher_classroom_history_${currentUser.userId}`, JSON.stringify(serverClassrooms));
+          }
+          return;
+        }
+      }
+
+      const storageKey = currentUser?.userId ? `guro_teacher_classroom_history_${currentUser.userId}` : 'guro_teacher_classroom_history';
+      const raw = await AsyncStorage.getItem(storageKey);
       if (raw) setClassroomHistory(JSON.parse(raw));
+      else setClassroomHistory([]);
     } catch (e) {
       console.warn('[ClassroomHistory] Failed to load:', e);
     }
@@ -160,11 +188,12 @@ export function TeacherSettingsScreen() {
 
   const saveClassroomToHistory = async (record: ClassroomRecord) => {
     try {
-      const raw = await AsyncStorage.getItem('guro_teacher_classroom_history');
+      const storageKey = currentUser?.userId ? `guro_teacher_classroom_history_${currentUser.userId}` : 'guro_teacher_classroom_history';
+      const raw = await AsyncStorage.getItem(storageKey);
       const existing: ClassroomRecord[] = raw ? JSON.parse(raw) : [];
       if (!existing.find((r) => r.id === record.id)) {
         const updated = [record, ...existing].slice(0, 10);
-        await AsyncStorage.setItem('guro_teacher_classroom_history', JSON.stringify(updated));
+        await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
         setClassroomHistory(updated);
       }
     } catch (e) {

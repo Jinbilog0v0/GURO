@@ -111,7 +111,11 @@ export function LessonSpace({
   };
 
   const isTeacher = currentUser?.role === 'teacher';
-  const classCode = isTeacher ? (currentUser?.classroomId || localStorage.getItem('guro_teacher_classroom_code')) : null;
+  const classCode = isTeacher
+    ? (currentUser?.classroomId || 
+       (currentUser?.userId ? localStorage.getItem(`guro_teacher_classroom_code_${currentUser.userId}`) : null) || 
+       localStorage.getItem('guro_teacher_classroom_code'))
+    : null;
   const isMissingClassroom = isTeacher && !classCode;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -845,7 +849,7 @@ export function LessonSpace({
                               type="text"
                               value={q.id}
                               onChange={(e) => updateField(idx, 'id', e.target.value)}
-                              className="bg-transparent border-none border-b border-dashed border-[var(--border-color)] font-['Space_Grotesk',sans-serif] font-bold text-xs text-[var(--text-main)] px-1 py-0.5 w-[150px] rounded-none focus:outline-none"
+                              className="bg-transparent border-none border-b border-dashed border-[var(--border-color)] font-bold text-xs text-[var(--text-main)] px-1 py-0.5 w-[150px] rounded-none focus:outline-none"
                             />
                           </div>
 

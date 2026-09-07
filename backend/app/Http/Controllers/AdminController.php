@@ -29,6 +29,18 @@ class AdminController extends Controller
         return "{$salt}:{$hash}";
     }
 
+    private function formatIso($date): ?string
+    {
+        if (!$date) {
+            return null;
+        }
+        if ($date instanceof \DateTimeInterface) {
+            return $date->format(\DateTimeInterface::ATOM);
+        }
+        $ts = strtotime($date);
+        return $ts ? date('c', $ts) : (string) $date;
+    }
+
     // GET /api/admin/overview
     public function overview(Request $request)
     {
@@ -36,6 +48,7 @@ class AdminController extends Controller
 
         $totalUsers = User::count();
         $rolesBreakdown = User::selectRaw('role, count(*) as count')->groupBy('role')->pluck('count', 'role')->toArray();
+        $pendingVerifications = User::where('role', 'teacher')->where('verification_status', 'pending')->count();
 
         $totalClassrooms = Classroom::count();
         $activeClassrooms = Classroom::where(function ($q) {
@@ -69,6 +82,7 @@ class AdminController extends Controller
             'metrics' => [
                 'totalUsers' => $totalUsers,
                 'rolesBreakdown' => $rolesBreakdown,
+                'pendingVerifications' => $pendingVerifications,
                 'totalClassrooms' => $totalClassrooms,
                 'activeClassrooms' => $activeClassrooms,
                 'totalProgressLogs' => $totalProgressLogs,
@@ -112,7 +126,8 @@ class AdminController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('user_id', 'like', "%{$search}%");
+                  ->orWhere('user_id', 'like', "%{$search}%")
+                  ->orWhere('school_name', 'like', "%{$search}%");
             });
         }
 
@@ -127,11 +142,18 @@ class AdminController extends Controller
                 'email' => $u->email,
                 'name' => $u->name,
                 'firstName' => $u->first_name,
+                'middleName' => $u->middle_name,
                 'lastName' => $u->last_name,
                 'role' => $u->role,
                 'classroomId' => $u->classroom_id,
                 'parentAccessToken' => $u->parent_access_token,
-                'createdAt' => $u->created_at ? $u->created_at->toIso8601String() : null,
+                'verificationStatus' => $u->verification_status ?? 'approved',
+                'schoolName' => $u->school_name,
+                'schoolIdNumber' => $u->school_id_number,
+                'idDocumentPath' => $u->id_document_path,
+                'rejectionReason' => $u->rejection_reason,
+                'verifiedAt' => $this->formatIso($u->verified_at),
+                'createdAt' => $this->formatIso($u->created_at),
             ];
         });
 
@@ -173,7 +195,10 @@ class AdminController extends Controller
         $this->authorizeAdmin($request);
 
         $request->validate([
-            'password' => 'required|string|min:6',
+            'password' => ['required', 'string', 'min:8', 'regex:/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$/'],
+        ], [
+            'password.regex' => 'Password must contain alphanumeric characters and at least one special symbol.',
+            'password.min' => 'Password must be at least 8 characters long.',
         ]);
 
         $user = User::where('id', $id)->orWhere('user_id', $id)->first();
@@ -248,8 +273,8 @@ class AdminController extends Controller
                 'gradeLevel' => $c->grade_level,
                 'enrolledStudents' => $enrolledCount,
                 'isLocked' => $isLocked,
-                'expiresAt' => $c->expires_at ? $c->expires_at->toIso8601String() : null,
-                'createdAt' => $c->created_at ? $c->created_at->toIso8601String() : null,
+                'expiresAt' => $this->formatIso($c->expires_at),
+                'createdAt' => $this->formatIso($c->created_at),
             ];
         });
 
@@ -406,5 +431,151 @@ class AdminController extends Controller
         $logs = ProgressLog::latest('timestamp')->take(50)->get();
 
         return response()->json(['syncLogs' => $logs]);
+    }
+
+    // GET /api/admin/teacher-verifications
+    public function getTeacherVerifications(Request $request)
+    {
+        $this->authorizeAdmin($request);
+
+        $status = trim($request->query('status', 'all'));
+        $search = trim($request->query('search', ''));
+
+        $query = User::where('role', 'teacher');
+
+        if ($status !== '' && $status !== 'all') {
+            $query->where('verification_status', $status);
+        }
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('school_name', 'like', "%{$search}%")
+                  ->orWhere('school_id_number', 'like', "%{$search}%");
+            });
+        }
+
+        $verifications = $query->orderBy('created_at', 'desc')->get()->map(function ($u) {
+            return [
+                'id' => $u->id,
+                'userId' => $u->user_id,
+                'email' => $u->email,
+                'name' => $u->name,
+                'firstName' => $u->first_name,
+                'middleName' => $u->middle_name,
+                'lastName' => $u->last_name,
+                'schoolName' => $u->school_name,
+                'schoolIdNumber' => $u->school_id_number,
+                'idDocumentPath' => $u->id_document_path,
+                'verificationStatus' => $u->verification_status ?? 'approved',
+                'rejectionReason' => $u->rejection_reason,
+                'verifiedAt' => $this->formatIso($u->verified_at),
+                'verifiedBy' => $u->verified_by,
+                'createdAt' => $this->formatIso($u->created_at),
+            ];
+        });
+
+        $counts = [
+            'pending' => User::where('role', 'teacher')->where('verification_status', 'pending')->count(),
+            'approved' => User::where('role', 'teacher')->where('verification_status', 'approved')->count(),
+            'rejected' => User::where('role', 'teacher')->where('verification_status', 'rejected')->count(),
+            'total' => User::where('role', 'teacher')->count(),
+        ];
+
+        return response()->json([
+            'verifications' => $verifications,
+            'counts' => $counts,
+        ]);
+    }
+
+    // POST /api/admin/teacher-verifications/{id}/review
+    public function reviewTeacherVerification(Request $request, $id)
+    {
+        $this->authorizeAdmin($request);
+
+        $request->validate([
+            'action' => 'required|in:approve,reject',
+            'reason' => 'nullable|string',
+        ]);
+
+        $user = User::where('id', $id)->orWhere('user_id', $id)->first();
+        if (!$user) {
+            return response()->json(['error' => 'Teacher account not found.'], 404);
+        }
+
+        if ($user->role !== 'teacher') {
+            return response()->json(['error' => 'Account is not a teacher.'], 400);
+        }
+
+        $action = $request->input('action');
+        $reason = trim($request->input('reason', ''));
+
+        if ($action === 'approve') {
+            $user->verification_status = 'approved';
+            $user->verified_at = now();
+            $user->verified_by = $request->user()->id;
+            $user->rejection_reason = null;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Teacher application for {$user->name} has been approved.",
+                'user' => [
+                    'id' => $user->id,
+                    'userId' => $user->user_id,
+                    'name' => $user->name,
+                    'verificationStatus' => $user->verification_status,
+                    'verifiedAt' => $this->formatIso($user->verified_at),
+                ],
+            ]);
+        } else {
+            if ($reason === '') {
+                $reason = 'Document verification did not match requirements or credentials could not be validated.';
+            }
+
+            $user->verification_status = 'rejected';
+            $user->rejection_reason = $reason;
+            $user->verified_at = now();
+            $user->verified_by = $request->user()->id;
+            $user->save();
+            return response()->json([
+                'success' => true,
+                'message' => "Teacher application for {$user->name} has been marked as rejected.",
+                'user' => [
+                    'id' => $user->id,
+                    'userId' => $user->user_id,
+                    'name' => $user->name,
+                    'verificationStatus' => $user->verification_status,
+                    'rejectionReason' => $user->rejection_reason,
+                    'verifiedAt' => $this->formatIso($user->verified_at),
+                ],
+            ]);
+        }
+    }
+
+    // DELETE /api/admin/teacher-verifications/{id}
+    public function deleteTeacherVerification(Request $request, $id)
+    {
+        $this->authorizeAdmin($request);
+
+        $user = User::where('id', $id)->orWhere('user_id', $id)->first();
+        if (!$user) {
+            return response()->json(['error' => 'Teacher account not found.'], 404);
+        }
+
+        if ($user->role !== 'teacher') {
+            return response()->json(['error' => 'Account is not a teacher.'], 400);
+        }
+
+        // Clean up classroom member records if any
+        ClassroomMember::where('student_id', $user->user_id)->delete();
+        $userName = $user->name;
+        $user->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Teacher application for {$userName} has been removed.",
+        ]);
     }
 }

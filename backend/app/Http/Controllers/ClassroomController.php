@@ -258,42 +258,74 @@ class ClassroomController extends Controller
 
         $teacherId = $classroom->teacher_user_id;
         $teacherName = $classroom->teacher_name;
+        $gradeLevel = (int) $classroom->grade_level;
 
-        // Query all subjects associated with this teacher across sections
-        $subjects = Classroom::where(function ($q) use ($teacherId, $teacherName) {
-            if ($teacherId) {
-                $q->where('teacher_user_id', $teacherId);
-            }
-            if ($teacherName) {
-                $q->orWhere('teacher_name', $teacherName);
-            }
-        })
-        ->pluck('subject')
-        ->filter()
-        ->unique()
-        ->values()
-        ->toArray();
+        // Query all subjects associated with this teacher for this grade level
+        $subjects = Classroom::where('grade_level', $gradeLevel)
+            ->where(function ($q) use ($teacherId, $teacherName) {
+                if ($teacherId) {
+                    $q->where('teacher_user_id', $teacherId);
+                }
+                if ($teacherName) {
+                    $q->orWhere('teacher_name', $teacherName);
+                }
+            })
+            ->pluck('subject')
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
 
-        // Also check if custom_item_bank has custom subjects defined
+        // If no subjects found from other classrooms, use this classroom's primary subject
+        if (empty($subjects) && !empty($classroom->subject)) {
+            $subjects = [$classroom->subject];
+        }
+
+        // Also check if custom_item_bank has custom subjects defined for this grade level
         if (!empty($classroom->custom_item_bank) && is_array($classroom->custom_item_bank)) {
-            foreach (array_keys($classroom->custom_item_bank) as $bankSubj) {
-                if (!in_array($bankSubj, $subjects)) {
-                    $subjects[] = $bankSubj;
+            foreach ($classroom->custom_item_bank as $bankSubj => $gradeData) {
+                if (is_array($gradeData) && isset($gradeData[(string)$gradeLevel])) {
+                    if (!in_array($bankSubj, $subjects)) {
+                        $subjects[] = $bankSubj;
+                    }
                 }
             }
         }
 
-        // Ensure classroom's own subject is present
-        if ($classroom->subject && !in_array($classroom->subject, $subjects)) {
-            $subjects[] = $classroom->subject;
-        }
-
-        // If no teacher subjects found, fallback to both standard subjects
         if (empty($subjects)) {
-            $subjects = ['Mathematics', 'English'];
+            $subjects = [$classroom->subject ?: 'Mathematics'];
         }
 
         return response()->json(['subjects' => array_values(array_unique($subjects))]);
+    }
+
+    // GET /api/classroom/my-classrooms
+    public function getMyClassrooms(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthenticated.'], 401);
+        }
+
+        $classrooms = Classroom::where('teacher_user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($c) {
+                return [
+                    'id' => $c->classroom_id,
+                    'classroomId' => $c->classroom_id,
+                    'teacherName' => $c->teacher_name,
+                    'subject' => $c->subject,
+                    'gradeLevel' => $c->grade_level,
+                    'schoolYear' => $c->school_year ?? '2026-2027',
+                    'term' => $c->term ?? 'Quarter 1',
+                    'customItemBank' => $c->custom_item_bank ?: (object) [],
+                    'expiresAt' => $c->expires_at ? ($c->expires_at instanceof \DateTimeInterface ? $c->expires_at->toIso8601String() : date('c', strtotime($c->expires_at))) : null,
+                    'createdAt' => $c->created_at ? ($c->created_at instanceof \DateTimeInterface ? $c->created_at->toIso8601String() : date('c', strtotime($c->created_at))) : null,
+                ];
+            });
+
+        return response()->json(['classrooms' => $classrooms]);
     }
 
     // POST /api/classroom/create
@@ -307,6 +339,16 @@ class ClassroomController extends Controller
             'term' => 'nullable|string',
             'duration' => 'nullable|integer',
         ]);
+
+        $user = $request->user();
+        $status = $user ? ($user->fresh()->verification_status ?? 'approved') : 'approved';
+        if ($user && $user->role === 'teacher' && $status !== 'approved') {
+            return response()->json([
+                'error' => 'Account verification required before creating live classrooms. Your application is currently ' . $status . ' administrator review.',
+                'verification_status' => $status,
+                'rejection_reason' => $user->fresh()->rejection_reason,
+            ], 403);
+        }
 
         $teacherName = trim($request->input('teacherName'));
         $subject = trim($request->input('subject'));
@@ -598,14 +640,29 @@ class ClassroomController extends Controller
         $request->validate([
             'studentId' => 'required|string',
             'classroomId' => 'required|string',
+            'gradeLevel' => 'nullable|integer',
         ]);
 
         $studentId = $request->input('studentId');
         $classroomId = strtoupper($request->input('classroomId'));
+        $studentGrade = $request->input('gradeLevel');
 
         $classroom = Classroom::where('classroom_id', $classroomId)->first();
         if (! $classroom) {
             return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        if (! $studentGrade) {
+            $latestLog = ProgressLog::where('student_id', $studentId)->latest('timestamp')->first();
+            if ($latestLog && $latestLog->grade_level) {
+                $studentGrade = (int) $latestLog->grade_level;
+            }
+        }
+
+        if ($studentGrade && (int) $studentGrade !== (int) $classroom->grade_level) {
+            return response()->json([
+                'error' => "Grade mismatch. This classroom is strictly for Grade {$classroom->grade_level} students only."
+            ], 422);
         }
 
         // Register student to classroom
@@ -623,7 +680,13 @@ class ClassroomController extends Controller
 
         return response()->json([
             'success' => true,
-            'member' => $member
+            'member' => $member,
+            'classroom' => [
+                'classroomId' => $classroom->classroom_id,
+                'teacherName' => $classroom->teacher_name,
+                'subject' => $classroom->subject,
+                'gradeLevel' => $classroom->grade_level,
+            ]
         ]);
     }
 

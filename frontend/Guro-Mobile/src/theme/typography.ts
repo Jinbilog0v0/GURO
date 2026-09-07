@@ -1,20 +1,20 @@
 /**
  * GURO Design System — Typography Tokens
- * Matches web fonts: 'Space Grotesk' (display) and 'Plus Jakarta Sans' (body).
+ * Matches web fonts: 'Quicksand' (rounded, clean geometric sans-serif).
  * Load these in App.tsx via useFonts().
  */
 
 export const Fonts = {
-  // Display — Nunito (headings, logo, labels)
-  display: 'Nunito_800ExtraBold',
-  displayMedium: 'Nunito_700Bold',
-  displayRegular: 'Nunito_500Medium',
+  // Display — Quicksand (headings, logo, labels)
+  display: 'Quicksand_700Bold',
+  displayMedium: 'Quicksand_600SemiBold',
+  displayRegular: 'Quicksand_500Medium',
 
-  // Body — Nunito (paragraphs, buttons, inputs)
-  body: 'Nunito_400Regular',
-  bodyMedium: 'Nunito_500Medium',
-  bodySemiBold: 'Nunito_600SemiBold',
-  bodyBold: 'Nunito_700Bold',
+  // Body — Quicksand (paragraphs, buttons, inputs)
+  body: 'Quicksand_400Regular',
+  bodyMedium: 'Quicksand_500Medium',
+  bodySemiBold: 'Quicksand_600SemiBold',
+  bodyBold: 'Quicksand_700Bold',
 } as const;
 
 export const FontSizes = {

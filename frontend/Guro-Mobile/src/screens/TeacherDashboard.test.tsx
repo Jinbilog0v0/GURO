@@ -66,6 +66,7 @@ jest.mock('../store/useAppStore', () => {
   (hook as any).getState = () => mockState;
   return {
     useAppStore: hook,
+    resolveServerUrl: jest.fn((url: string) => url || 'http://localhost:8000'),
   };
 });
 

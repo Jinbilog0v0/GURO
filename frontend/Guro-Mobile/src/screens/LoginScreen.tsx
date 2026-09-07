@@ -237,8 +237,8 @@ export function LoginScreen({ navigation }: Props) {
       toast.error('Please enter the 6-digit verification code.');
       return;
     }
-    if (forgotNewPassword.length < 6) {
-      toast.error('Password must be at least 6 characters.');
+    if (forgotNewPassword.length < 8 || !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$/.test(forgotNewPassword)) {
+      toast.error('Password must be at least 8 characters and contain letters, numbers, and at least one special symbol.');
       return;
     }
 
@@ -314,7 +314,7 @@ export function LoginScreen({ navigation }: Props) {
     if (!valid) return;
 
     setLoading(true);
-    const result = await loginToCloud(trimmedEmail, password);
+    const result = await loginToCloud(trimmedEmail, password, isAdminMode ? 'admin' : (selectedRole || undefined));
     setLoading(false);
 
     if (result.success) {
