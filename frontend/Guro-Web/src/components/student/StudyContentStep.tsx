@@ -297,6 +297,7 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                                             src={currentSlide.imageUrl} 
                                             alt="Visualization" 
                                             className="max-h-[190px] w-auto object-contain rounded-lg shadow-sm"
+                                            onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
                                         />
                                     </div>
                                 )}
@@ -323,6 +324,7 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                                             src={currentSlide.imageUrl} 
                                             alt="Concept Visualization" 
                                             className="max-h-[190px] w-auto object-contain rounded-lg shadow-sm"
+                                            onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
                                         />
                                     </div>
                                 )}

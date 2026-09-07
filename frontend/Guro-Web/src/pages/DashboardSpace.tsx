@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
-import { BarChart3, RotateCw, Loader2, FolderOpen, Inbox, Calculator, BookOpen, School, GraduationCap, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { BarChart3, RotateCw, Loader2, FolderOpen, Inbox, Calculator, BookOpen, School, GraduationCap, Clock, ChevronDown, ChevronUp, Shield, Users, Layers, Award, Zap } from 'lucide-react';
 import { RateLimitPanel } from '../components/developer/RateLimitPanel';
+import { AdminOverview } from '../components/admin/AdminOverview';
+import { AdminUserDirectory } from '../components/admin/AdminUserDirectory';
+import { AdminClassroomsDirectory } from '../components/admin/AdminClassroomsDirectory';
+import { AdminCurriculumManager } from '../components/admin/AdminCurriculumManager';
+import { AdminReportsView } from '../components/admin/AdminReportsView';
 
 function StatCard({ label, value, accentColor, valueColor }: {
   label: string; value: React.ReactNode; accentColor: string; valueColor?: string;
@@ -68,6 +73,9 @@ export function DashboardSpace({
   progressLoading = false,
   onNavigate
 }: DashboardSpaceProps) {
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'developer';
+  const [adminTab, setAdminTab] = useState<'overview' | 'users' | 'classrooms' | 'curriculum' | 'rate-limits' | 'reports'>('overview');
+
   const [loading, setLoading] = useState(true);
   const [dbStats, setDbStats] = useState({
     subjects: 0,
@@ -149,9 +157,11 @@ export function DashboardSpace({
           Object.keys(db[sub]).forEach(gradeKey => {
             if (db[sub][gradeKey]) {
               Object.keys(db[sub][gradeKey]).forEach(topicKey => {
-                if (!topicsList.includes(topicKey)) topicsList.push(topicKey);
+                if (!topicsList.includes(topicKey)) {
+                  topicsList.push(topicKey);
+                }
                 const topicNode = db[sub][gradeKey][topicKey];
-                if (topicNode) {
+                if (topicNode && typeof topicNode === 'object') {
                   Object.keys(topicNode).forEach(diff => {
                     if (diff === 'studyContent') return;
                     const diffNode = topicNode[diff];
@@ -205,6 +215,83 @@ export function DashboardSpace({
   const avgAccuracy = getAverageAccuracy();
   const latestSyncs = filteredLogs.slice(0, 5);
 
+  // ── Render Admin Governance Cockpit ──
+  if (isAdmin) {
+    return (
+      <div className="fade-in w-full flex flex-col gap-6 text-[var(--text-main)] pb-12">
+        {/* Admin Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 shrink-0 rounded-2xl bg-[#CE1126]/10 text-[#CE1126] border border-[#CE1126]/20 flex items-center justify-center">
+              <Shield className="size-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-extrabold tracking-tight text-[var(--text-main)] m-0">
+                  Staff &amp; IT Administration Console
+                </h1>
+                <span className="text-[10px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#CE1126]/10 text-[#CE1126] border border-[#CE1126]/20">
+                  Root
+                </span>
+              </div>
+              <p className="text-xs text-[var(--text-muted)] font-medium mt-0.5 mb-0">
+                School-wide identity management, classroom rosters, item bank governance, and division diagnostics.
+              </p>
+            </div>
+          </div>
+
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('lesson-builder')}
+              className="btn btn-primary text-xs px-4 py-2 font-bold flex items-center gap-2 self-start sm:self-auto cursor-pointer shadow-sm"
+            >
+              <Zap size={14} />
+              <span>Open Lesson Ingestor</span>
+            </button>
+          )}
+        </div>
+
+        {/* Sub-Navigation Pills */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border-color)] pb-3">
+          {[
+            { id: 'overview', label: 'Overview & Health', icon: BarChart3 },
+            { id: 'users', label: 'User Directory', icon: Users },
+            { id: 'classrooms', label: 'School Classrooms', icon: School },
+            { id: 'curriculum', label: 'Master Curriculum', icon: Layers },
+            { id: 'rate-limits', label: 'AI & Rate Limits', icon: Shield },
+            { id: 'reports', label: 'Division Reports', icon: Award },
+          ].map(tab => {
+            const Icon = tab.icon;
+            const isActive = adminTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setAdminTab(tab.id as any)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-[#11428E] text-white shadow-sm'
+                    : 'bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-color)] hover:border-[#11428E]/40 hover:text-[var(--text-main)]'
+                }`}
+              >
+                <Icon size={14} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Active Sub-Tab Content */}
+        {adminTab === 'overview' && <AdminOverview onNavigateTab={t => setAdminTab(t as any)} />}
+        {adminTab === 'users' && <AdminUserDirectory />}
+        {adminTab === 'classrooms' && <AdminClassroomsDirectory />}
+        {adminTab === 'curriculum' && <AdminCurriculumManager />}
+        {adminTab === 'rate-limits' && <RateLimitPanel />}
+        {adminTab === 'reports' && <AdminReportsView />}
+      </div>
+    );
+  }
+
+  // ── Render Teacher / Standard Space ──
   return (
     <div className="fade-in w-full flex flex-col gap-6 text-[var(--text-main)]">
       {/* Header */}
@@ -296,7 +383,6 @@ export function DashboardSpace({
                           {topics.map(topicName => {
                             const topicNode = itemBankData[subjectName][gradeLevel][topicName];
                             
-                            // Count questions accurately (excluding studyContent)
                             let qCount = 0;
                             if (topicNode) {
                               Object.keys(topicNode).forEach(diff => {
@@ -318,7 +404,6 @@ export function DashboardSpace({
 
                             return (
                               <div key={topicName} className="border border-[var(--border-color)] rounded-[11px] bg-[var(--bg-card)] overflow-hidden transition-all duration-200">
-                                {/* Topic Header */}
                                 <div
                                   onClick={() => toggleTopic(topicKey)}
                                   className="flex items-center justify-between px-[15px] py-[12px] cursor-pointer hover:bg-[var(--bg-main)] transition-colors select-none"
@@ -336,7 +421,6 @@ export function DashboardSpace({
                                   </span>
                                 </div>
 
-                                {/* Topic Questions (Leaves of the Tree) */}
                                 {isExpanded && (
                                   <div className="border-t border-[var(--border-color)] bg-[var(--bg-main)] p-4 flex flex-col gap-3">
                                     {questions.length === 0 ? (
@@ -361,7 +445,6 @@ export function DashboardSpace({
                                               {q.questionText}
                                             </p>
 
-                                            {/* Options */}
                                             {q.options && q.options.length > 0 && (
                                               <div className="grid grid-cols-1 gap-1.5 mt-1 pl-1">
                                                 {q.options.map((opt, oIdx) => {
@@ -380,7 +463,6 @@ export function DashboardSpace({
                                               </div>
                                             )}
 
-                                            {/* Matching Pairs */}
                                             {q.matchingPairs && Object.keys(q.matchingPairs).length > 0 && (
                                               <div className="flex flex-col gap-1.5 mt-1.5 pl-1 text-[12.5px]">
                                                 <span className="font-bold text-[var(--text-muted)] text-[10px] uppercase tracking-wider">Matching Pairs:</span>
@@ -394,7 +476,6 @@ export function DashboardSpace({
                                               </div>
                                             )}
 
-                                            {/* Feedback */}
                                             {q.feedback && (
                                               <div className="mt-1 text-[11.5px] italic text-[var(--text-muted)] bg-[var(--bg-main)] p-2 rounded border border-[var(--border-color)] leading-normal">
                                                 <strong>Feedback:</strong> {typeof q.feedback === 'object' ? q.feedback.en || q.feedback.fil || JSON.stringify(q.feedback) : q.feedback}
@@ -506,13 +587,6 @@ export function DashboardSpace({
           </div>
         )}
       </div>
-
-      {/* ── Rate Limit Controls (Admin / Developer only) ── */}
-      {currentUser && (currentUser.role === 'admin' || currentUser.role === 'developer') && (
-        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[20px] p-6">
-          <RateLimitPanel />
-        </div>
-      )}
     </div>
   );
 }

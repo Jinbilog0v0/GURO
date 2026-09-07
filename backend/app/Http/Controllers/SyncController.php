@@ -47,6 +47,9 @@ class SyncController extends Controller
 
         foreach ($events as $evt) {
             $eventId = $evt['eventId'];
+            $assessmentType = $evt['assessmentType'] ?? $evt['assessment_type'] ?? 'practice';
+            $schoolYear = $evt['schoolYear'] ?? $evt['school_year'] ?? '2026-2027';
+            $term = $evt['term'] ?? 'Quarter 1';
 
             // Prevent duplicate insertion
             if (!isset($existingLookup[$eventId])) {
@@ -60,6 +63,9 @@ class SyncController extends Controller
                     'score' => (int) $evt['score'],
                     'total_questions' => (int) $evt['totalQuestions'],
                     'difficulty' => $evt['difficulty'] ?? 'Average',
+                    'assessment_type' => $assessmentType,
+                    'school_year' => $schoolYear,
+                    'term' => $term,
                     'timestamp' => $evt['timestamp'],
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -75,6 +81,9 @@ class SyncController extends Controller
                     'score' => (int) $evt['score'],
                     'totalQuestions' => (int) $evt['totalQuestions'],
                     'difficulty' => $evt['difficulty'] ?? 'Average',
+                    'assessmentType' => $assessmentType,
+                    'schoolYear' => $schoolYear,
+                    'term' => $term,
                     'timestamp' => $evt['timestamp'],
                 ];
             }
@@ -97,6 +106,9 @@ class SyncController extends Controller
         $classroomId = $request->query('classroomId');
         $studentId = $request->query('studentId');
         $accessToken = $request->query('accessCode');
+        $termFilter = $request->query('term');
+        $yearFilter = $request->query('schoolYear');
+        $typeFilter = $request->query('assessmentType');
 
         if ($studentId) {
             $studentId = strtoupper(preg_replace('/\s+/', '-', trim($studentId)));
@@ -145,8 +157,17 @@ class SyncController extends Controller
             if ($hasStudent) {
                 $query->where('student_id', $studentId);
             }
+            if ($termFilter && $termFilter !== 'All') {
+                $query->where('term', $termFilter);
+            }
+            if ($yearFilter && $yearFilter !== 'All') {
+                $query->where('school_year', $yearFilter);
+            }
+            if ($typeFilter && $typeFilter !== 'All') {
+                $query->where('assessment_type', $typeFilter);
+            }
 
-            $logs = $query->orderBy('timestamp', 'desc')->limit(100)->get();
+            $logs = $query->orderBy('timestamp', 'desc')->limit(200)->get();
 
             $formatted = $logs->map(fn ($row) => [
                 'eventId' => $row->event_id,
@@ -157,6 +178,10 @@ class SyncController extends Controller
                 'topic' => $row->topic,
                 'score' => $row->score,
                 'totalQuestions' => $row->total_questions,
+                'difficulty' => $row->difficulty ?? 'Average',
+                'assessmentType' => $row->assessment_type ?? 'practice',
+                'schoolYear' => $row->school_year ?? '2026-2027',
+                'term' => $row->term ?? 'Quarter 1',
                 'timestamp' => $row->timestamp,
             ]);
 

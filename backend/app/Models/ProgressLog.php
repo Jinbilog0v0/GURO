@@ -16,6 +16,9 @@ class ProgressLog extends Model
         'score',
         'total_questions',
         'difficulty',
+        'assessment_type',
+        'school_year',
+        'term',
         'timestamp',
         'synced_at',
     ];

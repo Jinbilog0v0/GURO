@@ -7,7 +7,7 @@ import React from 'react';
 import { View, Text, StyleProp, ViewStyle } from 'react-native';
 import { Badges } from '../../theme/styles';
 
-type BadgeVariant = 'success' | 'warning' | 'danger' | 'indigo';
+type BadgeVariant = 'success' | 'warning' | 'danger' | 'indigo' | 'info' | 'neutral';
 
 interface BadgeProps {
   label: string;
@@ -21,6 +21,8 @@ const variantStyles: Record<BadgeVariant, { bg: object; text: object }> = {
   warning: { bg: Badges.warning, text: Badges.warningText },
   danger: { bg: Badges.danger, text: Badges.dangerText },
   indigo: { bg: Badges.indigo, text: Badges.indigoText },
+  info: { bg: Badges.indigo, text: Badges.indigoText },
+  neutral: { bg: Badges.indigo, text: Badges.indigoText },
 };
 
 export function Badge({ label, variant, style, icon: Icon }: BadgeProps) {

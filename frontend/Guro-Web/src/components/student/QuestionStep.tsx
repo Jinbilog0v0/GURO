@@ -557,6 +557,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                             src={imageUrl} 
                             alt="Question Illustration" 
                             className="max-h-[190px] w-auto object-contain rounded-lg shadow-sm"
+                            onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
                         />
                     </div>
                 )}

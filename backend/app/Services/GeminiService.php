@@ -229,7 +229,30 @@ class GeminiService
         $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '{}';
         $result = json_decode($text, true) ?: [];
 
-        // Convert matchingPairs from array of {"key": "...", "value": "..."} to associative array
+        // Ensure studyContent has verified high-quality educational visual aids
+        if (isset($result['studyContent']) && is_array($result['studyContent'])) {
+            $result['studyContent']['imageUrl'] = self::resolveEducationalVisual(
+                $result['studyContent']['imageUrl'] ?? '',
+                $subject,
+                $grade,
+                $topic,
+                'intro'
+            );
+
+            if (isset($result['studyContent']['definitions']) && is_array($result['studyContent']['definitions'])) {
+                foreach ($result['studyContent']['definitions'] as &$def) {
+                    $def['imageUrl'] = self::resolveEducationalVisual(
+                        $def['imageUrl'] ?? '',
+                        $subject,
+                        $grade,
+                        $topic,
+                        $def['term'] ?? ''
+                    );
+                }
+            }
+        }
+
+        // Convert matchingPairs from array of {"key": "...", "value": "..."} to associative array and sanitize question images
         if (isset($result['questions']) && is_array($result['questions'])) {
             foreach ($result['questions'] as &$q) {
                 if (isset($q['matchingPairs']) && is_array($q['matchingPairs'])) {
@@ -241,9 +264,59 @@ class GeminiService
                     }
                     $q['matchingPairs'] = $pairs;
                 }
+
+                if (!empty($q['imageUrl'])) {
+                    $q['imageUrl'] = self::resolveEducationalVisual(
+                        $q['imageUrl'],
+                        $subject,
+                        $grade,
+                        $topic,
+                        $q['category'] ?? ''
+                    );
+                }
             }
         }
 
         return $result;
+    }
+
+    public static function resolveEducationalVisual(?string $url, string $subject, int $grade, string $topic, string $context = ''): ?string
+    {
+        // Verified Unsplash high-res educational photo bank for primary school curriculum
+        $visualCatalog = [
+            'mathematics' => [
+                'fractions' => 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=600&q=80',
+                'decimals' => 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&q=80',
+                'algebra' => 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&w=600&q=80',
+                'equations' => 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&w=600&q=80',
+                'geometry' => 'https://images.unsplash.com/photo-1583912267550-d44d7a125e7e?auto=format&fit=crop&w=600&q=80',
+                'shapes' => 'https://images.unsplash.com/photo-1583912267550-d44d7a125e7e?auto=format&fit=crop&w=600&q=80',
+                'numbers' => 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&w=600&q=80',
+                'default' => 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=600&q=80',
+            ],
+            'english' => [
+                'figures of speech' => 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
+                'reading' => 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80',
+                'comprehension' => 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80',
+                'idioms' => 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80',
+                'vocabulary' => 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=600&q=80',
+                'grammar' => 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
+                'story' => 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80',
+                'default' => 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
+            ],
+        ];
+
+        $subKey = strtolower($subject) === 'mathematics' ? 'mathematics' : 'english';
+        $topKey = strtolower($topic);
+        $contextKey = strtolower($context);
+
+        // Check if topic or context matches any specific category in our curated catalog
+        foreach ($visualCatalog[$subKey] as $key => $verifiedUrl) {
+            if ($key !== 'default' && (str_contains($topKey, $key) || str_contains($contextKey, $key))) {
+                return $verifiedUrl;
+            }
+        }
+
+        return $visualCatalog[$subKey]['default'] ?? null;
     }
 }

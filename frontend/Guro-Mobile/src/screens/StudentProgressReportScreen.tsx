@@ -38,11 +38,46 @@ export function StudentProgressReportScreen() {
   const xpPoints = useAppStore((s) => s.xpPoints || 0);
   const studentId = useAppStore((s) => s.studentId || 'GUEST');
   const itemBank = useAppStore((s) => s.itemBank);
+  const activeSchoolYear = useAppStore((s) => s.activeSchoolYear || '2026-2027');
+  const activeTerm = useAppStore((s) => s.activeTerm || 'Quarter 1');
 
   // Compute profile data
   const displayName = currentUser ? currentUser.name : guestName || 'Student';
   const displayGrade = preferredGrade;
   const currentLevel = Math.floor(xpPoints / 100) + 1;
+  const isEligibleForPromotion = avgAccuracy >= 75;
+  const nextGradeLevel = preferredGrade < 6 ? preferredGrade + 1 : 6;
+
+  // Diagnostic Pre-Test vs Summative Post-Test Growth comparisons
+  const growthComparisons = useMemo(() => {
+    const list: { topic: string; subject: string; preScore: number; postScore: number; gain: number; normalizedGain: number }[] = [];
+    const grouped: Record<string, { pre?: number; post?: number }> = {};
+
+    studentProgress.forEach((p) => {
+      const key = `${p.subject}::${p.topic}`;
+      if (!grouped[key]) grouped[key] = {};
+      const pct = p.totalQuestions > 0 ? Math.round((p.score / p.totalQuestions) * 100) : 0;
+      if (p.assessmentType === 'pre-test') {
+        if (grouped[key].pre === undefined) grouped[key].pre = pct;
+      } else if (p.assessmentType === 'post-test' || !p.assessmentType) {
+        if (grouped[key].post === undefined || pct > (grouped[key].post || 0)) {
+          grouped[key].post = pct;
+        }
+      }
+    });
+
+    Object.keys(grouped).forEach((key) => {
+      const [subject, topic] = key.split('::');
+      const item = grouped[key];
+      if (item.pre !== undefined && item.post !== undefined) {
+        const gain = item.post - item.pre;
+        const normalizedGain = item.pre < 100 ? Math.round(((item.post - item.pre) / (100 - item.pre)) * 100) : gain;
+        list.push({ topic, subject, preScore: item.pre, postScore: item.post, gain, normalizedGain });
+      }
+    });
+
+    return list;
+  }, [studentProgress]);
 
   // Compute summary stats
   const totalSessions = studentProgress.length;
@@ -237,6 +272,47 @@ export function StudentProgressReportScreen() {
             Grade {displayGrade} · Level {currentLevel} ({xpPoints} XP)
           </Text>
           <Text style={styles.studentId}>ID: {studentId}</Text>
+
+          {/* DepEd Academic Year & Promotional Status Banner */}
+          <View
+            style={{
+              marginTop: Spacing.sm,
+              paddingTop: Spacing.sm,
+              borderTopWidth: 1,
+              borderTopColor: Colors.border,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 6,
+            }}
+          >
+            <View>
+              <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                SY {activeSchoolYear} · {activeTerm}
+              </Text>
+            </View>
+            <View
+              style={{
+                backgroundColor: isEligibleForPromotion ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)',
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: isEligibleForPromotion ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)',
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: Fonts.bodyBold,
+                  fontSize: 10,
+                  color: isEligibleForPromotion ? Colors.success : Colors.warning,
+                }}
+              >
+                {isEligibleForPromotion ? `Eligible for Grade ${nextGradeLevel} Promotion 🎓` : 'Ongoing Quarterly Progress ⏳'}
+              </Text>
+            </View>
+          </View>
         </GlassCard>
 
         {/* Summary Stats Grid */}
@@ -253,7 +329,7 @@ export function StudentProgressReportScreen() {
             />
           </View>
           <View style={styles.statCardWrapper}>
-            {/* O8: Child-friendly labels instead of 'Synced'/'Unsynced' */}
+            {/* Child-friendly labels */}
             <StatCard label="Shared with Teacher" value={syncedCount} icon={Cloud} valueColor={Colors.success} />
           </View>
           <View style={styles.statCardWrapper}>
@@ -265,6 +341,62 @@ export function StudentProgressReportScreen() {
             />
           </View>
         </View>
+
+        {/* Diagnostic Pre-Test vs Post-Test Growth Section */}
+        {growthComparisons.length > 0 && (
+          <View style={{ gap: Spacing.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
+                Pre-Test vs Post-Test Growth 📈
+              </Text>
+            </View>
+
+            <GlassCard padding={Spacing.md} style={{ gap: Spacing.sm }}>
+              {growthComparisons.map((item) => (
+                <View
+                  key={`${item.subject}::${item.topic}`}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingVertical: 8,
+                    borderBottomWidth: 1,
+                    borderBottomColor: Colors.border,
+                  }}
+                >
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }}>
+                      {item.topic}
+                    </Text>
+                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                      {item.subject} · Pre: {item.preScore}% ➔ Post: {item.postScore}%
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      backgroundColor: item.gain >= 0 ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)',
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      borderRadius: 6,
+                      borderWidth: 1,
+                      borderColor: item.gain >= 0 ? 'rgba(16,185,129,0.25)' : 'rgba(245,158,11,0.25)',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: Fonts.bodyBold,
+                        fontSize: FontSizes.xs,
+                        color: item.gain >= 0 ? Colors.success : Colors.warning,
+                      }}
+                    >
+                      {item.gain >= 0 ? `+${item.gain}% Growth` : `${item.gain}%`}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </GlassCard>
+          </View>
+        )}
 
         {/* Subject Breakdown List */}
         <View style={{ gap: Spacing.lg }}>

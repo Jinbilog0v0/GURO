@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Classroom;
+use App\Models\ClassroomMember;
+use App\Models\ProgressLog;
+use App\Models\StudentAcademicRecord;
+use App\Models\User;
 use App\Models\RateLimitConfig;
 use App\Models\AiGenerationLog;
 use App\Services\GeminiService;
@@ -36,15 +40,13 @@ class ClassroomController extends Controller
                 }
 
                 $data = \Illuminate\Support\Facades\Cache::remember("classroom_bank_" . strtoupper($classroomId), 3600, function () use ($classroom) {
-                    if (! empty($classroom->custom_item_bank) && count($classroom->custom_item_bank) > 0) {
-                        return $classroom->custom_item_bank;
-                    }
-                    // Fallback to global bank if custom bank is empty
                     $path = $this->getItemBankPath();
-                    if (! file_exists($path)) {
-                        return [];
+                    $globalBank = file_exists($path) ? (json_decode(file_get_contents($path), true) ?: []) : [];
+
+                    if (! empty($classroom->custom_item_bank) && count((array)$classroom->custom_item_bank) > 0) {
+                        return array_replace_recursive($globalBank, (array)$classroom->custom_item_bank);
                     }
-                    return json_decode(file_get_contents($path), true) ?: [];
+                    return $globalBank;
                 });
                 return response()->json($data);
             }
@@ -234,6 +236,8 @@ class ClassroomController extends Controller
             'teacherName' => $classroom->teacher_name,
             'subject' => $classroom->subject,
             'gradeLevel' => $classroom->grade_level,
+            'schoolYear' => $classroom->school_year ?? '2026-2027',
+            'term' => $classroom->term ?? 'Quarter 1',
             'customItemBank' => $classroom->custom_item_bank ?: (object) [],
             'expiresAt' => $classroom->expires_at ? $classroom->expires_at->toIso8601String() : null,
         ]);
@@ -252,25 +256,44 @@ class ClassroomController extends Controller
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
 
-        $subjects = [];
-        if ($classroom->teacher_user_id) {
-            $subjects = Classroom::where('teacher_user_id', $classroom->teacher_user_id)
-                ->where('grade_level', $classroom->grade_level)
-                ->pluck('subject')
-                ->unique()
-                ->values()
-                ->toArray();
-        } else {
-            $subjects = Classroom::where('teacher_name', $classroom->teacher_name)
-                ->where('grade_level', $classroom->grade_level)
-                ->pluck('subject')
-                ->unique()
-                ->values()
-                ->toArray();
+        $teacherId = $classroom->teacher_user_id;
+        $teacherName = $classroom->teacher_name;
+
+        // Query all subjects associated with this teacher across sections
+        $subjects = Classroom::where(function ($q) use ($teacherId, $teacherName) {
+            if ($teacherId) {
+                $q->where('teacher_user_id', $teacherId);
+            }
+            if ($teacherName) {
+                $q->orWhere('teacher_name', $teacherName);
+            }
+        })
+        ->pluck('subject')
+        ->filter()
+        ->unique()
+        ->values()
+        ->toArray();
+
+        // Also check if custom_item_bank has custom subjects defined
+        if (!empty($classroom->custom_item_bank) && is_array($classroom->custom_item_bank)) {
+            foreach (array_keys($classroom->custom_item_bank) as $bankSubj) {
+                if (!in_array($bankSubj, $subjects)) {
+                    $subjects[] = $bankSubj;
+                }
+            }
         }
 
-        // Return the unique offered subjects, but make sure it only returns valid ones
-        return response()->json(['subjects' => $subjects]);
+        // Ensure classroom's own subject is present
+        if ($classroom->subject && !in_array($classroom->subject, $subjects)) {
+            $subjects[] = $classroom->subject;
+        }
+
+        // If no teacher subjects found, fallback to both standard subjects
+        if (empty($subjects)) {
+            $subjects = ['Mathematics', 'English'];
+        }
+
+        return response()->json(['subjects' => array_values(array_unique($subjects))]);
     }
 
     // POST /api/classroom/create
@@ -280,12 +303,16 @@ class ClassroomController extends Controller
             'teacherName' => 'required|string',
             'subject' => 'required|string',
             'gradeLevel' => 'required',
+            'schoolYear' => 'nullable|string',
+            'term' => 'nullable|string',
             'duration' => 'nullable|integer',
         ]);
 
         $teacherName = trim($request->input('teacherName'));
         $subject = trim($request->input('subject'));
         $gradeLevel = $request->input('gradeLevel');
+        $schoolYear = trim($request->input('schoolYear', '2026-2027'));
+        $term = trim($request->input('term', 'Quarter 1'));
         $duration = $request->input('duration'); // In minutes
 
         // Generate invite code
@@ -304,6 +331,8 @@ class ClassroomController extends Controller
             'teacher_name' => $teacherName,
             'subject' => $subject,
             'grade_level' => (int) $gradeLevel,
+            'school_year' => $schoolYear ?: '2026-2027',
+            'term' => $term ?: 'Quarter 1',
             'custom_item_bank' => (object) [],
             'expires_at' => $expiresAt,
         ]);
@@ -313,6 +342,8 @@ class ClassroomController extends Controller
             'teacherName' => $classroom->teacher_name,
             'subject' => $classroom->subject,
             'gradeLevel' => $classroom->grade_level,
+            'schoolYear' => $classroom->school_year,
+            'term' => $classroom->term,
             'customItemBank' => $classroom->custom_item_bank,
             'expiresAt' => $classroom->expires_at ? $classroom->expires_at->toIso8601String() : null,
         ]);
@@ -613,14 +644,250 @@ class ClassroomController extends Controller
             return response()->json(['error' => 'Forbidden.'], 403);
         }
 
-        $members = \App\Models\ClassroomMember::where('classroom_id', strtoupper($classroomId))
+        $members = ClassroomMember::where('classroom_id', strtoupper($classroomId))
             ->orderBy('student_id', 'asc')
             ->get()
             ->map(fn($m) => [
                 'studentId' => $m->student_id,
+                'status' => $m->status ?? 'enrolled',
+                'promotedToGrade' => $m->promoted_to_grade,
+                'finalAverage' => $m->final_average,
+                'promotedAt' => $m->promoted_at ? $m->promoted_at->toIso8601String() : null,
                 'joinedAt' => $m->created_at->toIso8601String(),
             ]);
 
         return response()->json($members);
+    }
+
+    // GET /api/classroom/eosy-report
+    public function getEosyReport(Request $request)
+    {
+        $classroomId = $request->query('classroomId');
+        if (! $classroomId) {
+            return response()->json(['error' => 'Missing classroomId parameter.'], 400);
+        }
+
+        $classroom = Classroom::where('classroom_id', strtoupper($classroomId))->first();
+        if (! $classroom) {
+            return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        if ($classroom->teacher_user_id !== $request->user()->id) {
+            return response()->json(['error' => 'Forbidden.'], 403);
+        }
+
+        $members = ClassroomMember::where('classroom_id', strtoupper($classroomId))->get();
+        $studentIds = $members->pluck('student_id')->toArray();
+
+        // Query all progress logs for this classroom or enrolled students
+        $logs = ProgressLog::where(function ($q) use ($classroomId, $studentIds) {
+            $q->where('classroom_id', strtoupper($classroomId))
+              ->orWhereIn('student_id', $studentIds);
+        })->get();
+
+        $roster = [];
+
+        foreach ($members as $member) {
+            $sId = $member->student_id;
+            $sLogs = $logs->where('student_id', $sId);
+
+            // 1. Pre-Test and Post-Test statistics
+            $preLogs = $sLogs->where('assessment_type', 'pre-test');
+            $postLogs = $sLogs->where('assessment_type', 'post-test');
+
+            $preAvg = $preLogs->count() > 0 
+                ? round($preLogs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100), 1)
+                : null;
+
+            $postAvg = $postLogs->count() > 0 
+                ? round($postLogs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100), 1)
+                : null;
+
+            $learningGain = null;
+            if ($preAvg !== null && $postAvg !== null) {
+                if ($preAvg < 100) {
+                    $learningGain = round((($postAvg - $preAvg) / (100 - $preAvg)) * 100, 1);
+                } else {
+                    $learningGain = round($postAvg - $preAvg, 1);
+                }
+            }
+
+            // 2. Term-by-Term (Quarterly) Averages
+            $q1Logs = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 1', 'Term 1']));
+            $q2Logs = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 2', 'Term 2']));
+            $q3Logs = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 3', 'Term 3']));
+            $q4Logs = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 4', 'Term 4']));
+
+            $q1Avg = $q1Logs->count() > 0 ? round($q1Logs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100), 1) : null;
+            $q2Avg = $q2Logs->count() > 0 ? round($q2Logs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100), 1) : null;
+            $q3Avg = $q3Logs->count() > 0 ? round($q3Logs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100), 1) : null;
+            $q4Avg = $q4Logs->count() > 0 ? round($q4Logs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100), 1) : null;
+
+            // Compute overall general average (DepEd passing standard >= 75)
+            $allScores = $sLogs->map(fn($l) => ($l->score / max(1, $l->total_questions)) * 100);
+            $generalAverage = $allScores->count() > 0 ? round($allScores->avg(), 1) : 0;
+
+            // Promotion status
+            $currentGrade = (int) $classroom->grade_level;
+            $nextGrade = $currentGrade < 6 ? $currentGrade + 1 : 6;
+            
+            $status = $member->status;
+            if (!$status || $status === 'enrolled') {
+                if ($generalAverage >= 75) {
+                    $status = 'ELIGIBLE FOR PROMOTION';
+                } elseif ($generalAverage >= 60) {
+                    $status = 'CONDITIONAL / REMEDIAL';
+                } else {
+                    $status = 'RETAINED';
+                }
+            }
+
+            $roster[] = [
+                'studentId' => $sId,
+                'status' => $status,
+                'promotedToGrade' => $member->promoted_to_grade,
+                'promotedAt' => $member->promoted_at ? $member->promoted_at->toIso8601String() : null,
+                'preTestAvg' => $preAvg,
+                'postTestAvg' => $postAvg,
+                'learningGain' => $learningGain,
+                'termAverages' => [
+                    'Q1' => $q1Avg,
+                    'Q2' => $q2Avg,
+                    'Q3' => $q3Avg,
+                    'Q4' => $q4Avg,
+                ],
+                'generalAverage' => $generalAverage,
+                'currentGrade' => $currentGrade,
+                'suggestedGrade' => $nextGrade,
+                'totalQuizzesTaken' => $sLogs->count(),
+            ];
+        }
+
+        return response()->json([
+            'classroomId' => $classroom->classroom_id,
+            'subject' => $classroom->subject,
+            'gradeLevel' => $classroom->grade_level,
+            'schoolYear' => $classroom->school_year ?? '2026-2027',
+            'term' => $classroom->term ?? 'Quarter 1',
+            'roster' => $roster,
+        ]);
+    }
+
+    // POST /api/classroom/promote
+    public function promoteStudents(Request $request)
+    {
+        $request->validate([
+            'classroomId' => 'required|string',
+            'studentIds' => 'required|array|min:1',
+            'remarks' => 'nullable|string',
+        ]);
+
+        $classroomId = strtoupper($request->input('classroomId'));
+        $studentIds = $request->input('studentIds');
+        $remarks = $request->input('remarks');
+
+        $classroom = Classroom::where('classroom_id', $classroomId)->first();
+        if (! $classroom) {
+            return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        if ($classroom->teacher_user_id !== $request->user()->id) {
+            return response()->json(['error' => 'Forbidden.'], 403);
+        }
+
+        $currentGrade = (int) $classroom->grade_level;
+        $nextGrade = $currentGrade < 6 ? $currentGrade + 1 : 6;
+        $schoolYear = $classroom->school_year ?? '2026-2027';
+
+        $promotedResults = [];
+        $now = now();
+
+        foreach ($studentIds as $sId) {
+            $member = ClassroomMember::where('classroom_id', $classroomId)
+                ->where('student_id', $sId)
+                ->first();
+
+            $sLogs = ProgressLog::where('student_id', $sId)
+                ->where(function($q) use ($classroomId) {
+                    $q->where('classroom_id', $classroomId)->orWhereNull('classroom_id');
+                })->get();
+
+            $preAvg = $sLogs->where('assessment_type', 'pre-test')->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100);
+            $postAvg = $sLogs->where('assessment_type', 'post-test')->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100);
+            $learningGain = ($preAvg !== null && $postAvg !== null && $preAvg < 100) 
+                ? (($postAvg - $preAvg) / (100 - $preAvg)) * 100 
+                : null;
+
+            $q1Avg = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 1', 'Term 1']))->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100);
+            $q2Avg = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 2', 'Term 2']))->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100);
+            $q3Avg = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 3', 'Term 3']))->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100);
+            $q4Avg = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 4', 'Term 4']))->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100);
+
+            $allAvg = $sLogs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100) ?: 75.0;
+            $finalAvg = round($allAvg, 1);
+
+            if ($member) {
+                $member->status = 'promoted';
+                $member->promoted_to_grade = $nextGrade;
+                $member->final_average = $finalAvg;
+                $member->promoted_at = $now;
+                $member->save();
+            }
+
+            // Save permanent transcript record in student_academic_records
+            StudentAcademicRecord::updateOrCreate(
+                [
+                    'student_id' => $sId,
+                    'school_year' => $schoolYear,
+                    'grade_level' => $currentGrade,
+                    'subject' => $classroom->subject,
+                ],
+                [
+                    'classroom_id' => $classroomId,
+                    'pre_test_score' => $preAvg ? round($preAvg, 1) : null,
+                    'post_test_score' => $postAvg ? round($postAvg, 1) : null,
+                    'learning_gain' => $learningGain ? round($learningGain, 1) : null,
+                    'term_1_score' => $q1Avg ? round($q1Avg, 1) : null,
+                    'term_2_score' => $q2Avg ? round($q2Avg, 1) : null,
+                    'term_3_score' => $q3Avg ? round($q3Avg, 1) : null,
+                    'term_4_score' => $q4Avg ? round($q4Avg, 1) : null,
+                    'final_average' => $finalAvg,
+                    'promotional_status' => 'PROMOTED',
+                    'promoted_to_grade' => $nextGrade,
+                    'teacher_user_id' => $request->user()->id,
+                    'remarks' => $remarks ?: "Successfully promoted from Grade {$currentGrade} to Grade {$nextGrade}.",
+                ]
+            );
+
+            $promotedResults[] = [
+                'studentId' => $sId,
+                'fromGrade' => $currentGrade,
+                'toGrade' => $nextGrade,
+                'finalAverage' => $finalAvg,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Successfully promoted " . count($promotedResults) . " student(s) to Grade {$nextGrade}!",
+            'promotedCount' => count($promotedResults),
+            'promotedStudents' => $promotedResults,
+        ]);
+    }
+
+    // GET /api/student/academic-history
+    public function getStudentAcademicHistory(Request $request)
+    {
+        $studentId = $request->query('studentId');
+        if (! $studentId) {
+            return response()->json(['error' => 'Missing studentId parameter.'], 400);
+        }
+
+        $records = StudentAcademicRecord::where('student_id', strtoupper(preg_replace('/\s+/', '-', trim($studentId))))
+            ->orderBy('school_year', 'desc')
+            ->orderBy('grade_level', 'desc')
+            ->get();
+
+        return response()->json($records);
     }
 }

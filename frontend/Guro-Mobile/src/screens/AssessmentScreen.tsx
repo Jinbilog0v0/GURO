@@ -43,6 +43,8 @@ import {
   Trash2,
   Lightbulb,
   Target,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -92,12 +94,18 @@ const matchColors = [
 ];
 
 export function AssessmentScreen({ route, navigation }: Props) {
-  const { subject, gradeLevel, topic } = route.params;
+  const { subject, gradeLevel, topic, assessmentType = 'practice' } = route.params;
 
   // ── Store ──────────────────────────────────────────────────────────────────
   const itemBank = useAppStore((state) => state.itemBank);
   const addLog = useAppStore((state) => state.addLog);
   const recordProgress = useAppStore((state) => state.recordProgress);
+  const studentProgress = useAppStore((state) => state.studentProgress) || [];
+  const preTestLog = Array.isArray(studentProgress)
+    ? studentProgress.find(
+        (p) => p.subject === subject && p.gradeLevel === gradeLevel && p.topic === topic && p.assessmentType === 'pre-test'
+      )
+    : undefined;
 
   const adaptiveTiers = useAppStore((state) => state.adaptiveTiers || {});
   const topicKey = `${subject}_${gradeLevel}_${topic}`;
@@ -613,6 +621,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
         score: finalScore,
         totalQuestions: questions.length,
         difficulty: currentTier,
+        assessmentType,
       });
 
       // Adaptive progression & continuous failure routing
@@ -693,7 +702,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
     pan.setValue({ x: 0, y: 0 });
     setSpelledLetters([]);
     const nextQ = shuffled[0];
-    if (nextQ && nextQ.type === 'letter-pop') {
+    if (nextQ && (nextQ.type as string) === 'letter-pop') {
       const letters = shuffle((nextQ.correctAnswer || '').replace(/\s+/g, '').split(''));
       setLetterPool(letters.map((char, index) => ({ id: `${char}-${index}-${Math.random()}`, letter: char, selected: false })));
     }
@@ -750,6 +759,26 @@ export function AssessmentScreen({ route, navigation }: Props) {
               </View>
             )}
 
+            {/* Assessment Type Indicator Badge */}
+            <View style={{ marginBottom: Spacing.xs }}>
+              <Badge
+                label={
+                  assessmentType === 'pre-test'
+                    ? 'Diagnostic Pre-Test'
+                    : assessmentType === 'post-test'
+                    ? 'Summative Post-Test'
+                    : 'Practice Quiz'
+                }
+                variant={
+                  assessmentType === 'pre-test'
+                    ? 'info'
+                    : assessmentType === 'post-test'
+                    ? 'success'
+                    : 'neutral'
+                }
+              />
+            </View>
+
             <Text style={styles.finishedTopic}>{topic}</Text>
             <Text style={styles.finishedSubLabel}>
               {subject} · Grade {gradeLevel}
@@ -782,6 +811,65 @@ export function AssessmentScreen({ route, navigation }: Props) {
                 ]}
               />
             </View>
+
+            {/* Diagnostic Pre-Test vs Post-Test Growth Banner */}
+            {assessmentType === 'pre-test' ? (
+              <View
+                style={{
+                  marginVertical: Spacing.sm,
+                  padding: Spacing.md,
+                  backgroundColor: 'rgba(6, 182, 212, 0.08)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(6, 182, 212, 0.25)',
+                  borderRadius: Radius.md,
+                  gap: 4,
+                  width: '100%',
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Sparkles size={14} color={Colors.accentPrimary} />
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                    Diagnostic Baseline Saved
+                  </Text>
+                </View>
+                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMain, lineHeight: 17 }}>
+                  Now study the concept slides and take the Summative Post-Test to measure your score gain!
+                </Text>
+              </View>
+            ) : assessmentType === 'post-test' && preTestLog ? (
+              (() => {
+                const prePercent = Math.round((preTestLog.score / preTestLog.totalQuestions) * 100);
+                const gain = percentage - prePercent;
+                const normalizedGain = prePercent < 100 ? Math.round(((percentage - prePercent) / (100 - prePercent)) * 100) : gain;
+                return (
+                  <View
+                    style={{
+                      marginVertical: Spacing.sm,
+                      padding: Spacing.md,
+                      backgroundColor: gain >= 0 ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                      borderWidth: 1,
+                      borderColor: gain >= 0 ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)',
+                      borderRadius: Radius.md,
+                      gap: 4,
+                      width: '100%',
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: gain >= 0 ? Colors.success : Colors.warning }}>
+                        {gain >= 0 ? '📈 Learning Gain Measured!' : '📊 Assessment Comparison'}
+                      </Text>
+                      <Badge
+                        label={`${gain >= 0 ? '+' : ''}${gain}% Growth`}
+                        variant={gain >= 0 ? 'success' : 'warning'}
+                      />
+                    </View>
+                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMain, lineHeight: 17 }}>
+                      Pre-Test: {prePercent}% ➔ Post-Test: {percentage}% ({normalizedGain >= 0 ? `Normalized Gain: ${normalizedGain}%` : 'Keep reviewing!'})
+                    </Text>
+                  </View>
+                );
+              })()
+            ) : null}
 
             {/* Actionable Remediation & Prerequisite Return Card */}
             {(() => {

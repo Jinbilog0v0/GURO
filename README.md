@@ -58,6 +58,25 @@ Category dropdown options and interactive question types in the manual lesson bu
 * **AI Rate Limits & Token Governance:** Real-time configuration of sliding window durations and maximum generation request limits per role (`/api/dev/rate-limits`) to protect against Gemini API quota exhaustion.
 * **Master Item Bank Governance:** Real-time tree browser and inspector for global subjects, topics, and question pools that seed all new classrooms.
 
+### 7. DepEd Academic Year & Term/Quarter Structure
+* **Philippine Elementary Alignment:** Classes operate under official DepEd elementary School Years (e.g. `2026-2027`) divided into four quarterly terms (`Quarter 1`, `Quarter 2`, `Quarter 3`, `Quarter 4`).
+* **Session Configuration:** When generating classroom pairing codes, teachers specify the active School Year and Quarter. All synced telemetry logs automatically inherit this period context.
+* **Filtering & Term Breakdowns:** Mastery matrices, student profiles, and progress reports support granular filtering by academic term and assessment type.
+
+### 8. Diagnostic Pre-Test & Summative Post-Test Growth Tracking
+* **Diagnostic Baseline:** Before accessing full lesson study guides, learners can take a Diagnostic Pre-Test to evaluate entry-level competence without negative grade penalties.
+* **Summative Assessment:** Upon finishing module study checkpoints, learners complete the Summative Post-Test.
+* **Comparative Learning Gains:** Evaluates both Absolute Gain ($\Delta\% = \text{Post} - \text{Pre}$) and Hake Normalized Gain ($g = \frac{\text{Post} - \text{Pre}}{100 - \text{Pre}} \times 100$), classifying learner progress into *High Gain* ($g \ge 70\%$), *Medium Gain* ($30\% \le g < 70\%$), *Low Gain* ($0\% \le g < 30\%$), or *Needs Remediation* ($g < 0\%$).
+
+### 9. End-of-School-Year (EOSY) Promotion & SF9 Transcript Console
+* **Form 138 / SF9 Standard:** Teachers review cumulative quarterly grades (Q1–Q4), overall General Final Averages, and diagnostic growth per learner in the dedicated EOSY console.
+* **Automated Promotional Eligibility:** Evaluates DepEd promotion thresholds ($\ge 75\%$ passing standard) with status indicators:
+  - 🟢 **Eligible for Promotion** ($\ge 75\%$)
+  - 🟡 **Conditional / Remedial** ($60\% - 74\%$)
+  - 🔴 **Retained** ($< 60\%$)
+* **Batch Promotion Execution:** Teachers select eligible learners to execute grade-level promotions (e.g. Grade 4 $\to$ Grade 5, Grade 5 $\to$ Grade 6). Promotions automatically archive permanent transcripts into the `student_academic_records` table.
+* **Official SF9 Printout:** Teachers can generate and print official School Form 9 (SF9) Learner Progress Reports complete with DepEd header, quarterly grades, pre/post gain summary, and certificate of promotion.
+
 ---
 
 ## Default Administrative Credentials (Seeded)

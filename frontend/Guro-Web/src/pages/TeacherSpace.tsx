@@ -4,8 +4,10 @@ import { MasteryMatrix } from '../components/teacher/MasteryMatrix';
 import { StudentTile } from '../components/teacher/StudentTile';
 import { DiagnosticAlerts } from '../components/teacher/DiagnosticAlerts';
 import { ManualLessonBuilder } from '../components/teacher/ManualLessonBuilder';
+import { PrePostTestAnalytics } from '../components/teacher/PrePostTestAnalytics';
+import { EosyPromotionConsole } from '../components/teacher/EosyPromotionConsole';
 import { SkeletonStatCards, SkeletonCard, SkeletonTable } from '../components/shared/SkeletonLoader';
-import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock, Search, User, Trash2 } from 'lucide-react';
+import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock, Search, User, Trash2, Target, GraduationCap } from 'lucide-react';
 import { toast } from '../utils/toast';
 import { apiFetch } from '../utils/api';
 
@@ -27,8 +29,8 @@ interface TeacherSpaceProps {
   lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null;
   refreshLogs: () => Promise<void>;
   loading: boolean;
-  activeSubTab?: 'analytics' | 'manual-lesson' | 'classroom-pairing';
-  setActiveSubTab?: (tab: 'analytics' | 'manual-lesson' | 'classroom-pairing') => void;
+  activeSubTab?: 'analytics' | 'manual-lesson' | 'classroom-pairing' | 'pre-post-test' | 'eosy-promotion';
+  setActiveSubTab?: (tab: 'analytics' | 'manual-lesson' | 'classroom-pairing' | 'pre-post-test' | 'eosy-promotion') => void;
 }
 
 const getCategoriesAndTypes = (currentSubject: string, currentGrade: string | number) => {
@@ -73,7 +75,7 @@ export function TeacherSpace({
   const [selectedSection, setSelectedSection] = useState('All');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   
-  const [localActiveSubTab, setLocalActiveSubTab] = useState<'analytics' | 'manual-lesson' | 'classroom-pairing'>('analytics');
+  const [localActiveSubTab, setLocalActiveSubTab] = useState<'analytics' | 'manual-lesson' | 'classroom-pairing' | 'pre-post-test' | 'eosy-promotion'>('analytics');
   const activeSubTab = propActiveSubTab !== undefined ? propActiveSubTab : localActiveSubTab;
   const setActiveSubTab = propSetActiveSubTab !== undefined ? propSetActiveSubTab : setLocalActiveSubTab;
 
@@ -83,6 +85,8 @@ export function TeacherSpace({
     teacherName: string;
     subject: string;
     gradeLevel: number;
+    schoolYear?: string;
+    term?: string;
     expiresAt?: string | null;
   }[]>(() => {
     try {
@@ -101,6 +105,8 @@ export function TeacherSpace({
     teacherName: string;
     subject: string;
     gradeLevel: number;
+    schoolYear?: string;
+    term?: string;
     classroomId: string;
     customItemBank?: any;
     expiresAt?: string | null;
@@ -109,6 +115,8 @@ export function TeacherSpace({
   const [setupName, setSetupName] = useState('');
   const [setupSubject, setSetupSubject] = useState('Mathematics');
   const [setupGrade, setSetupGrade] = useState(4);
+  const [setupSchoolYear, setSetupSchoolYear] = useState('2026-2027');
+  const [setupTerm, setSetupTerm] = useState('Quarter 1');
   const [setupDuration, setSetupDuration] = useState(0);
   const [isCreatingClass, setIsCreatingClass] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -1331,13 +1339,13 @@ export function TeacherSpace({
   return (
     <div className="fade-in flex flex-col gap-6 w-full">
       {propActiveSubTab === undefined && (
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-[28px]">
+        <div className="flex justify-between items-center flex-wrap gap-3">
+          <div className="flex items-center gap-[20px] flex-wrap">
             <h2 className="flex items-center gap-2">
               <School className="size-6 text-[#11428E] shrink-0" />
               <span>Teacher Console</span>
             </h2>
-            <div className="flex bg-white/5 border border-[var(--border-color)] rounded-[10px] p-1 gap-1">
+            <div className="flex bg-white/5 border border-[var(--border-color)] rounded-[10px] p-1 gap-1 flex-wrap">
               <button
                 onClick={() => setActiveSubTab('analytics')}
                 className={`px-3.5 py-1.5 border-none font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 flex items-center gap-1.5 ${
@@ -1348,6 +1356,28 @@ export function TeacherSpace({
               >
                 <TrendingUp size={14} className="shrink-0" />
                 <span>Classroom Analytics</span>
+              </button>
+              <button
+                onClick={() => setActiveSubTab('pre-post-test')}
+                className={`px-3.5 py-1.5 border-none font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 flex items-center gap-1.5 ${
+                  activeSubTab === 'pre-post-test'
+                    ? 'bg-white/10 text-[var(--text-main)]'
+                    : 'bg-transparent text-[var(--text-muted)]'
+                }`}
+              >
+                <Target size={14} className="shrink-0" />
+                <span>Pre/Post Growth</span>
+              </button>
+              <button
+                onClick={() => setActiveSubTab('eosy-promotion')}
+                className={`px-3.5 py-1.5 border-none font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 flex items-center gap-1.5 ${
+                  activeSubTab === 'eosy-promotion'
+                    ? 'bg-white/10 text-[var(--text-main)]'
+                    : 'bg-transparent text-[var(--text-muted)]'
+                }`}
+              >
+                <GraduationCap size={14} className="shrink-0" />
+                <span>EOSY Promotion</span>
               </button>
               <button
                 onClick={() => setActiveSubTab('classroom-pairing')}
@@ -1418,6 +1448,8 @@ export function TeacherSpace({
                             teacherName: c.teacherName,
                             subject: c.subject,
                             gradeLevel: c.gradeLevel,
+                            schoolYear: c.schoolYear,
+                            term: c.term,
                             expiresAt: c.expiresAt
                           });
                           setSelectedModules([]);
@@ -1478,16 +1510,45 @@ export function TeacherSpace({
                 </select>
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div className="form-group">
+                  <label>Grade Level</label>
+                  <select 
+                    value={setupGrade} 
+                    onChange={(e) => setSetupGrade(Number(e.target.value))}
+                    style={{ padding: '10px 14px' }}
+                  >
+                    <option value={4}>Grade 4</option>
+                    <option value={5}>Grade 5</option>
+                    <option value={6}>Grade 6</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>School Year (SY)</label>
+                  <select 
+                    value={setupSchoolYear} 
+                    onChange={(e) => setSetupSchoolYear(e.target.value)}
+                    style={{ padding: '10px 14px' }}
+                  >
+                    <option value="2026-2027">2026-2027</option>
+                    <option value="2027-2028">2027-2028</option>
+                    <option value="2025-2026">2025-2026</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="form-group">
-                <label>Grade Level</label>
+                <label>Academic Term / Quarter</label>
                 <select 
-                  value={setupGrade} 
-                  onChange={(e) => setSetupGrade(Number(e.target.value))}
+                  value={setupTerm} 
+                  onChange={(e) => setSetupTerm(e.target.value)}
                   style={{ padding: '10px 14px' }}
                 >
-                  <option value={4}>Grade 4</option>
-                  <option value={5}>Grade 5</option>
-                  <option value={6}>Grade 6</option>
+                  <option value="Quarter 1">Quarter 1 (Term 1)</option>
+                  <option value="Quarter 2">Quarter 2 (Term 2)</option>
+                  <option value="Quarter 3">Quarter 3 (Term 3)</option>
+                  <option value="Quarter 4">Quarter 4 (Term 4)</option>
                 </select>
               </div>
 
@@ -1524,6 +1585,8 @@ export function TeacherSpace({
                         teacherName: setupName.trim(),
                         subject: setupSubject,
                         gradeLevel: setupGrade,
+                        schoolYear: setupSchoolYear,
+                        term: setupTerm,
                         duration: setupDuration
                       })
                     });
@@ -1543,6 +1606,8 @@ export function TeacherSpace({
                           teacherName: data.teacherName,
                           subject: data.subject,
                           gradeLevel: data.gradeLevel,
+                          schoolYear: data.schoolYear,
+                          term: data.term,
                           expiresAt: data.expiresAt
                         }];
                         localStorage.setItem('guro_teacher_classroom_history', JSON.stringify(updated));
@@ -1616,6 +1681,8 @@ export function TeacherSpace({
                   <div><strong>Teacher Name:</strong> {classroomData.teacherName}</div>
                   <div><strong>Subject Focus:</strong> {classroomData.subject}</div>
                   <div><strong>Grade Level:</strong> Grade {classroomData.gradeLevel}</div>
+                  <div><strong>School Year:</strong> {classroomData.schoolYear || '2026-2027'}</div>
+                  <div><strong>Academic Term:</strong> {classroomData.term || 'Quarter 1'}</div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1828,6 +1895,17 @@ export function TeacherSpace({
       </div>
       ) : activeSubTab === 'manual-lesson' ? (
         <ManualLessonBuilder classroomId={classroomCode} />
+      ) : activeSubTab === 'pre-post-test' ? (
+        <PrePostTestAnalytics
+          progressLogs={progressLogs}
+          activeClassroomId={classroomCode}
+          onGoToClassroomSetup={() => setActiveSubTab('classroom-pairing')}
+        />
+      ) : activeSubTab === 'eosy-promotion' ? (
+        <EosyPromotionConsole
+          classroomCode={classroomCode}
+          onGoToClassroomSetup={() => setActiveSubTab('classroom-pairing')}
+        />
       ) : (
         <>
           {classroomCode && classroomData && (

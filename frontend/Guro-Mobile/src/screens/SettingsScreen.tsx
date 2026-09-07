@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { useAppStore } from '../store/useAppStore';
+import { useAppStore, resolveServerUrl } from '../store/useAppStore';
 import { getParentAccessCode } from '../utils/security';
 import * as Speech from 'expo-speech';
 
@@ -182,9 +182,9 @@ export function SettingsScreen({ navigation }: Props) {
 
   const handleStartEditProfile = () => {
     const currentName = guestName || currentUser?.name || '';
-    let fName = currentUser?.firstName || '';
-    let mName = currentUser?.middleName || '';
-    let lName = currentUser?.lastName || '';
+    let fName = (currentUser as any)?.firstName || '';
+    let mName = (currentUser as any)?.middleName || '';
+    let lName = (currentUser as any)?.lastName || '';
 
     if (!fName && !lName && currentName) {
       const parts = currentName.split(' ');
@@ -224,7 +224,7 @@ export function SettingsScreen({ navigation }: Props) {
         const setGuestNameAction = useAppStore.getState().setGuestName;
         setGuestNameAction(fullName);
         const setStudentIdAction = useAppStore.getState().setStudentId;
-        const trimmedOfflineEmail = useAppStore.getState().email || '';
+        const trimmedOfflineEmail = currentUser?.email || '';
         const primaryId = trimmedOfflineEmail || fullName;
         setStudentIdAction(primaryId.replace(/\s+/g, '-').toUpperCase() + '-GUEST');
         
@@ -439,7 +439,7 @@ export function SettingsScreen({ navigation }: Props) {
                       paddingHorizontal: Spacing.sm,
                       borderWidth: 1,
                       borderColor: Colors.border,
-                      borderRadius: Radius.xs,
+                      borderRadius: Radius.sm,
                       backgroundColor: 'transparent',
                       alignItems: 'center',
                       flexDirection: 'row',
@@ -495,7 +495,7 @@ export function SettingsScreen({ navigation }: Props) {
                           paddingVertical: Spacing.sm,
                           borderWidth: 1,
                           borderColor: Colors.border,
-                          borderRadius: Radius.xs,
+                          borderRadius: Radius.sm,
                           backgroundColor: Colors.bgInput,
                           alignItems: 'center'
                         }}
@@ -511,7 +511,7 @@ export function SettingsScreen({ navigation }: Props) {
                         style={{
                           flex: 1,
                           paddingVertical: Spacing.sm,
-                          borderRadius: Radius.xs,
+                          borderRadius: Radius.sm,
                           backgroundColor: Colors.accentPrimary,
                           alignItems: 'center',
                           justifyContent: 'center'
