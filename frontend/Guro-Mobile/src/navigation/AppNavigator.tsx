@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { LoginScreen } from '../screens/LoginScreen';
 import { StudentTabNavigator } from './StudentTabNavigator';
 import { TeacherTabNavigator } from './TeacherTabNavigator';
+import { AdminTabNavigator } from './AdminTabNavigator';
 import { ParentDashboard } from '../screens/ParentDashboard';
 import { AssessmentScreen } from '../screens/AssessmentScreen';
 import { StudyScreen } from '../screens/StudyScreen';
@@ -18,6 +19,7 @@ export type RootStackParamList = {
   Login: undefined;
   StudentDashboard: undefined;
   TeacherDashboard: undefined;
+  AdminDashboard: undefined;
   ParentDashboard: undefined;
   Assessment: { subject: string; gradeLevel: number; topic: string; assessmentType?: 'pre-test' | 'post-test' | 'practice' };
   Study: { subject: string; gradeLevel: number; topic: string };
@@ -73,6 +75,11 @@ export function AppNavigator() {
       <Stack.Screen
         name="TeacherDashboard"
         component={TeacherTabNavigator}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AdminDashboard"
+        component={AdminTabNavigator}
         options={{ headerShown: false }}
       />
       <Stack.Screen
