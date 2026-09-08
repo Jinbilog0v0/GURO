@@ -279,7 +279,8 @@ export function LoginScreen({ navigation }: Props) {
 
   const routeByRole = (role: string) => {
     if (role === 'student') navigation.replace('StudentDashboard');
-    else if (role === 'teacher' || role === 'admin' || role === 'developer') navigation.replace('TeacherDashboard');
+    else if (role === 'admin' || role === 'developer') navigation.replace('AdminDashboard');
+    else if (role === 'teacher') navigation.replace('TeacherDashboard');
     else if (role === 'parent') navigation.replace('ParentDashboard');
     else navigation.replace('StudentDashboard');
   };
