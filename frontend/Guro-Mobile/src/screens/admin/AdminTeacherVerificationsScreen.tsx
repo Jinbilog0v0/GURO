@@ -6,12 +6,18 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
+  Image,
   RefreshControl,
   ActivityIndicator,
   StyleSheet,
   Alert,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import {
   ShieldCheck,
   Search,
@@ -24,6 +30,7 @@ import {
   Eye,
   X,
   AlertCircle,
+  ArrowLeft,
 } from 'lucide-react-native';
 import { adminService, TeacherVerificationRecord } from '../../services/adminService';
 import { Colors } from '../../theme/colors';
@@ -31,7 +38,21 @@ import { Fonts, FontSizes } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import { toast } from '../../components';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const isImageDoc = (path?: string | null): boolean => {
+  if (!path) return false;
+  return (
+    path.startsWith('data:image') ||
+    path.startsWith('http://') ||
+    path.startsWith('https://') ||
+    path.startsWith('file://') ||
+    /\.(jpg|jpeg|png|webp|gif)$/i.test(path)
+  );
+};
+
 export function AdminTeacherVerificationsScreen() {
+  const navigation = useNavigation<any>();
   const [verifications, setVerifications] = useState<TeacherVerificationRecord[]>([]);
   const [counts, setCounts] = useState({ pending: 0, approved: 0, rejected: 0, total: 0 });
   const [loading, setLoading] = useState(true);
@@ -48,6 +69,7 @@ export function AdminTeacherVerificationsScreen() {
   // Document / Details Modal
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [viewingTeacher, setViewingTeacher] = useState<TeacherVerificationRecord | null>(null);
+  const [submittingApprove, setSubmittingApprove] = useState(false);
 
   const loadVerifications = async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -76,9 +98,12 @@ export function AdminTeacherVerificationsScreen() {
   };
 
   const handleApprove = async (teacher: TeacherVerificationRecord) => {
+    setSubmittingApprove(true);
     const res = await adminService.reviewTeacherVerification(teacher.id, 'approve');
+    setSubmittingApprove(false);
     if (res.success) {
       toast.success(`Account for ${teacher.name} approved.`);
+      if (detailModalVisible) setDetailModalVisible(false);
       loadVerifications(true);
     } else {
       toast.error(res.error || 'Failed to approve application.');
@@ -142,8 +167,17 @@ export function AdminTeacherVerificationsScreen() {
       {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <ShieldCheck size={22} color={Colors.accentSecondary} />
-          <View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Overview')}
+            style={styles.backBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <ArrowLeft size={20} color={Colors.textMain} />
+          </TouchableOpacity>
+          <View style={styles.iconBox}>
+            <ShieldCheck size={20} color={Colors.accentSecondary} />
+          </View>
+          <View style={styles.headerTitleContainer}>
             <Text style={styles.title}>Teacher Verifications</Text>
             <Text style={styles.subtitle}>Review institutional educator credentials</Text>
           </View>
@@ -164,7 +198,7 @@ export function AdminTeacherVerificationsScreen() {
             returnKeyType="search"
           />
           {search.length > 0 && (
-            <TouchableOpacity onPress={() => { setSearch(''); loadVerifications(); }}>
+            <TouchableOpacity onPress={() => { setSearch(''); loadVerifications(); }} style={styles.clearSearchBtn}>
               <X size={14} color={Colors.textMuted} />
             </TouchableOpacity>
           )}
@@ -175,7 +209,14 @@ export function AdminTeacherVerificationsScreen() {
       <View style={styles.filterTabsRow}>
         {(['pending', 'approved', 'rejected', 'all'] as const).map((tab) => {
           const isActive = statusFilter === tab;
-          const count = tab === 'pending' ? counts.pending : tab === 'approved' ? counts.approved : tab === 'rejected' ? counts.rejected : counts.total;
+          const count =
+            tab === 'pending'
+              ? counts.pending
+              : tab === 'approved'
+              ? counts.approved
+              : tab === 'rejected'
+              ? counts.rejected
+              : counts.total;
           return (
             <TouchableOpacity
               key={tab}
@@ -266,7 +307,7 @@ export function AdminTeacherVerificationsScreen() {
                   {item.schoolIdNumber && (
                     <View style={styles.infoRow}>
                       <FileText size={13} color={Colors.textMuted} />
-                      <Text style={styles.infoText}>ID: {item.schoolIdNumber}</Text>
+                      <Text style={styles.infoText}>ID Number: {item.schoolIdNumber}</Text>
                     </View>
                   )}
 
@@ -286,7 +327,7 @@ export function AdminTeacherVerificationsScreen() {
                       activeOpacity={0.7}
                     >
                       <Eye size={13} color={Colors.textMain} />
-                      <Text style={styles.detailBtnText}>View Details</Text>
+                      <Text style={styles.detailBtnText}>View ID &amp; Details</Text>
                     </TouchableOpacity>
 
                     {isPending && (
@@ -326,19 +367,197 @@ export function AdminTeacherVerificationsScreen() {
         </ScrollView>
       )}
 
-      {/* Reject Modal */}
-      <Modal visible={rejectModalVisible} transparent animationType="fade">
+      {/* Details & ID Document Modal */}
+      <Modal visible={detailModalVisible} transparent animationType="fade" onRequestClose={() => setDetailModalVisible(false)}>
         <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setDetailModalVisible(false)}>
+            <View style={styles.modalBackdrop} />
+          </TouchableWithoutFeedback>
+
           <View style={styles.modalCard}>
+            {/* Modal Header */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Reject Teacher Application</Text>
-              <TouchableOpacity onPress={() => setRejectModalVisible(false)}>
-                <X size={18} color={Colors.textMuted} />
+              <View style={styles.modalHeaderTitleRow}>
+                <View style={styles.modalIconBox}>
+                  <FileText size={18} color={Colors.accentPrimary} />
+                </View>
+                <View style={styles.modalTitleTextContainer}>
+                  <Text style={styles.modalTitle} numberOfLines={1}>
+                    {viewingTeacher?.name || 'Teacher Verification'}
+                  </Text>
+                  <Text style={styles.modalSubtitle}>Institutional Credential Review</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setDetailModalVisible(false)}
+                style={styles.closeBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityLabel="Close modal"
+              >
+                <X size={18} color={Colors.textMain} />
               </TouchableOpacity>
             </View>
-            <Text style={styles.modalSubtitle}>
-              Specify why the application for {selectedTeacher?.name} is being rejected. The applicant will be notified.
+
+            {viewingTeacher && (
+              <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent}>
+                {/* Meta details list */}
+                <View style={styles.detailCard}>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Full Name</Text>
+                    <Text style={styles.detailVal}>{viewingTeacher.name}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Email Address</Text>
+                    <Text style={styles.detailVal}>{viewingTeacher.email}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>School Name</Text>
+                    <Text style={styles.detailVal}>{viewingTeacher.schoolName || 'Not specified'}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>School ID Number</Text>
+                    <Text style={styles.detailVal}>{viewingTeacher.schoolIdNumber || 'Not specified'}</Text>
+                  </View>
+                  <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                    <Text style={styles.detailLabel}>Current Status</Text>
+                    <Text
+                      style={[
+                        styles.detailVal,
+                        {
+                          fontWeight: '800',
+                          color:
+                            viewingTeacher.verificationStatus === 'approved'
+                              ? Colors.success
+                              : viewingTeacher.verificationStatus === 'rejected'
+                              ? Colors.danger
+                              : Colors.warning,
+                        },
+                      ]}
+                    >
+                      {viewingTeacher.verificationStatus.toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* ID Document Visual Viewer */}
+                <View style={styles.docSection}>
+                  <View style={styles.docSectionHeader}>
+                    <FileText size={15} color={Colors.accentPrimary} />
+                    <Text style={styles.docSectionTitle}>Attached ID / Credential Document</Text>
+                  </View>
+
+                  {viewingTeacher.idDocumentPath ? (
+                    isImageDoc(viewingTeacher.idDocumentPath) ? (
+                      <View style={styles.imageContainer}>
+                        <Image
+                          source={{ uri: viewingTeacher.idDocumentPath }}
+                          style={styles.documentImage}
+                          resizeMode="contain"
+                        />
+                        <View style={styles.imageBadge}>
+                          <ShieldCheck size={12} color="#FFFFFF" />
+                          <Text style={styles.imageBadgeText}>Official Verification Image</Text>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={styles.pdfContainer}>
+                        <FileText size={32} color={Colors.accentPrimary} />
+                        <Text style={styles.pdfTitle}>Credential Document File</Text>
+                        <Text style={styles.pdfPath} numberOfLines={2}>
+                          {viewingTeacher.idDocumentPath}
+                        </Text>
+                      </View>
+                    )
+                  ) : (
+                    <View style={styles.noDocContainer}>
+                      <AlertCircle size={24} color={Colors.textDark} />
+                      <Text style={styles.noDocText}>No ID document attached to this application.</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Modal Footer Controls */}
+                <View style={styles.modalFooterActions}>
+                  <TouchableOpacity
+                    style={styles.modalDismissBtn}
+                    onPress={() => setDetailModalVisible(false)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.modalDismissText}>Close</Text>
+                  </TouchableOpacity>
+
+                  {viewingTeacher.verificationStatus === 'pending' && (
+                    <>
+                      <TouchableOpacity
+                        style={styles.modalRejectBtn}
+                        onPress={() => {
+                          setDetailModalVisible(false);
+                          openRejectModal(viewingTeacher);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <XCircle size={14} color={Colors.danger} />
+                        <Text style={styles.modalRejectText}>Reject</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[styles.modalApproveBtn, submittingApprove && { opacity: 0.6 }]}
+                        onPress={() => handleApprove(viewingTeacher)}
+                        disabled={submittingApprove}
+                        activeOpacity={0.7}
+                      >
+                        {submittingApprove ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <>
+                            <CheckCircle2 size={14} color="#FFFFFF" />
+                            <Text style={styles.modalApproveText}>Approve</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Reject Reason Modal */}
+      <Modal visible={rejectModalVisible} transparent animationType="fade" onRequestClose={() => setRejectModalVisible(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setRejectModalVisible(false)}>
+            <View style={styles.modalBackdrop} />
+          </TouchableWithoutFeedback>
+
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderTitleRow}>
+                <View style={[styles.modalIconBox, { backgroundColor: 'rgba(160,19,34,0.1)' }]}>
+                  <XCircle size={18} color={Colors.danger} />
+                </View>
+                <View style={styles.modalTitleTextContainer}>
+                  <Text style={styles.modalTitle}>Reject Application</Text>
+                  <Text style={styles.modalSubtitle}>Provide explanation for applicant</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setRejectModalVisible(false)}
+                style={styles.closeBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityLabel="Close reject dialog"
+              >
+                <X size={18} color={Colors.textMain} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.rejectDesc}>
+              State why the verification for {selectedTeacher?.name} is being rejected:
             </Text>
+
             <TextInput
               style={styles.modalInput}
               placeholder="e.g., Unclear DepEd ID photo, invalid school ID number…"
@@ -348,97 +567,30 @@ export function AdminTeacherVerificationsScreen() {
               multiline
               numberOfLines={3}
             />
-            <View style={styles.modalActions}>
+
+            <View style={styles.modalFooterActions}>
               <TouchableOpacity
-                style={styles.modalCancelBtn}
+                style={styles.modalDismissBtn}
                 onPress={() => setRejectModalVisible(false)}
                 disabled={submittingReject}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={styles.modalDismissText}>Cancel</Text>
               </TouchableOpacity>
+
               <TouchableOpacity
-                style={[styles.modalRejectBtn, submittingReject && { opacity: 0.6 }]}
+                style={[styles.modalRejectConfirmBtn, submittingReject && { opacity: 0.6 }]}
                 onPress={submitReject}
                 disabled={submittingReject}
               >
                 {submittingReject ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.modalRejectText}>Reject Application</Text>
+                  <Text style={styles.modalRejectConfirmText}>Confirm Rejection</Text>
                 )}
               </TouchableOpacity>
             </View>
           </View>
-        </View>
-      </Modal>
-
-      {/* Details & Document Modal */}
-      <Modal visible={detailModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Educator Credentials</Text>
-              <TouchableOpacity onPress={() => setDetailModalVisible(false)}>
-                <X size={18} color={Colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-            {viewingTeacher && (
-              <View style={styles.detailContent}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Full Name:</Text>
-                  <Text style={styles.detailVal}>{viewingTeacher.name}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Email:</Text>
-                  <Text style={styles.detailVal}>{viewingTeacher.email}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>School Name:</Text>
-                  <Text style={styles.detailVal}>{viewingTeacher.schoolName || 'Not specified'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>School ID Number:</Text>
-                  <Text style={styles.detailVal}>{viewingTeacher.schoolIdNumber || 'Not specified'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>ID Document File:</Text>
-                  <Text style={styles.detailVal}>
-                    {viewingTeacher.idDocumentPath || 'No document uploaded'}
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Status:</Text>
-                  <Text style={[styles.detailVal, { fontWeight: '700' }]}>
-                    {viewingTeacher.verificationStatus.toUpperCase()}
-                  </Text>
-                </View>
-
-                {viewingTeacher.verificationStatus === 'pending' && (
-                  <View style={[styles.modalActions, { marginTop: Spacing.md }]}>
-                    <TouchableOpacity
-                      style={styles.modalRejectBtn}
-                      onPress={() => {
-                        setDetailModalVisible(false);
-                        openRejectModal(viewingTeacher);
-                      }}
-                    >
-                      <Text style={styles.modalRejectText}>Reject</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.modalApproveBtn}
-                      onPress={() => {
-                        setDetailModalVisible(false);
-                        handleApprove(viewingTeacher);
-                      }}
-                    >
-                      <Text style={styles.modalApproveText}>Approve Account</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -458,6 +610,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
+  },
+  backBtn: {
+    padding: 6,
+    marginRight: 2,
+  },
+  iconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.lg,
+    backgroundColor: 'rgba(160,19,34,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleContainer: {
+    flex: 1,
   },
   title: {
     fontFamily: Fonts.display,
@@ -491,6 +658,9 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.xs,
     color: Colors.textMain,
     padding: 0,
+  },
+  clearSearchBtn: {
+    padding: 4,
   },
   filterTabsRow: {
     flexDirection: 'row',
@@ -677,6 +847,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemiBold,
     fontSize: 11,
     color: Colors.textMain,
+    fontWeight: '600',
   },
   rejectBtn: {
     flexDirection: 'row',
@@ -714,28 +885,63 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: Spacing.lg,
+    padding: Spacing.md,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   modalCard: {
     width: '100%',
+    maxHeight: '90%',
     backgroundColor: Colors.bgCard,
-    borderRadius: Radius.xl,
-    padding: Spacing.lg,
-    gap: Spacing.sm,
+    borderRadius: Radius['2xl'],
     borderWidth: 1,
     borderColor: Colors.border,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    backgroundColor: Colors.bgCard,
+  },
+  modalHeaderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  modalIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.lg,
+    backgroundColor: 'rgba(17,66,142,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalTitleTextContainer: {
+    flex: 1,
   },
   modalTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSizes.md,
+    fontSize: FontSizes.sm,
     color: Colors.textMain,
     fontWeight: '700',
   },
@@ -744,70 +950,36 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.textMuted,
   },
-  modalInput: {
-    backgroundColor: Colors.bgMain,
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.bgInput,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: Radius.md,
-    padding: Spacing.sm,
-    fontFamily: Fonts.body,
-    fontSize: FontSizes.xs,
-    color: Colors.textMain,
-    minHeight: 70,
-    textAlignVertical: 'top',
   },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
+  modalScroll: {
+    maxHeight: 520,
   },
-  modalCancelBtn: {
+  modalScrollContent: {
+    padding: Spacing.lg,
+    gap: Spacing.md,
+  },
+  detailCard: {
+    backgroundColor: Colors.bgMain,
+    borderRadius: Radius.xl,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-    borderRadius: Radius.md,
-  },
-  modalCancelText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSizes.xs,
-    color: Colors.textMuted,
-  },
-  modalRejectBtn: {
-    backgroundColor: Colors.danger,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-    borderRadius: Radius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalRejectText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSizes.xs,
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  modalApproveBtn: {
-    backgroundColor: Colors.success,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-    borderRadius: Radius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalApproveText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSizes.xs,
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  detailContent: {
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
+    paddingVertical: Spacing.xs,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    alignItems: 'center',
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
@@ -820,7 +992,178 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: 11,
     color: Colors.textMain,
-    maxWidth: '60%',
+    maxWidth: '65%',
     textAlign: 'right',
+  },
+  docSection: {
+    gap: Spacing.xs,
+  },
+  docSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  docSectionTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSizes.xs,
+    color: Colors.textMain,
+    fontWeight: '700',
+  },
+  imageContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    minHeight: 200,
+  },
+  documentImage: {
+    width: SCREEN_WIDTH - 80,
+    height: 220,
+    borderRadius: Radius.lg,
+    backgroundColor: '#F8FAFC',
+  },
+  imageBadge: {
+    position: 'absolute',
+    bottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(17,66,142,0.85)',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+  },
+  imageBadgeText: {
+    color: '#FFFFFF',
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  pdfContainer: {
+    backgroundColor: Colors.bgMain,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    alignItems: 'center',
+    gap: Spacing.xs,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  pdfTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.xs,
+    color: Colors.textMain,
+    fontWeight: '700',
+  },
+  pdfPath: {
+    fontFamily: Fonts.body,
+    fontSize: 10,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  noDocContainer: {
+    backgroundColor: Colors.bgMain,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    alignItems: 'center',
+    gap: Spacing.xs,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  noDocText: {
+    fontFamily: Fonts.body,
+    fontSize: 11,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  modalFooterActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: Spacing.xs,
+    paddingTop: Spacing.xs,
+  },
+  modalDismissBtn: {
+    backgroundColor: Colors.bgInput,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 9,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  modalDismissText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSizes.xs,
+    color: Colors.textMain,
+  },
+  modalRejectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(160,19,34,0.1)',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 9,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(160,19,34,0.25)',
+  },
+  modalRejectText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSizes.xs,
+    color: Colors.danger,
+    fontWeight: '700',
+  },
+  modalApproveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.success,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 9,
+    borderRadius: Radius.lg,
+  },
+  modalApproveText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSizes.xs,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  rejectDesc: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.textMuted,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+  },
+  modalInput: {
+    backgroundColor: Colors.bgMain,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.lg,
+    padding: Spacing.sm,
+    fontFamily: Fonts.body,
+    fontSize: FontSizes.xs,
+    color: Colors.textMain,
+    minHeight: 80,
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.sm,
+    textAlignVertical: 'top',
+  },
+  modalRejectConfirmBtn: {
+    backgroundColor: Colors.danger,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 9,
+    borderRadius: Radius.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalRejectConfirmText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSizes.xs,
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 });

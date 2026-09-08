@@ -9,6 +9,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import {
   Award,
   AlertTriangle,
@@ -19,6 +20,7 @@ import {
   BarChart2,
   TrendingUp,
   Target,
+  ArrowLeft,
 } from 'lucide-react-native';
 import { adminService, ReportsData } from '../../services/adminService';
 import { Colors } from '../../theme/colors';
@@ -27,6 +29,7 @@ import { Spacing, Radius } from '../../theme/spacing';
 import { toast } from '../../components';
 
 export function AdminReportsScreen() {
+  const navigation = useNavigation<any>();
   const [data, setData] = useState<ReportsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -71,8 +74,17 @@ export function AdminReportsScreen() {
       {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Award size={22} color={Colors.accentSecondary} />
-          <View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Overview')}
+            style={styles.backBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <ArrowLeft size={20} color={Colors.textMain} />
+          </TouchableOpacity>
+          <View style={styles.iconBox}>
+            <Award size={20} color={Colors.accentSecondary} />
+          </View>
+          <View style={styles.headerTitleContainer}>
             <Text style={styles.title}>Division Analytics &amp; Reports</Text>
             <Text style={styles.subtitle}>Curriculum mastery and diagnostic intervention alerts</Text>
           </View>
@@ -272,6 +284,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
+  },
+  backBtn: {
+    padding: 6,
+    marginRight: 2,
+  },
+  iconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.lg,
+    backgroundColor: 'rgba(160,19,34,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleContainer: {
+    flex: 1,
   },
   title: {
     fontFamily: Fonts.display,

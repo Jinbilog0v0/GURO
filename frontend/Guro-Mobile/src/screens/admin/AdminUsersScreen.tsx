@@ -10,8 +10,12 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import {
   Users,
   Search,
@@ -22,6 +26,7 @@ import {
   School,
   Lock,
   UserCheck,
+  ArrowLeft,
 } from 'lucide-react-native';
 import { adminService, UserRecord } from '../../services/adminService';
 import { Colors } from '../../theme/colors';
@@ -39,6 +44,7 @@ const ROLE_COLORS: Record<string, { bg: string; text: string; label: string }> =
 };
 
 export function AdminUsersScreen() {
+  const navigation = useNavigation<any>();
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -153,8 +159,17 @@ export function AdminUsersScreen() {
       {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Users size={22} color={Colors.accentSecondary} />
-          <View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Overview')}
+            style={styles.backBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <ArrowLeft size={20} color={Colors.textMain} />
+          </TouchableOpacity>
+          <View style={styles.iconBox}>
+            <Users size={20} color={Colors.accentSecondary} />
+          </View>
+          <View style={styles.headerTitleContainer}>
             <Text style={styles.title}>User Directory</Text>
             <Text style={styles.subtitle}>Manage student, teacher, and parent accounts</Text>
           </View>
@@ -175,7 +190,7 @@ export function AdminUsersScreen() {
             returnKeyType="search"
           />
           {search.length > 0 && (
-            <TouchableOpacity onPress={() => { setSearch(''); loadUsers(); }}>
+            <TouchableOpacity onPress={() => { setSearch(''); loadUsers(); }} style={styles.clearSearchBtn}>
               <X size={14} color={Colors.textMuted} />
             </TouchableOpacity>
           )}
@@ -264,7 +279,7 @@ export function AdminUsersScreen() {
                       activeOpacity={0.7}
                     >
                       <Edit3 size={13} color={Colors.textMain} />
-                      <Text style={styles.actionBtnText}>Role</Text>
+                      <Text style={styles.actionBtnText}>Change Role</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -292,104 +307,149 @@ export function AdminUsersScreen() {
       )}
 
       {/* Edit Role Modal */}
-      <Modal visible={roleModalVisible} transparent animationType="fade">
+      <Modal visible={roleModalVisible} transparent animationType="fade" onRequestClose={() => setRoleModalVisible(false)}>
         <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setRoleModalVisible(false)}>
+            <View style={styles.modalBackdrop} />
+          </TouchableWithoutFeedback>
+
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Change Role: {editingUser?.name}</Text>
-              <TouchableOpacity onPress={() => setRoleModalVisible(false)}>
-                <X size={18} color={Colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.modalSubtitle}>Select the new security and access role for this user account:</Text>
+              <View style={styles.modalHeaderTitleRow}>
+                <View style={styles.modalIconBox}>
+                  <Edit3 size={18} color={Colors.accentPrimary} />
+                </View>
+                <View style={styles.modalTitleTextContainer}>
+                  <Text style={styles.modalTitle}>Change Role</Text>
+                  <Text style={styles.modalSubtitle} numberOfLines={1}>{editingUser?.name}</Text>
+                </View>
+              </View>
 
-            <View style={styles.roleOptions}>
-              {['student', 'teacher', 'parent', 'admin', 'developer'].map((r) => {
-                const isSelected = newRole === r;
-                return (
-                  <TouchableOpacity
-                    key={r}
-                    style={[styles.roleOption, isSelected && styles.roleOptionSelected]}
-                    onPress={() => setNewRole(r)}
-                  >
-                    <Text style={[styles.roleOptionText, isSelected && styles.roleOptionTextSelected]}>
-                      {r.charAt(0).toUpperCase() + r.slice(1)}
-                    </Text>
-                    {isSelected && <UserCheck size={14} color={Colors.accentPrimary} />}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <View style={styles.modalActions}>
               <TouchableOpacity
-                style={styles.modalCancelBtn}
                 onPress={() => setRoleModalVisible(false)}
-                disabled={updatingRole}
+                style={styles.closeBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityLabel="Close role dialog"
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <X size={18} color={Colors.textMain} />
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalSaveBtn, updatingRole && { opacity: 0.6 }]}
-                onPress={submitUpdateRole}
-                disabled={updatingRole}
-              >
-                {updatingRole ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.modalSaveText}>Save Role</Text>
-                )}
-              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={styles.modalDesc}>Select new security and access role:</Text>
+
+              <View style={styles.roleOptions}>
+                {['student', 'teacher', 'parent', 'admin', 'developer'].map((r) => {
+                  const isSelected = newRole === r;
+                  return (
+                    <TouchableOpacity
+                      key={r}
+                      style={[styles.roleOption, isSelected && styles.roleOptionSelected]}
+                      onPress={() => setNewRole(r)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.roleOptionText, isSelected && styles.roleOptionTextSelected]}>
+                        {r.charAt(0).toUpperCase() + r.slice(1)}
+                      </Text>
+                      {isSelected && <UserCheck size={16} color={Colors.accentPrimary} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <View style={styles.modalFooterActions}>
+                <TouchableOpacity
+                  style={styles.modalDismissBtn}
+                  onPress={() => setRoleModalVisible(false)}
+                  disabled={updatingRole}
+                >
+                  <Text style={styles.modalDismissText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalSaveBtn, updatingRole && { opacity: 0.6 }]}
+                  onPress={submitUpdateRole}
+                  disabled={updatingRole}
+                >
+                  {updatingRole ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.modalSaveText}>Save Role</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
       </Modal>
 
       {/* Password Reset Modal */}
-      <Modal visible={resetModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
+      <Modal visible={resetModalVisible} transparent animationType="fade" onRequestClose={() => setResetModalVisible(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setResetModalVisible(false)}>
+            <View style={styles.modalBackdrop} />
+          </TouchableWithoutFeedback>
+
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Reset Password: {resettingUser?.name}</Text>
-              <TouchableOpacity onPress={() => setResetModalVisible(false)}>
-                <X size={18} color={Colors.textMuted} />
+              <View style={styles.modalHeaderTitleRow}>
+                <View style={styles.modalIconBox}>
+                  <KeyRound size={18} color={Colors.accentPrimary} />
+                </View>
+                <View style={styles.modalTitleTextContainer}>
+                  <Text style={styles.modalTitle}>Reset Password</Text>
+                  <Text style={styles.modalSubtitle} numberOfLines={1}>{resettingUser?.email}</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setResetModalVisible(false)}
+                style={styles.closeBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityLabel="Close password dialog"
+              >
+                <X size={18} color={Colors.textMain} />
               </TouchableOpacity>
             </View>
-            <Text style={styles.modalSubtitle}>
-              Enter a new temporary password for {resettingUser?.email}. Must contain letters, numbers, and at least one special character.
-            </Text>
 
-            <TextInput
-              style={styles.modalInput}
-              placeholder="e.g., TempPass#2026!"
-              placeholderTextColor={Colors.textDark}
-              value={newPassword}
-              onChangeText={setNewPassword}
-              secureTextEntry
-            />
+            <View style={styles.modalBody}>
+              <Text style={styles.modalDesc}>
+                Enter a new temporary password (min 8 characters, letters, numbers, and symbols):
+              </Text>
 
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setResetModalVisible(false)}
-                disabled={submittingReset}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalSaveBtn, submittingReset && { opacity: 0.6 }]}
-                onPress={submitResetPassword}
-                disabled={submittingReset}
-              >
-                {submittingReset ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.modalSaveText}>Update Password</Text>
-                )}
-              </TouchableOpacity>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g., TempPass#2026!"
+                placeholderTextColor={Colors.textDark}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry
+              />
+
+              <View style={styles.modalFooterActions}>
+                <TouchableOpacity
+                  style={styles.modalDismissBtn}
+                  onPress={() => setResetModalVisible(false)}
+                  disabled={submittingReset}
+                >
+                  <Text style={styles.modalDismissText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalSaveBtn, submittingReset && { opacity: 0.6 }]}
+                  onPress={submitResetPassword}
+                  disabled={submittingReset}
+                >
+                  {submittingReset ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.modalSaveText}>Update Password</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -409,6 +469,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
+  },
+  backBtn: {
+    padding: 6,
+    marginRight: 2,
+  },
+  iconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.lg,
+    backgroundColor: 'rgba(160,19,34,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleContainer: {
+    flex: 1,
   },
   title: {
     fontFamily: Fonts.display,
@@ -442,6 +517,9 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.xs,
     color: Colors.textMain,
     padding: 0,
+  },
+  clearSearchBtn: {
+    padding: 4,
   },
   filterTabsRow: {
     paddingHorizontal: Spacing.md,
@@ -593,6 +671,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemiBold,
     fontSize: 11,
     color: Colors.textMain,
+    fontWeight: '600',
   },
   deleteBtn: {
     marginLeft: 'auto',
@@ -600,28 +679,62 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: Spacing.lg,
+    padding: Spacing.md,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   modalCard: {
     width: '100%',
     backgroundColor: Colors.bgCard,
-    borderRadius: Radius.xl,
-    padding: Spacing.lg,
-    gap: Spacing.sm,
+    borderRadius: Radius['2xl'],
     borderWidth: 1,
     borderColor: Colors.border,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    backgroundColor: Colors.bgCard,
+  },
+  modalHeaderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  modalIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.lg,
+    backgroundColor: 'rgba(17,66,142,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalTitleTextContainer: {
+    flex: 1,
   },
   modalTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSizes.md,
+    fontSize: FontSizes.sm,
     color: Colors.textMain,
     fontWeight: '700',
   },
@@ -630,16 +743,35 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.textMuted,
   },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.bgInput,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  modalBody: {
+    padding: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  modalDesc: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
   modalInput: {
     backgroundColor: Colors.bgMain,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: Radius.md,
+    borderRadius: Radius.lg,
     padding: Spacing.sm,
     fontFamily: Fonts.body,
     fontSize: FontSizes.xs,
     color: Colors.textMain,
-    height: 40,
+    height: 42,
   },
   roleOptions: {
     gap: 6,
@@ -652,7 +784,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgMain,
     paddingHorizontal: Spacing.md,
     paddingVertical: 10,
-    borderRadius: Radius.md,
+    borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -669,27 +801,31 @@ const styles = StyleSheet.create({
     color: Colors.accentPrimary,
     fontWeight: '700',
   },
-  modalActions: {
+  modalFooterActions: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'flex-end',
     gap: Spacing.xs,
     marginTop: Spacing.xs,
   },
-  modalCancelBtn: {
+  modalDismissBtn: {
+    backgroundColor: Colors.bgInput,
     paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-    borderRadius: Radius.md,
+    paddingVertical: 9,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  modalCancelText: {
+  modalDismissText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
+    color: Colors.textMain,
   },
   modalSaveBtn: {
     backgroundColor: Colors.accentPrimary,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
-    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 9,
+    borderRadius: Radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
   },
