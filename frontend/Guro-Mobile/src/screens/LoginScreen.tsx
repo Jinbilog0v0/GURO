@@ -688,7 +688,7 @@ export function LoginScreen({ navigation }: Props) {
       <Modal
         visible={showForgotModal}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => {
           setShowForgotModal(false);
           setForgotStep(1);
@@ -696,13 +696,28 @@ export function LoginScreen({ navigation }: Props) {
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1, backgroundColor: 'rgba(15,23,42,0.75)', justifyContent: 'center', alignItems: 'center', padding: Spacing.lg }}
+          style={{ flex: 1, backgroundColor: 'rgba(6, 9, 19, 0.72)', justifyContent: 'center', alignItems: 'center', padding: Spacing.lg }}
         >
-          <GlassCard padding={Spacing.xl} style={{ width: '100%', maxWidth: 400 }}>
+          <GlassCard padding={Spacing.xl} style={{ width: '100%', maxWidth: 400, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.12)' }}>
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain, marginBottom: Spacing.xs, textAlign: 'center' }}>
-                Reset Password
-              </Text>
+              <View style={{ alignItems: 'center', marginBottom: Spacing.sm }}>
+                <View style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 18,
+                  backgroundColor: 'rgba(17, 66, 142, 0.12)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: 'rgba(17, 66, 142, 0.25)',
+                  marginBottom: Spacing.xs,
+                }}>
+                  <KeyRound size={26} color={Colors.accentPrimary} />
+                </View>
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain, textAlign: 'center' }}>
+                  Reset Password
+                </Text>
+              </View>
               <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted, marginBottom: Spacing.md, textAlign: 'center' }}>
                 {forgotStep === 1
                   ? 'Select your role and enter your email address to receive a recovery code.'

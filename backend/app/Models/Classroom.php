@@ -12,6 +12,7 @@ class Classroom extends Model
         'teacher_name',
         'subject',
         'grade_level',
+        'section_name',
         'school_year',
         'term',
         'custom_item_bank',

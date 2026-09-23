@@ -1,4 +1,5 @@
 import React from 'react';
+import { Check } from 'lucide-react';
 
 type StepType = 'name' | 'grade' | 'dashboard' | 'topics' | 'progress' | 'study' | 'quiz' | 'results';
 
@@ -36,7 +37,7 @@ export const StepProgressBar: React.FC<StepProgressBarProps> = ({ currentStep })
                     : 'bg-transparent border-white/20 text-white/30'
                 }`}
               >
-                {isDone ? '✓' : i + 1}
+                {isDone ? <Check size={12} strokeWidth={3} /> : i + 1}
               </div>
               <span
                 className={`text-[9px] font-bold uppercase tracking-wider transition-colors duration-300 ${

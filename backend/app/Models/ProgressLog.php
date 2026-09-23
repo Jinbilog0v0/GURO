@@ -10,6 +10,7 @@ class ProgressLog extends Model
         'event_id',
         'student_id',
         'classroom_id',
+        'section_name',
         'subject',
         'grade_level',
         'topic',

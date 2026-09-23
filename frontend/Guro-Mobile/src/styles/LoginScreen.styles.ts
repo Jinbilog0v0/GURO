@@ -84,15 +84,15 @@ export const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingVertical: Spacing.md,
-    backgroundColor: '#F8FAFC', // slate-50 same as web input bg
-    borderRadius: 12, // rounded-xl
+    backgroundColor: Colors.bgInput,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0', // slate-200
+    borderColor: Colors.border,
   },
   rolePillText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSizes.sm,
-    color: '#94A3B8', // slate-400
+    color: Colors.textMuted,
   },
 
   formGroup: {},
@@ -104,8 +104,8 @@ export const styles = StyleSheet.create({
   },
   offlineButton: {
     marginTop: Spacing.xl,
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E2E8F0',
+    backgroundColor: Colors.bgCard,
+    borderColor: Colors.border,
     borderWidth: 1,
     borderRadius: 12,
     shadowColor: '#11428E',
@@ -133,19 +133,19 @@ export const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E2E8F0', // slate-200
+    backgroundColor: Colors.border,
   },
   dividerText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSizes.sm,
-    color: '#94A3B8', // slate-400
+    color: Colors.textMuted,
   },
 
   // Footer
   footer: {
     fontFamily: Fonts.body,
     fontSize: FontSizes.xs,
-    color: '#94A3B8', // slate-400
+    color: Colors.textDark,
     textAlign: 'center',
     marginTop: Spacing['3xl'],
     paddingBottom: Spacing.lg,

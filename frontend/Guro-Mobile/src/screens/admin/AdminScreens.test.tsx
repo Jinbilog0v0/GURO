@@ -5,6 +5,10 @@ import { AdminTeacherVerificationsScreen } from './AdminTeacherVerificationsScre
 import { AdminUsersScreen } from './AdminUsersScreen';
 import { AdminClassroomsScreen } from './AdminClassroomsScreen';
 import { AdminReportsScreen } from './AdminReportsScreen';
+import { AdminCurriculumScreen } from './AdminCurriculumScreen';
+import { AdminRateLimitsScreen } from './AdminRateLimitsScreen';
+import { AdminLessonIngestorScreen } from './AdminLessonIngestorScreen';
+import { AdminSidebar } from '../../components/admin/AdminSidebar';
 import { adminService } from '../../services/adminService';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -25,6 +29,7 @@ jest.mock('@react-navigation/native', () => ({
     navigate: jest.fn(),
     replace: jest.fn(),
     goBack: jest.fn(),
+    reset: jest.fn(),
   }),
 }));
 
@@ -142,6 +147,57 @@ const mockReports = {
   ],
 };
 
+const mockItemBank = {
+  Mathematics: {
+    '4': {
+      Fractions: {
+        Easy: {
+          'multiple-choice': [
+            {
+              id: 'q1',
+              questionText: 'What is 1/2 + 1/2?',
+              options: ['1', '2', '1/4', '1/2'],
+              correctAnswer: '1',
+              feedback: { en: 'Half plus half is 1 whole', fil: 'Kalahati dagdag kalahati ay isa' },
+            },
+          ],
+        },
+      },
+    },
+  },
+  English: {},
+};
+
+const mockRateLimits = [
+  {
+    id: 1,
+    role: 'teacher',
+    max_requests: 15,
+    window_minutes: 60,
+    is_enabled: true,
+    notes: 'Teacher generation quota',
+    created_at: '2026-09-01T00:00:00Z',
+    updated_at: '2026-09-01T00:00:00Z',
+  },
+];
+
+const mockRateLimitsUsage = [
+  {
+    role: 'teacher',
+    max_requests: 15,
+    window_minutes: 60,
+    users: [
+      {
+        user_id: 2,
+        name: 'Teacher Juan',
+        email: 'teacher@deped.gov.ph',
+        count: 5,
+        over_limit: false,
+      },
+    ],
+  },
+];
+
 describe('Mobile Admin Console Screens', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -163,6 +219,10 @@ describe('Mobile Admin Console Screens', () => {
     jest.spyOn(adminService, 'reassignClassroom').mockResolvedValue({ success: true, message: 'Reassigned' });
     jest.spyOn(adminService, 'deleteClassroom').mockResolvedValue({ success: true, message: 'Deleted' });
     jest.spyOn(adminService, 'getReportsSummary').mockResolvedValue({ success: true, data: mockReports });
+    jest.spyOn(adminService, 'getItemBank').mockResolvedValue({ success: true, data: mockItemBank });
+    jest.spyOn(adminService, 'getRateLimits').mockResolvedValue({ success: true, configs: mockRateLimits });
+    jest.spyOn(adminService, 'getRateLimitsUsage').mockResolvedValue({ success: true, usage: mockRateLimitsUsage });
+    jest.spyOn(adminService, 'updateRateLimit').mockResolvedValue({ success: true, message: 'Rate limit updated.' });
   });
 
   test('AdminOverviewScreen renders KPIs, Health, and Recent Syncs', async () => {
@@ -209,4 +269,49 @@ describe('Mobile Admin Console Screens', () => {
     expect(tree).toBeTruthy();
     expect(adminService.getReportsSummary).toHaveBeenCalled();
   });
+
+  test('AdminCurriculumScreen renders master curriculum hierarchy', async () => {
+    let tree: any;
+    await act(async () => {
+      tree = renderer.create(<AdminCurriculumScreen />);
+    });
+    expect(tree).toBeTruthy();
+    expect(adminService.getItemBank).toHaveBeenCalled();
+  });
+
+  test('AdminRateLimitsScreen renders role quotas and active consumers', async () => {
+    let tree: any;
+    await act(async () => {
+      tree = renderer.create(<AdminRateLimitsScreen />);
+    });
+    expect(tree).toBeTruthy();
+    expect(adminService.getRateLimits).toHaveBeenCalled();
+    expect(adminService.getRateLimitsUsage).toHaveBeenCalled();
+  });
+
+  test('AdminLessonIngestorScreen renders curriculum generator form', async () => {
+    let tree: any;
+    await act(async () => {
+      tree = renderer.create(<AdminLessonIngestorScreen />);
+    });
+    expect(tree).toBeTruthy();
+  });
+
+  test('AdminSidebar renders navigation items and user session info', async () => {
+    const mockNav = { navigate: jest.fn(), reset: jest.fn() };
+    let tree: any;
+    await act(async () => {
+      tree = renderer.create(
+        <AdminSidebar
+          visible={true}
+          onClose={jest.fn()}
+          navigation={mockNav}
+          currentRoute="Overview"
+        />
+      );
+    });
+    expect(tree).toBeTruthy();
+  });
 });
+
+

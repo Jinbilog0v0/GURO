@@ -24,19 +24,23 @@ interface StatCardProps {
 export function StatCard({ label, value, unit, valueColor, icon: IconOrEmoji }: StatCardProps) {
   const isComponent = typeof IconOrEmoji === 'function' || (typeof IconOrEmoji === 'object' && IconOrEmoji !== null);
   return (
-    <GlassCard style={styles.card} padding={Spacing.lg}>
+    <GlassCard style={styles.card} padding={Spacing.md}>
       {isComponent ? (
         <View style={{ marginBottom: Spacing.xs }}>
-          {React.createElement(IconOrEmoji as any, { size: 22, color: Colors.textDark })}
+          {React.createElement(IconOrEmoji as any, { size: 20, color: Colors.textDark })}
         </View>
       ) : IconOrEmoji ? (
         <Text style={styles.icon}>{IconOrEmoji as string}</Text>
       ) : null}
-      <Text style={[styles.value, valueColor ? { color: valueColor } : {}]}>
+      <Text 
+        style={[styles.value, valueColor ? { color: valueColor } : {}]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
         {value}
       </Text>
-      {unit ? <Text style={styles.unit}>{unit}</Text> : null}
-      <Text style={styles.label}>{label}</Text>
+      {unit ? <Text style={styles.unit} numberOfLines={1}>{unit}</Text> : null}
+      <Text style={styles.label} numberOfLines={1} adjustsFontSizeToFit>{label}</Text>
     </GlassCard>
   );
 }
@@ -44,28 +48,31 @@ export function StatCard({ label, value, unit, valueColor, icon: IconOrEmoji }: 
 const styles = StyleSheet.create({
   card: {
     alignItems: 'center',
-    minWidth: 90,
+    minWidth: 80,
     flex: 1,
+    paddingHorizontal: Spacing.xs,
   },
   icon: {
-    fontSize: 22,
+    fontSize: 20,
     marginBottom: Spacing.xs,
   },
   value: {
     fontFamily: Fonts.display,
-    fontSize: FontSizes['2xl'],
+    fontSize: FontSizes.xl,
     color: Colors.textMain,
     letterSpacing: -0.5,
+    textAlign: 'center',
   },
   unit: {
     fontFamily: Fonts.body,
-    fontSize: FontSizes.sm,
+    fontSize: FontSizes.xs,
     color: Colors.textMuted,
     marginTop: 2,
+    textAlign: 'center',
   },
   label: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSizes.xs,
+    fontSize: 10.5,
     color: Colors.textDark,
     textTransform: 'uppercase',
     letterSpacing: 0.5,

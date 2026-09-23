@@ -7,9 +7,10 @@ import { ManualLessonBuilder } from '../components/teacher/ManualLessonBuilder';
 import { PrePostTestAnalytics } from '../components/teacher/PrePostTestAnalytics';
 import { EosyPromotionConsole } from '../components/teacher/EosyPromotionConsole';
 import { SkeletonStatCards, SkeletonCard, SkeletonTable } from '../components/shared/SkeletonLoader';
-import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock, Search, User, Trash2, Target, GraduationCap, Clock, AlertCircle } from 'lucide-react';
+import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock, Search, User, Trash2, Target, GraduationCap, Clock, AlertCircle, Lightbulb, Calendar } from 'lucide-react';
 import { toast } from '../utils/toast';
 import { apiFetch } from '../utils/api';
+import { ConfirmModal } from '../components/shared/ConfirmModal';
 
 interface SyncedEvent {
   studentId: string;
@@ -110,6 +111,7 @@ export function TeacherSpace({
     gradeLevel: number;
     schoolYear?: string;
     term?: string;
+    sectionName?: string;
     expiresAt?: string | null;
   }[]>(() => {
     try {
@@ -137,12 +139,14 @@ export function TeacherSpace({
     gradeLevel: number;
     schoolYear?: string;
     term?: string;
+    sectionName?: string;
     classroomId: string;
     customItemBank?: any;
     expiresAt?: string | null;
   } | null>(null);
 
   const [setupName, setSetupName] = useState('');
+  const [setupSection, setSetupSection] = useState('');
   const [setupSubject, setSetupSubject] = useState('Mathematics');
   const [setupGrade, setSetupGrade] = useState(4);
   const [setupSchoolYear, setSetupSchoolYear] = useState('2026-2027');
@@ -166,6 +170,9 @@ export function TeacherSpace({
             teacherName: data.teacherName,
             subject: data.subject,
             gradeLevel: data.gradeLevel,
+            schoolYear: data.schoolYear,
+            term: data.term,
+            sectionName: data.sectionName || data.section_name,
             expiresAt: data.expiresAt
           }];
           if (user?.userId) {
@@ -288,11 +295,16 @@ export function TeacherSpace({
     return activeList;
   };
 
-  const handleDeleteTopic = async (subject: string, grade: string, topic: string) => {
-    if (!classroomCode) return;
-    if (!window.confirm(`Are you sure you want to delete the lesson "${topic}" from your classroom? Students will no longer see it.`)) {
-      return;
-    }
+  const [deleteTopicTarget, setDeleteTopicTarget] = useState<{ subject: string; grade: string; topic: string } | null>(null);
+  const [isDeletingTopic, setIsDeletingTopic] = useState(false);
+
+  const handleDeleteTopic = (subject: string, grade: string, topic: string) => {
+    setDeleteTopicTarget({ subject, grade, topic });
+  };
+
+  const executeDeleteTopic = async () => {
+    if (!deleteTopicTarget || !classroomCode) return;
+    setIsDeletingTopic(true);
 
     try {
       const res = await apiFetch('/api/classroom/delete-lesson', {
@@ -300,25 +312,28 @@ export function TeacherSpace({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           classroomId: classroomCode,
-          subject,
-          grade,
-          topic
+          subject: deleteTopicTarget.subject,
+          grade: deleteTopicTarget.grade,
+          topic: deleteTopicTarget.topic
         })
       });
 
       if (res.ok) {
         const data = await res.json();
-        toast.success(`Successfully deleted lesson "${topic}"!`);
+        toast.success(`Successfully deleted lesson "${deleteTopicTarget.topic}"!`);
         setClassroomData(prev => prev ? {
           ...prev,
           customItemBank: data.customItemBank
         } : null);
+        setDeleteTopicTarget(null);
       } else {
         const err = await res.json().catch(() => ({ error: 'Failed to delete lesson' }));
         throw new Error(err.error || 'Failed to delete lesson');
       }
     } catch (e: any) {
       toast.error(e.message || 'Error deleting lesson');
+    } finally {
+      setIsDeletingTopic(false);
     }
   };
 
@@ -475,13 +490,16 @@ export function TeacherSpace({
 
   // Filter logs based on search, dropdown selections, selected student tile, and classroom
   const filteredLogs = progressLogs.filter((log) => {
-    const matchesClassroom = !classroomCode || log.classroomId === classroomCode;
+    const matchesClassroom = !classroomCode || !log.classroomId || log.classroomId.toUpperCase() === classroomCode.toUpperCase();
     
     const matchesSearch =
       log.studentId.toLowerCase().includes(filterText.toLowerCase()) ||
       log.topic.toLowerCase().includes(filterText.toLowerCase());
     
-    const matchesSubject = selectedSubject === 'All' || log.subject === selectedSubject;
+    const matchesSubject = selectedSubject === 'All' ||
+      ((selectedSubject.toLowerCase() === 'mathematics' || selectedSubject.toLowerCase() === 'math')
+        ? (log.subject?.toLowerCase() === 'mathematics' || log.subject?.toLowerCase() === 'math')
+        : log.subject?.toLowerCase() === selectedSubject.toLowerCase());
     const matchesStudent = !selectedStudentId || log.studentId === selectedStudentId;
 
     let matchesSection = true;
@@ -510,7 +528,7 @@ export function TeacherSpace({
   const allStudentIds = Array.from(new Set([
     ...classroomMembers,
     ...progressLogs
-      .filter(log => !classroomCode || log.classroomId === classroomCode)
+      .filter(log => !classroomCode || !log.classroomId || log.classroomId.toUpperCase() === classroomCode.toUpperCase())
       .map(l => l.studentId)
   ])).sort();
 
@@ -1076,8 +1094,9 @@ export function TeacherSpace({
                         <label style={{ fontSize: '10px' }}>
                           Options (Check correct answer)
                           {q.type === 'fill-in-the-blank' && (
-                            <span style={{ fontSize: '10px', color: '#38BDF8', marginLeft: '6px', fontWeight: 'bold' }}>
-                              (💡 Prompt must contain exactly one [[blank]] placeholder)
+                            <span style={{ fontSize: '10px', color: '#38BDF8', marginLeft: '6px', fontWeight: 'bold' }} className="inline-flex items-center gap-1">
+                              <Lightbulb size={11} className="shrink-0" />
+                              <span>(Prompt must contain exactly one [[blank]] placeholder)</span>
                             </span>
                           )}
                         </label>
@@ -1356,9 +1375,10 @@ export function TeacherSpace({
                                     return { ...prev, questions };
                                   });
                                 }}
-                                style={{ background: 'transparent', border: 'none', color: '#EF4444', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', padding: '0 4px' }}
+                                style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0 4px', display: 'flex', alignItems: 'center' }}
+                                aria-label="Remove pair"
                               >
-                                ✕
+                                <X size={13} />
                               </button>
                             </div>
                           ))}
@@ -1456,11 +1476,15 @@ export function TeacherSpace({
 
       {propActiveSubTab === undefined && (
         <div className="flex justify-between items-center flex-wrap gap-3">
-          <div className="flex items-center gap-[20px] flex-wrap">
-            <h2 className="flex items-center gap-2">
+          <div className="flex items-center gap-3 md:gap-4 flex-wrap">
+            <h2 className="flex items-center gap-2 m-0">
               <School className="size-6 text-[#11428E] shrink-0" />
               <span>Teacher Console</span>
             </h2>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-700 dark:text-sky-300 text-xs font-bold shadow-xs" title="Current Academic Period">
+              <Calendar className="size-3.5 text-sky-500 shrink-0" />
+              <span>Academic Period: S.Y. {classroomData?.schoolYear || setupSchoolYear || '2026-2027'} • {classroomData?.term || setupTerm || 'Quarter 1'}</span>
+            </div>
             <div className="flex bg-white/5 border border-[var(--border-color)] rounded-[10px] p-1 gap-1 flex-wrap">
               <button
                 onClick={() => setActiveSubTab('analytics')}
@@ -1569,6 +1593,7 @@ export function TeacherSpace({
                             gradeLevel: c.gradeLevel,
                             schoolYear: c.schoolYear,
                             term: c.term,
+                            sectionName: c.sectionName,
                             expiresAt: c.expiresAt
                           });
                           setSelectedModules([]);
@@ -1591,7 +1616,7 @@ export function TeacherSpace({
                           ) : (
                             <Key size={12} className="text-[var(--text-muted)] inline-block shrink-0" />
                           )}
-                          <span>{c.id} - {c.teacherName} ({c.subject} • Grade {c.gradeLevel})</span>
+                          <span>{c.id} - {c.teacherName} ({c.subject} • Grade {c.gradeLevel}{c.sectionName ? ` • Sec: ${c.sectionName}` : ''} • S.Y. {c.schoolYear || '2026-2027'} {c.term || 'Q1'})</span>
                         </span>
                       </button>
                     );
@@ -1615,6 +1640,20 @@ export function TeacherSpace({
                   onChange={(e) => setSetupName(e.target.value)}
                   style={{ padding: '10px 14px' }}
                 />
+              </div>
+
+              <div className="form-group">
+                <label>Section Name</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Rizal, Emerald, Section A (Optional)" 
+                  value={setupSection}
+                  onChange={(e) => setSetupSection(e.target.value)}
+                  style={{ padding: '10px 14px' }}
+                />
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', display: 'block' }}>
+                  Generates dedicated classroom code with section slug (e.g. ENG-G6-RIZAL)
+                </span>
               </div>
 
               <div className="form-group">
@@ -1710,6 +1749,7 @@ export function TeacherSpace({
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
                         teacherName: setupName.trim(),
+                        sectionName: setupSection.trim(),
                         subject: setupSubject,
                         gradeLevel: setupGrade,
                         schoolYear: setupSchoolYear,
@@ -1726,6 +1766,7 @@ export function TeacherSpace({
                       setClassroomCode(data.classroomId);
                       setClassroomData(data);
                       setSetupName('');
+                      setSetupSection('');
                       refreshLogs();
                       
                       // Add to history
@@ -1738,6 +1779,7 @@ export function TeacherSpace({
                           gradeLevel: data.gradeLevel,
                           schoolYear: data.schoolYear,
                           term: data.term,
+                          sectionName: data.sectionName || data.section_name || setupSection.trim() || undefined,
                           expiresAt: data.expiresAt
                         }];
                         if (user?.userId) {
@@ -1828,6 +1870,9 @@ export function TeacherSpace({
                   <div><strong>Teacher Name:</strong> {classroomData.teacherName}</div>
                   <div><strong>Subject Focus:</strong> {classroomData.subject}</div>
                   <div><strong>Grade Level:</strong> Grade {classroomData.gradeLevel}</div>
+                  {classroomData.sectionName && (
+                    <div><strong>Section:</strong> {classroomData.sectionName}</div>
+                  )}
                   <div><strong>School Year:</strong> {classroomData.schoolYear || '2026-2027'}</div>
                   <div><strong>Academic Term:</strong> {classroomData.term || 'Quarter 1'}</div>
                 </div>
@@ -2059,7 +2104,7 @@ export function TeacherSpace({
             <div className="px-6 py-3.5 flex justify-between items-center bg-[var(--accent-primary-glow)] border border-[var(--accent-primary)]/20 rounded-[12px] mb-2">
               <span className="text-[13px] color-[var(--accent-secondary)] font-semibold flex items-center gap-2">
                 <School className="size-4 text-sky-500 shrink-0" />
-                <span>Filtered to Classroom Invite Code: <strong className="text-[var(--text-main)] font-mono text-[14px] tracking-[1px]">{classroomCode}</strong> ({classroomData.subject} • Grade {classroomData.gradeLevel})</span>
+                <span>Filtered to Classroom Invite Code: <strong className="text-[var(--text-main)] font-mono text-[14px] tracking-[1px]">{classroomCode}</strong> ({classroomData.subject} • Grade {classroomData.gradeLevel}{classroomData.sectionName ? ` • Sec: ${classroomData.sectionName}` : ''} • S.Y. {classroomData.schoolYear || '2026-2027'} {classroomData.term || 'Quarter 1'})</span>
               </span>
               <span className="text-[11px] text-[var(--text-muted)]">
                 Deselect/switch classroom setup in the Setup tab to view all logs.
@@ -2302,6 +2347,23 @@ export function TeacherSpace({
         </>
       )}
       {editingLesson && renderEditModal()}
+
+      <ConfirmModal
+        isOpen={!!deleteTopicTarget}
+        onClose={() => setDeleteTopicTarget(null)}
+        onConfirm={executeDeleteTopic}
+        title="Delete Classroom Lesson"
+        message={
+          deleteTopicTarget ? (
+            <span>
+              Are you sure you want to delete <strong className="text-[var(--text-main)]">"{deleteTopicTarget.topic}"</strong> ({deleteTopicTarget.subject} · Grade {deleteTopicTarget.grade}) from your classroom? Students will no longer see or attempt this lesson.
+            </span>
+          ) : null
+        }
+        confirmLabel="Delete Lesson"
+        variant="danger"
+        loading={isDeletingTopic}
+      />
     </div>
   );
 }

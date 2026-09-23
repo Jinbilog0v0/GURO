@@ -14,6 +14,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { toast } from '../../utils/toast';
+import { ConfirmModal } from '../shared/ConfirmModal';
 
 export interface TeacherVerificationRecord {
   id: number;
@@ -46,6 +47,7 @@ export function AdminTeacherVerifications() {
   // Reject Confirmation Modal
   const [rejectingUser, setRejectingUser] = useState<TeacherVerificationRecord | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [deletingUser, setDeletingUser] = useState<TeacherVerificationRecord | null>(null);
   const [submittingReview, setSubmittingReview] = useState(false);
 
   const fetchVerifications = async () => {
@@ -133,10 +135,7 @@ export function AdminTeacherVerifications() {
     }
   };
 
-  const handleDeleteApplication = async (user: TeacherVerificationRecord) => {
-    if (!window.confirm(`Are you sure you want to completely remove the teacher application for "${user.name}" (${user.email})? This allows the applicant to re-register from scratch.`)) {
-      return;
-    }
+  const executeDeleteApplication = async (user: TeacherVerificationRecord) => {
     setSubmittingReview(true);
     try {
       const res = await apiFetch(`/api/admin/teacher-verifications/${user.id}`, {
@@ -145,6 +144,7 @@ export function AdminTeacherVerifications() {
       if (res.ok) {
         toast.success(`Application for ${user.name} removed successfully.`);
         if (viewingDocUser?.id === user.id) setViewingDocUser(null);
+        setDeletingUser(null);
         fetchVerifications();
       } else {
         const err = await res.json().catch(() => ({}));
@@ -452,7 +452,7 @@ export function AdminTeacherVerifications() {
                           <button
                             type="button"
                             disabled={submittingReview}
-                            onClick={() => handleDeleteApplication(t)}
+                            onClick={() => setDeletingUser(t)}
                             className="p-1.5 rounded-xl bg-rose-600/10 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-600/20 text-xs transition-all cursor-pointer shadow-xs"
                             title="Completely remove application (allows applicant to re-register)"
                             aria-label={`Remove application for ${t.name}`}
@@ -615,6 +615,27 @@ export function AdminTeacherVerifications() {
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Application Modal */}
+      <ConfirmModal
+        isOpen={!!deletingUser}
+        title="Remove Teacher Application?"
+        description={
+          deletingUser
+            ? `Are you sure you want to completely remove the teacher application for "${deletingUser.name}" (${deletingUser.email})? This allows the applicant to re-register from scratch.`
+            : ''
+        }
+        confirmText="Remove Application"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={submittingReview}
+        onClose={() => setDeletingUser(null)}
+        onConfirm={() => {
+          if (deletingUser) {
+            executeDeleteApplication(deletingUser);
+          }
+        }}
+      />
     </div>
   );
 }

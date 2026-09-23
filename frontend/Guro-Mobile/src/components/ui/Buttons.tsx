@@ -37,19 +37,9 @@ export function PrimaryButton({ label, onPress, disabled, loading, style, icon }
         Buttons.base,
         Buttons.primary,
         isInactive && Buttons.disabled,
-        { overflow: 'hidden', position: 'relative' },
         style,
       ]}
     >
-      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
-        <Defs>
-          <SvgLinearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor={Colors.accentPrimary} />
-            <Stop offset="100%" stopColor={Colors.accentBlue} />
-          </SvgLinearGradient>
-        </Defs>
-        <Rect width="100%" height="100%" fill="url(#primaryGrad)" />
-      </Svg>
       {loading ? (
         <ActivityIndicator size="small" color={Colors.white} />
       ) : (

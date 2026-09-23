@@ -25,6 +25,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 
 import { Alert } from 'react-native';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
 // Mock the store
 const mockAddLog = jest.fn();
@@ -208,7 +209,6 @@ describe('AssessmentScreen (Mobile)', () => {
     }));
 
     mockIncrementConsecutiveFailures.mockReturnValue(3);
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
     let root: any;
     await act(async () => {
@@ -248,9 +248,10 @@ describe('AssessmentScreen (Mobile)', () => {
     expect(mockRecordProgress).toHaveBeenCalled();
     expect(mockSetAdaptiveTier).toHaveBeenCalled();
     expect(mockIncrementConsecutiveFailures).toHaveBeenCalled();
-    expect(alertSpy).toHaveBeenCalled();
 
-    alertSpy.mockRestore();
+    const reviewDialog = root.root.findByProps({ title: 'Foundational Review Recommended' });
+    expect(reviewDialog).toBeDefined();
+    expect(reviewDialog.props.visible).toBe(true);
   });
 
   test('active minutes should be tracked periodically', async () => {

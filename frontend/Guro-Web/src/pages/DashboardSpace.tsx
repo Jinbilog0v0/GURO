@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
-import { BarChart3, RotateCw, Loader2, FolderOpen, Inbox, Calculator, BookOpen, School, GraduationCap, Clock, ChevronDown, ChevronUp, Shield, Users, Layers, Award, Zap, ShieldCheck, Key } from 'lucide-react';
+import { BarChart3, RotateCw, Loader2, FolderOpen, Inbox, Calculator, BookOpen, School, GraduationCap, Clock, ChevronDown, ChevronUp, Shield, Users, Layers, Award, Zap, ShieldCheck, Key, Check } from 'lucide-react';
 import { RateLimitPanel } from '../components/developer/RateLimitPanel';
 import { AdminOverview } from '../components/admin/AdminOverview';
 import { AdminUserDirectory } from '../components/admin/AdminUserDirectory';
@@ -214,7 +214,7 @@ export function DashboardSpace({
 
   // Compute student stats
   const filteredLogs = progressLogs.filter((log) => {
-    return !classCode || log.classroomId === classCode;
+    return !classCode || !log.classroomId || log.classroomId.toUpperCase() === classCode.toUpperCase();
   });
 
   const uniqueStudentsCount = new Set(filteredLogs.map(l => l.studentId)).size;
@@ -488,8 +488,9 @@ export function DashboardSpace({
                                                       <span className={`font-mono font-bold ${isCorrect ? 'text-[#16A34A]' : 'text-[var(--text-muted)]'}`}>
                                                         {String.fromCharCode(65 + oIdx)}.
                                                       </span>
-                                                      <span className={isCorrect ? 'text-[#16A34A] font-bold' : 'text-[var(--text-main)]'}>
-                                                        {opt} {isCorrect && '✓'}
+                                                      <span className={`inline-flex items-center gap-1 ${isCorrect ? 'text-[#16A34A] font-bold' : 'text-[var(--text-main)]'}`}>
+                                                        <span>{opt}</span>
+                                                        {isCorrect && <Check size={13} className="text-[#16A34A] shrink-0 inline" strokeWidth={2.5} />}
                                                       </span>
                                                     </div>
                                                   );

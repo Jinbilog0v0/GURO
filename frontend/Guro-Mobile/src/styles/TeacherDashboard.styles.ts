@@ -12,26 +12,30 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: Spacing.lg,
+    padding: Spacing.md,
     paddingBottom: Spacing['4xl'],
-    gap: Spacing.lg,
+    gap: Spacing.md,
   },
 
   // Header
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: Spacing.xs,
+    gap: Spacing.xs,
+    flexWrap: 'wrap',
   },
   headerLeft: {
     flex: 1,
+    minWidth: 140,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: Spacing.xs,
+    flexShrink: 0,
   },
   screenTitle: {
     fontFamily: Fonts.display,
@@ -41,7 +45,7 @@ export const styles = StyleSheet.create({
   },
   screenSubtitle: {
     fontFamily: Fonts.body,
-    fontSize: FontSizes.sm,
+    fontSize: FontSizes.xs,
     color: Colors.textMuted,
     marginTop: 2,
   },
@@ -57,7 +61,7 @@ export const styles = StyleSheet.create({
   // Stats
   statsRow: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: Spacing.xs,
   },
 
   // Sections
@@ -78,10 +82,10 @@ export const styles = StyleSheet.create({
   // Empty state
   emptyText: {
     fontFamily: Fonts.body,
-    fontSize: FontSizes.md,
+    fontSize: FontSizes.sm,
     color: Colors.textDark,
     textAlign: 'center',
-    paddingVertical: Spacing.xl,
+    paddingVertical: Spacing.lg,
   },
 
   // File rows
@@ -89,30 +93,32 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   fileInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: Spacing.sm,
-    marginRight: Spacing.sm,
+    gap: Spacing.xs,
+    minWidth: 0,
   },
   fileIcon: {
     fontSize: 18,
   },
   fileName: {
     fontFamily: Fonts.bodyMedium,
-    fontSize: FontSizes.md,
+    fontSize: FontSizes.sm,
     color: Colors.textMain,
     flex: 1,
+    minWidth: 0,
   },
   fileActions: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    gap: Spacing.xs,
+    flexShrink: 0,
   },
   fileBtn: {
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.sm,
   },
 
   // Terminal log
@@ -125,15 +131,15 @@ export const styles = StyleSheet.create({
   },
   logLine: {
     fontFamily: Platform.select({ ios: 'Courier New', android: 'monospace', default: 'monospace' }),
-    fontSize: FontSizes.sm,
+    fontSize: FontSizes.xs,
     color: Colors.success,
-    lineHeight: 20,
+    lineHeight: 18,
   },
 
   // Clear button
   clearBtn: {
-    paddingHorizontal: Spacing.md,
-    minHeight: 48,
+    paddingHorizontal: Spacing.sm,
+    minHeight: 38,
     justifyContent: 'center',
   },
 });

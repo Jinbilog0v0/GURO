@@ -168,11 +168,18 @@ export const BadgeCase: React.FC<BadgeCaseProps> = ({ logs }) => {
                 </h4>
                 <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">{badge.description}</p>
                 <span
-                  className={`text-[10px] font-bold uppercase tracking-[0.5px] mt-1 ${
+                  className={`text-[10px] font-bold uppercase tracking-[0.5px] mt-1 inline-flex items-center gap-1 ${
                     unlocked ? 'text-[var(--success)]' : 'text-[var(--text-dark)]'
                   }`}
                 >
-                  {unlocked ? '✓ Completed' : 'Locked'}
+                  {unlocked ? (
+                    <>
+                      <CheckCircle2 size={10} className="shrink-0" />
+                      <span>Completed</span>
+                    </>
+                  ) : (
+                    <span>Locked</span>
+                  )}
                 </span>
               </div>
             </div>

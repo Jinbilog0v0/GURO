@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, BookOpen, BarChart2, Wifi, WifiOff, Menu, X, GraduationCap, Sun, Moon, LogOut } from 'lucide-react';
+import { LayoutDashboard, BookOpen, BarChart2, Wifi, WifiOff, Menu, X, GraduationCap, Sun, Moon, LogOut, Calendar } from 'lucide-react';
 import { StudentProfile } from './StudentProfile';
 
 export type ShellView = 'dashboard' | 'lessons' | 'progress' | 'classroom';
@@ -14,6 +14,8 @@ interface StudentShellProps {
     currentView: ShellView;
     onViewChange: (view: ShellView) => void;
     parentAccessCode?: string;
+    schoolYear?: string;
+    term?: string;
     children: React.ReactNode;
     isDarkMode: boolean;
     onToggleTheme: () => void;
@@ -35,6 +37,8 @@ export const StudentShell: React.FC<StudentShellProps> = ({
     currentView,
     onViewChange,
     parentAccessCode,
+    schoolYear = '2026-2027',
+    term = 'Quarter 1',
     children,
     isDarkMode,
     onToggleTheme,
@@ -106,6 +110,12 @@ export const StudentShell: React.FC<StudentShellProps> = ({
 
                     {/* Right side */}
                     <div className="flex items-center gap-2.5 ml-auto">
+                        {/* Enrolled Academic Period / Semester Badge */}
+                        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20 shadow-xs" title="Enrolled School Year & Academic Term">
+                            <Calendar className="size-3 text-sky-500 shrink-0" />
+                            <span>S.Y. {schoolYear} • {term}</span>
+                        </div>
+
                         {/* Online badge */}
                         <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold ${
                             isOnline
@@ -144,6 +154,12 @@ export const StudentShell: React.FC<StudentShellProps> = ({
                 {/* Mobile slide-down nav */}
                 {mobileNavOpen && (
                     <div className="md:hidden bg-[var(--bg-sidebar)] border-b border-[var(--border-color)] shadow-sm px-3 py-2 flex flex-col gap-1 z-20">
+                        {/* Mobile academic period indicator */}
+                        <div className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-sky-600 dark:text-sky-400 bg-sky-500/10 rounded-xl border border-sky-500/20 mb-1">
+                            <Calendar className="size-3.5 shrink-0 text-sky-500" />
+                            <span>Enrolled: S.Y. {schoolYear} • {term}</span>
+                        </div>
+
                         {NAV_ITEMS.map(({ view, label, Icon }) => (
                             <button
                                 key={view}

@@ -27,6 +27,16 @@ class ClassroomController extends Controller
         return base_path('../frontend/Guro-Mobile/assets/item_bank.json');
     }
 
+    private function isClassroomOwner(Classroom $classroom, User $user): bool
+    {
+        if (in_array($user->role, ['admin', 'developer'])) {
+            return true;
+        }
+        return ((int) $classroom->teacher_user_id === (int) $user->id)
+            || ($classroom->teacher_user_id === $user->user_id)
+            || ($classroom->teacher_name === $user->name);
+    }
+
     // GET /api/item-bank
     public function getItemBank(Request $request)
     {
@@ -70,10 +80,13 @@ class ClassroomController extends Controller
     {
         $request->validate([
             'subject' => 'required|string',
-            'grade' => 'required',
+            'grade' => 'required_without:gradeLevel',
+            'gradeLevel' => 'nullable',
             'topic' => 'required|string',
-            'lessonText' => 'required_without:pdf|nullable|string',
-            'pdf' => 'required_without:lessonText|nullable|string',
+            'lessonText' => 'nullable|string',
+            'competency' => 'nullable|string',
+            'pdf' => 'nullable|string',
+            'questionCount' => 'nullable|integer|min:5|max:30',
         ]);
 
         // ── Rate limit enforcement ────────────────────────────────────────────
@@ -110,13 +123,18 @@ class ClassroomController extends Controller
         // ─────────────────────────────────────────────────────────────────────
 
         $subject = $request->input('subject');
-        $grade = (int) $request->input('grade');
+        $grade = (int) ($request->input('grade') ?? $request->input('gradeLevel', 4));
         $topic = $request->input('topic');
-        $lessonText = $request->input('lessonText');
+        $lessonText = $request->input('lessonText') ?? $request->input('competency');
         $pdf = $request->input('pdf');
+        $questionCount = (int) $request->input('questionCount', 15);
 
         try {
-            $result = $this->geminiService->generateQuestions($subject, $grade, $topic, $lessonText, $pdf);
+            if ($request->has('questionCount')) {
+                $result = $this->geminiService->generateQuestions($subject, $grade, $topic, $lessonText, $pdf, $questionCount);
+            } else {
+                $result = $this->geminiService->generateQuestions($subject, $grade, $topic, $lessonText, $pdf);
+            }
 
             // Log successful generation for rate tracking
             AiGenerationLog::create([
@@ -236,6 +254,7 @@ class ClassroomController extends Controller
             'teacherName' => $classroom->teacher_name,
             'subject' => $classroom->subject,
             'gradeLevel' => $classroom->grade_level,
+            'sectionName' => $classroom->section_name,
             'schoolYear' => $classroom->school_year ?? '2026-2027',
             'term' => $classroom->term ?? 'Quarter 1',
             'customItemBank' => $classroom->custom_item_bank ?: (object) [],
@@ -307,7 +326,11 @@ class ClassroomController extends Controller
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
-        $classrooms = Classroom::where('teacher_user_id', $user->id)
+        $classrooms = Classroom::where(function ($q) use ($user) {
+            $q->where('teacher_user_id', $user->id)
+              ->orWhere('teacher_user_id', $user->user_id)
+              ->orWhere('teacher_name', $user->name);
+        })
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($c) {
@@ -317,6 +340,7 @@ class ClassroomController extends Controller
                     'teacherName' => $c->teacher_name,
                     'subject' => $c->subject,
                     'gradeLevel' => $c->grade_level,
+                    'sectionName' => $c->section_name,
                     'schoolYear' => $c->school_year ?? '2026-2027',
                     'term' => $c->term ?? 'Quarter 1',
                     'customItemBank' => $c->custom_item_bank ?: (object) [],
@@ -335,6 +359,8 @@ class ClassroomController extends Controller
             'teacherName' => 'required|string',
             'subject' => 'required|string',
             'gradeLevel' => 'required',
+            'sectionName' => 'nullable|string',
+            'section_name' => 'nullable|string',
             'schoolYear' => 'nullable|string',
             'term' => 'nullable|string',
             'duration' => 'nullable|integer',
@@ -353,14 +379,32 @@ class ClassroomController extends Controller
         $teacherName = trim($request->input('teacherName'));
         $subject = trim($request->input('subject'));
         $gradeLevel = $request->input('gradeLevel');
+        $sectionName = trim($request->input('sectionName', $request->input('section_name', '')));
         $schoolYear = trim($request->input('schoolYear', '2026-2027'));
         $term = trim($request->input('term', 'Quarter 1'));
         $duration = $request->input('duration'); // In minutes
 
         // Generate invite code
         $subjectPrefix = strtoupper(substr($subject, 0, 3));
-        $randomSuffix = strtoupper(Str::random(3));
-        $classroomId = "{$subjectPrefix}-G{$gradeLevel}-{$randomSuffix}";
+        if ($sectionName !== '') {
+            $sectionSlug = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $sectionName));
+            if (strlen($sectionSlug) > 8) {
+                $sectionSlug = substr($sectionSlug, 0, 8);
+            }
+            if (strlen($sectionSlug) >= 2) {
+                $baseCode = "{$subjectPrefix}-G{$gradeLevel}-{$sectionSlug}";
+                $classroomId = $baseCode;
+                while (Classroom::where('classroom_id', $classroomId)->exists()) {
+                    $classroomId = "{$baseCode}-" . strtoupper(Str::random(3));
+                }
+            } else {
+                $randomSuffix = strtoupper(Str::random(3));
+                $classroomId = "{$subjectPrefix}-G{$gradeLevel}-{$randomSuffix}";
+            }
+        } else {
+            $randomSuffix = strtoupper(Str::random(3));
+            $classroomId = "{$subjectPrefix}-G{$gradeLevel}-{$randomSuffix}";
+        }
 
         $expiresAt = null;
         if ($duration && (int)$duration > 0) {
@@ -373,6 +417,7 @@ class ClassroomController extends Controller
             'teacher_name' => $teacherName,
             'subject' => $subject,
             'grade_level' => (int) $gradeLevel,
+            'section_name' => $sectionName ?: null,
             'school_year' => $schoolYear ?: '2026-2027',
             'term' => $term ?: 'Quarter 1',
             'custom_item_bank' => (object) [],
@@ -384,6 +429,7 @@ class ClassroomController extends Controller
             'teacherName' => $classroom->teacher_name,
             'subject' => $classroom->subject,
             'gradeLevel' => $classroom->grade_level,
+            'sectionName' => $classroom->section_name,
             'schoolYear' => $classroom->school_year,
             'term' => $classroom->term,
             'customItemBank' => $classroom->custom_item_bank,
@@ -404,7 +450,7 @@ class ClassroomController extends Controller
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
 
-        if ($classroom->teacher_user_id !== $request->user()->id) {
+        if (! $this->isClassroomOwner($classroom, $request->user())) {
             return response()->json(['error' => 'Forbidden.'], 403);
         }
 
@@ -438,7 +484,7 @@ class ClassroomController extends Controller
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
 
-        if ($classroom->teacher_user_id !== $request->user()->id) {
+        if (! $this->isClassroomOwner($classroom, $request->user())) {
             return response()->json(['error' => 'Forbidden.'], 403);
         }
 
@@ -497,7 +543,7 @@ class ClassroomController extends Controller
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
 
-        if ($classroom->teacher_user_id !== $request->user()->id) {
+        if (! $this->isClassroomOwner($classroom, $request->user())) {
             return response()->json(['error' => 'Forbidden.'], 403);
         }
 
@@ -549,8 +595,8 @@ class ClassroomController extends Controller
         $topicNode['studyContent']['orderIndex'] = $newOrderIndex;
 
         foreach ($questions as $q) {
-            $difficulty = $q['difficulty'];
-            $category = $q['category'];
+            $difficulty = $q['difficulty'] ?? 'Average';
+            $category = $q['category'] ?? 'Figures of Speech';
 
             if (! isset($topicNode[$difficulty])) {
                 $topicNode[$difficulty] = [];
@@ -577,18 +623,27 @@ class ClassroomController extends Controller
                 'questionText' => $q['questionText'],
                 'options' => $q['options'],
                 'correctAnswer' => $q['correctAnswer'],
-                'feedback' => $q['feedback'],
+                'feedback' => $q['feedback'] ?? null,
                 'type' => $type,
                 'matchingPairs' => $q['matchingPairs'] ?? null,
                 'imageUrl' => $q['imageUrl'] ?? null,
             ];
         }
 
+        $bank[$subject][$grade][$topic] = $topicNode;
+
         $classroom->custom_item_bank = $bank;
         $classroom->save();
+
+        // Bust cache
         \Illuminate\Support\Facades\Cache::forget("classroom_bank_" . strtoupper($classroomId));
 
-        return response()->json(['success' => true, 'count' => count($questions)]);
+        return response()->json([
+            'success' => true,
+            'classroomId' => $classroom->classroom_id,
+            'topic' => $topic,
+            'customItemBank' => $classroom->custom_item_bank,
+        ]);
     }
 
     // POST /api/classroom/delete-lesson
@@ -611,7 +666,7 @@ class ClassroomController extends Controller
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
 
-        if ($classroom->teacher_user_id !== $request->user()->id) {
+        if (! $this->isClassroomOwner($classroom, $request->user())) {
             return response()->json(['error' => 'Forbidden.'], 403);
         }
 
@@ -666,10 +721,20 @@ class ClassroomController extends Controller
         }
 
         // Register student to classroom
-        $member = \App\Models\ClassroomMember::firstOrCreate([
-            'classroom_id' => $classroomId,
-            'student_id' => $studentId,
-        ]);
+        $member = \App\Models\ClassroomMember::firstOrCreate(
+            [
+                'classroom_id' => $classroomId,
+                'student_id' => $studentId,
+            ],
+            [
+                'section_name' => $classroom->section_name,
+            ]
+        );
+
+        if ($classroom->section_name && $member->section_name !== $classroom->section_name) {
+            $member->section_name = $classroom->section_name;
+            $member->save();
+        }
 
         // Also update the student user's classroom_id column if the user exists
         $studentUser = \App\Models\User::where('user_id', $studentId)->first();
@@ -686,6 +751,7 @@ class ClassroomController extends Controller
                 'teacherName' => $classroom->teacher_name,
                 'subject' => $classroom->subject,
                 'gradeLevel' => $classroom->grade_level,
+                'sectionName' => $classroom->section_name,
             ]
         ]);
     }
@@ -702,8 +768,8 @@ class ClassroomController extends Controller
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
 
-        // Only the owner teacher can fetch members
-        if ($classroom->teacher_user_id !== $request->user()->id) {
+        // Only the owner teacher (or admin/developer) can fetch members
+        if (! $this->isClassroomOwner($classroom, $request->user())) {
             return response()->json(['error' => 'Forbidden.'], 403);
         }
 
@@ -712,6 +778,7 @@ class ClassroomController extends Controller
             ->get()
             ->map(fn($m) => [
                 'studentId' => $m->student_id,
+                'sectionName' => $m->section_name ?? $classroom->section_name,
                 'status' => $m->status ?? 'enrolled',
                 'promotedToGrade' => $m->promoted_to_grade,
                 'finalAverage' => $m->final_average,
@@ -735,12 +802,13 @@ class ClassroomController extends Controller
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
 
-        if ($classroom->teacher_user_id !== $request->user()->id) {
+        if (! $this->isClassroomOwner($classroom, $request->user())) {
             return response()->json(['error' => 'Forbidden.'], 403);
         }
 
         $members = ClassroomMember::where('classroom_id', strtoupper($classroomId))->get();
         $studentIds = $members->pluck('student_id')->toArray();
+        $userMap = User::whereIn('user_id', $studentIds)->get()->keyBy('user_id');
 
         // Query all progress logs for this classroom or enrolled students
         $logs = ProgressLog::where(function ($q) use ($classroomId, $studentIds) {
@@ -753,6 +821,8 @@ class ClassroomController extends Controller
         foreach ($members as $member) {
             $sId = $member->student_id;
             $sLogs = $logs->where('student_id', $sId);
+            $u = $userMap->get($sId);
+            $studentName = $u ? $u->name : null;
 
             // 1. Pre-Test and Post-Test statistics
             $preLogs = $sLogs->where('assessment_type', 'pre-test');
@@ -807,6 +877,7 @@ class ClassroomController extends Controller
 
             $roster[] = [
                 'studentId' => $sId,
+                'studentName' => $studentName,
                 'status' => $status,
                 'promotedToGrade' => $member->promoted_to_grade,
                 'promotedAt' => $member->promoted_at ? $member->promoted_at->toIso8601String() : null,
@@ -830,6 +901,7 @@ class ClassroomController extends Controller
             'classroomId' => $classroom->classroom_id,
             'subject' => $classroom->subject,
             'gradeLevel' => $classroom->grade_level,
+            'sectionName' => $classroom->section_name,
             'schoolYear' => $classroom->school_year ?? '2026-2027',
             'term' => $classroom->term ?? 'Quarter 1',
             'roster' => $roster,
@@ -854,7 +926,7 @@ class ClassroomController extends Controller
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
 
-        if ($classroom->teacher_user_id !== $request->user()->id) {
+        if (! $this->isClassroomOwner($classroom, $request->user())) {
             return response()->json(['error' => 'Forbidden.'], 403);
         }
 

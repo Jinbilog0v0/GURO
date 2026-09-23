@@ -104,7 +104,7 @@ describe('DashboardSpace Component', () => {
     // Question text and options should now be visible
     expect(screen.getByText('What is the sum of 1/4 and 2/4?')).toBeInTheDocument();
     expect(screen.getByText('MATH-G4-FRAC-001 (Multiple-Choice)')).toBeInTheDocument();
-    expect(screen.getByText('3/4 ✓')).toBeInTheDocument();
+    expect(screen.getByText('3/4')).toBeInTheDocument();
     expect(screen.getByText('Simply add numerators')).toBeInTheDocument();
 
     // Click again to collapse

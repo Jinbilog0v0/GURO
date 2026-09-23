@@ -453,7 +453,7 @@ export const useAppStore = create<AppState>()(
                 console.error('[Store] Failed to fetch active subjects:', subErr);
               }
 
-              // Auto-fetch teacher name if not already cached
+              // Auto-fetch teacher name, school year, and term if not already cached
               try {
                 const verRes = await fetch(`${resolvedUrl}/api/classroom/verify?code=${encodeURIComponent(id)}`);
                 if (verRes.ok) {
@@ -461,9 +461,15 @@ export const useAppStore = create<AppState>()(
                   if (verData.teacherName) {
                     set({ teacherName: verData.teacherName });
                   }
+                  if (verData.schoolYear) {
+                    set({ activeSchoolYear: verData.schoolYear });
+                  }
+                  if (verData.term) {
+                    set({ activeTerm: verData.term });
+                  }
                 }
               } catch (verErr) {
-                console.error('[Store] Failed to verify teacher name:', verErr);
+                console.error('[Store] Failed to verify teacher name / academic term:', verErr);
               }
 
               get().addLog(`Downloaded custom classroom item bank from server for: ${id}`);

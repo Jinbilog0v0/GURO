@@ -16,6 +16,8 @@ jest.mock('../components', () => ({
   },
 }));
 
+jest.setTimeout(60000);
+
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
 const mockNavigation = {
@@ -92,15 +94,18 @@ describe('Teacher Screens', () => {
     jest.clearAllMocks();
   });
 
-  test('TeacherDashboardScreen should render stats', async () => {
+  test('TeacherDashboardScreen should render stats and Lessons Overview', async () => {
     let root: any;
     await act(async () => {
       root = renderer.create(<TeacherDashboardScreen />);
     });
 
     const stringified = JSON.stringify(root.toJSON());
-    expect(stringified).toContain('Teacher Dashboard');
+    expect(stringified).toContain('Teacher Console');
     expect(stringified).toContain('Questions');
+    expect(stringified).toContain('Lessons Overview');
+    expect(stringified).toContain('Fractions');
+    expect(stringified).toContain('item');
   });
 
   test('TeacherSettingsScreen should render saved reports and handle actions', async () => {

@@ -33,6 +33,7 @@ import {
   Trash2,
   AlertTriangle,
   Info,
+  Check,
 } from 'lucide-react-native';
 
 export function TeacherIngestionScreen({ route }: any) {
@@ -45,6 +46,7 @@ export function TeacherIngestionScreen({ route }: any) {
   const [topic, setTopic] = useState('');
   const [lessonText, setLessonText] = useState('');
   
+  const [questionCount, setQuestionCount] = useState<number>(15);
   const [loading, setLoading] = useState(false);
   const [commiting, setCommiting] = useState(false);
 
@@ -61,6 +63,12 @@ export function TeacherIngestionScreen({ route }: any) {
       const subj = route.params.prefillSubject;
       if (subj === 'Mathematics' || subj === 'English') {
         setSubject(subj);
+      }
+    }
+    if (route?.params?.prefillGrade) {
+      const gr = Number(route.params.prefillGrade);
+      if ([4, 5, 6].includes(gr)) {
+        setGrade(gr);
       }
     }
   }, [route?.params]);
@@ -103,15 +111,11 @@ export function TeacherIngestionScreen({ route }: any) {
   const [viewGuide, setViewGuide] = useState(true);
   const [viewQuestions, setViewQuestions] = useState(true);
 
-  const classroomId = currentUser?.classroomId;
+  const classroomId = currentUser?.classroomId || useAppStore((state) => state.classroomId);
 
   const handleGenerate = async () => {
     if (!topic.trim()) {
       toast.warning('Please specify a lesson topic.');
-      return;
-    }
-    if (!pdfBase64 && !lessonText.trim()) {
-      toast.warning('Please paste your lesson plan text or upload a PDF.');
       return;
     }
 
@@ -131,8 +135,9 @@ export function TeacherIngestionScreen({ route }: any) {
           subject,
           grade,
           topic: topic.trim(),
-          lessonText: pdfBase64 ? undefined : lessonText.trim(),
-          pdf: pdfBase64 || undefined
+          lessonText: pdfBase64 ? undefined : (lessonText.trim() || undefined),
+          pdf: pdfBase64 || undefined,
+          questionCount,
         })
       });
 
@@ -207,7 +212,7 @@ export function TeacherIngestionScreen({ route }: any) {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.screenTitle}>AI Lesson Ingestor</Text>
-            <Text style={styles.screenSubtitle}>Upload or paste lesson plans to populate item banks</Text>
+            <Text style={styles.screenSubtitle}>Smart Document &amp; Curriculum Parser</Text>
           </View>
           <View style={styles.headerRight}>
             <Badge label="Teacher" variant="indigo" style={styles.roleBadge} />
@@ -242,6 +247,7 @@ export function TeacherIngestionScreen({ route }: any) {
           />
 
           {/* Subject Switcher */}
+          {/* Subject Selector */}
           <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.textMuted, marginBottom: Spacing.xs, textTransform: 'uppercase', letterSpacing: 0.5 }}>
             Subject
           </Text>
@@ -256,13 +262,13 @@ export function TeacherIngestionScreen({ route }: any) {
                     flex: 1,
                     alignItems: 'center',
                     paddingVertical: Spacing.md,
-                    backgroundColor: active ? 'rgba(17,66,142,0.06)' : '#F8FAFC',
+                    backgroundColor: active ? Colors.accentPrimaryDeep : Colors.bgInput,
                     borderRadius: Radius.md,
                     borderWidth: 1,
-                    borderColor: active ? Colors.accentPrimary : '#E2E8F0',
+                    borderColor: active ? Colors.accentPrimary : Colors.border,
                   }}
                 >
-                  <Text style={{ fontFamily: active ? Fonts.bodyBold : Fonts.bodyMedium, color: active ? Colors.accentPrimary : '#94A3B8' }}>
+                  <Text style={{ fontFamily: active ? Fonts.bodyBold : Fonts.bodySemiBold, color: active ? Colors.accentPrimary : Colors.textMuted }}>
                     {sub}
                   </Text>
                 </TouchableOpacity>
@@ -285,13 +291,13 @@ export function TeacherIngestionScreen({ route }: any) {
                     flex: 1,
                     alignItems: 'center',
                     paddingVertical: Spacing.md,
-                    backgroundColor: active ? 'rgba(17,66,142,0.06)' : '#F8FAFC',
+                    backgroundColor: active ? Colors.accentPrimaryDeep : Colors.bgInput,
                     borderRadius: Radius.md,
                     borderWidth: 1,
-                    borderColor: active ? Colors.accentPrimary : '#E2E8F0',
+                    borderColor: active ? Colors.accentPrimary : Colors.border,
                   }}
                 >
-                  <Text style={{ fontFamily: active ? Fonts.bodyBold : Fonts.bodyMedium, color: active ? Colors.accentPrimary : '#94A3B8' }}>
+                  <Text style={{ fontFamily: active ? Fonts.bodyBold : Fonts.bodySemiBold, color: active ? Colors.accentPrimary : Colors.textMuted }}>
                     Grade {g}
                   </Text>
                 </TouchableOpacity>
@@ -346,10 +352,77 @@ export function TeacherIngestionScreen({ route }: any) {
             containerStyle={styles.inputSpacing}
           />
 
+          {/* Quick topic suggestion pills */}
+          <View style={{ marginBottom: Spacing.md }}>
+            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: 6 }}>
+              Suggested curriculum topics:
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+              {(subject === 'Mathematics' ? (
+                grade === 4 ? ['Fractions Addition', 'Multiplication Tables', 'Perimeter & Area', 'Decimals Basics'] :
+                grade === 5 ? ['Decimal Operations', 'Percentages', 'Volume & Surface Area', 'Prime Factorization'] :
+                ['Algebraic Equations', 'Integers & Exponents', 'Ratio & Proportion', 'Geometry & Angles']
+              ) : (
+                grade === 4 ? ['Figures of Speech', 'Subject-Verb Agreement', 'Context Clues', 'Synonyms & Antonyms'] :
+                grade === 5 ? ['Reading Comprehension', 'Cause & Effect', 'Fact vs Opinion', 'Prefixes & Suffixes'] :
+                ['Idiomatic Expressions', 'Author Purpose', 'Compound Sentences', 'Direct & Indirect Speech']
+              )).map((sug) => (
+                <TouchableOpacity
+                  key={sug}
+                  onPress={() => setTopic(sug)}
+                  style={{
+                    paddingHorizontal: Spacing.sm,
+                    paddingVertical: 5,
+                    backgroundColor: 'rgba(17,66,142,0.06)',
+                    borderRadius: Radius.full,
+                    borderWidth: 1,
+                    borderColor: 'rgba(17,66,142,0.15)',
+                  }}
+                >
+                  <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.accentPrimary }}>
+                    + {sug}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Question Volume Density Selector */}
+          <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.textMuted, marginBottom: Spacing.xs, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            Question Volume &amp; Density
+          </Text>
+          <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md }}>
+            {([10, 15, 20] as const).map((qc) => {
+              const active = questionCount === qc;
+              return (
+                <TouchableOpacity
+                  key={qc}
+                  onPress={() => setQuestionCount(qc)}
+                  style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    paddingVertical: Spacing.sm,
+                    backgroundColor: active ? Colors.accentPrimaryDeep : Colors.bgInput,
+                    borderRadius: Radius.md,
+                    borderWidth: 1,
+                    borderColor: active ? Colors.accentPrimary : Colors.border,
+                  }}
+                >
+                  <Text style={{ fontFamily: active ? Fonts.bodyBold : Fonts.bodySemiBold, fontSize: FontSizes.xs, color: active ? Colors.accentPrimary : Colors.textMuted }}>
+                    {qc} Questions
+                  </Text>
+                  <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: active ? Colors.accentPrimary : Colors.textDark }}>
+                    {qc === 10 ? 'Standard' : qc === 15 ? 'Recommended' : 'Exam Bank'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           {!pdfBase64 && (
             <ThemedTextInput
-              label="Raw Lesson Plan / Reference Material"
-              placeholder="Paste your syllabus, reference textbook snippet, or outline notes here…"
+              label="Raw Lesson Plan / Reference Material (Optional)"
+              placeholder="Paste textbook snippet, outline notes, or leave blank for full AI curriculum generation…"
               value={lessonText}
               onChangeText={setLessonText}
               multiline
@@ -360,7 +433,7 @@ export function TeacherIngestionScreen({ route }: any) {
           )}
 
           {pdfBase64 !== '' && (
-            <View style={{ backgroundColor: 'rgba(255,255,255,0.02)', padding: Spacing.md, borderRadius: Radius.sm, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
+            <View style={{ backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: Radius.sm, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
               <Info size={16} color={Colors.textMuted} style={{ marginTop: 2, flexShrink: 0 }} />
               <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, flex: 1, lineHeight: 16 }}>
                 Text Ingestion is disabled because a PDF document is selected. The generator will parse study content and items directly from the PDF context.
@@ -369,7 +442,7 @@ export function TeacherIngestionScreen({ route }: any) {
           )}
 
           <PrimaryButton
-            label="Process Ingestion Pipeline"
+            label={`Generate ${questionCount} Assessment Items & Guide`}
             icon={<Sparkles size={16} color={Colors.white} style={{ marginRight: 6 }} />}
             onPress={handleGenerate}
             loading={loading}
@@ -464,7 +537,7 @@ export function TeacherIngestionScreen({ route }: any) {
                     {stagedQuestions.map((q: any, i: number) => {
                       const difficultyColor = q.difficulty === 'Easy' ? Colors.success : q.difficulty === 'Difficult' ? Colors.danger : Colors.warning;
                       return (
-                        <View key={i} style={{ padding: Spacing.md, backgroundColor: '#F8FAFC', borderRadius: Radius.md, borderWidth: 1, borderColor: '#E2E8F0', gap: 4 }}>
+                        <View key={i} style={{ padding: Spacing.md, backgroundColor: Colors.bgInput, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, gap: 4 }}>
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Badge label={`Q${i + 1} - ${q.category}`} variant="indigo" />
                             <Badge label={q.difficulty} variant="indigo" style={{ backgroundColor: 'transparent', borderColor: difficultyColor }} />
@@ -475,9 +548,12 @@ export function TeacherIngestionScreen({ route }: any) {
                           {q.options && q.options.map((opt: string, idx: number) => {
                             const isCorrect = opt === q.correctAnswer;
                             return (
-                              <Text key={idx} style={{ fontFamily: Fonts.body, color: isCorrect ? Colors.success : Colors.textMuted, fontSize: FontSizes.sm, paddingLeft: 6 }}>
-                                {String.fromCharCode(65 + idx)}. {opt} {isCorrect ? '✓' : ''}
-                              </Text>
+                              <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: 6 }}>
+                                <Text style={{ fontFamily: Fonts.body, color: isCorrect ? Colors.success : Colors.textMuted, fontSize: FontSizes.sm }}>
+                                  {String.fromCharCode(65 + idx)}. {opt}
+                                </Text>
+                                {isCorrect && <Check size={12} color={Colors.success} strokeWidth={3} />}
+                              </View>
                             );
                           })}
                           {q.feedback && (
@@ -499,7 +575,6 @@ export function TeacherIngestionScreen({ route }: any) {
               icon={<Award size={16} color={Colors.white} style={{ marginRight: 6 }} />}
               onPress={handleSaveToBank}
               loading={commiting}
-              style={{ backgroundColor: Colors.success }}
             />
           </View>
         )}

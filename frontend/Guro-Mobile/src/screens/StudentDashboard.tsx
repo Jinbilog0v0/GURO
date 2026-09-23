@@ -42,6 +42,8 @@ import {
   Users,
   CheckCircle2,
   School,
+  Calendar,
+  Sparkles,
 } from 'lucide-react-native';
 import { toast } from '../components';
 
@@ -54,6 +56,7 @@ import { SyncBadge } from '../components/shared/SyncBadge';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { styles } from '../styles/StudentDashboard.styles';
 import { isLessonLocked, LESSON_SEQUENCE } from '../utils/engine';
+import itemBankData from '../../assets/item_bank.json';
 
 const OUTFIT_EMOJIS: Record<string, string> = {
   default: '',
@@ -88,6 +91,8 @@ export function StudentDashboard() {
   const teacherName = useAppStore((s) => s.teacherName);
   const setClassroomId = useAppStore((s) => s.setClassroomId);
   const activeSubjects = useAppStore((s) => s.activeSubjects || ['Mathematics', 'English']);
+  const activeSchoolYear = useAppStore((s) => s.activeSchoolYear || '2026-2027');
+  const activeTerm = useAppStore((s) => s.activeTerm || 'Quarter 1');
 
   const [joinModalVisible, setJoinModalVisible] = React.useState(false);
   const [typedCode, setTypedCode] = React.useState('');
@@ -199,6 +204,12 @@ export function StudentDashboard() {
         if (verifiedClassroom && verifiedClassroom.gradeLevel) {
           useAppStore.getState().setPreferredGrade(verifiedClassroom.gradeLevel);
         }
+        if (verifiedClassroom && verifiedClassroom.schoolYear) {
+          useAppStore.getState().setActiveSchoolYear(verifiedClassroom.schoolYear);
+        }
+        if (verifiedClassroom && verifiedClassroom.term) {
+          useAppStore.getState().setActiveTerm(verifiedClassroom.term);
+        }
 
         // Pair this student name on the server as a classroom member
         const resolvedUrl = resolveServerUrl(serverUrl);
@@ -260,7 +271,7 @@ export function StudentDashboard() {
 
   const getMathAverageScore = (grade: number): number => {
     const logs = studentProgress.filter(
-      (p) => p.subject === 'Mathematics' && p.gradeLevel === grade,
+      (p) => (p.subject === 'Mathematics' || p.subject === 'Math') && p.gradeLevel === grade,
     );
     if (logs.length === 0) return 0;
     const sum = logs.reduce((acc, p) => acc + (p.score / p.totalQuestions) * 100, 0);
@@ -270,7 +281,7 @@ export function StudentDashboard() {
   const isEnglishLocked = (gradeLevel: number): boolean => {
     if (classroomId || !parentalControls.mathBeforeEnglish) return false;
     const mathLogs = studentProgress.filter(
-      (p) => p.subject === 'Mathematics' && p.gradeLevel === gradeLevel,
+      (p) => (p.subject === 'Mathematics' || p.subject === 'Math') && p.gradeLevel === gradeLevel,
     );
     if (mathLogs.length === 0) return false;
     const mathScore = getMathAverageScore(gradeLevel);
@@ -280,23 +291,29 @@ export function StudentDashboard() {
   // Smart recommended: needs-improvement (40–79%) first, then unattempted.
   // Grade order: student's preferredGrade first. Subject order: weaker subject first.
   const recommended = (() => {
-    if (!itemBank) return null;
+    const effectiveBank = itemBank || (itemBankData as any);
+    if (!effectiveBank) return null;
 
     const getBestRatio = (subject: string, grade: number, topic: string): number | null => {
       const logs = studentProgress.filter(
-        (p) => p.subject === subject && p.gradeLevel === grade && p.topic === topic,
+        (p) =>
+          (p.subject === subject || (subject === 'Mathematics' && p.subject === 'Math')) &&
+          p.gradeLevel === grade &&
+          p.topic === topic,
       );
       if (logs.length === 0) return null;
       return Math.max(...logs.map((p) => p.score / p.totalQuestions));
     };
 
     const getSubjectAvg = (subject: string): number => {
-      const logs = studentProgress.filter((p) => p.subject === subject);
+      const logs = studentProgress.filter(
+        (p) => p.subject === subject || (subject === 'Mathematics' && p.subject === 'Math'),
+      );
       if (logs.length === 0) return -1;
       return logs.reduce((acc, p) => acc + p.score / p.totalQuestions, 0) / logs.length;
     };
 
-    const availableSubjects = activeSubjects.filter((s) => s === 'Mathematics' || s === 'English');
+    const availableSubjects = Array.from(new Set(['Mathematics', 'English', ...(activeSubjects || [])]));
     if (availableSubjects.length === 0) return null;
 
     const gradeOrder = [preferredGrade, ...[4, 5, 6].filter((g) => g !== preferredGrade)];
@@ -310,13 +327,13 @@ export function StudentDashboard() {
 
     for (const grade of gradeOrder) {
       for (const subject of subjectOrder) {
-        const gradeData = itemBank[subject]?.[grade.toString()];
+        const gradeData = effectiveBank[subject]?.[grade.toString()];
         if (!gradeData) continue;
         for (const topic of Object.keys(gradeData)) {
           if (topic === 'studyContent') continue;
 
           // Skip if locked by 1:1 progression or English-after-Math lock rules
-          const isProgLocked = isLessonLocked(subject, grade, topic, studentProgress, preferredGrade, itemBank);
+          const isProgLocked = isLessonLocked(subject, grade, topic, studentProgress, preferredGrade, effectiveBank);
           const isEngLocked = subject === 'English' && isEnglishLocked(grade);
           if (isProgLocked || isEngLocked) continue;
 
@@ -334,7 +351,12 @@ export function StudentDashboard() {
   })();
 
   // Most recent quiz attempt for "Continue Learning" card
-  const filteredProgress = studentProgress.filter((p) => activeSubjects.includes(p.subject) && p.gradeLevel === preferredGrade);
+  const availableSubjectsList = Array.from(new Set(['Mathematics', 'English', ...(activeSubjects || [])]));
+  const filteredProgress = studentProgress.filter(
+    (p) =>
+      (availableSubjectsList.includes(p.subject) || (p.subject === 'Math' && availableSubjectsList.includes('Mathematics'))) &&
+      p.gradeLevel === preferredGrade,
+  );
   const lastActivity = filteredProgress.length > 0
     ? filteredProgress.reduce((a, b) => (new Date(a.timestamp) > new Date(b.timestamp) ? a : b))
     : null;
@@ -420,24 +442,46 @@ export function StudentDashboard() {
             
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.white }}>
-                Hello, {studentName}! 👋
+                Welcome back, {studentName}!
               </Text>
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: 'rgba(255,255,255,0.9)' }}>
-                Level {level} Explorer
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: 'rgba(255,255,255,0.9)' }}>
+                  Level {level} Explorer
+                </Text>
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: 'rgba(255,255,255,0.18)',
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: Radius.full,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.25)',
+                }}>
+                  <Calendar size={11} color={Colors.white} />
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.white }}>
+                    S.Y. {activeSchoolYear} • {activeTerm}
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
 
-          {/* Mascot speech bubble */}
+          {/* Mascot companion speech bubble */}
           <View style={{
             backgroundColor: 'rgba(255,255,255,0.12)',
             borderRadius: Radius.sm,
             padding: Spacing.sm,
             borderWidth: 1,
             borderColor: 'rgba(255,255,255,0.2)',
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: 6,
           }}>
-            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.white, lineHeight: 16 }}>
-              🦉 Companion: <Text style={{ fontFamily: Fonts.bodyMedium, color: '#FEF3C7' }}>"{mascotMessage}"</Text>
+            <Sparkles size={14} color="#FEF3C7" style={{ marginTop: 2, flexShrink: 0 }} />
+            <Text style={{ flex: 1, fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.white, lineHeight: 16 }}>
+              Companion Guide: <Text style={{ fontFamily: Fonts.bodyMedium, color: '#FEF3C7' }}>"{mascotMessage}"</Text>
             </Text>
           </View>
           
@@ -462,7 +506,7 @@ export function StudentDashboard() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
                 <School size={20} color={Colors.accentPrimary} />
                 <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
-                  My Classroom
+                  My Classroom Connection
                 </Text>
               </View>
               <View style={{ backgroundColor: 'rgba(16,185,129,0.12)', paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.full, borderWidth: 1, borderColor: 'rgba(16,185,129,0.25)' }}>
@@ -471,12 +515,18 @@ export function StudentDashboard() {
                 </Text>
               </View>
             </View>
-            <View style={{ gap: 2 }}>
+            <View style={{ gap: 4 }}>
               {teacherName ? (
                 <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }}>
                   Teacher: <Text style={{ color: Colors.accentPrimary }}>{teacherName}</Text>
                 </Text>
               ) : null}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <Calendar size={13} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                  Enrolled Term: S.Y. {activeSchoolYear} • {activeTerm}
+                </Text>
+              </View>
               <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
                 Class Code: {classroomId}
               </Text>
@@ -487,7 +537,7 @@ export function StudentDashboard() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
               <Users size={20} color={Colors.accentPrimary} />
               <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
-                Connect to Classroom
+                My Classroom Connection
               </Text>
             </View>
             <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
@@ -530,7 +580,7 @@ export function StudentDashboard() {
               {virtualStars}
             </Text>
             <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-              Stars
+              Stars Collected
             </Text>
           </GlassCard>
           <GlassCard padding={Spacing.md} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
@@ -539,7 +589,7 @@ export function StudentDashboard() {
               {studentProgress.length}
             </Text>
             <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-              Lessons
+              Lessons Completed
             </Text>
           </GlassCard>
         </View>
@@ -593,7 +643,7 @@ export function StudentDashboard() {
             >
               <Rocket size={16} color={Colors.white} />
               <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.md, color: Colors.white }}>
-                Start Lesson
+                Start Practice
               </Text>
             </TouchableOpacity>
           </GlassCard>
@@ -665,7 +715,7 @@ export function StudentDashboard() {
                 }}
               >
                 <Play size={14} color={Colors.white} fill={Colors.white} />
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.white }}>Resume</Text>
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.white }}>Resume Lesson</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => navigation.navigate('Lessons')}
@@ -726,7 +776,7 @@ export function StudentDashboard() {
       {/* ── Join Classroom Modal ── */}
       <Modal
         visible={joinModalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => {
           setJoinModalVisible(false);
@@ -736,15 +786,31 @@ export function StudentDashboard() {
       >
         {/* M4: KeyboardAvoidingView prevents keyboard from covering the TextInput */}
         <KeyboardAvoidingView
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: Spacing.lg }}
+          style={{ flex: 1, backgroundColor: 'rgba(6, 9, 19, 0.72)', justifyContent: 'center', padding: Spacing.lg }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <GlassCard style={{ padding: Spacing.lg, gap: Spacing.md, backgroundColor: Colors.white }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Users size={20} color={Colors.accentPrimary} />
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
-                Join Classroom
-              </Text>
+          <GlassCard style={{ padding: Spacing.xl, gap: Spacing.md, backgroundColor: Colors.bgCard, borderRadius: Radius['2xl'], borderWidth: 1, borderColor: Colors.border }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+              <View style={{
+                width: 44,
+                height: 44,
+                borderRadius: Radius.xl,
+                backgroundColor: 'rgba(17, 66, 142, 0.12)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(17, 66, 142, 0.25)',
+              }}>
+                <Users size={22} color={Colors.accentPrimary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, fontWeight: '700' }}>
+                  Join Classroom
+                </Text>
+                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                  Connect with your teacher
+                </Text>
+              </View>
             </View>
 
             {!verifiedClassroom ? (
@@ -762,9 +828,9 @@ export function StudentDashboard() {
                   style={{
                     borderWidth: 1,
                     borderColor: Colors.border,
-                    borderRadius: Radius.md,
+                    borderRadius: Radius.lg,
                     paddingHorizontal: Spacing.md,
-                    paddingVertical: Spacing.sm,
+                    paddingVertical: Spacing.md,
                     fontFamily: Fonts.bodyBold,
                     fontSize: FontSizes.md,
                     color: Colors.textMain,
@@ -784,9 +850,10 @@ export function StudentDashboard() {
                       flex: 1,
                       borderWidth: 1,
                       borderColor: Colors.border,
-                      borderRadius: Radius.md,
+                      borderRadius: Radius.lg,
                       paddingVertical: Spacing.md,
                       alignItems: 'center',
+                      backgroundColor: Colors.bgMain,
                     }}
                   >
                     <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMuted }}>Cancel</Text>
@@ -798,7 +865,7 @@ export function StudentDashboard() {
                     style={{
                       flex: 1,
                       backgroundColor: Colors.accentPrimary,
-                      borderRadius: Radius.md,
+                      borderRadius: Radius.lg,
                       paddingVertical: Spacing.md,
                       alignItems: 'center',
                       flexDirection: 'row',
@@ -833,6 +900,19 @@ export function StudentDashboard() {
                   <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
                     Grade Level: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>Grade {verifiedClassroom.gradeLevel}</Text>
                   </Text>
+                  {verifiedClassroom.sectionName && (
+                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                      Section: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{verifiedClassroom.sectionName}</Text>
+                    </Text>
+                  )}
+                  {(verifiedClassroom.schoolYear || verifiedClassroom.term) && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Calendar size={12} color={Colors.textMuted} />
+                      <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                        Academic Period: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>S.Y. {verifiedClassroom.schoolYear || '2026-2027'} • {verifiedClassroom.term || 'Quarter 1'}</Text>
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
@@ -846,9 +926,10 @@ export function StudentDashboard() {
                       flex: 1,
                       borderWidth: 1,
                       borderColor: Colors.border,
-                      borderRadius: Radius.md,
+                      borderRadius: Radius.lg,
                       paddingVertical: Spacing.md,
                       alignItems: 'center',
+                      backgroundColor: Colors.bgMain,
                     }}
                   >
                     <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMuted }}>Back</Text>
@@ -860,7 +941,7 @@ export function StudentDashboard() {
                     style={{
                       flex: 1,
                       backgroundColor: Colors.success,
-                      borderRadius: Radius.md,
+                      borderRadius: Radius.lg,
                       paddingVertical: Spacing.md,
                       alignItems: 'center',
                       flexDirection: 'row',

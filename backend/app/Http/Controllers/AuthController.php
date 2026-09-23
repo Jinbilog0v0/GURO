@@ -217,6 +217,16 @@ class AuthController extends Controller
                 $classroomId = $member->classroom_id;
             }
         }
+        if ($user->role === 'teacher' && !$classroomId) {
+            $classroom = \App\Models\Classroom::where(function ($q) use ($user) {
+                $q->where('teacher_user_id', $user->id)
+                  ->orWhere('teacher_user_id', $user->user_id)
+                  ->orWhere('teacher_name', $user->name);
+            })->orderBy('created_at', 'desc')->first();
+            if ($classroom) {
+                $classroomId = $classroom->classroom_id;
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -236,6 +246,7 @@ class AuthController extends Controller
                 'rejectionReason' => $user->rejection_reason,
             ],
             'studentId' => $user->role === 'student' ? $user->user_id : null,
+            'classroomId' => $classroomId,
         ]);
     }
 

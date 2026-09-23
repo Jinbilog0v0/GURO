@@ -74,6 +74,15 @@ it('can search and filter users in admin user directory', function () {
         'role' => 'teacher',
     ]);
 
+    User::create([
+        'user_id' => 'USR-DEV01',
+        'email' => 'dev1@guro.dev',
+        'password_hash' => 'dummy:hash',
+        'name' => 'Guro Developer',
+        'role' => 'developer',
+    ]);
+
+    // Filter teacher
     $response = $this->withHeader('Authorization', "Bearer {$token}")
         ->getJson('/api/admin/users?role=teacher');
 
@@ -82,10 +91,21 @@ it('can search and filter users in admin user directory', function () {
             'users' => [
                 '*' => ['id', 'userId', 'email', 'name', 'role'],
             ],
+            'counts' => ['all', 'teacher', 'parent', 'student', 'admin'],
         ]);
 
     expect(count($response->json('users')))->toBe(1);
     expect($response->json('users.0.email'))->toBe('teacher1@school.edu');
+
+    // Filter admin / developer
+    $adminFilterRes = $this->withHeader('Authorization', "Bearer {$token}")
+        ->getJson('/api/admin/users?role=admin');
+
+    $adminFilterRes->assertStatus(200);
+    expect(count($adminFilterRes->json('users')))->toBe(2);
+    $emails = collect($adminFilterRes->json('users'))->pluck('email')->all();
+    expect($emails)->toContain('admin@guro.dev');
+    expect($emails)->toContain('dev1@guro.dev');
 });
 
 it('can update a user role and reset password', function () {

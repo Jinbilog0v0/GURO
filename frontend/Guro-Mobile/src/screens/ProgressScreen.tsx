@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { Text, View, ScrollView, Alert, Clipboard, TouchableOpacity, RefreshControl, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
-import { Trophy, Flame, Calculator, BookOpen, CheckCircle2, AlertCircle, Clock, Star, Award, Zap, Lock } from 'lucide-react-native';
+import { Trophy, Flame, Calculator, BookOpen, CheckCircle2, AlertCircle, Clock, Star, Award, Zap, Lock, X, Calendar } from 'lucide-react-native';
 import { MASTERY_THRESHOLD } from '../utils/engine';
 
 import { Colors } from '../theme/colors';
@@ -18,6 +18,7 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { SectionHeader } from '../components/ui/SectionHeader';
 import { SyncBadge } from '../components/shared/SyncBadge';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { toast } from '../components';
 import { styles } from '../styles/ProgressScreen.styles';
 
@@ -42,6 +43,8 @@ export function ProgressScreen() {
   const bestStreak      = useAppStore((s) => s.bestStreak || 0);
   const unlockedBadges  = useAppStore((s) => s.unlockedBadges || []);
   const studentProgress = useAppStore((s) => s.studentProgress);
+  const activeSchoolYear = useAppStore((s) => s.activeSchoolYear || '2026-2027');
+  const activeTerm = useAppStore((s) => s.activeTerm || 'Quarter 1');
 
   // All-time stats calculations
   const totalSessions = studentProgress.length;
@@ -50,6 +53,8 @@ export function ProgressScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [fullHistoryVisible, setFullHistoryVisible] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState<{ key: string; label: string; desc: string; unlocked: boolean } | null>(null);
+  const [selectedAttempt, setSelectedAttempt] = useState<{ topic: string; subject: string; gradeLevel: number; score: number; totalQuestions: number; pct: number; passed: boolean; dateStr: string } | null>(null);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -79,28 +84,7 @@ export function ProgressScreen() {
   const handleBadgePress = (key: string) => {
     const info = BADGE_INFO[key];
     const unlocked = unlockedBadges.includes(key);
-
-    if (unlocked) {
-      Alert.alert(
-        info.label,
-        `${info.desc}\n\nStatus: Unlocked!`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Share Achievement',
-            onPress: () => {
-              Clipboard.setString(`I unlocked the "${info.label}" badge on GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION by learning ${info.desc.toLowerCase()}!`);
-              toast.success('Achievement text copied to clipboard.');
-            },
-          },
-        ]
-      );
-    } else {
-      Alert.alert(
-        `${info.label} (Locked)`,
-        `${info.desc}\n\nKeep practicing topics with 80%+ scores to unlock this milestone!`
-      );
-    }
+    setSelectedBadge({ key, label: info.label, desc: info.desc, unlocked });
   };
 
   // Recent activity: last 5 attempts, newest first
@@ -153,7 +137,25 @@ export function ProgressScreen() {
       {/* O1: SyncBadge added to Progress header */}
       <View style={styles.headerBar}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Progress</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <Text style={styles.headerTitle}>Progress</Text>
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              backgroundColor: 'rgba(17,66,142,0.08)',
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: 'rgba(17,66,142,0.15)',
+            }}>
+              <Calendar size={11} color={Colors.accentPrimary} />
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                S.Y. {activeSchoolYear} • {activeTerm}
+              </Text>
+            </View>
+          </View>
           <Text style={styles.headerSubtitle}>Track your learning journey.</Text>
         </View>
         <SyncBadge />
@@ -212,16 +214,16 @@ export function ProgressScreen() {
         <GlassCard padding={Spacing.lg} style={{ gap: Spacing.md }}>
           <SectionHeader title="All-Time Stats" subtitle="Your learning milestone numbers" />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.sm }}>
-            <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.02)', padding: Spacing.md, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: Colors.border }}>
+            <View style={{ flex: 1, backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: Colors.border }}>
               <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
                 {totalSessions}
               </Text>
               <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted, marginTop: 2, textAlign: 'center' }}>
-                Quests Played
+                Lessons Completed
               </Text>
             </View>
 
-            <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.02)', padding: Spacing.md, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: Colors.border }}>
+            <View style={{ flex: 1, backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: Colors.border }}>
               <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.success }}>
                 {totalCorrect}
               </Text>
@@ -230,12 +232,12 @@ export function ProgressScreen() {
               </Text>
             </View>
 
-            <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.02)', padding: Spacing.md, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: Colors.border }}>
+            <View style={{ flex: 1, backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: Colors.border }}>
               <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.accentPrimary }}>
                 {totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0}%
               </Text>
               <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted, marginTop: 2, textAlign: 'center' }}>
-                Total Accuracy
+                Average Score
               </Text>
             </View>
           </View>
@@ -278,7 +280,7 @@ export function ProgressScreen() {
         </GlassCard>
 
         {/* Subject breakdown */}
-        <SectionHeader title="Subject Progress" subtitle="Average score per subject and grade" />
+        <SectionHeader title="Subject Mastery" subtitle="Average score per subject and grade" />
         {studentProgress.length === 0 ? (
           <GlassCard variant="subtle" padding={Spacing.xl} style={{ alignItems: 'center', gap: Spacing.sm }}>
             <Trophy size={40} color={Colors.textMuted} />
@@ -298,26 +300,16 @@ export function ProgressScreen() {
                 const avg = getSubjectAvg(subject, grade);
                 const color = scoreColor(avg);
                 return (
-                  <GlassCard key={`${subject}-${grade}`} padding={Spacing.md} style={{ gap: Spacing.sm }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-                        {subject === 'Mathematics' ? (
-                          <Calculator size={16} color={Colors.accentPrimary} />
-                        ) : (
-                          <BookOpen size={16} color={Colors.accentSecondary} />
-                        )}
-                        <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.textMain }}>
-                          {subject} · Grade {grade}
-                        </Text>
-                      </View>
-                      <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color }}>
-                        {avg}%
+                  <GlassCard key={`${subject}-${grade}`} padding={Spacing.md}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xs }}>
+                      <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.textMain }}>
+                        {subject} · Grade {grade}
+                      </Text>
+                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color }}>
+                        {avg}% ({attempts} {attempts === 1 ? 'quiz' : 'quizzes'})
                       </Text>
                     </View>
                     <ProgressBar progress={avg} height={6} color={color} />
-                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                      {attempts} {attempts === 1 ? 'attempt' : 'attempts'}
-                    </Text>
                   </GlassCard>
                 );
               }),
@@ -326,7 +318,7 @@ export function ProgressScreen() {
         )}
 
         {/* Badge showcase */}
-        <SectionHeader title="Badges" subtitle="Complete lessons and streaks to earn them" />
+        <SectionHeader title="Badge Case" subtitle="Earn badges through lessons and streaks" />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
           {ALL_BADGES.map((key) => {
             const info = BADGE_INFO[key];
@@ -415,7 +407,7 @@ export function ProgressScreen() {
         {/* Recent Activity */}
         {recentActivity.length > 0 && (
           <>
-            <SectionHeader title="Recent Activity" subtitle="Your last 5 quiz attempts" />
+            <SectionHeader title="Assessment History" subtitle="Your last 5 quiz attempts" />
             <View style={{ gap: Spacing.sm }}>
               {recentActivity.map((p, idx) => {
                 const pct = Math.round((p.score / p.totalQuestions) * 100);
@@ -453,7 +445,7 @@ export function ProgressScreen() {
                   alignSelf: 'center',
                   paddingVertical: Spacing.xs,
                   paddingHorizontal: Spacing.md,
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  backgroundColor: Colors.bgInput,
                   borderWidth: 1,
                   borderColor: Colors.border,
                   borderRadius: 16,
@@ -502,7 +494,7 @@ export function ProgressScreen() {
                 onPress={() => setFullHistoryVisible(false)}
                 style={{
                   padding: Spacing.xs,
-                  backgroundColor: 'rgba(255,255,255,0.06)',
+                  backgroundColor: Colors.bgInput,
                   borderRadius: 16,
                   width: 32,
                   height: 32,
@@ -510,7 +502,7 @@ export function ProgressScreen() {
                   justifyContent: 'center',
                 }}
               >
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }}>✕</Text>
+                <X size={16} color={Colors.textMain} />
               </TouchableOpacity>
             </View>
 
@@ -529,10 +521,16 @@ export function ProgressScreen() {
                       key={p.eventId || idx}
                       activeOpacity={0.8}
                       onPress={() => {
-                        Alert.alert(
-                          `📊 ${p.topic} Details`,
-                          `Subject: ${p.subject}\nGrade Level: ${p.gradeLevel}\nScore: ${pct}% (${p.score}/${p.totalQuestions} correct answers)\nDate: ${dateStr}\nStatus: ${passed ? 'Mastered! 🎉' : 'Needs Practice! 📚'}`
-                        );
+                        setSelectedAttempt({
+                          topic: p.topic,
+                          subject: p.subject,
+                          gradeLevel: p.gradeLevel,
+                          score: p.score,
+                          totalQuestions: p.totalQuestions,
+                          pct,
+                          passed,
+                          dateStr,
+                        });
                       }}
                     >
                       <GlassCard padding={Spacing.md}>
@@ -563,6 +561,49 @@ export function ProgressScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Badge Milestone Details Dialog */}
+      <ConfirmDialog
+        visible={!!selectedBadge}
+        title={selectedBadge ? `${selectedBadge.label}${selectedBadge.unlocked ? ' Unlocked!' : ' (Locked)'}` : ''}
+        message={
+          selectedBadge
+            ? selectedBadge.unlocked
+              ? `${selectedBadge.desc}\n\nAchievement unlocked! Great work on your learning journey.`
+              : `${selectedBadge.desc}\n\nKeep practicing topics with 80%+ scores to unlock this milestone!`
+            : ''
+        }
+        confirmText={selectedBadge?.unlocked ? 'Share Milestone' : 'Keep Learning'}
+        cancelText="Close"
+        hideCancel={!selectedBadge?.unlocked}
+        variant={selectedBadge?.unlocked ? 'success' : 'primary'}
+        icon={selectedBadge ? BADGE_INFO[selectedBadge.key]?.icon || Award : Award}
+        onConfirm={() => {
+          if (selectedBadge?.unlocked) {
+            Clipboard.setString(`I unlocked the "${selectedBadge.label}" badge on GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION by learning ${selectedBadge.desc.toLowerCase()}!`);
+            toast.success('Achievement text copied to clipboard.');
+          }
+          setSelectedBadge(null);
+        }}
+        onCancel={() => setSelectedBadge(null)}
+      />
+
+      {/* Exercise Attempt Details Dialog */}
+      <ConfirmDialog
+        visible={!!selectedAttempt}
+        title={selectedAttempt ? `${selectedAttempt.topic}` : ''}
+        message={
+          selectedAttempt
+            ? `Subject: ${selectedAttempt.subject}\nGrade Level: Grade ${selectedAttempt.gradeLevel}\nScore: ${selectedAttempt.pct}% (${selectedAttempt.score}/${selectedAttempt.totalQuestions} correct)\nDate: ${selectedAttempt.dateStr}\nStatus: ${selectedAttempt.passed ? 'Mastery Achieved (80%+)' : 'Review / Practice Needed'}`
+            : ''
+        }
+        confirmText="Done"
+        hideCancel={true}
+        variant={selectedAttempt?.passed ? 'success' : 'warning'}
+        icon={selectedAttempt?.passed ? CheckCircle2 : AlertCircle}
+        onConfirm={() => setSelectedAttempt(null)}
+        onCancel={() => setSelectedAttempt(null)}
+      />
     </SafeAreaView>
   );
 }

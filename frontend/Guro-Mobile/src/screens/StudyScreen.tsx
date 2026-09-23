@@ -36,7 +36,10 @@ import {
   ChevronLeft,
   ChevronRight,
   XCircle,
+  Check,
+  FileEdit,
 } from 'lucide-react-native';
+import itemBankData from '../../assets/item_bank.json';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Study'>;
 
@@ -78,7 +81,8 @@ export function StudyScreen({ route, navigation }: Props) {
   }, [currentSlide]);
 
   // ── Load study content ──────────────────────────────────────────────────────
-  const subjectData = itemBank?.[subject];
+  const effectiveBank = itemBank || (itemBankData as any);
+  const subjectData = effectiveBank?.[subject];
   const gradeData = subjectData?.[gradeLevel.toString()];
   const topicData = gradeData?.[topic];
 
@@ -289,7 +293,8 @@ export function StudyScreen({ route, navigation }: Props) {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(16,185,129,0.08)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 }}>
                 <WifiOff size={10} color={Colors.success} />
-                <Text style={{ fontFamily: styles.ttsIcon.fontFamily, fontSize: 10, color: Colors.success }}>Offline ✓</Text>
+                <Text style={{ fontFamily: styles.ttsIcon.fontFamily, fontSize: 10, color: Colors.success }}>Offline</Text>
+                <Check size={10} color={Colors.success} strokeWidth={3} />
               </View>
               <TouchableOpacity onPress={toggleSpeech} style={[styles.ttsIconBtn, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
                 {isSpeaking ? (
@@ -333,14 +338,17 @@ export function StudyScreen({ route, navigation }: Props) {
                 style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(17,66,142,0.08)', borderWidth: 1, borderColor: 'rgba(17,66,142,0.2)', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, marginTop: 14 }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.primary }}>
-                    Take Diagnostic Pre-Test 📝
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <FileEdit size={13} color={Colors.accentPrimary} />
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                      Take Diagnostic Pre-Test
+                    </Text>
+                  </View>
                   <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted, marginTop: 2 }}>
                     Record your baseline score before studying this topic!
                   </Text>
                 </View>
-                <ChevronRight size={14} color={Colors.primary} />
+                <ChevronRight size={14} color={Colors.accentPrimary} />
               </TouchableOpacity>
             )}
             {currentItem.imageUrl && (

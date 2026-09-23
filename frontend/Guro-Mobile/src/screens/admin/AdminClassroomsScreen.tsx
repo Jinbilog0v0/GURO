@@ -29,15 +29,20 @@ import {
   X,
   UserCheck,
   ArrowLeft,
+  Menu,
+  Calendar,
 } from 'lucide-react-native';
 import { adminService, ClassroomRecord } from '../../services/adminService';
 import { Colors } from '../../theme/colors';
 import { Fonts, FontSizes } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import { toast } from '../../components';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { AdminSidebar } from '../../components/admin/AdminSidebar';
 
 export function AdminClassroomsScreen() {
   const navigation = useNavigation<any>();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [classrooms, setClassrooms] = useState<ClassroomRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -49,6 +54,10 @@ export function AdminClassroomsScreen() {
   const [selectedClassroom, setSelectedClassroom] = useState<ClassroomRecord | null>(null);
   const [newTeacherName, setNewTeacherName] = useState('');
   const [submittingReassign, setSubmittingReassign] = useState(false);
+
+  // Delete Classroom Modal State
+  const [deletingClassroom, setDeletingClassroom] = useState<ClassroomRecord | null>(null);
+  const [isDeletingClassroom, setIsDeletingClassroom] = useState(false);
 
   const loadClassrooms = async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -109,26 +118,21 @@ export function AdminClassroomsScreen() {
   };
 
   const handleDeleteClassroom = (c: ClassroomRecord) => {
-    Alert.alert(
-      'Delete Classroom Section',
-      `Are you sure you want to permanently delete section "${c.classroomId}"? All student rosters and pairings for this section will be affected.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const res = await adminService.deleteClassroom(c.id);
-            if (res.success) {
-              toast.success(`Classroom ${c.classroomId} deleted.`);
-              loadClassrooms(true);
-            } else {
-              toast.error(res.error || 'Failed to delete classroom.');
-            }
-          },
-        },
-      ]
-    );
+    setDeletingClassroom(c);
+  };
+
+  const executeDeleteClassroom = async () => {
+    if (!deletingClassroom) return;
+    setIsDeletingClassroom(true);
+    const res = await adminService.deleteClassroom(deletingClassroom.id);
+    setIsDeletingClassroom(false);
+    if (res.success) {
+      toast.success(`Classroom ${deletingClassroom.classroomId} deleted.`);
+      setDeletingClassroom(null);
+      loadClassrooms(true);
+    } else {
+      toast.error(res.error || 'Failed to delete classroom.');
+    }
   };
 
   return (
@@ -137,18 +141,19 @@ export function AdminClassroomsScreen() {
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Overview')}
-            style={styles.backBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            onPress={() => setSidebarOpen(true)}
+            style={styles.menuBtn}
+            activeOpacity={0.7}
+            accessibilityLabel="Open navigation menu"
           >
-            <ArrowLeft size={20} color={Colors.textMain} />
+            <Menu size={20} color={Colors.textMain} />
           </TouchableOpacity>
           <View style={styles.iconBox}>
             <School size={20} color={Colors.accentSecondary} />
           </View>
           <View style={styles.headerTitleContainer}>
             <Text style={styles.title}>School Classrooms</Text>
-            <Text style={styles.subtitle}>Manage sections, teacher assignments, and locks</Text>
+            <Text style={styles.subtitle}>Monitor sections, enrollment, and roster lock state</Text>
           </View>
         </View>
       </View>
@@ -230,7 +235,7 @@ export function AdminClassroomsScreen() {
                           <BookOpen size={12} color={Colors.success} />
                         )}
                         <Text style={styles.subjectText}>
-                          Grade {item.gradeLevel} · {item.subject}
+                          Grade {item.gradeLevel} · {item.subject}{item.sectionName ? ` · Sec: ${item.sectionName}` : ''}
                         </Text>
                       </View>
                     </View>
@@ -255,6 +260,13 @@ export function AdminClassroomsScreen() {
                         {isLocked ? 'LOCKED' : 'OPEN'}
                       </Text>
                     </View>
+                  </View>
+
+                  <View style={styles.infoRow}>
+                    <Calendar size={13} color={Colors.textMuted} />
+                    <Text style={styles.infoText}>
+                      S.Y. {item.schoolYear || '2026-2027'} • {item.term || 'Quarter 1'}
+                    </Text>
                   </View>
 
                   <View style={styles.infoRow}>
@@ -288,12 +300,12 @@ export function AdminClassroomsScreen() {
                       onPress={() => openReassignModal(item)}
                       activeOpacity={0.7}
                     >
-                      <Edit3 size={13} color={Colors.textMain} />
+                      <Edit3 size={13} color={Colors.accentPrimary} />
                       <Text style={styles.actionBtnText}>Reassign</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={styles.deleteBtn}
+                      style={styles.deleteClassroomBtn}
                       onPress={() => handleDeleteClassroom(item)}
                       activeOpacity={0.7}
                     >
@@ -374,6 +386,31 @@ export function AdminClassroomsScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Admin Sidebar Navigation */}
+      <AdminSidebar
+        visible={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        navigation={navigation}
+        currentRoute="Classrooms"
+      />
+
+      {/* Delete Classroom Confirmation Dialog */}
+      <ConfirmDialog
+        visible={!!deletingClassroom}
+        title="Delete Classroom Section?"
+        message={
+          deletingClassroom
+            ? `Are you sure you want to permanently delete section "${deletingClassroom.classroomId}"? All student rosters and pairings for this section will be affected.`
+            : ''
+        }
+        confirmText="Delete Section"
+        cancelText="Cancel"
+        variant="danger"
+        loading={isDeletingClassroom}
+        onConfirm={executeDeleteClassroom}
+        onCancel={() => setDeletingClassroom(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -393,9 +430,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.xs,
   },
-  backBtn: {
-    padding: 6,
-    marginRight: 2,
+  menuBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.bgCard,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   iconBox: {
     width: 36,
@@ -576,35 +619,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
-    marginTop: Spacing.xs,
-    paddingTop: Spacing.xs,
+    marginTop: Spacing.sm,
+    paddingTop: Spacing.sm,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
   actionBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    gap: 5,
     backgroundColor: Colors.bgMain,
     borderWidth: 1,
     borderColor: Colors.border,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: Radius.md,
+    paddingVertical: 8,
+    borderRadius: Radius.lg,
   },
   actionBtnText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 11,
     color: Colors.textMain,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  deleteBtn: {
-    marginLeft: 'auto',
-    padding: 6,
+  deleteClassroomBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.lg,
+    backgroundColor: 'rgba(160,19,34,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(160,19,34,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(6, 9, 19, 0.72)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.md,

@@ -1,11 +1,14 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { BarChart2, ShieldCheck, Users, School, Award } from 'lucide-react-native';
+import { BarChart2, ShieldCheck, Users, School, Award, Layers, Shield, Zap } from 'lucide-react-native';
 import { AdminOverviewScreen } from '../screens/admin/AdminOverviewScreen';
 import { AdminTeacherVerificationsScreen } from '../screens/admin/AdminTeacherVerificationsScreen';
 import { AdminUsersScreen } from '../screens/admin/AdminUsersScreen';
 import { AdminClassroomsScreen } from '../screens/admin/AdminClassroomsScreen';
 import { AdminReportsScreen } from '../screens/admin/AdminReportsScreen';
+import { AdminCurriculumScreen } from '../screens/admin/AdminCurriculumScreen';
+import { AdminRateLimitsScreen } from '../screens/admin/AdminRateLimitsScreen';
+import { AdminLessonIngestorScreen } from '../screens/admin/AdminLessonIngestorScreen';
 import { Colors } from '../theme/colors';
 import { Fonts, FontSizes } from '../theme/typography';
 
@@ -15,6 +18,9 @@ export type AdminTabParamList = {
   Users: undefined;
   Classrooms: undefined;
   Reports: undefined;
+  Curriculum: undefined;
+  RateLimits: undefined;
+  LessonIngestor: undefined;
 };
 
 const Tab = createBottomTabNavigator<AdminTabParamList>();
@@ -74,7 +80,7 @@ export function AdminTabNavigator() {
         name="Classrooms"
         component={AdminClassroomsScreen}
         options={{
-          tabBarLabel: 'Sections',
+          tabBarLabel: 'Classrooms',
           tabBarIcon: ({ color, size }) => <School size={size - 2} color={color} />,
         }}
       />
@@ -86,6 +92,31 @@ export function AdminTabNavigator() {
           tabBarIcon: ({ color, size }) => <Award size={size - 2} color={color} />,
         }}
       />
+      <Tab.Screen
+        name="Curriculum"
+        component={AdminCurriculumScreen}
+        options={{
+          tabBarItemStyle: { display: 'none' },
+          tabBarButton: () => null,
+        }}
+      />
+      <Tab.Screen
+        name="RateLimits"
+        component={AdminRateLimitsScreen}
+        options={{
+          tabBarItemStyle: { display: 'none' },
+          tabBarButton: () => null,
+        }}
+      />
+      <Tab.Screen
+        name="LessonIngestor"
+        component={AdminLessonIngestorScreen}
+        options={{
+          tabBarItemStyle: { display: 'none' },
+          tabBarButton: () => null,
+        }}
+      />
     </Tab.Navigator>
   );
 }
+

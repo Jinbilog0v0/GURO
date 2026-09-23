@@ -31,12 +31,15 @@ import {
   X,
   AlertCircle,
   ArrowLeft,
+  Menu,
 } from 'lucide-react-native';
 import { adminService, TeacherVerificationRecord } from '../../services/adminService';
 import { Colors } from '../../theme/colors';
 import { Fonts, FontSizes } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import { toast } from '../../components';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { AdminSidebar } from '../../components/admin/AdminSidebar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -53,11 +56,12 @@ const isImageDoc = (path?: string | null): boolean => {
 
 export function AdminTeacherVerificationsScreen() {
   const navigation = useNavigation<any>();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [verifications, setVerifications] = useState<TeacherVerificationRecord[]>([]);
   const [counts, setCounts] = useState({ pending: 0, approved: 0, rejected: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [search, setSearch] = useState('');
 
   // Reject Modal
@@ -70,6 +74,10 @@ export function AdminTeacherVerificationsScreen() {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [viewingTeacher, setViewingTeacher] = useState<TeacherVerificationRecord | null>(null);
   const [submittingApprove, setSubmittingApprove] = useState(false);
+
+  // Delete Confirmation
+  const [deletingTeacher, setDeletingTeacher] = useState<TeacherVerificationRecord | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadVerifications = async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -135,26 +143,21 @@ export function AdminTeacherVerificationsScreen() {
   };
 
   const handleDelete = (teacher: TeacherVerificationRecord) => {
-    Alert.alert(
-      'Delete Teacher Application',
-      `Are you sure you want to delete the registration request for ${teacher.name}? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const res = await adminService.deleteTeacherVerification(teacher.id);
-            if (res.success) {
-              toast.success(`Verification record deleted.`);
-              loadVerifications(true);
-            } else {
-              toast.error(res.error || 'Failed to delete record.');
-            }
-          },
-        },
-      ]
-    );
+    setDeletingTeacher(teacher);
+  };
+
+  const executeDelete = async () => {
+    if (!deletingTeacher) return;
+    setIsDeleting(true);
+    const res = await adminService.deleteTeacherVerification(deletingTeacher.id);
+    setIsDeleting(false);
+    setDeletingTeacher(null);
+    if (res.success) {
+      toast.success('Verification record deleted.');
+      loadVerifications(true);
+    } else {
+      toast.error(res.error || 'Failed to delete record.');
+    }
   };
 
   const openDetails = (teacher: TeacherVerificationRecord) => {
@@ -168,11 +171,12 @@ export function AdminTeacherVerificationsScreen() {
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Overview')}
-            style={styles.backBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            onPress={() => setSidebarOpen(true)}
+            style={styles.menuBtn}
+            activeOpacity={0.7}
+            accessibilityLabel="Open navigation menu"
           >
-            <ArrowLeft size={20} color={Colors.textMain} />
+            <Menu size={20} color={Colors.textMain} />
           </TouchableOpacity>
           <View style={styles.iconBox}>
             <ShieldCheck size={20} color={Colors.accentSecondary} />
@@ -207,16 +211,16 @@ export function AdminTeacherVerificationsScreen() {
 
       {/* Filter Tabs */}
       <View style={styles.filterTabsRow}>
-        {(['pending', 'approved', 'rejected', 'all'] as const).map((tab) => {
+        {(['all', 'pending', 'approved', 'rejected'] as const).map((tab) => {
           const isActive = statusFilter === tab;
           const count =
-            tab === 'pending'
+            tab === 'all'
+              ? counts.total
+              : tab === 'pending'
               ? counts.pending
               : tab === 'approved'
               ? counts.approved
-              : tab === 'rejected'
-              ? counts.rejected
-              : counts.total;
+              : counts.rejected;
           return (
             <TouchableOpacity
               key={tab}
@@ -357,7 +361,7 @@ export function AdminTeacherVerificationsScreen() {
                       onPress={() => handleDelete(item)}
                       activeOpacity={0.7}
                     >
-                      <Trash2 size={14} color={Colors.textDark} />
+                      <Trash2 size={14} color={Colors.danger} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -592,6 +596,27 @@ export function AdminTeacherVerificationsScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmDialog
+        visible={!!deletingTeacher}
+        variant="danger"
+        title="Delete Application"
+        description={`Are you sure you want to delete the registration request for ${deletingTeacher?.name}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        loading={isDeleting}
+        onConfirm={executeDelete}
+        onCancel={() => setDeletingTeacher(null)}
+      />
+
+      {/* Admin Sidebar Navigation */}
+      <AdminSidebar
+        visible={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        navigation={navigation}
+        currentRoute="Verifications"
+      />
     </SafeAreaView>
   );
 }
@@ -611,9 +636,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.xs,
   },
-  backBtn: {
-    padding: 6,
-    marginRight: 2,
+  menuBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.bgCard,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   iconBox: {
     width: 36,
@@ -881,11 +912,18 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     marginLeft: 'auto',
-    padding: 6,
+    width: 32,
+    height: 32,
+    borderRadius: Radius.md,
+    backgroundColor: 'rgba(160,19,34,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(160,19,34,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(6, 9, 19, 0.72)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.md,

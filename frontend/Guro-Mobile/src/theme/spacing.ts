@@ -20,6 +20,7 @@ export const Radius = {
   md: 14,   // Web: border-radius 14px on inputs/buttons
   lg: 20,   // Web: border-radius 20px on .glass-panel
   xl: 26,
+  '2xl': 32,
   full: 999, // Web: border-radius 99px on badges
 } as const;
 
