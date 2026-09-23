@@ -90,12 +90,12 @@ export function AppNavigator() {
       <Stack.Screen
         name="Study"
         component={StudyScreen}
-        options={{ title: 'Learning Lab' }}
+        options={{ title: 'Study Guide' }}
       />
       <Stack.Screen
         name="Assessment"
         component={AssessmentScreen}
-        options={{ title: 'Activity Station' }}
+        options={{ title: 'Quiz Assessment' }}
       />
       <Stack.Screen
         name="Details"
@@ -105,7 +105,7 @@ export function AppNavigator() {
       <Stack.Screen
         name="StudentProgressReport"
         component={StudentProgressReportScreen}
-        options={{ title: 'Progress Report' }}
+        options={{ title: "Learner's Progress Report" }}
       />
     </Stack.Navigator>
   );

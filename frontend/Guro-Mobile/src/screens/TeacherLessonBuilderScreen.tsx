@@ -60,7 +60,7 @@ export function TeacherLessonBuilderScreen() {
   const [questions, setQuestions] = useState<QuestionDraft[]>([emptyQuestion()]);
   const [submitting, setSubmitting] = useState(false);
 
-  const classroomId = currentUser?.classroomId;
+  const classroomId = currentUser?.classroomId || useAppStore((state) => state.classroomId);
 
   const updateQuestion = (id: string, patch: Partial<QuestionDraft>) => {
     setQuestions((prev) =>
@@ -192,8 +192,8 @@ export function TeacherLessonBuilderScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Text style={styles.screenTitle}>Lesson Builder</Text>
-              <Text style={styles.screenSubtitle}>Manually craft questions for your classroom</Text>
+              <Text style={styles.screenTitle}>Manual Lesson Builder</Text>
+              <Text style={styles.screenSubtitle}>Create Lesson Manually</Text>
             </View>
             <View style={styles.headerRight}>
               <Badge label="Teacher" variant="indigo" style={styles.roleBadge} />
@@ -202,10 +202,10 @@ export function TeacherLessonBuilderScreen() {
           </View>
 
           {!classroomId && (
-            <GlassCard style={[styles.section, { borderColor: Colors.warning, backgroundColor: 'rgba(245,158,11,0.03)' }]}>
+            <GlassCard style={[styles.section, { borderColor: Colors.warningBorder, backgroundColor: Colors.warningGlow }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                <AlertTriangle size={16} color="#D97706" />
-                <Text style={{ fontFamily: Fonts.bodyBold, color: '#D97706', fontSize: FontSizes.sm }}>
+                <AlertTriangle size={16} color={Colors.warning} />
+                <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.warning, fontSize: FontSizes.sm }}>
                   Active Classroom Required
                 </Text>
               </View>
@@ -221,7 +221,7 @@ export function TeacherLessonBuilderScreen() {
               title={
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
                   <BookOpen size={20} color={Colors.accentPrimary} />
-                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Lesson Details</Text>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Step 1: Lesson Metadata</Text>
                 </View>
               }
               subtitle="Set subject, grade, and topic"
@@ -242,13 +242,13 @@ export function TeacherLessonBuilderScreen() {
                       flex: 1,
                       alignItems: 'center',
                       paddingVertical: Spacing.md,
-                      backgroundColor: active ? 'rgba(17,66,142,0.06)' : '#F8FAFC',
+                      backgroundColor: active ? Colors.accentPrimaryDeep : Colors.bgInput,
                       borderRadius: Radius.md,
                       borderWidth: 1,
-                      borderColor: active ? Colors.accentPrimary : '#E2E8F0',
+                      borderColor: active ? Colors.accentPrimary : Colors.border,
                     }}
                   >
-                    <Text style={{ fontFamily: active ? Fonts.bodyBold : Fonts.bodyMedium, color: active ? Colors.accentPrimary : '#94A3B8' }}>
+                    <Text style={{ fontFamily: active ? Fonts.bodyBold : Fonts.bodySemiBold, color: active ? Colors.accentPrimary : Colors.textMuted }}>
                       {sub}
                     </Text>
                   </TouchableOpacity>
@@ -271,13 +271,13 @@ export function TeacherLessonBuilderScreen() {
                       flex: 1,
                       alignItems: 'center',
                       paddingVertical: Spacing.md,
-                      backgroundColor: active ? 'rgba(17,66,142,0.06)' : '#F8FAFC',
+                      backgroundColor: active ? Colors.accentPrimaryDeep : Colors.bgInput,
                       borderRadius: Radius.md,
                       borderWidth: 1,
-                      borderColor: active ? Colors.accentPrimary : '#E2E8F0',
+                      borderColor: active ? Colors.accentPrimary : Colors.border,
                     }}
                   >
-                    <Text style={{ fontFamily: active ? Fonts.bodyBold : Fonts.bodyMedium, color: active ? Colors.accentPrimary : '#94A3B8' }}>
+                    <Text style={{ fontFamily: active ? Fonts.bodyBold : Fonts.bodySemiBold, color: active ? Colors.accentPrimary : Colors.textMuted }}>
                       Grade {g}
                     </Text>
                   </TouchableOpacity>
@@ -307,7 +307,7 @@ export function TeacherLessonBuilderScreen() {
 
           {/* Questions */}
           <SectionHeader
-            title={`Questions (${questions.length})`}
+            title={`Step 2: Item Bank Questions (${questions.length})`}
             subtitle="Tap a letter bubble to mark the correct answer"
           />
 
@@ -345,7 +345,7 @@ export function TeacherLessonBuilderScreen() {
                         width: 32,
                         height: 32,
                         borderRadius: 16,
-                        backgroundColor: isCorrect ? Colors.success : 'rgba(255,255,255,0.06)',
+                        backgroundColor: isCorrect ? Colors.success : Colors.bgInput,
                         borderWidth: 1,
                         borderColor: isCorrect ? Colors.success : Colors.border,
                         alignItems: 'center',
@@ -354,7 +354,7 @@ export function TeacherLessonBuilderScreen() {
                     >
                       {isCorrect
                         ? <CheckCircle2 size={16} color={Colors.white} />
-                        : <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMuted }}>{letter}</Text>
+                        : <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }}>{letter}</Text>
                       }
                     </TouchableOpacity>
                     <View style={{ flex: 1 }}>
@@ -391,7 +391,7 @@ export function TeacherLessonBuilderScreen() {
             icon={<Send size={16} color={Colors.white} style={{ marginRight: 6 }} />}
             onPress={validateAndSubmit}
             loading={submitting}
-            style={{ backgroundColor: Colors.success, marginBottom: Spacing.xl }}
+            style={{ marginBottom: Spacing.xl }}
           />
         </ScrollView>
       </KeyboardAvoidingView>

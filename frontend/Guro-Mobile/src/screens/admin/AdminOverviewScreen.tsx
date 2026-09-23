@@ -7,6 +7,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -25,6 +26,7 @@ import {
   AlertTriangle,
   LogOut,
   ChevronRight,
+  Menu,
 } from 'lucide-react-native';
 import { useAppStore } from '../../store/useAppStore';
 import { adminService, OverviewMetrics, SystemHealth, RecentSync } from '../../services/adminService';
@@ -32,11 +34,15 @@ import { Colors } from '../../theme/colors';
 import { Fonts, FontSizes } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import { toast } from '../../components';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { AdminSidebar } from '../../components/admin/AdminSidebar';
 
 export function AdminOverviewScreen() {
   const navigation = useNavigation<any>();
   const currentUser = useAppStore((state) => state.currentUser);
   const logoutFromCloud = useAppStore((state) => state.logoutFromCloud);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const [metrics, setMetrics] = useState<OverviewMetrics | null>(null);
   const [health, setHealth] = useState<SystemHealth | null>(null);
@@ -81,6 +87,11 @@ export function AdminOverviewScreen() {
   };
 
   const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const executeLogout = () => {
+    setShowLogoutConfirm(false);
     logoutFromCloud();
     navigation.replace('Login');
   };
@@ -105,25 +116,28 @@ export function AdminOverviewScreen() {
       >
         {/* Top Header */}
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <View style={styles.titleRow}>
-              <View style={styles.shieldIconContainer}>
-                <Shield size={22} color={Colors.accentSecondary} />
-              </View>
-              <View>
-                <View style={styles.titleBadgeRow}>
-                  <Text style={styles.title}>Admin Console</Text>
-                  <View style={styles.rootBadge}>
-                    <Text style={styles.rootBadgeText}>ROOT</Text>
-                  </View>
+          <View style={styles.titleRow}>
+            <TouchableOpacity
+              onPress={() => setSidebarOpen(true)}
+              style={styles.menuBtn}
+              activeOpacity={0.7}
+              accessibilityLabel="Open navigation menu"
+            >
+              <Menu size={20} color={Colors.textMain} />
+            </TouchableOpacity>
+            <View style={styles.shieldIconContainer}>
+              <Shield size={20} color={Colors.accentSecondary} />
+            </View>
+            <View style={styles.headerTitleContainer}>
+              <View style={styles.titleBadgeRow}>
+                <Text style={styles.title}>Overview &amp; Health</Text>
+                <View style={styles.rootBadge}>
+                  <Text style={styles.rootBadgeText}>ROOT</Text>
                 </View>
-                <Text style={styles.subtitle}>ADMIN · Division Governance Office</Text>
               </View>
+              <Text style={styles.subtitle}>Staff &amp; IT Administration Console</Text>
             </View>
           </View>
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn} activeOpacity={0.7}>
-            <LogOut size={16} color={Colors.textMuted} />
-          </TouchableOpacity>
         </View>
 
         {/* Pending Teacher Verifications Banner */}
@@ -329,6 +343,26 @@ export function AdminOverviewScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Sign Out Confirmation Modal */}
+      <ConfirmDialog
+        visible={showLogoutConfirm}
+        variant="danger"
+        title="Sign Out"
+        description="Are you sure you want to log out of the Administration Console?"
+        confirmLabel="Sign Out"
+        cancelLabel="Cancel"
+        onConfirm={executeLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
+
+      {/* Admin Sidebar Navigation */}
+      <AdminSidebar
+        visible={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        navigation={navigation}
+        currentRoute="Overview"
+      />
     </SafeAreaView>
   );
 }
@@ -360,26 +394,34 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: Spacing.xs,
-  },
-  headerLeft: {
-    flex: 1,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.xs,
+    flex: 1,
+  },
+  menuBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.bgCard,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   shieldIconContainer: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: Radius.lg,
     backgroundColor: 'rgba(160,19,34,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(160,19,34,0.2)',
+  },
+  headerTitleContainer: {
+    flex: 1,
   },
   titleBadgeRow: {
     flexDirection: 'row',

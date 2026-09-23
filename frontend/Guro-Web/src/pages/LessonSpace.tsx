@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from '../utils/toast';
 import { apiFetch } from '../utils/api';
-import { BookOpenText, Wrench, FolderOpen, Folder, FileText, Star, BookOpen, FileCheck, Loader2, X, Zap, Briefcase, Check, AlertTriangle, Hourglass, Languages } from 'lucide-react';
+import { BookOpenText, Wrench, FolderOpen, Folder, FileText, Star, BookOpen, FileCheck, Loader2, X, Zap, Briefcase, Check, AlertTriangle, Hourglass, Languages, Lightbulb } from 'lucide-react';
 
 export interface Question {
   id: string;
@@ -43,6 +43,8 @@ export function LessonSpace({
   const [subject, setSubject] = useState('English');
   const [grade, setGrade] = useState('5');
   const [topic, setTopic] = useState('');
+  const [questionCount, setQuestionCount] = useState<number>(15);
+  const [filterDifficulty, setFilterDifficulty] = useState<'All' | 'Easy' | 'Average' | 'Difficult'>('All');
   const [lessonText, setLessonText] = useState('');
   const [pdfBase64, setPdfBase64] = useState<string | null>(null);
   const [pdfFileName, setPdfFileName] = useState<string | null>(null);
@@ -154,10 +156,6 @@ export function LessonSpace({
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!topic.trim()) return;
-    if (!lessonText.trim() && !pdfBase64) {
-      toast.error('Please provide either lesson text or upload a PDF file.');
-      return;
-    }
 
     setLoading(true);
     setStagedQuestions([]);
@@ -173,6 +171,7 @@ export function LessonSpace({
           topic: topic.trim(),
           lessonText: lessonText.trim() || null,
           pdf: pdfBase64,
+          questionCount,
         }),
       });
 
@@ -511,7 +510,10 @@ export function LessonSpace({
           </div>
 
           <div className="form-group">
-            <label>Topic Title</label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="m-0">Topic Title</label>
+              <span className="text-[11px] text-[var(--text-muted)]">Click suggestion to autofill</span>
+            </div>
             <input
               type="text"
               placeholder="e.g. Metric Conversions, Adverbs"
@@ -519,6 +521,39 @@ export function LessonSpace({
               onChange={(e) => setTopic(e.target.value)}
               required
             />
+            {/* Quick Topic Suggestions */}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {(subject === 'Mathematics' ? (
+                grade === '4' ? ['Fractions Addition', 'Multiplication Tables', 'Perimeter & Area', 'Decimals Basics'] :
+                grade === '5' ? ['Decimal Operations', 'Percentages', 'Volume & Surface Area', 'Prime Factorization'] :
+                ['Algebraic Equations', 'Integers & Exponents', 'Ratio & Proportion', 'Geometry & Angles']
+              ) : (
+                grade === '4' ? ['Figures of Speech', 'Subject-Verb Agreement', 'Context Clues', 'Synonyms & Antonyms'] :
+                grade === '5' ? ['Reading Comprehension', 'Cause & Effect', 'Fact vs Opinion', 'Prefixes & Suffixes'] :
+                ['Idiomatic Expressions', 'Author Purpose', 'Compound Sentences', 'Direct & Indirect Speech']
+              )).map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => setTopic(suggestion)}
+                  className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-white/5 hover:bg-white/10 text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border-color)] transition-colors cursor-pointer"
+                >
+                  + {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Question Volume &amp; Density</label>
+            <select value={questionCount} onChange={(e) => setQuestionCount(Number(e.target.value))}>
+              <option value={10}>Standard Practice (10 Questions)</option>
+              <option value={15}>Deep Assessment Bank (15 Questions - Recommended)</option>
+              <option value={20}>Comprehensive Exam Mastery (20 Questions)</option>
+            </select>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px', display: 'block' }}>
+              Generates an extensive, balanced assessment set spanning Easy, Average, and Difficult tiers with step-by-step feedback.
+            </span>
           </div>
 
           <div className="form-group">
@@ -826,9 +861,61 @@ export function LessonSpace({
                 ) : (
                   /* Render Questions List */
                   <div className="flex flex-col gap-4">
-                    {stagedQuestions.map((q, idx) => {
-                      const badgeClass = q.difficulty.toLowerCase();
-                      return (
+                    {/* Filter and stats row */}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-[var(--bg-main)] p-3 rounded-xl border border-[var(--border-color)]">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {(['All', 'Easy', 'Average', 'Difficult'] as const).map((diff) => {
+                          const isSel = filterDifficulty === diff;
+                          const count = diff === 'All' 
+                            ? stagedQuestions.length 
+                            : stagedQuestions.filter(q => q.difficulty === diff).length;
+                          return (
+                            <button
+                              key={diff}
+                              type="button"
+                              onClick={() => setFilterDifficulty(diff)}
+                              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                                isSel
+                                  ? 'bg-[#11428E] text-white shadow-sm'
+                                  : 'bg-white/5 hover:bg-white/10 text-[var(--text-muted)] border border-[var(--border-color)]'
+                              }`}
+                            >
+                              <span>{diff}</span>
+                              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSel ? 'bg-white/20 text-white' : 'bg-white/10 text-[var(--text-muted)]'}`}>
+                                {count}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newQ: Question = {
+                            id: `${subject.slice(0, 3).toUpperCase()}-G${grade}-${topic.slice(0, 3).toUpperCase() || 'TOP'}-${String(stagedQuestions.length + 1).padStart(3, '0')}`,
+                            difficulty: 'Average',
+                            category: (subject === 'English' ? 'Figures of Speech' : 'Fractions') as any,
+                            type: 'multiple-choice',
+                            questionText: '',
+                            options: ['', '', '', ''],
+                            correctAnswer: '',
+                            feedback: { en: '', fil: '' }
+                          };
+                          setStagedQuestions([...stagedQuestions, newQ]);
+                        }}
+                        className="px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors cursor-pointer flex items-center gap-1"
+                      >
+                        + Add Question
+                      </button>
+                    </div>
+
+                    {stagedQuestions
+                      .filter(q => filterDifficulty === 'All' || q.difficulty === filterDifficulty)
+                      .map((q) => {
+                        const idx = stagedQuestions.findIndex(orig => orig === q);
+                        const badgeClass = q.difficulty.toLowerCase();
+                        return (
                         <div key={idx} className="bg-[var(--bg-sidebar)] border border-[var(--border-color)] rounded-[12px] p-4 flex flex-col gap-3.5">
                           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3">
                             <div className="flex gap-2">
@@ -912,8 +999,9 @@ export function LessonSpace({
                               <label className="flex flex-col">
                                 <span>Options (Check the correct answer)</span>
                                 {q.type === 'fill-in-the-blank' && (
-                                  <span className="text-[11px] text-[#38BDF8] mt-0.5 font-medium">
-                                    💡 Prompt must contain exactly one <strong>[[blank]]</strong> placeholder (e.g. \'Adjectives describe a [[blank]]\').
+                                  <span className="text-[11px] text-[#38BDF8] mt-0.5 font-medium inline-flex items-center gap-1">
+                                    <Lightbulb size={12} className="shrink-0" />
+                                    <span>Prompt must contain exactly one <strong>[[blank]]</strong> placeholder (e.g. 'Adjectives describe a [[blank]]').</span>
                                   </span>
                                 )}
                               </label>
@@ -1098,9 +1186,10 @@ export function LessonSpace({
                                         updated[idx].correctAnswer = Object.entries(pairs).map(([k, v]) => `${k}-${v}`).join(', ');
                                         setStagedQuestions(updated);
                                       }}
-                                      className="text-red-500 hover:text-red-600 px-2 font-bold text-[14px]"
+                                      className="text-red-500 hover:text-red-600 px-2 flex items-center justify-center bg-transparent border-none cursor-pointer"
+                                      aria-label="Remove pair"
                                     >
-                                      ✕
+                                      <X size={14} />
                                     </button>
                                   </div>
                                 ))}

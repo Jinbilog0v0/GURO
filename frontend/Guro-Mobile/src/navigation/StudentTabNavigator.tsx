@@ -54,6 +54,7 @@ export function StudentTabNavigator() {
         name="Home"
         component={StudentDashboard}
         options={{
+          tabBarLabel: 'Dashboard',
           tabBarIcon: ({ color, size }) => <Home size={size - 2} color={color} />,
         }}
       />
@@ -61,6 +62,7 @@ export function StudentTabNavigator() {
         name="Lessons"
         component={LessonsScreen}
         options={{
+          tabBarLabel: 'Lessons',
           tabBarIcon: ({ color, size }) => <BookOpen size={size - 2} color={color} />,
         }}
       />
@@ -68,6 +70,7 @@ export function StudentTabNavigator() {
         name="Progress"
         component={ProgressScreen}
         options={{
+          tabBarLabel: 'My Progress',
           tabBarIcon: ({ color, size }) => <BarChart2 size={size - 2} color={color} />,
         }}
       />
@@ -75,7 +78,7 @@ export function StudentTabNavigator() {
         name="Me"
         component={ProfileScreen}
         options={{
-          tabBarLabel: 'Me',
+          tabBarLabel: 'Profile',
           tabBarIcon: ({ color, size }) => <User2 size={size - 2} color={color} />,
         }}
       />

@@ -26,7 +26,9 @@ import { StatCard } from '../components/ui/StatCard';
 import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { Badge } from '../components/ui/Badge';
 import { SyncBadge } from '../components/shared/SyncBadge';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { styles } from '../styles/ParentDashboard.styles';
+import { toast } from '../components';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ClipboardList,
@@ -59,8 +61,9 @@ import {
   BookOpen,
   Flame,
   Zap,
+  TrendingUp,
+  CheckCircle,
 } from 'lucide-react-native';
-import { toast } from '../components';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ParentDashboard'>;
 
@@ -80,6 +83,8 @@ export function ParentDashboard({ navigation }: Props) {
   const dailyMinutesUsed = useAppStore((state) => state.dailyMinutesUsed);
   const resetDailyMinutes = useAppStore((state) => state.resetDailyMinutes);
   const appMode = useAppStore((state) => state.appMode);
+  const activeSchoolYear = useAppStore((state) => state.activeSchoolYear || '2026-2027');
+  const activeTerm = useAppStore((state) => state.activeTerm || 'Quarter 1');
 
   const isPinMode = appMode === 'offline' || currentUser?.role === 'student';
 
@@ -134,6 +139,11 @@ export function ParentDashboard({ navigation }: Props) {
   const [newPinInput, setNewPinInput] = useState('');
   const [confirmPinInput, setConfirmPinInput] = useState('');
 
+  // Custom Modal states
+  const [showClearProgressConfirm, setShowClearProgressConfirm] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showExitPortalConfirm, setShowExitPortalConfirm] = useState(false);
+
   // Device Student ID Input (editing local student ID on the device)
   const [studentIdInput, setStudentIdInput] = useState(studentId || '');
 
@@ -187,21 +197,7 @@ export function ParentDashboard({ navigation }: Props) {
   };
 
   const handleClearHistory = () => {
-    Alert.alert(
-      'Clear Student Progress',
-      'Are you sure? This cannot be undone locally.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear All',
-          style: 'destructive',
-          onPress: () => {
-            clearProgress();
-            toast.success('Practice logs cleared.');
-          },
-        },
-      ]
-    );
+    setShowClearProgressConfirm(true);
   };
 
   // ── Search Explorer Handlers ───────────────────────────────────────────────
@@ -346,33 +342,99 @@ export function ParentDashboard({ navigation }: Props) {
   };
 
   const getHeatmapColor = (count: number) => {
-    if (count === 0) return 'rgba(255, 255, 255, 0.03)';
-    if (count === 1) return 'rgba(139, 92, 246, 0.2)';
-    if (count === 2) return 'rgba(139, 92, 246, 0.5)';
-    return 'rgba(139, 92, 246, 0.9)';
+    if (count === 0) return Colors.bgInput;
+    if (count === 1) return 'rgba(17, 66, 142, 0.2)';
+    if (count === 2) return 'rgba(17, 66, 142, 0.5)';
+    return Colors.accentPrimary;
   };
 
   const getTutorReportData = () => {
     if (searchedLogs.length === 0) return null;
 
-    const topicAverages: Record<string, { sum: number; count: number; subject: string }> = {};
+    // 1. Subject stats
+    const subjectStats: Record<string, { score: number; total: number; count: number }> = {};
     searchedLogs.forEach((log) => {
-      const pct = (log.score / log.totalQuestions) * 100;
+      const subj = log.subject === 'Math' ? 'Mathematics' : log.subject;
+      if (!subjectStats[subj]) {
+        subjectStats[subj] = { score: 0, total: 0, count: 0 };
+      }
+      subjectStats[subj].score += log.score;
+      subjectStats[subj].total += log.totalQuestions;
+      subjectStats[subj].count += 1;
+    });
+
+    // 2. Topic performance breakdown
+    const topicAverages: Record<string, { sum: number; totalQ: number; totalScore: number; count: number; subject: string }> = {};
+    searchedLogs.forEach((log) => {
+      const pct = log.totalQuestions > 0 ? (log.score / log.totalQuestions) * 100 : 0;
       if (!topicAverages[log.topic]) {
-        topicAverages[log.topic] = { sum: 0, count: 0, subject: log.subject };
+        topicAverages[log.topic] = { sum: 0, totalQ: 0, totalScore: 0, count: 0, subject: log.subject };
       }
       topicAverages[log.topic].sum += pct;
+      topicAverages[log.topic].totalScore += log.score;
+      topicAverages[log.topic].totalQ += log.totalQuestions;
       topicAverages[log.topic].count += 1;
     });
 
     const sortedTopics = Object.keys(topicAverages).map((top) => ({
       name: top,
       subject: topicAverages[top].subject,
-      average: Math.round(topicAverages[top].sum / topicAverages[top].count),
+      average: Math.round(topicAverages[top].sum / Math.max(1, topicAverages[top].count)),
+      count: topicAverages[top].count,
     })).sort((a, b) => b.average - a.average);
 
-    const strongestTopic = sortedTopics[0] || { name: 'N/A', average: 0, subject: '' };
-    const weakestTopic = sortedTopics[sortedTopics.length - 1] || { name: 'N/A', average: 0, subject: '' };
+    const strongTopics = sortedTopics.filter((t) => t.average >= 80);
+    const progressingTopics = sortedTopics.filter((t) => t.average >= 50 && t.average < 80);
+    const weakTopics = sortedTopics.filter((t) => t.average < 50);
+
+    const strongestTopic = strongTopics[0] || sortedTopics[0] || { name: 'N/A', average: 0, subject: '' };
+    const weakestTopic = weakTopics[0] || progressingTopics[progressingTopics.length - 1] || sortedTopics[sortedTopics.length - 1] || { name: 'N/A', average: 0, subject: '' };
+
+    // 3. Pre vs Post Growth & Normalized Gain (g)
+    let totalPrePct = 0;
+    let preCount = 0;
+    let totalPostPct = 0;
+    let postCount = 0;
+
+    searchedLogs.forEach((log) => {
+      const pct = log.totalQuestions > 0 ? Math.round((log.score / log.totalQuestions) * 100) : 0;
+      if (log.assessmentType === 'pre-test') {
+        totalPrePct += pct;
+        preCount += 1;
+      } else if (log.assessmentType === 'post-test') {
+        totalPostPct += pct;
+        postCount += 1;
+      }
+    });
+
+    const avgPre = preCount > 0 ? Math.round(totalPrePct / preCount) : null;
+    const avgPost = postCount > 0 ? Math.round(totalPostPct / postCount) : null;
+    let normalizedGain: number | null = null;
+    let absoluteGain: number | null = null;
+
+    if (avgPre !== null && avgPost !== null) {
+      absoluteGain = avgPost - avgPre;
+      if (avgPre < 100) {
+        normalizedGain = Math.round(((avgPost - avgPre) / (100 - avgPre)) * 100);
+      } else {
+        normalizedGain = absoluteGain;
+      }
+    }
+
+    // 4. Cognitive Difficulty Accuracy
+    const diffStats: Record<string, { score: number; total: number }> = {
+      Easy: { score: 0, total: 0 },
+      Average: { score: 0, total: 0 },
+      Difficult: { score: 0, total: 0 },
+    };
+
+    searchedLogs.forEach((log) => {
+      const diff = log.difficulty || 'Average';
+      if (diffStats[diff]) {
+        diffStats[diff].score += log.score;
+        diffStats[diff].total += log.totalQuestions;
+      }
+    });
 
     const getParentTips = (topicName: string, avg: number): string => {
       if (topicName === 'N/A') return 'No sessions completed yet.';
@@ -382,15 +444,30 @@ export function ParentDashboard({ navigation }: Props) {
       if (topicName.toLowerCase().includes('fraction')) {
         return 'Help your child visualize fractions by cutting pizza, fruit, or bread into equal parts and naming them (e.g. "this slice is 1/4 of the whole pizza").';
       }
+      if (topicName.toLowerCase().includes('decimal')) {
+        return 'Practice decimals with grocery items or coins (e.g., 50 centavos = 0.50 pesos). Compare values to reinforce greater than and less than.';
+      }
       if (topicName.toLowerCase().includes('simile') || topicName.toLowerCase().includes('figurative') || topicName.toLowerCase().includes('metaphor')) {
         return 'Read books together and point out comparisons. Ask them to complete prompts like: "as swift as an arrow" or "as bright as...".';
+      }
+      if (topicName.toLowerCase().includes('verb') || topicName.toLowerCase().includes('grammar')) {
+        return 'Play a sentence game: say a subject (e.g., "The teacher...") and let your child complete it with the matching verb form.';
       }
       return `Review the practice explanation notes with your child for "${topicName}" and attempt the quiz again together to boost their comprehension.`;
     };
 
     return {
+      subjectStats,
+      strongTopics,
+      progressingTopics,
+      weakTopics,
       strongestTopic,
       weakestTopic,
+      avgPre,
+      avgPost,
+      absoluteGain,
+      normalizedGain,
+      diffStats,
       tips: getParentTips(weakestTopic.name, weakestTopic.average),
     };
   };
@@ -522,10 +599,28 @@ export function ParentDashboard({ navigation }: Props) {
     <SafeAreaView style={styles.screen}>
       {/* ── Header ── */}
       <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flex: 1 }}>
           <View>
-            <Text style={styles.headerTitle}>Parent Portal</Text>
-            <Text style={styles.headerSub}>Monitor, control &amp; sync</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <Text style={styles.headerTitle}>Parent Progress Explorer</Text>
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                backgroundColor: 'rgba(17,66,142,0.08)',
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: 'rgba(17,66,142,0.15)',
+              }}>
+                <Calendar size={11} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                  S.Y. {activeSchoolYear} • {activeTerm}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.headerSub}>Guardian Oversight &amp; Growth Terminal</Text>
           </View>
         </View>
         <View style={styles.headerRight}>
@@ -630,7 +725,7 @@ export function ParentDashboard({ navigation }: Props) {
             <View style={{ gap: Spacing.lg }}>
               {/* Stats Row */}
               <View style={styles.statsRow}>
-                <StatCard label="Completed Quests" value={searchedLogs.length} icon={ClipboardList} />
+                <StatCard label="Lessons Completed" value={searchedLogs.length} icon={ClipboardList} />
                 <StatCard
                   label="Average Accuracy"
                   value={`${avgScore}%`}
@@ -646,12 +741,12 @@ export function ParentDashboard({ navigation }: Props) {
               </View>
 
               {/* Segmented Sub-Tabs */}
-              <View style={{ flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.03)', padding: 4, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border }}>
+              <View style={{ flexDirection: 'row', backgroundColor: Colors.bgInput, padding: 4, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border }}>
                 {(['overview', 'report', 'milestones'] as const).map((tab) => {
                   const active = parentSubTab === tab;
-                  let label = 'Overview';
+                  let label = 'Activity Heatmap';
                   if (tab === 'report') label = 'Tutor Report';
-                  if (tab === 'milestones') label = 'Milestones';
+                  if (tab === 'milestones') label = 'Badge Case';
                   return (
                     <TouchableOpacity
                       key={tab}
@@ -676,22 +771,23 @@ export function ParentDashboard({ navigation }: Props) {
                 })}
               </View>
 
+              {/* ── Sub-Tab Contents ── */}
               {parentSubTab === 'overview' && (
                 <>
-                  {/* Heatmap Card */}
+                  {/* Heatmap Section */}
                   <GlassCard style={styles.section}>
                     <SectionHeader
                       title={
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Calendar size={18} color="#8B5CF6" />
-                          <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Practice Consistency Tracker</Text>
+                          <Calendar size={18} color={Colors.accentPrimary} />
+                          <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Activity Heatmap</Text>
                         </View>
                       }
-                      subtitle="Daily activity calendar (past 4 weeks)"
+                      subtitle="Daily assessment completion intensity (Past 28 Days)"
                     />
 
-                    <View style={{ alignItems: 'center', marginVertical: Spacing.md }}>
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', width: 224, gap: 8 }}>
+                    <View style={{ alignItems: 'center', marginVertical: Spacing.sm }}>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', width: 224, gap: 8, justifyContent: 'center' }}>
                         {getPast28Days().map((date, idx) => {
                           const count = getEventCountForDate(date);
                           return (
@@ -703,7 +799,7 @@ export function ParentDashboard({ navigation }: Props) {
                                 borderRadius: Radius.sm,
                                 backgroundColor: getHeatmapColor(count),
                                 borderWidth: 1,
-                                borderColor: 'rgba(255,255,255,0.05)',
+                                borderColor: Colors.border,
                               }}
                             />
                           );
@@ -768,30 +864,110 @@ export function ParentDashboard({ navigation }: Props) {
                       title={
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                           <Sparkles size={18} color="#EC4899" />
-                          <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>AI Study Feedback</Text>
+                          <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Tutor Report</Text>
                         </View>
                       }
-                      subtitle="Narrative performance review and tips"
+                      subtitle="Subject mastery, strengths, and home action plan"
                     />
 
                     <View style={{ gap: Spacing.md }}>
+                      {/* Growth Chip */}
+                      {report.normalizedGain !== null && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, padding: Spacing.sm, backgroundColor: 'rgba(16,185,129,0.1)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.25)', borderRadius: Radius.sm }}>
+                          <TrendingUp size={16} color={Colors.success} />
+                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.success }}>
+                            Learning Growth Gain: +{report.absoluteGain}% (Normalized g = {report.normalizedGain > 0 ? (report.normalizedGain / 100).toFixed(2) : 0})
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Subject Mastery Progress Bars */}
+                      <View style={{ backgroundColor: Colors.bgInput, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, gap: Spacing.sm }}>
+                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                          Subject Mastery Breakdown
+                        </Text>
+                        {(['Mathematics', 'English'] as const).map((subj) => {
+                          const data = report.subjectStats[subj] || { score: 0, total: 0, count: 0 };
+                          const pct = data.total > 0 ? Math.round((data.score / data.total) * 100) : 0;
+                          const isMath = subj === 'Mathematics';
+                          const IconComp = isMath ? Calculator : BookOpen;
+                          const color = pct >= 80 ? Colors.success : pct >= 50 ? Colors.warning : Colors.danger;
+                          return (
+                            <View key={subj} style={{ gap: 4 }}>
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                  <IconComp size={13} color={isMath ? Colors.accentPrimary : Colors.success} />
+                                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMain }}>{subj}</Text>
+                                </View>
+                                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color }}>
+                                  {pct}% ({data.count} {data.count === 1 ? 'quiz' : 'quizzes'})
+                                </Text>
+                              </View>
+                              <View style={{ height: 6, backgroundColor: Colors.border, borderRadius: 3, overflow: 'hidden' }}>
+                                <View style={{ height: '100%', width: `${Math.min(100, Math.max(5, pct))}%`, backgroundColor: color, borderRadius: 3 }} />
+                              </View>
+                            </View>
+                          );
+                        })}
+                      </View>
+
+                      {/* Strengths & Weaknesses Tally */}
+                      <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                        <View style={{ flex: 1, backgroundColor: 'rgba(16,185,129,0.05)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)', borderRadius: Radius.sm, padding: Spacing.sm, gap: 4 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <CheckCircle size={13} color={Colors.success} />
+                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.success }}>Top Strengths ({report.strongTopics.length})</Text>
+                          </View>
+                          {report.strongTopics.length === 0 ? (
+                            <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted, fontStyle: 'italic' }}>Reach 80%+ to unlock</Text>
+                          ) : (
+                            report.strongTopics.slice(0, 2).map((t) => (
+                              <Text key={t.name} style={{ fontFamily: Fonts.body, fontSize: 10.5, color: Colors.textMain }} numberOfLines={1}>
+                                • {t.name} ({t.average}%)
+                              </Text>
+                            ))
+                          )}
+                        </View>
+
+                        <View style={{ flex: 1, backgroundColor: 'rgba(239,68,68,0.05)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)', borderRadius: Radius.sm, padding: Spacing.sm, gap: 4 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <AlertCircle size={13} color={Colors.danger} />
+                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.danger }}>Needs Focus ({report.weakTopics.length + report.progressingTopics.length})</Text>
+                          </View>
+                          {(report.weakTopics.length === 0 && report.progressingTopics.length === 0) ? (
+                            <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.success }}>No weak topics!</Text>
+                          ) : (
+                            [...report.weakTopics, ...report.progressingTopics].slice(0, 2).map((t) => (
+                              <Text key={t.name} style={{ fontFamily: Fonts.body, fontSize: 10.5, color: Colors.textMain }} numberOfLines={1}>
+                                • {t.name} ({t.average}%)
+                              </Text>
+                            ))
+                          )}
+                        </View>
+                      </View>
+
+                      {/* Narrative Review */}
                       <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMain, lineHeight: 20 }}>
-                        Your child is demonstrating great work! Their strongest subject performance is on{' '}
+                        Your child is demonstrating great work! Their strongest performance is on{' '}
                         <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.success }}>
                           {report.strongestTopic.name} ({report.strongestTopic.average}%)
                         </Text>
-                        . We recommend allocating more practice focus on{' '}
+                        . We recommend allocating practice time on{' '}
                         <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.danger }}>
                           {report.weakestTopic.name} ({report.weakestTopic.average}%)
                         </Text>
                         .
                       </Text>
 
+                      {/* Home Action Plan */}
                       <View style={{ flexDirection: 'row', gap: Spacing.sm, backgroundColor: 'rgba(236,72,153,0.05)', borderWidth: 1, borderColor: 'rgba(236,72,153,0.15)', borderRadius: Radius.md, padding: Spacing.md }}>
                         <MessageCircle size={16} color="#EC4899" style={{ marginTop: 2 }} />
-                        <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.xs, color: '#EC4899', flex: 1, lineHeight: 18 }}>
-                          {report.tips}
-                        </Text>
+                        <View style={{ flex: 1, gap: 2 }}>
+                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: '#EC4899', textTransform: 'uppercase' }}>Home Study Plan for Parents</Text>
+                          <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.xs, color: '#EC4899', lineHeight: 18 }}>
+                            {report.tips}
+                          </Text>
+                        </View>
                       </View>
 
                       <TouchableOpacity
@@ -826,7 +1002,7 @@ export function ParentDashboard({ navigation }: Props) {
                     title={
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                         <Award size={18} color="#F59E0B" />
-                        <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Milestone Badge Case</Text>
+                        <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Badge Case</Text>
                       </View>
                     }
                     subtitle="Badges unlock at 80%+ mastery"
@@ -847,7 +1023,7 @@ export function ParentDashboard({ navigation }: Props) {
                             borderRadius: Radius.md,
                             borderColor: unlocked ? `${badge.color}30` : Colors.border,
                             borderWidth: 1,
-                            backgroundColor: unlocked ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.01)',
+                            backgroundColor: unlocked ? Colors.bgInput : Colors.bgMain,
                             opacity: unlocked ? 1 : 0.6,
                           }}
                         >
@@ -856,7 +1032,7 @@ export function ParentDashboard({ navigation }: Props) {
                               width: 42,
                               height: 42,
                               borderRadius: Radius.full,
-                              backgroundColor: unlocked ? badge.color : 'rgba(255,255,255,0.05)',
+                              backgroundColor: unlocked ? badge.color : Colors.border,
                               alignItems: 'center',
                               justifyContent: 'center',
                             }}
@@ -1087,23 +1263,7 @@ export function ParentDashboard({ navigation }: Props) {
               </GlassCard>
               <DangerButton
                 label="Log Out of Cloud Account"
-                onPress={() => {
-                  Alert.alert(
-                    'Confirm Logout',
-                    'Are you sure you want to log out? You will need to sign in again to access your account.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Logout',
-                        style: 'destructive',
-                        onPress: () => {
-                          logoutFromCloud();
-                          navigation.replace((appMode as string) === 'offline' ? 'StudentDashboard' : 'Login');
-                        },
-                      },
-                    ]
-                  );
-                }}
+                onPress={() => setShowLogoutConfirm(true)}
               />
             </GlassCard>
           ) : (
@@ -1300,31 +1460,68 @@ export function ParentDashboard({ navigation }: Props) {
         <SecondaryButton
           label="Exit Parent Portal"
           icon={<LogOut size={16} color={Colors.textMuted} style={{ marginRight: 6 }} />}
-          onPress={() => {
-            Alert.alert(
-              isPinMode ? 'Exit Parent Portal' : 'Exit and Logout',
-              isPinMode
-                ? 'Return to the student home screen?'
-                : 'Are you sure you want to exit the Parent Portal and log out?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: isPinMode ? 'Exit' : 'Logout',
-                  style: 'destructive',
-                  onPress: () => {
-                    if (!isPinMode) logoutFromCloud();
-                    navigation.replace((isPinMode || (appMode as string) === 'offline') ? 'StudentDashboard' : 'Login');
-                  },
-                },
-              ]
-            );
-          }}
+          onPress={() => setShowExitPortalConfirm(true)}
           style={{ marginTop: Spacing.md }}
         />
 
         {/* Bottom padding */}
         <View style={{ height: Spacing['3xl'] }} />
       </ScrollView>
+
+      {/* Clear Practice History Dialog */}
+      <ConfirmDialog
+        visible={showClearProgressConfirm}
+        title="Clear Student Progress?"
+        message="Are you sure you want to clear student progress? This will remove all local practice logs from this device."
+        confirmText="Clear All"
+        cancelText="Cancel"
+        variant="danger"
+        icon={Trash2}
+        onConfirm={() => {
+          clearProgress();
+          setShowClearProgressConfirm(false);
+          toast.success('Practice logs cleared.');
+        }}
+        onCancel={() => setShowClearProgressConfirm(false)}
+      />
+
+      {/* Cloud Logout Dialog */}
+      <ConfirmDialog
+        visible={showLogoutConfirm}
+        title="Confirm Cloud Logout"
+        message="Are you sure you want to log out? You will need to sign in again to access your cloud account."
+        confirmText="Log Out"
+        cancelText="Cancel"
+        variant="danger"
+        icon={LogOut}
+        onConfirm={() => {
+          setShowLogoutConfirm(false);
+          logoutFromCloud();
+          navigation.replace((appMode as string) === 'offline' ? 'StudentDashboard' : 'Login');
+        }}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
+
+      {/* Exit Parent Portal Dialog */}
+      <ConfirmDialog
+        visible={showExitPortalConfirm}
+        title={isPinMode ? 'Exit Parent Portal' : 'Exit and Logout'}
+        message={
+          isPinMode
+            ? 'Return to the student home screen?'
+            : 'Are you sure you want to exit the Parent Portal and log out?'
+        }
+        confirmText={isPinMode ? 'Exit Portal' : 'Log Out'}
+        cancelText="Stay Here"
+        variant={isPinMode ? 'primary' : 'danger'}
+        icon={LogOut}
+        onConfirm={() => {
+          setShowExitPortalConfirm(false);
+          if (!isPinMode) logoutFromCloud();
+          navigation.replace((isPinMode || (appMode as string) === 'offline') ? 'StudentDashboard' : 'Login');
+        }}
+        onCancel={() => setShowExitPortalConfirm(false)}
+      />
     </SafeAreaView>
   );
 }

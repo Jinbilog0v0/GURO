@@ -48,7 +48,7 @@ export function TeacherTabNavigator() {
         name="Dashboard"
         component={TeacherDashboardScreen}
         options={{
-          tabBarLabel: 'Dashboard',
+          tabBarLabel: 'Console',
           tabBarIcon: ({ color, size }) => <BarChart2 size={size - 2} color={color} />,
         }}
       />
@@ -64,7 +64,7 @@ export function TeacherTabNavigator() {
         name="Builder"
         component={TeacherLessonBuilderScreen}
         options={{
-          tabBarLabel: 'Builder',
+          tabBarLabel: 'Lesson Builder',
           tabBarIcon: ({ color, size }) => <PenLine size={size - 2} color={color} />,
         }}
       />

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, Lightbulb, TrendingDown, BookOpen, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertCircle, AlertTriangle, TrendingDown, CheckCircle2, ChevronDown, ChevronUp, Award } from 'lucide-react';
 
 interface SyncedEvent {
   studentId: string;
@@ -9,6 +9,8 @@ interface SyncedEvent {
   topic: string;
   score: number;
   totalQuestions: number;
+  difficulty?: string;
+  assessmentType?: string;
   timestamp: string;
 }
 
@@ -17,127 +19,208 @@ interface DiagnosticAlertsProps {
 }
 
 export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs }) => {
-  const topicStats: { [topic: string]: { sum: number; count: number; subject: string; grade: number } } = {};
-  progressLogs.forEach((log) => {
-    const pct = (log.score / log.totalQuestions) * 100;
-    if (!topicStats[log.topic]) {
-      topicStats[log.topic] = { sum: 0, count: 0, subject: log.subject, grade: log.gradeLevel };
+  const [selectedGrade, setSelectedGrade] = useState<'All' | 4 | 5 | 6>('All');
+  const [selectedSubject, setSelectedSubject] = useState<'All' | 'Mathematics' | 'English'>('All');
+
+  // Filter logs by Grade and Subject
+  const filteredLogs = progressLogs.filter((log) => {
+    if (selectedGrade !== 'All' && log.gradeLevel !== selectedGrade) return false;
+    if (selectedSubject !== 'All') {
+      const isMath = selectedSubject === 'Mathematics';
+      const logSubj = log.subject === 'Math' ? 'Mathematics' : log.subject;
+      if (isMath && logSubj !== 'Mathematics') return false;
+      if (!isMath && logSubj !== 'English') return false;
     }
+    return true;
+  });
+
+  // Calculate topic performance across cohort
+  const topicStats: { [topic: string]: { sum: number; totalQ: number; totalScore: number; count: number; subject: string; grade: number } } = {};
+  filteredLogs.forEach((log) => {
+    const subj = log.subject === 'Math' ? 'Mathematics' : log.subject;
+    if (!topicStats[log.topic]) {
+      topicStats[log.topic] = { sum: 0, totalQ: 0, totalScore: 0, count: 0, subject: subj, grade: log.gradeLevel };
+    }
+    const pct = log.totalQuestions > 0 ? (log.score / log.totalQuestions) * 100 : 0;
     topicStats[log.topic].sum += pct;
+    topicStats[log.topic].totalScore += log.score;
+    topicStats[log.topic].totalQ += log.totalQuestions;
     topicStats[log.topic].count += 1;
   });
 
-  const lowAverageTopics = Object.keys(topicStats)
-    .map((topic) => ({
+  const topicSummaryList = Object.keys(topicStats).map((topic) => {
+    const item = topicStats[topic];
+    const avgPct = Math.round(item.sum / Math.max(1, item.count));
+    return {
       topic,
-      average: Math.round(topicStats[topic].sum / topicStats[topic].count),
-      subject: topicStats[topic].subject,
-      grade: topicStats[topic].grade,
-    }))
-    .filter((stat) => stat.average < 80);
+      average: avgPct,
+      subject: item.subject,
+      grade: item.grade,
+      attempts: item.count,
+    };
+  });
 
-  const hasAlerts = lowAverageTopics.length > 0;
-  const [isOpen, setIsOpen] = useState(hasAlerts);
+  const strongTopics = topicSummaryList.filter((t) => t.average >= 80).sort((a, b) => b.average - a.average);
+  const progressingTopics = topicSummaryList.filter((t) => t.average >= 50 && t.average < 80).sort((a, b) => b.average - a.average);
+  const weakTopics = topicSummaryList.filter((t) => t.average < 50).sort((a, b) => a.average - b.average);
+
+  const lowAverageTopics = [...weakTopics, ...progressingTopics];
+  const [isOpen, setIsOpen] = useState(true);
 
   return (
-    <div className="glass-panel overflow-hidden w-full">
+    <div className="glass-panel overflow-hidden w-full shadow-md border border-[var(--border-color)]">
       {/* Accordion header */}
       <button
         onClick={() => setIsOpen((p) => !p)}
         className="w-full flex items-center justify-between px-6 py-4 text-left border-b border-[var(--border-color)] cursor-pointer hover:bg-white/[0.02] transition-colors"
         aria-expanded={isOpen}
       >
-        <div className="flex items-center gap-2.5">
-          <TrendingDown size={18} className={hasAlerts ? 'text-[#A01322]' : 'text-[var(--text-muted)]'} aria-hidden="true" />
-          <span className="text-[14.5px] font-bold text-[var(--text-main)]">Diagnostic Alerts &amp; Recommendations</span>
-          {hasAlerts ? (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[var(--danger-glow)] text-[var(--danger)] border border-[var(--danger)]/20">
-              {lowAverageTopics.length} alert{lowAverageTopics.length > 1 ? 's' : ''}
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[var(--success-glow)] text-[var(--success)] border border-[var(--success)]/20">
-              <CheckCircle size={10} /> All clear
-            </span>
-          )}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <TrendingDown size={18} className={weakTopics.length > 0 ? 'text-[#A01322]' : 'text-[var(--text-muted)]'} aria-hidden="true" />
+          <span className="text-[14.5px] font-bold text-[var(--text-main)]">
+            Curriculum Health &amp; Strong/Weak Lessons Tally
+          </span>
+          <span className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[var(--bg-main)] border border-[var(--border-color)]">
+            <span className="text-emerald-500 inline-flex items-center gap-1"><CheckCircle2 size={11} className="text-emerald-500" /> {strongTopics.length} Strong</span>
+            <span className="text-amber-500 inline-flex items-center gap-1"><AlertCircle size={11} className="text-amber-500" /> {progressingTopics.length} In-Progress</span>
+            <span className="text-red-500 inline-flex items-center gap-1"><AlertTriangle size={11} className="text-red-500" /> {weakTopics.length} Bottlenecks</span>
+          </span>
         </div>
         {isOpen ? <ChevronUp size={16} className="text-[var(--text-muted)] shrink-0" /> : <ChevronDown size={16} className="text-[var(--text-muted)] shrink-0" />}
       </button>
 
       {isOpen && (
-        <div className="grid grid-cols-2 gap-5 p-5">
-          {/* Struggling Topics */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <TrendingDown size={16} className="text-[#A01322]" aria-hidden="true" />
-              <h4 className="text-[13.5px] font-bold text-[var(--text-main)]">Struggling Topics (avg &lt; 80%)</h4>
+        <div className="p-5 flex flex-col gap-5">
+          {/* Grade & Subject Filter Pills */}
+          <div className="flex items-center justify-between flex-wrap gap-3 pb-2 border-b border-[var(--border-color)]/60">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs font-bold text-[var(--text-muted)] mr-1">Grade:</span>
+              {(['All', 4, 5, 6] as const).map((gr) => {
+                const active = selectedGrade === gr;
+                return (
+                  <button
+                    key={gr}
+                    onClick={() => setSelectedGrade(gr)}
+                    className={`px-3 py-1 text-xs font-bold rounded-full transition-all cursor-pointer ${
+                      active
+                        ? 'bg-[var(--accent-primary)] text-white shadow-sm'
+                        : 'bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)] hover:text-[var(--text-main)]'
+                    }`}
+                  >
+                    {gr === 'All' ? 'All Grades' : `Grade ${gr}`}
+                  </button>
+                );
+              })}
             </div>
-            <div className="flex flex-col gap-2.5 overflow-y-auto max-h-[220px]">
-              {lowAverageTopics.length === 0 ? (
-                <div className="p-4 bg-[var(--success-glow)] border border-[var(--success)]/20 rounded-xl text-[#10B981] text-[13px] font-semibold flex items-center gap-1.5">
-                  <CheckCircle size={15} className="shrink-0" />
-                  <span>No topic averages fall below mastery thresholds currently.</span>
-                </div>
-              ) : (
-                lowAverageTopics.map((item) => {
-                  const isCritical = item.average < 50;
-                  return (
-                    <div key={item.topic} className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
-                      <AlertCircle size={15} className={isCritical ? 'text-[#A01322] mt-0.5 shrink-0' : 'text-[#F59E0B] mt-0.5 shrink-0'} aria-hidden="true" />
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[13px] font-bold text-[var(--text-main)]">
-                            {item.topic} (Grade {item.grade} {item.subject})
-                          </span>
-                          <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${isCritical ? 'bg-[#A01322]/15 text-[#A01322] border border-[#A01322]/30' : 'bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30'}`}>
-                            {isCritical ? 'Critical (<50%)' : 'Borderline (50-79%)'}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
-                          Class average: <strong className="text-[#A01322] font-extrabold">{item.average}%</strong>. {isCritical ? 'Prerequisite lesson return recommended.' : 'Guided micro-practice boost recommended.'}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-[var(--text-muted)] mr-1">Subject:</span>
+              {(['All', 'Mathematics', 'English'] as const).map((subj) => {
+                const active = selectedSubject === subj;
+                return (
+                  <button
+                    key={subj}
+                    onClick={() => setSelectedSubject(subj)}
+                    className={`px-3 py-1 text-xs font-bold rounded-full transition-all cursor-pointer ${
+                      active
+                        ? 'bg-[var(--accent-secondary)] text-white shadow-sm'
+                        : 'bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)] hover:text-[var(--text-main)]'
+                    }`}
+                  >
+                    {subj === 'All' ? 'All Subjects' : subj === 'Mathematics' ? 'Math' : 'English'}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* AI Recommendations */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <Lightbulb size={16} className="text-[#F59E0B]" aria-hidden="true" />
-              <h4 className="text-[13.5px] font-bold text-[var(--text-main)]">AI Curriculum Recommendations</h4>
+          {/* Tally Metrics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="bg-[var(--bg-main)]/60 border border-[var(--border-color)] rounded-xl p-3.5 flex flex-col gap-1 items-center justify-center">
+              <span className="text-[10.5px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Active Evaluated Topics</span>
+              <span className="text-xl font-black text-[var(--text-main)]">{topicSummaryList.length}</span>
             </div>
-            <div className="flex flex-col gap-2.5 overflow-y-auto max-h-[220px]">
-              {lowAverageTopics.length === 0 ? (
-                <div className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
-                  <BookOpen size={15} className="text-[#10B981] shrink-0 mt-0.5" aria-hidden="true" />
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[13px] font-bold text-[var(--text-main)]">Keep building standard lessons!</span>
-                    <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
-                      Everything looks stable. Consider creating a Grade 5 Decimals or Fractions lesson to extend the curriculum bank.
-                    </p>
+            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3.5 flex flex-col gap-1 items-center justify-center">
+              <span className="text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                <CheckCircle2 size={13} className="text-emerald-500" /> Strong Topics (≥80%)
+              </span>
+              <span className="text-xl font-black text-emerald-500">{strongTopics.length}</span>
+            </div>
+            <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3.5 flex flex-col gap-1 items-center justify-center">
+              <span className="text-[10.5px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                <AlertCircle size={13} className="text-amber-500" /> Moderate (50-79%)
+              </span>
+              <span className="text-xl font-black text-amber-500">{progressingTopics.length}</span>
+            </div>
+            <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-3.5 flex flex-col gap-1 items-center justify-center">
+              <span className="text-[10.5px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wider flex items-center gap-1">
+                <AlertTriangle size={13} className="text-red-500" /> Bottlenecks (&lt;50%)
+              </span>
+              <span className="text-xl font-black text-red-500">{weakTopics.length}</span>
+            </div>
+          </div>
+
+          {/* Side-by-side Top Strengths vs Struggling Bottlenecks */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Top Cohort Strengths */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Award size={16} className="text-emerald-500" aria-hidden="true" />
+                <h4 className="text-[13.5px] font-bold text-[var(--text-main)]">Top Mastered Topics (Cohort Strengths)</h4>
+              </div>
+              <div className="flex flex-col gap-2 overflow-y-auto max-h-[220px]">
+                {strongTopics.length === 0 ? (
+                  <div className="p-3.5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-muted)] text-xs italic text-center">
+                    No topics have reached 80%+ cohort mastery for this filter yet.
                   </div>
-                </div>
-              ) : (
-                lowAverageTopics.map((item) => {
-                  const isCritical = item.average < 50;
-                  return (
-                    <div key={item.topic} className="flex gap-2.5 p-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl">
-                      <Lightbulb size={15} className="text-[#F59E0B] mt-0.5 shrink-0" aria-hidden="true" />
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[13px] font-bold text-[var(--text-main)]">Targeted Boost: {item.topic}</span>
-                        <p className="text-[11px] text-[var(--text-muted)] leading-[15px]">
-                          {isCritical
-                            ? <>Go to <strong>Lesson Ingestor</strong> → Grade <strong>{item.grade}</strong> → <strong>{item.subject}</strong> → parse a prerequisite fallback module for <em>"{item.topic}"</em> with foundational step-by-step guidance.</>
-                            : <>Go to <strong>Lesson Ingestor</strong> → Grade <strong>{item.grade}</strong> → <strong>{item.subject}</strong> → parse an extension lesson for <em>"{item.topic}"</em> with simplified Q&amp;A.</>}
-                        </p>
+                ) : (
+                  strongTopics.slice(0, 3).map((item) => (
+                    <div key={item.topic} className="flex items-center justify-between p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
+                      <div className="flex items-center gap-2 overflow-hidden mr-2">
+                        <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
+                        <span className="text-xs font-bold text-[var(--text-main)] truncate" title={item.topic}>
+                          {item.topic} (G{item.grade} {item.subject})
+                        </span>
                       </div>
+                      <span className="text-xs font-extrabold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-500 shrink-0">
+                        {item.average}%
+                      </span>
                     </div>
-                  );
-                })
-              )}
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Critical Bottlenecks */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <TrendingDown size={16} className="text-[#A01322]" aria-hidden="true" />
+                <h4 className="text-[13.5px] font-bold text-[var(--text-main)]">Priority Bottlenecks (Needs Review)</h4>
+              </div>
+              <div className="flex flex-col gap-2 overflow-y-auto max-h-[220px]">
+                {lowAverageTopics.length === 0 ? (
+                  <div className="p-3.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl text-emerald-500 text-xs font-semibold flex items-center gap-1.5 justify-center">
+                    <CheckCircle2 size={14} /> All topics are above mastery threshold!
+                  </div>
+                ) : (
+                  lowAverageTopics.slice(0, 3).map((item) => {
+                    const isCritical = item.average < 50;
+                    return (
+                      <div key={item.topic} className={`flex items-center justify-between p-3 rounded-xl border ${isCritical ? 'bg-red-500/5 border-red-500/20' : 'bg-amber-500/5 border-amber-500/20'}`}>
+                        <div className="flex items-center gap-2 overflow-hidden mr-2">
+                          <AlertCircle size={15} className={isCritical ? 'text-red-500 shrink-0' : 'text-amber-500 shrink-0'} />
+                          <span className="text-xs font-bold text-[var(--text-main)] truncate" title={item.topic}>
+                            {item.topic} (G{item.grade} {item.subject})
+                          </span>
+                        </div>
+                        <span className={`text-xs font-extrabold px-2 py-0.5 rounded shrink-0 ${isCritical ? 'bg-red-500/15 text-red-500' : 'bg-amber-500/15 text-amber-500'}`}>
+                          {item.average}%
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         </div>

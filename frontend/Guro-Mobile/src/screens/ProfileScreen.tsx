@@ -38,6 +38,7 @@ import { SectionHeader } from '../components/ui/SectionHeader';
 import { PinPad } from '../components/shared/PinPad';
 import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { styles } from '../styles/ProfileScreen.styles';
 import { toast } from '../components';
 
@@ -88,6 +89,12 @@ export function ProfileScreen() {
   const [resetPinModal, setResetPinModal] = useState(false);
   const [resetCodeInput, setResetCodeInput] = useState('');
 
+  // Custom Modal states
+  const [unlinkModalVisible, setUnlinkModalVisible] = useState(false);
+  const [outfitToBuy, setOutfitToBuy] = useState<{ key: string; label: string; cost: number } | null>(null);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [teacherForgotPinNotice, setTeacherForgotPinNotice] = useState(false);
+
   const studentName = guestName ?? currentUser?.name ?? 'Explorer';
   const outfitEmoji = mascotOutfit !== 'default' ? (OUTFIT_OPTIONS.find(o => o.key === mascotOutfit)?.emoji || '') : '';
 
@@ -118,12 +125,8 @@ export function ProfileScreen() {
 
   const handleForgotPin = () => {
     if (pinTarget === 'teacher') {
-      Alert.alert(
-        'Teacher Security Console',
-        'To access the Teacher Console, please use the correct classroom PIN.\n\nIf you have forgotten it, verify it on your web administration dashboard under your classroom settings.',
-        [{ text: 'OK' }],
-        { cancelable: true }
-      );
+      setPinVisible(false);
+      setTeacherForgotPinNotice(true);
     } else if (pinTarget === 'parent') {
       setPinVisible(false);
       setResetPinModal(true);
@@ -185,10 +188,7 @@ export function ProfileScreen() {
   };
 
   const handleUnlinkClassroom = () => {
-    Alert.alert('Unlink Classroom?', 'This will remove your classroom connection.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Unlink', style: 'destructive', onPress: () => { setClassroomId(null); toast.success('Classroom unlinked.'); } },
-    ]);
+    setUnlinkModalVisible(true);
   };
 
   // ── Outfit ───────────────────────────────────────────────────────────────────
@@ -199,17 +199,15 @@ export function ProfileScreen() {
       toast.error(`You need ${cost} stars to unlock this.`);
       return;
     }
-    Alert.alert(`Buy outfit?`, `Cost: ${cost} stars`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Buy', onPress: () => { if (!purchaseOutfit(key, cost)) toast.error('Not enough stars!'); } },
-    ]);
+    const label = OUTFIT_OPTIONS.find(o => o.key === key)?.label || key;
+    setOutfitToBuy({ key, label, cost });
   };
 
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerTitle}>My Profile</Text>
-        <Text style={styles.headerSubtitle}>Customize your experience.</Text>
+        <Text style={styles.headerTitle}>Student Profile</Text>
+        <Text style={styles.headerSubtitle}>Account &amp; learning preferences.</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -257,7 +255,7 @@ export function ProfileScreen() {
         </GlassCard>
 
         {/* Outfit shop */}
-        <SectionHeader title="My Outfit" subtitle="Spend stars to unlock new looks." />
+        <SectionHeader title="Mascot Outfit Shop" subtitle="Dress up your companion using Stars." />
         <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' }}>
           {OUTFIT_OPTIONS.map(({ key, label, emoji, cost }) => {
             const owned  = ownedOutfits.includes(key);
@@ -335,7 +333,7 @@ export function ProfileScreen() {
         </GlassCard>
 
         {/* Classroom */}
-        <SectionHeader title="Classroom" subtitle="Link to your teacher's classroom." />
+        <SectionHeader title="My Classroom Connection" subtitle="Link to your teacher's classroom." />
         <GlassCard padding={Spacing.lg}>
           {classroomId ? (
             <View style={{ gap: Spacing.sm }}>
@@ -408,20 +406,7 @@ export function ProfileScreen() {
 
         {/* Logout — U6: Specific confirmation copy + always navigate to Login */}
         <TouchableOpacity
-          onPress={() =>
-            Alert.alert(
-              'Log out from GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION?',
-              'Your progress is saved on this device and will sync when you reconnect.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Log Out',
-                  style: 'destructive',
-                  onPress: () => { logoutFromCloud(); navigation.replace('Login'); },
-                },
-              ]
-            )
-          }
+          onPress={() => setLogoutModalVisible(true)}
           activeOpacity={0.75}
         >
           <GlassCard
@@ -517,6 +502,74 @@ export function ProfileScreen() {
           </View>
         </View>
       )}
+
+      {/* Unlink Classroom Dialog */}
+      <ConfirmDialog
+        visible={unlinkModalVisible}
+        title="Unlink Classroom?"
+        message="This will remove your classroom connection and custom teacher assignments from this device."
+        confirmText="Unlink"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          setClassroomId(null);
+          setUnlinkModalVisible(false);
+          toast.success('Classroom unlinked.');
+        }}
+        onCancel={() => setUnlinkModalVisible(false)}
+      />
+
+      {/* Buy Outfit Dialog */}
+      <ConfirmDialog
+        visible={!!outfitToBuy}
+        title={`Unlock ${outfitToBuy?.label || 'Outfit'}?`}
+        message={`Cost: ${outfitToBuy?.cost || 0} stars. Equip your mascot with this unique outfit!`}
+        confirmText="Purchase & Equip"
+        cancelText="Cancel"
+        variant="warning"
+        icon={Star}
+        onConfirm={() => {
+          if (outfitToBuy) {
+            if (purchaseOutfit(outfitToBuy.key, outfitToBuy.cost)) {
+              toast.success(`Unlocked ${outfitToBuy.label}!`);
+            } else {
+              toast.error('Not enough stars!');
+            }
+            setOutfitToBuy(null);
+          }
+        }}
+        onCancel={() => setOutfitToBuy(null)}
+      />
+
+      {/* Log Out Dialog */}
+      <ConfirmDialog
+        visible={logoutModalVisible}
+        title="Log Out of GURO?"
+        message="Your learning progress is safely saved on this device and will sync when you reconnect."
+        confirmText="Log Out"
+        cancelText="Cancel"
+        variant="danger"
+        icon={LogOut}
+        onConfirm={() => {
+          setLogoutModalVisible(false);
+          logoutFromCloud();
+          navigation.replace('Login');
+        }}
+        onCancel={() => setLogoutModalVisible(false)}
+      />
+
+      {/* Teacher Forgot PIN Notice */}
+      <ConfirmDialog
+        visible={teacherForgotPinNotice}
+        title="Teacher Security Console"
+        message="To access the Teacher Console, please use the correct classroom PIN.\n\nIf you have forgotten it, verify it on your web administration dashboard under your classroom settings."
+        confirmText="Got it"
+        hideCancel={true}
+        variant="primary"
+        icon={School}
+        onConfirm={() => setTeacherForgotPinNotice(false)}
+        onCancel={() => setTeacherForgotPinNotice(false)}
+      />
     </SafeAreaView>
   );
 }

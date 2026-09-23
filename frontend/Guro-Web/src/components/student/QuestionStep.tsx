@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Volume2, Square, X, Check, ThumbsUp, ThumbsDown, Sparkles, Star, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Volume2, Square, X, Check, ThumbsUp, ThumbsDown, Sparkles, Star, Lightbulb, Flame } from 'lucide-react';
 import { QuizOption } from './QuizOption';
 import { QuizExplanation } from './QuizExplanation';
 
@@ -441,8 +441,8 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                     <div className="flex items-center gap-3">
                         {comboStreak >= 2 && (
                             <span className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-xs rounded-full shadow-md animate-bounce flex items-center gap-1.5">
-                                <Sparkles className="size-3.5 fill-white" />
-                                🔥 {comboStreak}x Combo!
+                                <Flame className="size-3.5 fill-white text-white" />
+                                <span>{comboStreak}x Combo!</span>
                             </span>
                         )}
                         <span className="px-4 py-2 bg-white border border-zinc-200/60 rounded-full shadow-sm text-zinc-700 font-bold text-sm">
@@ -648,9 +648,10 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                                                 setCurrentMatches(nextMatches);
                                                                 setSelectedOption(null);
                                                             }}
-                                                            className="text-red-500 hover:text-red-700 font-extrabold ml-1.5 cursor-pointer bg-transparent border-none text-base leading-none"
+                                                            className="text-red-500 hover:text-red-700 ml-1.5 cursor-pointer bg-transparent border-none flex items-center justify-center"
+                                                            aria-label="Remove pair"
                                                         >
-                                                            ✕
+                                                            <X size={14} />
                                                         </button>
                                                     )}
                                                 </div>

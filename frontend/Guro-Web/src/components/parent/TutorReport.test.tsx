@@ -34,7 +34,7 @@ describe('TutorReport Component', () => {
 
     render(<TutorReport logs={mockLogs} />);
 
-    expect(screen.getByText('AI Study Feedback')).toBeInTheDocument();
+    expect(screen.getByText(/Child Learning Pulse & Progress Insights/i)).toBeInTheDocument();
     
     // Check strongest vs weakest topics
     expect(screen.getAllByText(/Fractions/i).length).toBeGreaterThanOrEqual(1);
@@ -42,6 +42,6 @@ describe('TutorReport Component', () => {
     expect(screen.getAllByText(/60%/i).length).toBeGreaterThanOrEqual(1);
 
     // Check parent tip for Figurative Language
-    expect(screen.getByText(/Tip: Read stories together and point out similes/i)).toBeInTheDocument();
+    expect(screen.getByText(/Read a bedtime story together and hunt for similes/i)).toBeInTheDocument();
   });
 });

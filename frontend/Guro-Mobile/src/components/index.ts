@@ -8,6 +8,7 @@ export { ThemedTextInput } from './ui/ThemedTextInput';
 export { ProgressBar } from './ui/ProgressBar';
 export { LessonCard } from './ui/LessonCard';
 export { ToastContainer, toast } from './ui/ToastContainer';
+export { ConfirmDialog } from './ui/ConfirmDialog';
 
 // Shared Components
 export { PinPad } from './shared/PinPad';

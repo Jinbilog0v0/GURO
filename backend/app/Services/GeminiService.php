@@ -7,13 +7,18 @@ use Illuminate\Support\Facades\Log;
 
 class GeminiService
 {
-    public function generateQuestions(string $subject, int $grade, string $topic, ?string $lessonText, ?string $pdfBase64 = null): array
+    public function generateQuestions(string $subject, int $grade, string $topic, ?string $lessonText, ?string $pdfBase64 = null, int $questionCount = 12): array
     {
         set_time_limit(180);
         $apiKey = env('GEMINI_API_KEY');
         if (! $apiKey) {
             throw new \Exception('GEMINI_API_KEY environment variable is not configured.');
         }
+
+        $targetCount = max(10, min($questionCount, 30));
+        $easyCount = (int) ceil($targetCount * 0.35);
+        $averageCount = (int) ceil($targetCount * 0.40);
+        $difficultCount = max(2, $targetCount - $easyCount - $averageCount);
 
         $parts = [];
 
@@ -26,29 +31,45 @@ class GeminiService
             ];
         }
 
-        $prompt = "You are an expert curriculum designer and test engineer.\n".
-                  "Analyze the following lesson content and structure it into a comprehensive child-friendly study guide and a set of diagnostic questions.\n\n";
+        $prompt = "You are an elite elementary education curriculum specialist and psychometrician.\n".
+                  "Your mission is to generate a comprehensive, highly engaging study module and a robust, extensive diagnostic question bank.\n\n";
 
         if ($lessonText) {
-            $prompt .= "Lesson Content:\n".
+            $prompt .= "Lesson Source Material:\n".
                        "\"\"\"\n".
                        $lessonText."\n".
                        "\"\"\"\n\n";
+        } elseif ($pdfBase64) {
+            $prompt .= "Analyze the attached PDF document as the primary lesson content.\n\n";
+        } else {
+            $prompt .= "Synthesize a full DepEd/K-12 aligned lesson module and question bank for the specified grade and topic.\n\n";
         }
 
-        if ($pdfBase64) {
-            $prompt .= "Analyze the attached PDF document as the lesson content.\n\n";
-        }
-
-        $prompt .= "Generate both studyContent (including a short, interactive 2-3 question refresherQuiz to test understanding) and questions for:\n".
+        $prompt .= "Generate comprehensive studyContent and at least {$targetCount} high-quality assessment questions for:\n".
                   '- Subject: '.$subject."\n".
                   '- Grade Level: '.$grade."\n".
                   '- Topic: '.$topic."\n\n".
-                  "Ensure the studyContent uses simple, engaging, age-appropriate language for Grade {$grade} students.\n".
-                  "The questions should span Easy, Average, and Difficult tiers.\n".
-                  "Include a diverse mix of question types: 'multiple-choice', 'fill-in-the-blank' (using one '[[blank]]' inside the sentence), and 'drag-drop-matching' (matching antonyms, synonyms, or translations).\n".
-                  "Enforce feedback explaining the answer in English (both en and fil feedback fields must be populated with the English explanation).\n".
-                  "Include public educational illustration or photo URLs from Unsplash for studyContent.imageUrl, optionally for studyContent.definitions[i].imageUrl (to visualize specific vocabulary terms or rules), and optionally for questions.imageUrl (if visual helper is needed). The URL must use format: https://images.unsplash.com/photo-[id]?auto=format&fit=crop&w=600&q=80. For example: photo-1509228468518-180dd4864904 (Mathematics), photo-1456513080510-7bf3a84b82f8 (Reading/Writing), photo-1583912267550-d44d7a125e7e (Fractions/Shapes). Choose a highly relevant, real photo ID.";
+                  "STUDY GUIDE REQUIREMENTS (studyContent):\n".
+                  "- In-depth, encouraging, age-appropriate introduction explaining the topic with real-world analogies suitable for Grade {$grade} students.\n".
+                  "- 4 to 6 detailed definitions or core concept rules with 2 to 3 crystal-clear, relatable examples each.\n".
+                  "- 4 to 6 bulleted summary takeaway points.\n".
+                  "- A 3 to 5 question interactive refresherQuiz embedded in the study guide for instant practice.\n\n".
+                  "QUESTION BANK REQUIREMENTS (questions):\n".
+                  "- Generate AT LEAST {$targetCount} distinct, high-quality assessment questions.\n".
+                  "- Difficulty breakdown: at least {$easyCount} Easy questions, {$averageCount} Average questions, and {$difficultCount} Difficult questions.\n".
+                  "- Include a diverse, balanced mix of question types across all tiers:\n".
+                  "  * 'multiple-choice': 4 distinct plausible options with one clear correct answer.\n".
+                  "  * 'fill-in-the-blank': A complete sentence with exactly one '[[blank]]' placeholder, and 4 plausible options.\n".
+                  "  * 'drag-drop-matching': Matching 3 to 4 related pairs (e.g., term to definition, antonyms, equations to answers).\n".
+                  "  * 'true-false': Conceptual statements testing key principles (2 options: 'True' and 'False').\n".
+                  "  * 'swipe-card': Rapid classification or decision scenarios (2 options).\n";
+
+        if (strtolower($subject) === 'mathematics') {
+            $prompt .= "  * 'fraction-builder': Target numerator at options[0] and denominator at options[1] (e.g. ['3', '4']).\n";
+        }
+
+        $prompt .= "- Feedback: Provide detailed step-by-step explanations in English for why the correct answer is right (populate both 'en' and 'fil' feedback keys).\n".
+                   "- Educational Visuals: Suggest relevant Unsplash educational photo URLs for studyContent and question visual aids where helpful.";
 
         $parts[] = ['text' => $prompt];
 
@@ -115,6 +136,23 @@ class GeminiService
                                 ],
                                 'required' => ['term', 'definition', 'examples']
                             ]
+                        ],
+                        'orderIndex' => [
+                            'type' => 'INTEGER',
+                            'description' => 'Sequential lesson order index (e.g. 1, 2, 3...) indicating pedagogical progression order within the grade level.'
+                        ],
+                        'quarter' => [
+                            'type' => 'STRING',
+                            'description' => 'Academic term or DepEd quarter, e.g. "Quarter 1", "Quarter 2", "Quarter 3", "Quarter 4".'
+                        ],
+                        'bloomLevel' => [
+                            'type' => 'STRING',
+                            'description' => 'Primary Bloom cognitive level for this lesson (e.g., "Remembering", "Understanding", "Applying", "Analyzing").'
+                        ],
+                        'prerequisites' => [
+                            'type' => 'ARRAY',
+                            'description' => 'Optional list of prerequisite topic names that should precede this lesson.',
+                            'items' => ['type' => 'STRING']
                         ],
                         'summary' => [
                             'type' => 'ARRAY',
@@ -249,6 +287,13 @@ class GeminiService
                         $def['term'] ?? ''
                     );
                 }
+            }
+
+            if (!isset($result['studyContent']['orderIndex']) || !is_numeric($result['studyContent']['orderIndex'])) {
+                $result['studyContent']['orderIndex'] = 1;
+            }
+            if (empty($result['studyContent']['quarter'])) {
+                $result['studyContent']['quarter'] = 'Quarter 1';
             }
         }
 

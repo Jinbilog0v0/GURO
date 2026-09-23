@@ -2,6 +2,7 @@ import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { Alert, Switch } from 'react-native';
 import { ParentDashboard } from './ParentDashboard';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useAppStore } from '../store/useAppStore';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -133,23 +134,19 @@ describe('ParentDashboard', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    // Mock confirmation alert dialog success trigger
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((title, msg, buttons) => {
-      if (buttons && buttons[1] && buttons[1].onPress) {
-        buttons[1].onPress();
-      }
-    });
-
     const deleteBtn = root.root.findByProps({ label: 'Clear Practice History' });
     act(() => {
       deleteBtn.props.onPress();
     });
 
-    expect(alertSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Clear Student Progress'),
-      expect.any(String),
-      expect.any(Array)
-    );
+    const clearDialog = root.root.findByProps({ title: 'Clear Student Progress?' });
+    expect(clearDialog).toBeDefined();
+    expect(clearDialog.props.visible).toBe(true);
+
+    act(() => {
+      clearDialog.props.onConfirm();
+    });
+
     expect(mockClearProgress).toHaveBeenCalled();
 
     act(() => {

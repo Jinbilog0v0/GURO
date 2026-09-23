@@ -132,7 +132,12 @@ class AdminController extends Controller
         }
 
         if ($role !== '' && $role !== 'all') {
-            $query->where('role', strtolower($role));
+            $roleLower = strtolower($role);
+            if (in_array($roleLower, ['admin', 'developer', 'admin/developer', 'admin-developer', 'admin / developer', 'admin/dev', 'admin / dev', 'admindev', 'admin_developer'])) {
+                $query->whereIn('role', ['admin', 'developer']);
+            } else {
+                $query->where('role', $roleLower);
+            }
         }
 
         $users = $query->orderBy('created_at', 'desc')->get()->map(function ($u) {
@@ -157,7 +162,18 @@ class AdminController extends Controller
             ];
         });
 
-        return response()->json(['users' => $users]);
+        $counts = [
+            'all' => User::count(),
+            'teacher' => User::where('role', 'teacher')->count(),
+            'parent' => User::where('role', 'parent')->count(),
+            'student' => User::where('role', 'student')->count(),
+            'admin' => User::whereIn('role', ['admin', 'developer'])->count(),
+        ];
+
+        return response()->json([
+            'users' => $users,
+            'counts' => $counts,
+        ]);
     }
 
     // POST /api/admin/users/{id}/update-role
@@ -271,6 +287,9 @@ class AdminController extends Controller
                 'teacherName' => $c->teacher_name,
                 'subject' => $c->subject,
                 'gradeLevel' => $c->grade_level,
+                'sectionName' => $c->section_name ?? null,
+                'schoolYear' => $c->school_year ?? '2026-2027',
+                'term' => $c->term ?? 'Quarter 1',
                 'enrolledStudents' => $enrolledCount,
                 'isLocked' => $isLocked,
                 'expiresAt' => $this->formatIso($c->expires_at),

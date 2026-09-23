@@ -87,6 +87,9 @@ export interface ClassroomRecord {
   teacherName: string;
   subject: string;
   gradeLevel: number;
+  sectionName?: string | null;
+  schoolYear?: string;
+  term?: string;
   enrolledStudents: number;
   isLocked: boolean;
   expiresAt?: string | null;
@@ -97,6 +100,32 @@ export interface GradeMetrics {
   totalAttempts: number;
   averageScore: number;
   masteryRate: number;
+}
+
+export interface RateLimitConfig {
+  id?: number;
+  role: string;
+  max_requests: number;
+  window_minutes: number;
+  is_enabled: boolean;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface UsageUser {
+  user_id: number | string;
+  name: string;
+  email: string;
+  count: number;
+  over_limit: boolean;
+}
+
+export interface RoleUsage {
+  role: string;
+  max_requests: number;
+  window_minutes: number;
+  users: UsageUser[];
 }
 
 export interface TopicMastery {
@@ -213,7 +242,12 @@ export const adminService = {
     }
   },
 
-  async getUsers(role: string = 'all', search: string = ''): Promise<{ success: boolean; users?: UserRecord[]; error?: string }> {
+  async getUsers(role: string = 'all', search: string = ''): Promise<{
+    success: boolean;
+    users?: UserRecord[];
+    counts?: { all: number; teacher: number; parent: number; student: number; admin: number };
+    error?: string;
+  }> {
     try {
       const q = new URLSearchParams();
       if (role !== 'all') q.set('role', role);
@@ -224,7 +258,7 @@ export const adminService = {
       });
       if (res.ok) {
         const data = await res.json();
-        return { success: true, users: data.users || [] };
+        return { success: true, users: data.users || [], counts: data.counts };
       }
       const err = await res.json().catch(() => ({}));
       return { success: false, error: err.error || err.message || 'Failed to load users.' };
@@ -367,4 +401,70 @@ export const adminService = {
       return { success: false, error: e.message || 'Network error loading reports.' };
     }
   },
+
+  async getItemBank(): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/item-bank`, {
+        headers: getAdminHeaders(),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return { success: true, data };
+      }
+      const err = await res.json().catch(() => ({}));
+      return { success: false, error: err.error || err.message || 'Failed to load master item bank.' };
+    } catch (e: any) {
+      return { success: false, error: e.message || 'Network error loading item bank.' };
+    }
+  },
+
+  async getRateLimits(): Promise<{ success: boolean; configs?: RateLimitConfig[]; error?: string }> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/dev/rate-limits`, {
+        headers: getAdminHeaders(),
+      });
+      if (res.ok) {
+        const configs = await res.json();
+        return { success: true, configs };
+      }
+      const err = await res.json().catch(() => ({}));
+      return { success: false, error: err.error || err.message || 'Failed to load rate limit configs.' };
+    } catch (e: any) {
+      return { success: false, error: e.message || 'Network error loading rate limits.' };
+    }
+  },
+
+  async getRateLimitsUsage(): Promise<{ success: boolean; usage?: RoleUsage[]; error?: string }> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/dev/rate-limits/usage`, {
+        headers: getAdminHeaders(),
+      });
+      if (res.ok) {
+        const usage = await res.json();
+        return { success: true, usage };
+      }
+      const err = await res.json().catch(() => ({}));
+      return { success: false, error: err.error || err.message || 'Failed to load rate limit usage.' };
+    } catch (e: any) {
+      return { success: false, error: e.message || 'Network error loading rate limit usage.' };
+    }
+  },
+
+  async updateRateLimit(role: string, values: Partial<RateLimitConfig>): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/dev/rate-limits/${encodeURIComponent(role)}`, {
+        method: 'PUT',
+        headers: getAdminHeaders(),
+        body: JSON.stringify(values),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        return { success: true, message: data.message || `Rate limit for ${role} updated.` };
+      }
+      return { success: false, error: data.message || data.error || 'Failed to update rate limit.' };
+    } catch (e: any) {
+      return { success: false, error: e.message || 'Network error updating rate limit.' };
+    }
+  },
 };
+

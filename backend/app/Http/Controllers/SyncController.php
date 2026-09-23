@@ -20,19 +20,36 @@ class SyncController extends Controller
         $studentId = $request->input('studentId');
         $events = $request->input('events');
         $classroomId = $request->input('classroomId');
+        $normClassroomId = $classroomId ? strtoupper(trim($classroomId)) : null;
 
-        if ($classroomId) {
-            \App\Models\ClassroomMember::firstOrCreate([
-                'classroom_id' => strtoupper($classroomId),
+        $sectionName = null;
+        if ($normClassroomId) {
+            $classroom = \App\Models\Classroom::where('classroom_id', $normClassroomId)->first();
+            $sectionName = $classroom ? $classroom->section_name : null;
+
+            $member = \App\Models\ClassroomMember::firstOrCreate([
+                'classroom_id' => $normClassroomId,
                 'student_id' => $studentId,
+            ], [
+                'section_name' => $sectionName,
             ]);
+
+            if ($sectionName && $member->section_name !== $sectionName) {
+                $member->section_name = $sectionName;
+                $member->save();
+            }
 
             // Also update the student user's classroom_id column if the user exists
             $studentUser = User::where('user_id', $studentId)->first();
-            if ($studentUser && $studentUser->classroom_id !== strtoupper($classroomId)) {
-                $studentUser->classroom_id = strtoupper($classroomId);
+            if ($studentUser && $studentUser->classroom_id !== $normClassroomId) {
+                $studentUser->classroom_id = $normClassroomId;
                 $studentUser->save();
             }
+
+            // Associate any previous null classroom_id logs for this student
+            ProgressLog::where('student_id', $studentId)
+                ->whereNull('classroom_id')
+                ->update(['classroom_id' => $normClassroomId]);
         }
 
         $newEventsAppended = [];
@@ -50,14 +67,18 @@ class SyncController extends Controller
             $assessmentType = $evt['assessmentType'] ?? $evt['assessment_type'] ?? 'practice';
             $schoolYear = $evt['schoolYear'] ?? $evt['school_year'] ?? '2026-2027';
             $term = $evt['term'] ?? 'Quarter 1';
+            $evtSection = $evt['sectionName'] ?? $evt['section_name'] ?? $sectionName;
+            $rawSubject = trim($evt['subject'] ?? 'Mathematics');
+            $normSubject = (strcasecmp($rawSubject, 'Math') === 0 || strcasecmp($rawSubject, 'Mathematics') === 0) ? 'Mathematics' : $rawSubject;
 
             // Prevent duplicate insertion
             if (!isset($existingLookup[$eventId])) {
                 $recordsToInsert[] = [
                     'event_id' => $eventId,
                     'student_id' => $studentId,
-                    'classroom_id' => $classroomId ?: null,
-                    'subject' => $evt['subject'],
+                    'classroom_id' => $normClassroomId ?: null,
+                    'section_name' => $evtSection,
+                    'subject' => $normSubject,
                     'grade_level' => (int) $evt['gradeLevel'],
                     'topic' => $evt['topic'],
                     'score' => (int) $evt['score'],
@@ -74,8 +95,9 @@ class SyncController extends Controller
                 $newEventsAppended[] = [
                     'eventId' => $eventId,
                     'studentId' => $studentId,
-                    'classroomId' => $classroomId ?: null,
-                    'subject' => $evt['subject'],
+                    'classroomId' => $normClassroomId ?: null,
+                    'sectionName' => $evtSection,
+                    'subject' => $normSubject,
                     'gradeLevel' => (int) $evt['gradeLevel'],
                     'topic' => $evt['topic'],
                     'score' => (int) $evt['score'],
@@ -109,6 +131,7 @@ class SyncController extends Controller
         $termFilter = $request->query('term');
         $yearFilter = $request->query('schoolYear');
         $typeFilter = $request->query('assessmentType');
+        $sectionFilter = $request->query('section');
 
         if ($studentId) {
             $studentId = strtoupper(preg_replace('/\s+/', '-', trim($studentId)));
@@ -133,9 +156,9 @@ class SyncController extends Controller
                 return response()->json(['error' => 'Invalid parent access code.'], 403);
             }
         } else {
-            // Classroom-only query: must be authenticated as the teacher of this classroom
+            // Classroom-only query: must be authenticated as the teacher of this classroom (or admin/developer)
             $user = $request->user('sanctum');
-            if (!$user || $user->role !== 'teacher') {
+            if (!$user || !in_array($user->role, ['teacher', 'admin', 'developer'])) {
                 return response()->json(['error' => 'Unauthenticated. Classroom query requires an authenticated teacher session.'], 401);
             }
 
@@ -144,7 +167,12 @@ class SyncController extends Controller
                 return response()->json(['error' => 'Classroom not found.'], 404);
             }
 
-            if ($classroom->teacher_user_id !== $user->id) {
+            $isOwner = in_array($user->role, ['admin', 'developer'])
+                || ((int) $classroom->teacher_user_id === (int) $user->id)
+                || ($classroom->teacher_user_id === $user->user_id)
+                || ($classroom->teacher_name === $user->name);
+
+            if (!$isOwner) {
                 return response()->json(['error' => 'Forbidden. You are not the teacher of this classroom.'], 403);
             }
         }
@@ -152,10 +180,21 @@ class SyncController extends Controller
         try {
             $query = ProgressLog::query();
             if ($hasClassroom) {
-                $query->where('classroom_id', strtoupper($classroomId));
+                $normClassroomId = strtoupper(trim($classroomId));
+                $memberStudentIds = \App\Models\ClassroomMember::where('classroom_id', $normClassroomId)->pluck('student_id')->toArray();
+
+                $query->where(function ($q) use ($normClassroomId, $memberStudentIds) {
+                    $q->where('classroom_id', $normClassroomId);
+                    if (!empty($memberStudentIds)) {
+                        $q->orWhereIn('student_id', $memberStudentIds);
+                    }
+                });
             }
             if ($hasStudent) {
                 $query->where('student_id', $studentId);
+            }
+            if ($sectionFilter && $sectionFilter !== 'All') {
+                $query->where('section_name', $sectionFilter);
             }
             if ($termFilter && $termFilter !== 'All') {
                 $query->where('term', $termFilter);
@@ -172,8 +211,9 @@ class SyncController extends Controller
             $formatted = $logs->map(fn ($row) => [
                 'eventId' => $row->event_id,
                 'studentId' => $row->student_id,
-                'classroomId' => $row->classroom_id,
-                'subject' => $row->subject,
+                'classroomId' => $row->classroom_id ?: ($hasClassroom ? strtoupper(trim($classroomId)) : null),
+                'sectionName' => $row->section_name,
+                'subject' => (strcasecmp($row->subject, 'Math') === 0 || strcasecmp($row->subject, 'Mathematics') === 0) ? 'Mathematics' : $row->subject,
                 'gradeLevel' => $row->grade_level,
                 'topic' => $row->topic,
                 'score' => $row->score,

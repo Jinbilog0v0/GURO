@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../../utils/api';
-import { BookOpen, Calculator, Download, RefreshCw, ChevronDown, ChevronUp, FolderOpen, Layers } from 'lucide-react';
+import { BookOpen, Calculator, Download, RefreshCw, ChevronDown, ChevronUp, FolderOpen, Layers, Check } from 'lucide-react';
 import { toast } from '../../utils/toast';
 
 interface ItemBankStructure {
@@ -282,13 +282,14 @@ export function AdminCurriculumManager() {
                                       {q.options.map((opt, optIdx) => (
                                         <div 
                                           key={optIdx} 
-                                          className={`p-1.5 rounded text-[11px] border ${
+                                          className={`p-1.5 rounded text-[11px] border flex items-center gap-1 ${
                                             opt === q.correctAnswer 
                                               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 font-bold' 
                                               : 'bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)]'
                                           }`}
                                         >
-                                          {opt === q.correctAnswer ? '✓ ' : '• '}{opt}
+                                          {opt === q.correctAnswer ? <Check size={11} className="shrink-0 text-emerald-600" strokeWidth={3} /> : <span className="opacity-40">•</span>}
+                                          <span>{opt}</span>
                                         </div>
                                       ))}
                                     </div>

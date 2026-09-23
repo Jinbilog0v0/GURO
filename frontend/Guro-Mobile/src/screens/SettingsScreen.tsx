@@ -30,6 +30,7 @@ import {
   Award,
   Star,
   BarChart2,
+  Globe,
 } from 'lucide-react-native';
 
 // ── Design System & UI ────────────────────────────────────────────────────────
@@ -39,6 +40,7 @@ import { Spacing, Radius } from '../theme/spacing';
 import { GlassCard } from '../components/ui/GlassCard';
 import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { PrimaryButton, DangerButton } from '../components/ui/Buttons';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { toast } from '../components';
 import { styles } from '../styles/SettingsScreen.styles';
 
@@ -99,6 +101,25 @@ export function SettingsScreen({ navigation }: Props) {
   const [profileMiddleName, setProfileMiddleName] = useState('');
   const [profileLastName, setProfileLastName] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // Dialog states
+  const [purchasingOutfit, setPurchasingOutfit] = useState<any | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleConfirmPurchaseOutfit = () => {
+    if (!purchasingOutfit) return;
+    const success = purchaseOutfit(purchasingOutfit.id, purchasingOutfit.cost);
+    if (success) {
+      toast.success(`You purchased the ${purchasingOutfit.label}!`);
+    }
+    setPurchasingOutfit(null);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutConfirm(false);
+    logoutFromCloud();
+    navigation.replace((appMode as string) === 'offline' ? 'StudentDashboard' : 'Login');
+  };
 
   // Prefill name if guestName changes
   useEffect(() => {
@@ -528,9 +549,12 @@ export function SettingsScreen({ navigation }: Props) {
 
               {appMode === 'offline' && (
                 <View style={{ gap: Spacing.xs, marginTop: Spacing.sm, padding: Spacing.md, borderWidth: 1, borderColor: '#d0d7de', borderRadius: Radius.md, backgroundColor: '#f6f8fa' }}>
-                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.accentSecondary }}>
-                    Go Online 🌐
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Globe size={18} color={Colors.accentSecondary} />
+                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.accentSecondary }}>
+                      Go Online
+                    </Text>
+                  </View>
                   <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: Spacing.xs }}>
                     Register a cloud account to sync lessons progress across all your devices.
                   </Text>
@@ -651,22 +675,7 @@ export function SettingsScreen({ navigation }: Props) {
                         } else {
                           // Try purchase
                           if (virtualStars >= item.cost) {
-                            Alert.alert(
-                              'Unlock Accessory',
-                              `Unlock ${item.label} for ${item.cost} Stars?`,
-                              [
-                                { text: 'Cancel', style: 'cancel' },
-                                {
-                                  text: 'Buy Now!',
-                                  onPress: () => {
-                                    const success = purchaseOutfit(item.id, item.cost);
-                                    if (success) {
-                                      toast.success(`You purchased the ${item.label}!`);
-                                    }
-                                  }
-                                }
-                              ]
-                            );
+                            setPurchasingOutfit(item);
                           } else {
                             toast.warning(`This accessory costs ${item.cost} Stars. Finish more quizzes to earn stars!`);
                           }
@@ -1057,26 +1066,34 @@ export function SettingsScreen({ navigation }: Props) {
           <DangerButton
             label="Sign Out of Cloud Session"
             icon={<LogOut size={16} color={Colors.dangerText} style={{ marginRight: 6 }} />}
-            onPress={() => {
-              Alert.alert(
-                'Confirm Logout',
-                'Are you sure you want to sign out? Your credentials will be cleared, returning you to the offline guest state.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Logout',
-                    style: 'destructive',
-                    onPress: () => {
-                      logoutFromCloud();
-                      navigation.replace((appMode as string) === 'offline' ? 'StudentDashboard' : 'Login');
-                    },
-                  },
-                ]
-              );
-            }}
+            onPress={() => setShowLogoutConfirm(true)}
           />
         </View>
       )}
+
+      {/* Outfit Purchase Confirmation */}
+      <ConfirmDialog
+        visible={!!purchasingOutfit}
+        variant="primary"
+        title="Unlock Accessory"
+        description={`Unlock ${purchasingOutfit?.label} for ${purchasingOutfit?.cost} Stars?`}
+        confirmLabel="Buy Now!"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmPurchaseOutfit}
+        onCancel={() => setPurchasingOutfit(null)}
+      />
+
+      {/* Logout Confirmation */}
+      <ConfirmDialog
+        visible={showLogoutConfirm}
+        variant="danger"
+        title="Confirm Logout"
+        description="Are you sure you want to sign out? Your credentials will be cleared, returning you to the offline guest state."
+        confirmLabel="Logout"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
     </SafeAreaView>
   );
 }

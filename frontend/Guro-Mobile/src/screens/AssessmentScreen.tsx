@@ -45,11 +45,15 @@ import {
   Target,
   ChevronLeft,
   ChevronRight,
+  TrendingUp,
+  BarChart3,
+  Rocket,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppStore, Question } from '../store/useAppStore';
+import itemBankData from '../../assets/item_bank.json';
 import { shuffle, MASTERY_THRESHOLD, evaluateRemediationRouting } from '../utils/engine';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
@@ -62,6 +66,7 @@ import { Spacing, Radius } from '../theme/spacing';
 import { GlassCard } from '../components/ui/GlassCard';
 import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
 import { Badge } from '../components/ui/Badge';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { styles } from '../styles/AssessmentScreen.styles';
 
 
@@ -121,8 +126,9 @@ export function AssessmentScreen({ route, navigation }: Props) {
 
   // ── Question loading ───────────────────────────────────────────────────────
   const getQuestions = (): Question[] => {
-    if (!itemBank) return [];
-    const subjectData = itemBank[subject];
+    const effectiveBank = itemBank || (itemBankData as any);
+    if (!effectiveBank) return [];
+    const subjectData = effectiveBank[subject];
     if (!subjectData) return [];
     const gradeData = subjectData[gradeLevel.toString()];
     if (!gradeData) return [];
@@ -167,6 +173,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
   const [showAnswerReview, setShowAnswerReview] = useState(false);
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
   const [shadedSlices, setShadedSlices] = useState<number[]>([]);
+  const [foundationalReviewTarget, setFoundationalReviewTarget] = useState<{ targetLesson: { topic: string; grade: number; subject?: string }; topicKey: string } | null>(null);
 
   interface AnswerLogEntry {
     questionText: string;
@@ -640,32 +647,10 @@ export function AssessmentScreen({ route, navigation }: Props) {
           nextFailures = state.incrementConsecutiveFailures(topicKey);
         }
         if (nextFailures >= 3 && remediation.targetLesson) {
-          const prevLesson = remediation.targetLesson;
-          Alert.alert(
-            "Foundational Review Recommended 📚",
-            `You've had a few tough attempts at "${topic}". Would you like to return to "${prevLesson.topic}" (Grade ${prevLesson.grade}) to build up your core skills first?`,
-            [
-              {
-                text: "Keep Trying Here",
-                onPress: () => {},
-                style: "cancel"
-              },
-              {
-                text: `Review ${prevLesson.topic}`,
-                onPress: () => {
-                  // Reset failure count so they aren't immediately prompted again
-                  if (typeof state.resetConsecutiveFailures === 'function') {
-                    state.resetConsecutiveFailures(topicKey);
-                  }
-                  navigation.replace('Study', {
-                    subject,
-                    gradeLevel: prevLesson.grade,
-                    topic: prevLesson.topic
-                  });
-                }
-              }
-            ]
-          );
+          setFoundationalReviewTarget({
+            targetLesson: remediation.targetLesson,
+            topicKey,
+          });
         }
       } else {
         if (typeof state.resetConsecutiveFailures === 'function') {
@@ -754,7 +739,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
               }}>
                 <WifiOff size={14} color={Colors.warning} />
                 <Text style={{ flex: 1, fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.warning, lineHeight: 16 }}>
-                  📡 Score saved on your device. It will be sent to your teacher once you're back online.
+                  Score saved on your device. It will be sent to your teacher once you're back online.
                 </Text>
               </View>
             )}
@@ -855,9 +840,16 @@ export function AssessmentScreen({ route, navigation }: Props) {
                     }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: gain >= 0 ? Colors.success : Colors.warning }}>
-                        {gain >= 0 ? '📈 Learning Gain Measured!' : '📊 Assessment Comparison'}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        {gain >= 0 ? (
+                          <TrendingUp size={13} color={Colors.success} />
+                        ) : (
+                          <BarChart3 size={13} color={Colors.warning} />
+                        )}
+                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: gain >= 0 ? Colors.success : Colors.warning }}>
+                          {gain >= 0 ? 'Learning Gain Measured!' : 'Assessment Comparison'}
+                        </Text>
+                      </View>
                       <Badge
                         label={`${gain >= 0 ? '+' : ''}${gain}% Growth`}
                         variant={gain >= 0 ? 'success' : 'warning'}
@@ -1041,11 +1033,11 @@ export function AssessmentScreen({ route, navigation }: Props) {
               animationType="fade"
               onRequestClose={() => setLevelUpLevel(null)}
             >
-              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', padding: Spacing.lg }}>
+              <View style={{ flex: 1, backgroundColor: 'rgba(6, 9, 19, 0.72)', alignItems: 'center', justifyContent: 'center', padding: Spacing.lg }}>
                 <View style={{
                   width: '100%',
                   maxWidth: 360,
-                  borderRadius: Radius.xl,
+                  borderRadius: Radius['2xl'],
                   overflow: 'hidden',
                   backgroundColor: Colors.accentPrimary,
                   shadowColor: '#000',
@@ -1055,7 +1047,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
                   elevation: 16,
                 }}>
                   <View style={{ backgroundColor: '#EAB308', paddingVertical: 20, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 48 }}>🎖️</Text>
+                    <Award size={48} color={Colors.accentPrimary} />
                   </View>
                   <View style={{ padding: Spacing.xl, alignItems: 'center', gap: Spacing.md }}>
                     <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#EAB308', textTransform: 'uppercase', letterSpacing: 1.5 }}>
@@ -1082,9 +1074,12 @@ export function AssessmentScreen({ route, navigation }: Props) {
                         alignItems: 'center',
                       }}
                     >
-                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.md, color: Colors.accentPrimary }}>
-                        Awesome! 🚀
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Rocket size={18} color={Colors.accentPrimary} />
+                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.md, color: Colors.accentPrimary }}>
+                          Awesome!
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1199,6 +1194,37 @@ export function AssessmentScreen({ route, navigation }: Props) {
             </GlassCard>
           ))}
         </ScrollView>
+
+        {/* Foundational Review Recommendation Dialog */}
+        <ConfirmDialog
+          visible={!!foundationalReviewTarget}
+          title="Foundational Review Recommended"
+          message={
+            foundationalReviewTarget
+              ? `You've had a few tough attempts at "${topic}". Would you like to review "${foundationalReviewTarget.targetLesson.topic}" (Grade ${foundationalReviewTarget.targetLesson.grade}) to build up your core skills first?`
+              : ''
+          }
+          confirmText={foundationalReviewTarget ? `Review ${foundationalReviewTarget.targetLesson.topic}` : 'Review'}
+          cancelText="Keep Trying Here"
+          variant="primary"
+          icon={BookOpen}
+          onConfirm={() => {
+            if (foundationalReviewTarget) {
+              const { targetLesson, topicKey } = foundationalReviewTarget;
+              const state = useAppStore.getState();
+              if (typeof state.resetConsecutiveFailures === 'function') {
+                state.resetConsecutiveFailures(topicKey);
+              }
+              setFoundationalReviewTarget(null);
+              navigation.replace('Study', {
+                subject,
+                gradeLevel: targetLesson.grade,
+                topic: targetLesson.topic,
+              });
+            }
+          }}
+          onCancel={() => setFoundationalReviewTarget(null)}
+        />
       </SafeAreaView>
     );
   }
@@ -1302,7 +1328,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
               style={[
                 styles.listenButton,
                 {
-                  backgroundColor: isSpeaking ? Colors.accentPrimaryDeep : 'rgba(255, 255, 255, 0.05)',
+                  backgroundColor: isSpeaking ? Colors.accentPrimaryDeep : Colors.bgInput,
                   borderColor: isSpeaking ? Colors.accentPrimary : Colors.border,
                 }
               ]}
@@ -1442,7 +1468,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
 
               {/* Display current matches */}
               {Object.keys(currentMatches).length > 0 && (
-                <View style={{ marginTop: 24, backgroundColor: 'rgba(255, 255, 255, 0.02)', padding: 14, borderRadius: Radius.md || 12, borderWidth: 1, borderColor: Colors.border }}>
+                <View style={{ marginTop: 24, backgroundColor: Colors.bgInput, padding: 14, borderRadius: Radius.md || 12, borderWidth: 1, borderColor: Colors.border }}>
                   <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: 8, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     Your Matches
                   </Text>
@@ -1876,7 +1902,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
                 justifyContent: 'center',
                 gap: 12,
                 padding: 15,
-                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                backgroundColor: Colors.bgInput,
                 borderRadius: 24,
                 borderWidth: 1,
                 borderColor: Colors.border,
@@ -1903,7 +1929,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
                         borderWidth: 1.5,
                         borderBottomWidth: item.selected ? 1.5 : 4,
                         borderColor: item.selected ? 'transparent' : Colors.accentSecondary,
-                        backgroundColor: item.selected ? 'rgba(255, 255, 255, 0.03)' : Colors.bgCard,
+                        backgroundColor: item.selected ? Colors.bgInput : Colors.bgCard,
                         alignItems: 'center',
                         justifyContent: 'center',
                         transform: [{ translateY: item.selected ? 2 : 0 }],
@@ -2025,6 +2051,37 @@ export function AssessmentScreen({ route, navigation }: Props) {
         {/* Spacer for bottom safe-area */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Foundational Review Recommendation Dialog */}
+      <ConfirmDialog
+        visible={!!foundationalReviewTarget}
+        title="Foundational Review Recommended"
+        message={
+          foundationalReviewTarget
+            ? `You've had a few tough attempts at "${topic}". Would you like to review "${foundationalReviewTarget.targetLesson.topic}" (Grade ${foundationalReviewTarget.targetLesson.grade}) to build up your core skills first?`
+            : ''
+        }
+        confirmText={foundationalReviewTarget ? `Review ${foundationalReviewTarget.targetLesson.topic}` : 'Review'}
+        cancelText="Keep Trying Here"
+        variant="primary"
+        icon={BookOpen}
+        onConfirm={() => {
+          if (foundationalReviewTarget) {
+            const { targetLesson, topicKey } = foundationalReviewTarget;
+            const state = useAppStore.getState();
+            if (typeof state.resetConsecutiveFailures === 'function') {
+              state.resetConsecutiveFailures(topicKey);
+            }
+            setFoundationalReviewTarget(null);
+            navigation.replace('Study', {
+              subject,
+              gradeLevel: targetLesson.grade,
+              topic: targetLesson.topic,
+            });
+          }
+        }}
+        onCancel={() => setFoundationalReviewTarget(null)}
+      />
     </SafeAreaView>
   );
 }

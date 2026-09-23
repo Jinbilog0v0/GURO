@@ -11,6 +11,7 @@ import { PrimaryButton } from '../components/ui/Buttons';
 import { toast } from '../components';
 import { FileService } from '../services/fileService';
 import { styles } from '../styles/StudentProgressReport.styles';
+import itemBankData from '../../assets/item_bank.json';
 import {
   Trophy,
   Calculator,
@@ -24,6 +25,9 @@ import {
   Target,
   Cloud,
   Clock,
+  GraduationCap,
+  TrendingUp,
+  Calendar,
 } from 'lucide-react-native';
 
 export function StudentProgressReportScreen() {
@@ -41,6 +45,14 @@ export function StudentProgressReportScreen() {
   const activeSchoolYear = useAppStore((s) => s.activeSchoolYear || '2026-2027');
   const activeTerm = useAppStore((s) => s.activeTerm || 'Quarter 1');
 
+  // Compute summary stats
+  const totalSessions = studentProgress.length;
+  const totalScore = studentProgress.reduce((sum, item) => sum + item.score, 0);
+  const totalQuestions = studentProgress.reduce((sum, item) => sum + item.totalQuestions, 0);
+  const avgAccuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
+  const syncedCount = studentProgress.filter((p) => p.synced).length;
+  const unsyncedCount = studentProgress.filter((p) => !p.synced).length;
+
   // Compute profile data
   const displayName = currentUser ? currentUser.name : guestName || 'Student';
   const displayGrade = preferredGrade;
@@ -54,7 +66,8 @@ export function StudentProgressReportScreen() {
     const grouped: Record<string, { pre?: number; post?: number }> = {};
 
     studentProgress.forEach((p) => {
-      const key = `${p.subject}::${p.topic}`;
+      const normSubj = p.subject === 'Math' ? 'Mathematics' : p.subject;
+      const key = `${normSubj}::${p.topic}`;
       if (!grouped[key]) grouped[key] = {};
       const pct = p.totalQuestions > 0 ? Math.round((p.score / p.totalQuestions) * 100) : 0;
       if (p.assessmentType === 'pre-test') {
@@ -79,25 +92,18 @@ export function StudentProgressReportScreen() {
     return list;
   }, [studentProgress]);
 
-  // Compute summary stats
-  const totalSessions = studentProgress.length;
-  const totalScore = studentProgress.reduce((sum, item) => sum + item.score, 0);
-  const totalQuestions = studentProgress.reduce((sum, item) => sum + item.totalQuestions, 0);
-  const avgAccuracy = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
-  const syncedCount = studentProgress.filter((p) => p.synced).length;
-  const unsyncedCount = studentProgress.filter((p) => !p.synced).length;
-
   // Get list of all topics in curriculum (itemBank) and/or progress logs
   const gradeStr = String(preferredGrade);
   const subjectsList = ['Mathematics', 'English'] as const;
 
   const topicsBySubject = useMemo(() => {
     const map: Record<string, string[]> = { Mathematics: [], English: [] };
+    const effectiveBank = itemBank || (itemBankData as any);
     
     // 1. Gather from curriculum for current preferred grade
-    if (itemBank) {
+    if (effectiveBank) {
       subjectsList.forEach((sub) => {
-        const gradeData = itemBank[sub]?.[gradeStr];
+        const gradeData = effectiveBank[sub]?.[gradeStr];
         if (gradeData) {
           Object.keys(gradeData).forEach((topic) => {
             if (topic !== 'studyContent' && !map[sub].includes(topic)) {
@@ -110,7 +116,7 @@ export function StudentProgressReportScreen() {
 
     // 2. Gather from actual attempts (e.g. if they attempted other grades' topics)
     studentProgress.forEach((p) => {
-      const sub = p.subject;
+      const sub = p.subject === 'Math' ? 'Mathematics' : p.subject;
       const topic = p.topic;
       if (map[sub] && !map[sub].includes(topic)) {
         map[sub].push(topic);
@@ -125,7 +131,8 @@ export function StudentProgressReportScreen() {
     const stats: Record<string, { totalScore: number; totalQuestions: number; count: number; bestScore: number }> = {};
     
     studentProgress.forEach((p) => {
-      const key = `${p.subject}::${p.topic}`;
+      const normSubj = p.subject === 'Math' ? 'Mathematics' : p.subject;
+      const key = `${normSubj}::${p.topic}`;
       if (!stats[key]) {
         stats[key] = { totalScore: 0, totalQuestions: 0, count: 0, bestScore: 0 };
       }
@@ -188,6 +195,7 @@ export function StudentProgressReportScreen() {
       let txt = `GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Student Progress Report\n`;
       txt += `==============================\n`;
       txt += `Generated : ${dateStr}\n`;
+      txt += `School Year & Term: S.Y. ${activeSchoolYear} • ${activeTerm}\n`;
       txt += `Student   : ${displayName}\n`;
       txt += `Grade     : ${displayGrade}\n`;
       txt += `Level     : ${currentLevel}  (XP: ${xpPoints})\n`;
@@ -287,13 +295,17 @@ export function StudentProgressReportScreen() {
               gap: 6,
             }}
           >
-            <View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+              <Calendar size={13} color={Colors.accentPrimary} />
               <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                SY {activeSchoolYear} · {activeTerm}
+                Enrolled Academic Period: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>S.Y. {activeSchoolYear} • {activeTerm}</Text>
               </Text>
             </View>
             <View
               style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
                 backgroundColor: isEligibleForPromotion ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)',
                 paddingHorizontal: 8,
                 paddingVertical: 4,
@@ -302,6 +314,11 @@ export function StudentProgressReportScreen() {
                 borderColor: isEligibleForPromotion ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)',
               }}
             >
+              {isEligibleForPromotion ? (
+                <GraduationCap size={12} color={Colors.success} />
+              ) : (
+                <Clock size={12} color={Colors.warning} />
+              )}
               <Text
                 style={{
                   fontFamily: Fonts.bodyBold,
@@ -309,7 +326,7 @@ export function StudentProgressReportScreen() {
                   color: isEligibleForPromotion ? Colors.success : Colors.warning,
                 }}
               >
-                {isEligibleForPromotion ? `Eligible for Grade ${nextGradeLevel} Promotion 🎓` : 'Ongoing Quarterly Progress ⏳'}
+                {isEligibleForPromotion ? `Eligible for Grade ${nextGradeLevel} Promotion` : 'Ongoing Quarterly Progress'}
               </Text>
             </View>
           </View>
@@ -345,9 +362,10 @@ export function StudentProgressReportScreen() {
         {/* Diagnostic Pre-Test vs Post-Test Growth Section */}
         {growthComparisons.length > 0 && (
           <View style={{ gap: Spacing.sm }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <TrendingUp size={16} color={Colors.textMain} />
               <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
-                Pre-Test vs Post-Test Growth 📈
+                Pre-Test vs Post-Test Growth
               </Text>
             </View>
 

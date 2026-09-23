@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { GraduationCap, ArrowRight, CheckCircle2, Info, RefreshCw, BarChart2 } from 'lucide-react';
+import { GraduationCap, ArrowRight, CheckCircle2, Info, RefreshCw, BarChart2, Calendar } from 'lucide-react';
 
 interface ClassroomStepProps {
     classroomCode: string;
     teacherName: string;
+    sectionName?: string;
+    schoolYear?: string;
+    term?: string;
     onJoinClassroom: (code: string) => Promise<boolean>;
     onLeaveClassroom: () => void;
 }
@@ -11,6 +14,9 @@ interface ClassroomStepProps {
 export const ClassroomStep: React.FC<ClassroomStepProps> = ({
     classroomCode,
     teacherName,
+    sectionName = '',
+    schoolYear = '2026-2027',
+    term = 'Quarter 1',
     onJoinClassroom,
     onLeaveClassroom,
 }) => {
@@ -62,11 +68,22 @@ export const ClassroomStep: React.FC<ClassroomStepProps> = ({
                         <div className="flex flex-col gap-1 mt-2">
                             <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">ACTIVE CLASSROOM</span>
                             <h2 className="text-3xl font-black text-[var(--text-main)] tracking-tight">{classroomCode}</h2>
-                            {teacherName && (
-                                <p className="text-sm font-semibold text-[var(--text-muted)] mt-1">
-                                    Teacher: <span className="text-[var(--text-main)]">{teacherName}</span>
-                                </p>
-                            )}
+                            <div className="flex items-center gap-2 flex-wrap mt-1">
+                                {teacherName && (
+                                    <span className="text-sm font-semibold text-[var(--text-muted)]">
+                                        Teacher: <strong className="text-[var(--text-main)]">{teacherName}</strong>
+                                    </span>
+                                )}
+                                {sectionName && (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-bold text-xs border border-emerald-500/20">
+                                        Section: {sectionName}
+                                    </span>
+                                )}
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold text-xs border border-sky-500/20">
+                                    <Calendar className="size-3 text-sky-500 shrink-0" />
+                                    <span>S.Y. {schoolYear} • {term}</span>
+                                </span>
+                            </div>
                         </div>
 
                         <div className="h-px bg-[var(--border-color)] w-full" />

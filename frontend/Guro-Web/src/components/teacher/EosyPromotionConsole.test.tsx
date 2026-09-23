@@ -103,5 +103,70 @@ describe('EosyPromotionConsole Component', () => {
     expect(screen.getByText('School Form 9 (SF9) / Learner Progress Report')).toBeInTheDocument();
     expect(screen.getByText('Quarter 1 (Term 1)')).toBeInTheDocument();
     expect(screen.getByText('Official Action on Promotion')).toBeInTheDocument();
+
+    // Test closing with X button
+    const closeBtn = screen.getByRole('button', { name: /Close SF9 Modal/i });
+    fireEvent.click(closeBtn);
+    expect(screen.queryByText('School Form 9 (SF9) / Learner Progress Report')).not.toBeInTheDocument();
+  });
+
+  test('closes SF9 modal when pressing Escape key', async () => {
+    mockApiFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockEosyReport,
+    } as any);
+
+    render(<EosyPromotionConsole classroomCode="MATH-G4-TEST" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('STUDENT-001')).toBeInTheDocument();
+    });
+
+    const sf9Buttons = screen.getAllByRole('button', { name: /SF9 Report/i });
+    fireEvent.click(sf9Buttons[0]);
+    expect(screen.getByText('School Form 9 (SF9) / Learner Progress Report')).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByText('School Form 9 (SF9) / Learner Progress Report')).not.toBeInTheDocument();
+  });
+
+  test('allows editing signatory names and provides download and print buttons', async () => {
+    mockApiFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockEosyReport,
+    } as any);
+
+    // Mock URL methods for file download
+    window.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
+    window.URL.revokeObjectURL = jest.fn();
+
+    render(<EosyPromotionConsole classroomCode="MATH-G4-TEST" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('STUDENT-001')).toBeInTheDocument();
+    });
+
+    const sf9Buttons = screen.getAllByRole('button', { name: /SF9 Report/i });
+    fireEvent.click(sf9Buttons[0]);
+
+    // Check signatory inputs
+    const adviserInput = screen.getByLabelText('Class Adviser Name');
+    const principalInput = screen.getByLabelText('Principal / School Head Name');
+
+    fireEvent.change(adviserInput, { target: { value: 'Maria Santos, LPT' } });
+    fireEvent.change(principalInput, { target: { value: 'Dr. Roberto Reyes' } });
+
+    expect(adviserInput).toHaveValue('Maria Santos, LPT');
+    expect(principalInput).toHaveValue('Dr. Roberto Reyes');
+
+    // Check buttons
+    const downloadBtn = screen.getByRole('button', { name: /Download SF9/i });
+    const printBtn = screen.getByRole('button', { name: /Print \/ Save as PDF/i });
+
+    expect(downloadBtn).toBeInTheDocument();
+    expect(printBtn).toBeInTheDocument();
+
+    fireEvent.click(downloadBtn);
+    expect(window.URL.createObjectURL).toHaveBeenCalled();
   });
 });

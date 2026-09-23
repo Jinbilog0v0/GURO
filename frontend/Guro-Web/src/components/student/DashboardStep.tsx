@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, BookOpen, Trophy, TrendingUp, Lock, Play, Rocket, ShoppingBag, Sparkles, X, Clock, ArrowLeft, Flame, GraduationCap, Star, Inbox } from 'lucide-react';
+import { Calculator, BookOpen, Trophy, TrendingUp, Lock, Play, Rocket, ShoppingBag, Sparkles, X, Clock, ArrowLeft, Flame, GraduationCap, Star, Inbox, Calendar } from 'lucide-react';
 import { SubjectCard } from './SubjectCard';
 import { StatCard } from './StatCard';
 import { StudentProfile } from './StudentProfile';
@@ -44,9 +44,12 @@ interface DashboardStepProps {
     dailyTimeLimit: number;
     isTimeLimitExceeded: boolean;
 
-    // Classroom Connection
+    // Classroom Connection & Academic Term
     classroomCode?: string;
     teacherName?: string;
+    sectionName?: string;
+    schoolYear?: string;
+    term?: string;
     onJoinClassroom?: (code: string) => Promise<boolean>;
     onLeaveClassroom?: () => void;
     activeSubjects?: string[];
@@ -110,9 +113,12 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
     dailyTimeLimit = 0,
     isTimeLimitExceeded = false,
 
-    // Classroom Connection
+    // Classroom Connection & Academic Term
     classroomCode = '',
     teacherName = '',
+    sectionName = '',
+    schoolYear = '2026-2027',
+    term = 'Quarter 1',
     onJoinClassroom,
     onLeaveClassroom,
     activeSubjects = ['Mathematics', 'English'],
@@ -174,6 +180,10 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                         </button>
                     </div>
                     <div className="flex items-center gap-3">
+                        <div className="px-4 py-2 rounded-full shadow-md font-bold text-xs tracking-tight border bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200/60 dark:border-sky-800/60 flex items-center gap-1.5" title="Active School Year & Academic Term">
+                            <Calendar className="size-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
+                            <span>S.Y. {schoolYear} • {term}</span>
+                        </div>
                         <div className={`px-5 py-2.5 rounded-full shadow-md font-bold text-sm tracking-tight border ${
                             selectedGrade === 4 ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' :
                             selectedGrade === 5 ? 'bg-blue-50 text-blue-700 border-blue-200/60' :
@@ -232,9 +242,15 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                     <div className="flex-1 text-center md:text-left w-full flex flex-col justify-center">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
-                                <span className="bg-white/25 text-white font-extrabold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full">
-                                    Student Dashboard
-                                </span>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="bg-white/25 text-white font-extrabold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full">
+                                        Student Dashboard
+                                    </span>
+                                    <span className="bg-white/20 text-white font-extrabold text-[10px] tracking-wide px-3 py-1 rounded-full flex items-center gap-1">
+                                        <Calendar className="size-3 shrink-0 text-white" />
+                                        <span>S.Y. {schoolYear} • {term}</span>
+                                    </span>
+                                </div>
                                 <h1 className="text-2xl md:text-3xl font-black mt-2">
                                     Welcome back, {userName}!
                                 </h1>
@@ -257,7 +273,7 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                         <div className="mt-3 relative bg-white/10 border border-white/20 rounded-2xl p-3 text-xs font-extrabold leading-normal text-white flex items-center gap-2 max-w-xl">
                             <Sparkles className="size-3.5 text-amber-300 shrink-0" />
                             <p className="margin-0 text-left">
-                                <span className="text-amber-300">🦉 Mascot: </span>
+                                <span className="text-amber-300">Companion Guide: </span>
                                 "{mascotMessage}"
                             </p>
                         </div>
@@ -294,9 +310,24 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                                             Teacher: {teacherName}
                                         </span>
                                     ) : null}
+                                    {sectionName ? (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-bold text-[11px] border border-emerald-500/20">
+                                            Sec: {sectionName}
+                                        </span>
+                                    ) : null}
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold text-[11px] border border-purple-500/20">
+                                        <Calendar className="size-3 shrink-0" />
+                                        <span>Term: {term} (S.Y. {schoolYear})</span>
+                                    </span>
                                 </>
                             ) : (
-                                <span>Not connected to any classroom. Enter your teacher's code to sync practice lessons.</span>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span>Not connected to any classroom.</span>
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-600 font-bold text-[11px] border border-sky-500/20">
+                                        <Calendar className="size-3 shrink-0" />
+                                        <span>Current Term: {term} (S.Y. {schoolYear})</span>
+                                    </span>
+                                </div>
                             )}
                         </div>
                     </div>

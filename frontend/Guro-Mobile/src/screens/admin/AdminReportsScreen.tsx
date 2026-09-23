@@ -20,16 +20,19 @@ import {
   BarChart2,
   TrendingUp,
   Target,
-  ArrowLeft,
+  Sparkles,
+  Menu,
 } from 'lucide-react-native';
 import { adminService, ReportsData } from '../../services/adminService';
 import { Colors } from '../../theme/colors';
 import { Fonts, FontSizes } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import { toast } from '../../components';
+import { AdminSidebar } from '../../components/admin/AdminSidebar';
 
 export function AdminReportsScreen() {
   const navigation = useNavigation<any>();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [data, setData] = useState<ReportsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -69,24 +72,30 @@ export function AdminReportsScreen() {
 
   const strugglingTopics = data?.topicMastery?.filter((t) => t.isStruggling) || [];
 
+  // Calculate overall division average mastery rate
+  const totalTopicsCount = data?.topicMastery?.length || 0;
+  const masteredTopicsCount = data?.topicMastery?.filter((t) => !t.isStruggling).length || 0;
+  const overallMasteryRate = totalTopicsCount > 0 ? Math.round((masteredTopicsCount / totalTopicsCount) * 100) : 0;
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Overview')}
-            style={styles.backBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            onPress={() => setSidebarOpen(true)}
+            style={styles.menuBtn}
+            activeOpacity={0.7}
+            accessibilityLabel="Open navigation menu"
           >
-            <ArrowLeft size={20} color={Colors.textMain} />
+            <Menu size={20} color={Colors.textMain} />
           </TouchableOpacity>
           <View style={styles.iconBox}>
             <Award size={20} color={Colors.accentSecondary} />
           </View>
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.title}>Division Analytics &amp; Reports</Text>
-            <Text style={styles.subtitle}>Curriculum mastery and diagnostic intervention alerts</Text>
+            <Text style={styles.title}>Division Reports</Text>
+            <Text style={styles.subtitle}>Division-wide mastery, diagnostics, and subject analytics</Text>
           </View>
         </View>
       </View>
@@ -102,21 +111,14 @@ export function AdminReportsScreen() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.accentSecondary} />}
         >
-          {/* Summary Cards */}
+          {/* Summary Cards Grid (2x2) */}
           <View style={styles.summaryGrid}>
             <View style={styles.summaryCard}>
               <View style={styles.summaryHeader}>
-                <Text style={styles.summaryLabel}>TOTAL ATTEMPTS</Text>
-                <Target size={15} color={Colors.accentPrimary} />
-              </View>
-              <Text style={styles.summaryValue}>{data?.totalAssessments ?? 0}</Text>
-              <Text style={styles.summarySubtitle}>Completed Quizzes</Text>
-            </View>
-
-            <View style={styles.summaryCard}>
-              <View style={styles.summaryHeader}>
                 <Text style={styles.summaryLabel}>MATH AVERAGE</Text>
-                <Calculator size={15} color={Colors.accentPrimary} />
+                <View style={[styles.summaryIconBox, { backgroundColor: 'rgba(17,66,142,0.1)' }]}>
+                  <Calculator size={15} color={Colors.accentPrimary} />
+                </View>
               </View>
               <Text style={[styles.summaryValue, { color: Colors.accentPrimary }]}>
                 {data?.mathAverage ?? 0}%
@@ -127,12 +129,38 @@ export function AdminReportsScreen() {
             <View style={styles.summaryCard}>
               <View style={styles.summaryHeader}>
                 <Text style={styles.summaryLabel}>ENGLISH AVERAGE</Text>
-                <BookOpen size={15} color={Colors.success} />
+                <View style={[styles.summaryIconBox, { backgroundColor: 'rgba(22,163,74,0.1)' }]}>
+                  <BookOpen size={15} color={Colors.success} />
+                </View>
               </View>
               <Text style={[styles.summaryValue, { color: Colors.success }]}>
                 {data?.englishAverage ?? 0}%
               </Text>
               <Text style={styles.summarySubtitle}>Across Grades 4-6</Text>
+            </View>
+
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryHeader}>
+                <Text style={styles.summaryLabel}>TOTAL ASSESSMENTS</Text>
+                <View style={[styles.summaryIconBox, { backgroundColor: 'rgba(147,51,234,0.1)' }]}>
+                  <Target size={15} color="#9333EA" />
+                </View>
+              </View>
+              <Text style={styles.summaryValue}>{data?.totalAssessments ?? 0}</Text>
+              <Text style={styles.summarySubtitle}>Completed Submissions</Text>
+            </View>
+
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryHeader}>
+                <Text style={styles.summaryLabel}>MASTERY RATE</Text>
+                <View style={[styles.summaryIconBox, { backgroundColor: 'rgba(232,137,12,0.1)' }]}>
+                  <TrendingUp size={15} color={Colors.warning} />
+                </View>
+              </View>
+              <Text style={[styles.summaryValue, { color: Colors.warning }]}>
+                {overallMasteryRate}%
+              </Text>
+              <Text style={styles.summarySubtitle}>{masteredTopicsCount}/{totalTopicsCount} Topics Mastered</Text>
             </View>
           </View>
 
@@ -140,21 +168,32 @@ export function AdminReportsScreen() {
           {strugglingTopics.length > 0 && (
             <View style={styles.alertCard}>
               <View style={styles.alertHeader}>
-                <AlertTriangle size={18} color={Colors.danger} />
-                <Text style={styles.alertTitle}>Priority Intervention Alerts</Text>
+                <View style={styles.alertIconBox}>
+                  <AlertTriangle size={18} color={Colors.danger} />
+                </View>
+                <View style={styles.alertTitleContainer}>
+                  <Text style={styles.alertTitle}>Priority Diagnostic Alerts</Text>
+                  <Text style={styles.alertSubtitle}>
+                    {strugglingTopics.length} {strugglingTopics.length === 1 ? 'topic falls' : 'topics fall'} below the 75% mastery benchmark and require teacher intervention:
+                  </Text>
+                </View>
               </View>
-              <Text style={styles.alertSubtitle}>
-                {strugglingTopics.length} {strugglingTopics.length === 1 ? 'topic falls' : 'topics fall'} below the 75% mastery benchmark and require teacher intervention:
-              </Text>
 
               <View style={styles.strugglingList}>
                 {strugglingTopics.map((t) => (
                   <View key={t.key} style={styles.strugglingItem}>
                     <View style={styles.strugglingLeft}>
                       <Text style={styles.strugglingTopic}>{t.topic}</Text>
-                      <Text style={styles.strugglingMeta}>
-                        Grade {t.gradeLevel} · {t.subject} · {t.totalAttempts} attempts
-                      </Text>
+                      <View style={styles.strugglingMetaRow}>
+                        {t.subject === 'Mathematics' ? (
+                          <Calculator size={11} color={Colors.accentPrimary} />
+                        ) : (
+                          <BookOpen size={11} color={Colors.success} />
+                        )}
+                        <Text style={styles.strugglingMeta}>
+                          Grade {t.gradeLevel} · {t.subject} · {t.totalAttempts} attempts
+                        </Text>
+                      </View>
                     </View>
                     <View style={styles.strugglingBadge}>
                       <Text style={styles.strugglingBadgeText}>{t.averageScore}% avg</Text>
@@ -179,8 +218,11 @@ export function AdminReportsScreen() {
                     <Text style={styles.gradeLabel}>{grade}</Text>
                     <Text style={styles.gradeScore}>{metrics.averageScore}%</Text>
                     <Text style={styles.gradeMeta}>
-                      {metrics.totalAttempts} attempts • {metrics.masteryRate}% mastery
+                      {metrics.totalAttempts} tests
                     </Text>
+                    <View style={styles.gradeMasteryBadge}>
+                      <Text style={styles.gradeMasteryText}>{metrics.masteryRate}% mastery</Text>
+                    </View>
                   </View>
                 ))}
               </View>
@@ -252,7 +294,7 @@ export function AdminReportsScreen() {
               <Text style={styles.cardTitle}>Master Cache Maintenance</Text>
             </View>
             <Text style={styles.purgeDesc}>
-              Purging cached item banks forces all devices to reload the latest official DepEd item banks on next sync.
+              Purging cached item banks forces all mobile devices to reload the latest official DepEd item banks on their next synchronization.
             </Text>
             <TouchableOpacity
               style={[styles.purgeBtn, purgingCache && { opacity: 0.6 }]}
@@ -266,6 +308,14 @@ export function AdminReportsScreen() {
           </View>
         </ScrollView>
       )}
+
+      {/* Admin Sidebar Navigation */}
+      <AdminSidebar
+        visible={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        navigation={navigation}
+        currentRoute="Reports"
+      />
     </SafeAreaView>
   );
 }
@@ -285,9 +335,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.xs,
   },
-  backBtn: {
-    padding: 6,
-    marginRight: 2,
+  menuBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.bgCard,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   iconBox: {
     width: 36,
@@ -337,7 +393,7 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     flex: 1,
-    minWidth: '29%',
+    minWidth: '47%',
     backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -351,14 +407,21 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 9,
+    fontSize: 10,
     color: Colors.textMuted,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
+  summaryIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: Radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   summaryValue: {
     fontFamily: Fonts.display,
-    fontSize: 20,
+    fontSize: 22,
     color: Colors.textMain,
     fontWeight: '800',
     marginTop: 4,
@@ -368,6 +431,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: Colors.textMuted,
     marginTop: 2,
+    fontWeight: '600',
   },
   alertCard: {
     backgroundColor: 'rgba(160,19,34,0.08)',
@@ -379,8 +443,20 @@ const styles = StyleSheet.create({
   },
   alertHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: Spacing.xs,
+  },
+  alertIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: Radius.md,
+    backgroundColor: 'rgba(160,19,34,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  alertTitleContainer: {
+    flex: 1,
   },
   alertTitle: {
     fontFamily: Fonts.display,
@@ -392,6 +468,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: 11,
     color: Colors.textMuted,
+    marginTop: 2,
   },
   strugglingList: {
     gap: Spacing.xs,
@@ -418,6 +495,12 @@ const styles = StyleSheet.create({
     color: Colors.textMain,
     fontWeight: '700',
   },
+  strugglingMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
   strugglingMeta: {
     fontFamily: Fonts.body,
     fontSize: 10,
@@ -425,7 +508,7 @@ const styles = StyleSheet.create({
   },
   strugglingBadge: {
     backgroundColor: 'rgba(160,19,34,0.1)',
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: Radius.full,
   },
@@ -466,6 +549,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     padding: Spacing.sm,
     alignItems: 'center',
+    gap: 2,
   },
   gradeLabel: {
     fontFamily: Fonts.bodySemiBold,
@@ -484,8 +568,20 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: 9,
     color: Colors.textMuted,
-    marginTop: 2,
     textAlign: 'center',
+  },
+  gradeMasteryBadge: {
+    backgroundColor: 'rgba(22,163,74,0.1)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: Radius.full,
+    marginTop: 2,
+  },
+  gradeMasteryText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 9,
+    color: Colors.success,
+    fontWeight: '700',
   },
   topicList: {
     gap: Spacing.xs,

@@ -6,9 +6,10 @@ import { QuizResultsStep } from '../components/student/QuizResultsStep';
 import { StudyContentStep } from '../components/student/StudyContentStep';
 import { StudentShell, type ShellView } from '../components/student/StudentShell';
 import { ProgressView } from '../components/student/ProgressView';
-import { BookOpen, Calculator, Inbox, CheckCircle2, Circle, TrendingUp, GraduationCap } from 'lucide-react';
+import { BookOpen, Calculator, Inbox, CheckCircle2, Circle, TrendingUp, GraduationCap, Lock } from 'lucide-react';
 import { getParentAccessCode } from '../utils/security';
 import { LogoutConfirmModal } from '../components/shared/LogoutConfirmModal';
+import { ConfirmModal } from '../components/shared/ConfirmModal';
 import { ClassroomStep } from '../components/student/ClassroomStep';
 import { toast } from '../utils/toast';
 import { apiFetch } from '../utils/api';
@@ -411,6 +412,15 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     const [teacherName, setTeacherName] = useState(() => {
         return localStorage.getItem(`guro_student_teacher_name_${activeStudentId}`) || localStorage.getItem('guro_student_teacher_name') || '';
     });
+    const [activeSchoolYear, setActiveSchoolYear] = useState(() => {
+        return localStorage.getItem(`guro_student_school_year_${activeStudentId}`) || localStorage.getItem('guro_student_school_year') || '2026-2027';
+    });
+    const [activeTerm, setActiveTerm] = useState(() => {
+        return localStorage.getItem(`guro_student_term_${activeStudentId}`) || localStorage.getItem('guro_student_term') || 'Quarter 1';
+    });
+    const [activeSectionName, setActiveSectionName] = useState(() => {
+        return localStorage.getItem(`guro_student_section_${activeStudentId}`) || localStorage.getItem('guro_student_section') || '';
+    });
 
     // Quiz execution state
     const [questions, setQuestions] = useState<QuestionItem[]>([]);
@@ -427,6 +437,8 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
             return {};
         }
     });
+
+    const [pendingGradeSwitch, setPendingGradeSwitch] = useState<{ targetGrade: number; classGrade: number; classroomCode: string } | null>(null);
 
     // Sync metrics history scoped to current student account
     const [lessonsCompleted, setLessonsCompleted] = useState<number>(() => {
@@ -481,8 +493,9 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     }, [selectedSubject]);
 
     useEffect(() => {
-        if (activeSubjects.length > 0 && !activeSubjects.includes(selectedSubject)) {
-            setSelectedSubject(activeSubjects[0] as any);
+        const validSubjects = Array.from(new Set(['Mathematics', 'English', ...(activeSubjects || [])]));
+        if (validSubjects.length > 0 && !validSubjects.includes(selectedSubject)) {
+            setSelectedSubject(validSubjects[0] as any);
         }
     }, [activeSubjects, selectedSubject]);
 
@@ -713,7 +726,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                     }
                 }
 
-                // Auto-verify and populate teacherName if not already cached
+                // Auto-verify and populate teacherName, schoolYear, term, and sectionName if not already cached
                 try {
                     const verRes = await apiFetch(`/api/classroom/verify?code=${encodeURIComponent(activeCode.trim().toUpperCase())}`);
                     if (verRes.ok) {
@@ -722,6 +735,21 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                             setTeacherName(verData.teacherName);
                             localStorage.setItem('guro_student_teacher_name', verData.teacherName);
                             localStorage.setItem(`guro_student_teacher_name_${activeStudentId}`, verData.teacherName);
+                        }
+                        if (verData.schoolYear) {
+                            setActiveSchoolYear(verData.schoolYear);
+                            localStorage.setItem('guro_student_school_year', verData.schoolYear);
+                            localStorage.setItem(`guro_student_school_year_${activeStudentId}`, verData.schoolYear);
+                        }
+                        if (verData.term) {
+                            setActiveTerm(verData.term);
+                            localStorage.setItem('guro_student_term', verData.term);
+                            localStorage.setItem(`guro_student_term_${activeStudentId}`, verData.term);
+                        }
+                        if (verData.sectionName) {
+                            setActiveSectionName(verData.sectionName);
+                            localStorage.setItem('guro_student_section', verData.sectionName);
+                            localStorage.setItem(`guro_student_section_${activeStudentId}`, verData.sectionName);
                         }
                     }
                 } catch (e) {}
@@ -734,7 +762,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         } finally {
             setItemBankLoading(false);
         }
-    }, [classroomCode]);
+    }, [classroomCode, activeStudentId]);
 
     const handleJoinClassroom = async (code: string): Promise<boolean> => {
         try {
@@ -755,6 +783,22 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                 localStorage.setItem('guro_student_teacher_name', data.teacherName || '');
                 localStorage.setItem(`guro_student_teacher_name_${activeStudentId}`, data.teacherName || '');
                 
+                if (data.schoolYear) {
+                    setActiveSchoolYear(data.schoolYear);
+                    localStorage.setItem('guro_student_school_year', data.schoolYear);
+                    localStorage.setItem(`guro_student_school_year_${activeStudentId}`, data.schoolYear);
+                }
+                if (data.term) {
+                    setActiveTerm(data.term);
+                    localStorage.setItem('guro_student_term', data.term);
+                    localStorage.setItem(`guro_student_term_${activeStudentId}`, data.term);
+                }
+                if (data.sectionName) {
+                    setActiveSectionName(data.sectionName);
+                    localStorage.setItem('guro_student_section', data.sectionName);
+                    localStorage.setItem(`guro_student_section_${activeStudentId}`, data.sectionName);
+                }
+
                 // Pair this student name on the server as a classroom member
                 const pairRes = await apiFetch('/api/classroom/pair', {
                     method: 'POST',
@@ -785,10 +829,19 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     const handleLeaveClassroom = () => {
         setClassroomCode('');
         setTeacherName('');
+        setActiveSchoolYear('2026-2027');
+        setActiveTerm('Quarter 1');
+        setActiveSectionName('');
         localStorage.removeItem('guro_student_classroom_id');
         localStorage.removeItem(`guro_student_classroom_id_${activeStudentId}`);
         localStorage.removeItem('guro_student_teacher_name');
         localStorage.removeItem(`guro_student_teacher_name_${activeStudentId}`);
+        localStorage.removeItem('guro_student_school_year');
+        localStorage.removeItem(`guro_student_school_year_${activeStudentId}`);
+        localStorage.removeItem('guro_student_term');
+        localStorage.removeItem(`guro_student_term_${activeStudentId}`);
+        localStorage.removeItem('guro_student_section');
+        localStorage.removeItem(`guro_student_section_${activeStudentId}`);
         toast.success('Successfully left classroom.');
         fetchItemBank('');
     };
@@ -879,9 +932,8 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
 
     // Helper to get available topics for a subject & grade level
     const getTopicsForCurrentSelection = (subject: 'Mathematics' | 'English'): string[] => {
-        if (activeSubjects && !activeSubjects.includes(subject)) return [];
         const gradeStr = selectedGrade.toString();
-        const subjectNode = itemBank[subject];
+        const subjectNode = itemBank[subject] || FALLBACK_ITEM_BANK[subject];
         if (!subjectNode) return [];
         const gradeNode = subjectNode[gradeStr];
         if (!gradeNode) return [];
@@ -898,7 +950,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     const prepareQuestions = (topicName: string, subjectName?: string): QuestionItem[] | null => {
         const gradeStr = selectedGrade.toString();
         const subject = subjectName || selectedSubject;
-        const topicNode = itemBank[subject]?.[gradeStr]?.[topicName];
+        const topicNode = itemBank[subject]?.[gradeStr]?.[topicName] || FALLBACK_ITEM_BANK[subject]?.[gradeStr]?.[topicName];
         if (!topicNode) return null;
 
         const allQuestions: QuestionItem[] = [];
@@ -965,7 +1017,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
 
         // Check for study content
         const gradeStr = selectedGrade.toString();
-        const topicNode = itemBank[subject]?.[gradeStr]?.[topicName] as any;
+        const topicNode = (itemBank[subject]?.[gradeStr]?.[topicName] || FALLBACK_ITEM_BANK[subject]?.[gradeStr]?.[topicName]) as any;
         const hasStudyContent =
             topicNode?.studyContent &&
             (topicNode.studyContent.introduction || topicNode.studyContent.definitions?.length > 0);
@@ -1240,17 +1292,14 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                     userName={userName}
                     email={currentUser?.email}
                     selectedGrade={selectedGrade}
+                    schoolYear={activeSchoolYear}
+                    term={activeTerm}
                     onGradeChange={(grade) => {
                         if (classroomCode) {
                             const classGradeMatch = classroomCode.match(/-G([4-6])-/i);
                             const classGrade = classGradeMatch ? parseInt(classGradeMatch[1], 10) : null;
                             if (classGrade && classGrade !== grade) {
-                                if (window.confirm(`You are currently enrolled in a Grade ${classGrade} classroom (${classroomCode}). Switching to Grade ${grade} will leave this classroom. Do you want to proceed?`)) {
-                                    handleLeaveClassroom();
-                                    setSelectedGrade(grade);
-                                    localStorage.setItem(STORAGE_KEY_GRADE, String(grade));
-                                    setStep('dashboard');
-                                }
+                                setPendingGradeSwitch({ targetGrade: grade, classGrade, classroomCode });
                                 return;
                             }
                         }
@@ -1308,9 +1357,12 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                             dailyTimeLimit={dailyTimeLimit}
                             isTimeLimitExceeded={isTimeLimitExceeded}
 
-                            // Classroom Connection
+                            // Classroom Connection & Academic Term
                             classroomCode={classroomCode}
                             teacherName={teacherName}
+                            sectionName={activeSectionName}
+                            schoolYear={activeSchoolYear}
+                            term={activeTerm}
                             onJoinClassroom={handleJoinClassroom}
                             onLeaveClassroom={handleLeaveClassroom}
                         />
@@ -1339,7 +1391,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                                     {/* English lock banner in topics view */}
                                     {selectedSubject === 'English' && isEnglishLocked && (
                                         <div className="flex items-start gap-2.5 w-full max-w-lg px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl mt-2">
-                                            <span className="text-amber-500 text-lg shrink-0">🔒</span>
+                                            <Lock className="size-4 text-amber-500 shrink-0 mt-0.5" />
                                             <p className="text-xs font-semibold text-[var(--text-muted)] text-left">{englishLockReason}</p>
                                         </div>
                                     )}
@@ -1454,6 +1506,9 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                         <ClassroomStep
                             classroomCode={classroomCode}
                             teacherName={teacherName}
+                            sectionName={activeSectionName}
+                            schoolYear={activeSchoolYear}
+                            term={activeTerm}
                             onJoinClassroom={handleJoinClassroom}
                             onLeaveClassroom={handleLeaveClassroom}
                         />
@@ -1528,6 +1583,28 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                 isOpen={isLogoutModalOpen}
                 onClose={() => setIsLogoutModalOpen(false)}
                 onConfirm={confirmLogout}
+            />
+            <ConfirmModal
+                isOpen={!!pendingGradeSwitch}
+                title="Switch Grade Level?"
+                description={
+                    pendingGradeSwitch
+                        ? `You are currently enrolled in a Grade ${pendingGradeSwitch.classGrade} classroom (${pendingGradeSwitch.classroomCode}). Switching to Grade ${pendingGradeSwitch.targetGrade} will disconnect you from this classroom.`
+                        : ''
+                }
+                confirmText="Leave & Switch Grade"
+                cancelText="Keep Current Grade"
+                variant="warning"
+                onClose={() => setPendingGradeSwitch(null)}
+                onConfirm={() => {
+                    if (pendingGradeSwitch) {
+                        handleLeaveClassroom();
+                        setSelectedGrade(pendingGradeSwitch.targetGrade);
+                        localStorage.setItem(STORAGE_KEY_GRADE, String(pendingGradeSwitch.targetGrade));
+                        setStep('dashboard');
+                        setPendingGradeSwitch(null);
+                    }
+                }}
             />
         </div>
     );

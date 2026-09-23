@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '../../utils/api';
 import {
   Zap, Shield, Clock, Users, Trash2, Plus, RefreshCw,
-  ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, ToggleLeft, ToggleRight,
+  ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, ToggleLeft, ToggleRight, FileText,
 } from 'lucide-react';
+import { ConfirmModal } from '../shared/ConfirmModal';
 
 interface RateLimitConfig {
   id: number;
@@ -119,14 +120,24 @@ export function RateLimitPanel() {
     finally { setSaving(null); }
   };
 
-  const handleDelete = async (role: string) => {
-    if (!confirm(`Remove rate limit rule for "${role}"?`)) return;
+  const [deleteRoleTarget, setDeleteRoleTarget] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = (role: string) => {
+    setDeleteRoleTarget(role);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteRoleTarget) return;
+    setIsDeleting(true);
     try {
-      await apiFetch(`/api/dev/rate-limits/${role}`, { method: 'DELETE' });
-      flash(`Removed rule for "${role}".`, 'success');
+      await apiFetch(`/api/dev/rate-limits/${deleteRoleTarget}`, { method: 'DELETE' });
+      flash(`Removed rule for "${deleteRoleTarget}".`, 'success');
+      setDeleteRoleTarget(null);
       await fetchConfigs();
       await fetchUsage();
     } catch { flash('Failed to delete.', 'error'); }
+    finally { setIsDeleting(false); }
   };
 
   const handleAdd = async () => {
@@ -447,7 +458,10 @@ export function RateLimitPanel() {
                       </div>
                     )}
                     {cfg.notes && (
-                      <p className="mt-3 text-[11px] italic text-[var(--text-muted)] border-t border-[var(--border-color)] pt-2">📝 {cfg.notes}</p>
+                      <p className="mt-3 text-[11px] italic text-[var(--text-muted)] border-t border-[var(--border-color)] pt-2 flex items-center gap-1.5">
+                        <FileText size={11} className="shrink-0" />
+                        <span>{cfg.notes}</span>
+                      </p>
                     )}
                   </div>
                 )}
@@ -456,6 +470,23 @@ export function RateLimitPanel() {
           })}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteRoleTarget}
+        onClose={() => setDeleteRoleTarget(null)}
+        onConfirm={executeDelete}
+        title="Remove Rate Limit Rule"
+        message={
+          deleteRoleTarget ? (
+            <span>
+              Are you sure you want to remove the rate limit rule for role <strong className="text-[var(--text-main)] uppercase tracking-wider font-extrabold">{deleteRoleTarget}</strong>?
+            </span>
+          ) : null
+        }
+        confirmLabel="Remove Rule"
+        variant="danger"
+        loading={isDeleting}
+      />
     </div>
   );
 }

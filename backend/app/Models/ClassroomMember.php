@@ -12,6 +12,7 @@ class ClassroomMember extends Model
     protected $fillable = [
         'classroom_id',
         'student_id',
+        'section_name',
         'status',
         'promoted_to_grade',
         'final_average',

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
 import { List } from 'react-window';
-import { Search, AlertCircle, Inbox, BarChart3, Calculator, BookOpen, User, Star, TrendingUp, AlertTriangle, Calendar, Trash2, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { Search, AlertCircle, Inbox, BarChart3, Calculator, BookOpen, User, Star, TrendingUp, AlertTriangle, Calendar, Trash2, UserPlus, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { ActivityHeatmap } from '../components/parent/ActivityHeatmap';
 import { TutorReport } from '../components/parent/TutorReport';
 import { BadgeCase } from '../components/parent/BadgeCase';
@@ -380,7 +380,10 @@ export function ParentSpace({
 
             {createStudentSuccess && (
               <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-800 text-xs font-semibold mt-2 flex flex-col gap-2">
-                <p className="font-extrabold text-emerald-950 flex items-center gap-1">✓ Account Created Successfully!</p>
+                <p className="font-extrabold text-emerald-950 flex items-center gap-1.5">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                  <span>Account Created Successfully!</span>
+                </p>
                 <p className="mt-1">Student ID: <code className="font-mono bg-emerald-500/5 px-1 py-0.5 rounded text-sm font-bold">{createStudentSuccess.studentId}</code></p>
                 <p>Access Code: <code className="font-mono bg-emerald-500/5 px-1 py-0.5 rounded text-sm font-bold">{createStudentSuccess.accessCode}</code></p>
                 <p className="text-[11px] text-emerald-700 mt-1" style={{ lineHeight: '15px' }}>Credentials have been saved. Your child can now log in using this email and password!</p>

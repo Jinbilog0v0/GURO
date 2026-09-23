@@ -27,12 +27,15 @@ import {
   Lock,
   UserCheck,
   ArrowLeft,
+  Menu,
 } from 'lucide-react-native';
 import { adminService, UserRecord } from '../../services/adminService';
 import { Colors } from '../../theme/colors';
 import { Fonts, FontSizes } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import { toast } from '../../components';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { AdminSidebar } from '../../components/admin/AdminSidebar';
 
 const ROLE_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   teacher: { bg: 'rgba(17,66,142,0.1)', text: '#11428E', label: 'Teacher' },
@@ -45,29 +48,53 @@ const ROLE_COLORS: Record<string, { bg: string; text: string; label: string }> =
 
 export function AdminUsersScreen() {
   const navigation = useNavigation<any>();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedRole, setSelectedRole] = useState('all');
   const [search, setSearch] = useState('');
 
-  // Role Edit Modal
   const [roleModalVisible, setRoleModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
-  const [newRole, setNewRole] = useState('teacher');
+  const [newRole, setNewRole] = useState('student');
   const [updatingRole, setUpdatingRole] = useState(false);
 
-  // Password Reset Modal
+  // Password Reset Modal State
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [resettingUser, setResettingUser] = useState<UserRecord | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [submittingReset, setSubmittingReset] = useState(false);
 
+  // Delete User Modal State
+  const [deletingUser, setDeletingUser] = useState<UserRecord | null>(null);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
+
+  const [counts, setCounts] = useState({
+    all: 0,
+    teacher: 0,
+    parent: 0,
+    student: 0,
+    admin: 0,
+  });
+
   const loadUsers = async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);
     const result = await adminService.getUsers(selectedRole, search);
     if (result.success) {
-      setUsers(result.users || []);
+      const userList = result.users || [];
+      setUsers(userList);
+      if (result.counts) {
+        setCounts(result.counts);
+      } else if (selectedRole === 'all') {
+        setCounts({
+          all: userList.length,
+          teacher: userList.filter((u) => u.role === 'teacher').length,
+          parent: userList.filter((u) => u.role === 'parent').length,
+          student: userList.filter((u) => u.role === 'student').length,
+          admin: userList.filter((u) => u.role === 'admin' || u.role === 'developer').length,
+        });
+      }
     } else {
       toast.error(result.error || 'Failed to load user accounts.');
     }
@@ -132,26 +159,21 @@ export function AdminUsersScreen() {
   };
 
   const handleDeleteUser = (user: UserRecord) => {
-    Alert.alert(
-      'Delete User Account',
-      `Are you sure you want to permanently delete ${user.name} (${user.email})? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const res = await adminService.deleteUser(user.id);
-            if (res.success) {
-              toast.success(`User ${user.name} deleted.`);
-              loadUsers(true);
-            } else {
-              toast.error(res.error || 'Failed to delete user.');
-            }
-          },
-        },
-      ]
-    );
+    setDeletingUser(user);
+  };
+
+  const executeDeleteUser = async () => {
+    if (!deletingUser) return;
+    setIsDeletingUser(true);
+    const res = await adminService.deleteUser(deletingUser.id);
+    setIsDeletingUser(false);
+    if (res.success) {
+      toast.success(`User ${deletingUser.name} deleted.`);
+      setDeletingUser(null);
+      loadUsers(true);
+    } else {
+      toast.error(res.error || 'Failed to delete user.');
+    }
   };
 
   return (
@@ -160,11 +182,12 @@ export function AdminUsersScreen() {
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Overview')}
-            style={styles.backBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            onPress={() => setSidebarOpen(true)}
+            style={styles.menuBtn}
+            activeOpacity={0.7}
+            accessibilityLabel="Open navigation menu"
           >
-            <ArrowLeft size={20} color={Colors.textMain} />
+            <Menu size={20} color={Colors.textMain} />
           </TouchableOpacity>
           <View style={styles.iconBox}>
             <Users size={20} color={Colors.accentSecondary} />
@@ -198,29 +221,40 @@ export function AdminUsersScreen() {
       </View>
 
       {/* Role Filter Tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterTabsRow}>
-        {[
-          { id: 'all', label: 'All' },
-          { id: 'teacher', label: 'Teachers' },
-          { id: 'parent', label: 'Parents' },
-          { id: 'student', label: 'Students' },
-          { id: 'admin', label: 'Admins' },
-        ].map((tab) => {
-          const isActive = selectedRole === tab.id;
-          return (
-            <TouchableOpacity
-              key={tab.id}
-              style={[styles.filterTab, isActive && styles.filterTabActive]}
-              onPress={() => setSelectedRole(tab.id)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterTabText, isActive && styles.filterTabTextActive]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      <View style={styles.filterTabsContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterTabsRow}
+        >
+          {[
+            { id: 'all', label: 'All', count: counts.all },
+            { id: 'teacher', label: 'Teacher', count: counts.teacher },
+            { id: 'parent', label: 'Parent', count: counts.parent },
+            { id: 'student', label: 'Student', count: counts.student },
+            { id: 'admin', label: 'Admin / Dev', count: counts.admin },
+          ].map((tab) => {
+            const isActive = selectedRole === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                style={[styles.filterTab, isActive && styles.filterTabActive]}
+                onPress={() => setSelectedRole(tab.id)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.filterTabText, isActive && styles.filterTabTextActive]}>
+                  {tab.label}
+                </Text>
+                <View style={[styles.filterCountBadge, isActive && styles.filterCountBadgeActive]}>
+                  <Text style={[styles.filterCountText, isActive && styles.filterCountTextActive]}>
+                    {tab.count}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {/* User List */}
       {loading && !refreshing ? (
@@ -278,8 +312,8 @@ export function AdminUsersScreen() {
                       onPress={() => openRoleModal(item)}
                       activeOpacity={0.7}
                     >
-                      <Edit3 size={13} color={Colors.textMain} />
-                      <Text style={styles.actionBtnText}>Change Role</Text>
+                      <Edit3 size={13} color={Colors.accentPrimary} />
+                      <Text style={styles.actionBtnText}>Role</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -287,12 +321,12 @@ export function AdminUsersScreen() {
                       onPress={() => openResetModal(item)}
                       activeOpacity={0.7}
                     >
-                      <KeyRound size={13} color={Colors.textMain} />
-                      <Text style={styles.actionBtnText}>Reset Password</Text>
+                      <KeyRound size={13} color={Colors.accentPrimary} />
+                      <Text style={styles.actionBtnText}>Reset</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={styles.deleteBtn}
+                      style={styles.deleteUserBtn}
                       onPress={() => handleDeleteUser(item)}
                       activeOpacity={0.7}
                     >
@@ -451,6 +485,31 @@ export function AdminUsersScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Admin Sidebar Navigation */}
+      <AdminSidebar
+        visible={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        navigation={navigation}
+        currentRoute="Users"
+      />
+
+      {/* Delete User Confirmation Dialog */}
+      <ConfirmDialog
+        visible={!!deletingUser}
+        title="Delete User Account?"
+        message={
+          deletingUser
+            ? `Are you sure you want to permanently delete account "${deletingUser.name}" (${deletingUser.email})? This action cannot be undone.`
+            : ''
+        }
+        confirmText="Delete Account"
+        cancelText="Cancel"
+        variant="danger"
+        loading={isDeletingUser}
+        onConfirm={executeDeleteUser}
+        onCancel={() => setDeletingUser(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -470,9 +529,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.xs,
   },
-  backBtn: {
-    padding: 6,
-    marginRight: 2,
+  menuBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.bgCard,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   iconBox: {
     width: 36,
@@ -521,18 +586,24 @@ const styles = StyleSheet.create({
   clearSearchBtn: {
     padding: 4,
   },
-  filterTabsRow: {
-    paddingHorizontal: Spacing.md,
+  filterTabsContainer: {
     paddingBottom: Spacing.xs,
+  },
+  filterTabsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.md,
     gap: Spacing.xs,
   },
   filterTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 5,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
   },
   filterTabActive: {
     backgroundColor: 'rgba(160,19,34,0.1)',
@@ -545,6 +616,27 @@ const styles = StyleSheet.create({
   },
   filterTabTextActive: {
     color: Colors.accentSecondary,
+    fontWeight: '700',
+  },
+  filterCountBadge: {
+    backgroundColor: Colors.bgMain,
+    borderRadius: Radius.full,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  filterCountBadgeActive: {
+    backgroundColor: Colors.accentSecondary,
+    borderColor: Colors.accentSecondary,
+  },
+  filterCountText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 9,
+    color: Colors.textMuted,
+  },
+  filterCountTextActive: {
+    color: '#FFFFFF',
     fontWeight: '700',
   },
   scroll: {
@@ -673,13 +765,20 @@ const styles = StyleSheet.create({
     color: Colors.textMain,
     fontWeight: '600',
   },
-  deleteBtn: {
+  deleteUserBtn: {
     marginLeft: 'auto',
-    padding: 6,
+    width: 32,
+    height: 32,
+    borderRadius: Radius.md,
+    backgroundColor: 'rgba(160,19,34,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(160,19,34,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(6, 9, 19, 0.72)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.md,

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../../utils/api';
-import { Users, Search, KeyRound, Trash2, Edit3, RefreshCw, X, AlertCircle } from 'lucide-react';
+import { Users, Search, KeyRound, Trash2, Edit3, RefreshCw, X, Building2, Clock, XCircle, CheckCircle2, Shield } from 'lucide-react';
 import { toast } from '../../utils/toast';
+import { ConfirmModal } from '../shared/ConfirmModal';
 
 interface UserRecord {
   id: number;
@@ -157,17 +158,23 @@ export function AdminUserDirectory() {
       {/* ── Filters and Search ── */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[20px] p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-2">
-          {['all', 'teacher', 'parent', 'student', 'admin'].map(r => (
+          {[
+            { id: 'all', label: 'All' },
+            { id: 'teacher', label: 'Teacher' },
+            { id: 'parent', label: 'Parent' },
+            { id: 'student', label: 'Student' },
+            { id: 'admin', label: 'Admin / Developer' },
+          ].map(tab => (
             <button
-              key={r}
-              onClick={() => setSelectedRole(r)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold capitalize transition-all cursor-pointer ${
-                selectedRole === r
+              key={tab.id}
+              onClick={() => setSelectedRole(tab.id)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                selectedRole === tab.id
                   ? 'bg-[#11428E] text-white shadow-sm'
                   : 'bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)] hover:border-[#11428E]/40'
               }`}
             >
-              {r === 'admin' ? 'Admin / Dev' : r}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -237,7 +244,10 @@ export function AdminUserDirectory() {
                             <span className="font-extrabold text-[var(--text-main)] text-xs">{u.name || 'Anonymous User'}</span>
                             <span className="text-[11px] text-[var(--text-muted)]">{u.email}</span>
                             {u.schoolName && (
-                              <span className="text-[10px] text-[var(--text-dark)] font-medium">🏫 {u.schoolName}</span>
+                              <span className="text-[10px] text-[var(--text-dark)] font-medium inline-flex items-center gap-1">
+                                <Building2 size={10} className="shrink-0 text-[var(--text-muted)]" />
+                                {u.schoolName}
+                              </span>
                             )}
                           </div>
                         </div>
@@ -249,16 +259,19 @@ export function AdminUserDirectory() {
                           </span>
                           {u.role === 'teacher' && (
                             u.verificationStatus === 'pending' ? (
-                              <span className="text-[9px] font-extrabold text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                                ⏳ Pending
+                              <span className="text-[9px] font-extrabold text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 inline-flex items-center gap-1">
+                                <Clock size={10} className="shrink-0" />
+                                Pending
                               </span>
                             ) : u.verificationStatus === 'rejected' ? (
-                              <span className="text-[9px] font-extrabold text-rose-600 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
-                                ✕ Rejected
+                              <span className="text-[9px] font-extrabold text-rose-600 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20 inline-flex items-center gap-1">
+                                <XCircle size={10} className="shrink-0" />
+                                Rejected
                               </span>
                             ) : (
-                              <span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                                ✓ Verified
+                              <span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 inline-flex items-center gap-1">
+                                <CheckCircle2 size={10} className="shrink-0" />
+                                Verified
                               </span>
                             )
                           )}
@@ -318,21 +331,27 @@ export function AdminUserDirectory() {
 
       {/* ── Role Update Modal ── */}
       {editingUser && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[20px] p-6 max-w-sm w-full shadow-xl flex flex-col gap-4">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 max-w-sm w-full shadow-2xl flex flex-col gap-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-extrabold text-base text-[var(--text-main)]">Change Role</h4>
-              <button onClick={() => setEditingUser(null)} className="text-[var(--text-muted)] hover:text-[var(--text-main)]">
+              <div className="flex items-center gap-2 text-[#11428E] dark:text-blue-400">
+                <Shield size={18} />
+                <h4 className="font-extrabold text-base text-[var(--text-main)] m-0">Change User Role</h4>
+              </div>
+              <button
+                onClick={() => setEditingUser(null)}
+                className="p-1 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] cursor-pointer transition-colors"
+              >
                 <X size={16} />
               </button>
             </div>
-            <p className="text-xs text-[var(--text-muted)]">
+            <p className="text-xs text-[var(--text-muted)] m-0 leading-relaxed">
               Modify access permissions for <strong className="text-[var(--text-main)]">{editingUser.name}</strong> ({editingUser.email}):
             </p>
             <select
               value={newRole}
               onChange={e => setNewRole(e.target.value)}
-              className="w-full p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-bold focus:outline-none focus:border-[#11428E]"
+              className="w-full p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-bold focus:outline-none focus:border-[#11428E] focus:ring-1 focus:ring-[#11428E]"
             >
               <option value="teacher">Teacher</option>
               <option value="parent">Parent</option>
@@ -364,15 +383,21 @@ export function AdminUserDirectory() {
 
       {/* ── Password Reset Modal ── */}
       {resettingUser && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[20px] p-6 max-w-sm w-full shadow-xl flex flex-col gap-4">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 max-w-sm w-full shadow-2xl flex flex-col gap-4">
             <div className="flex items-center justify-between">
-              <h4 className="font-extrabold text-base text-[var(--text-main)]">Reset Password</h4>
-              <button onClick={() => setResettingUser(null)} className="text-[var(--text-muted)] hover:text-[var(--text-main)]">
+              <div className="flex items-center gap-2 text-amber-500">
+                <KeyRound size={18} />
+                <h4 className="font-extrabold text-base text-[var(--text-main)] m-0">Reset Password</h4>
+              </div>
+              <button
+                onClick={() => setResettingUser(null)}
+                className="p-1 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] cursor-pointer transition-colors"
+              >
                 <X size={16} />
               </button>
             </div>
-            <p className="text-xs text-[var(--text-muted)]">
+            <p className="text-xs text-[var(--text-muted)] m-0 leading-relaxed">
               Set a new password for <strong className="text-[var(--text-main)]">{resettingUser.name}</strong>:
             </p>
             <input
@@ -380,7 +405,7 @@ export function AdminUserDirectory() {
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
               placeholder="Minimum 6 characters"
-              className="w-full p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-mono focus:outline-none focus:border-amber-500"
+              className="w-full p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-mono focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
             />
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
@@ -394,7 +419,7 @@ export function AdminUserDirectory() {
                 type="button"
                 onClick={handleResetPassword}
                 disabled={submittingReset || newPassword.length < 6}
-                className="btn bg-amber-500 text-white hover:bg-amber-600 text-xs px-4 py-2 font-bold rounded-xl cursor-pointer disabled:opacity-50"
+                className="btn bg-amber-500 text-white hover:bg-amber-600 text-xs px-4 py-2 font-bold rounded-xl cursor-pointer disabled:opacity-50 transition-colors"
               >
                 {submittingReset ? 'Resetting…' : 'Apply Password'}
               </button>
@@ -404,36 +429,21 @@ export function AdminUserDirectory() {
       )}
 
       {/* ── Delete Confirmation Modal ── */}
-      {deletingUser && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[20px] p-6 max-w-sm w-full shadow-xl flex flex-col gap-4">
-            <div className="flex items-center gap-2 text-rose-600">
-              <AlertCircle size={20} />
-              <h4 className="font-extrabold text-base">Delete User Account</h4>
-            </div>
-            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-              Are you sure you want to delete <strong className="text-[var(--text-main)]">{deletingUser.name}</strong> ({deletingUser.email})? This action cannot be undone.
-            </p>
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setDeletingUser(null)}
-                className="btn btn-secondary text-xs px-3.5 py-2 font-bold cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteUser}
-                disabled={submittingDelete}
-                className="btn bg-rose-600 text-white hover:bg-rose-700 text-xs px-4 py-2 font-bold rounded-xl cursor-pointer disabled:opacity-50"
-              >
-                {submittingDelete ? 'Deleting…' : 'Delete Account'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={!!deletingUser}
+        title="Delete User Account?"
+        description={
+          deletingUser
+            ? `Are you sure you want to permanently delete the account for "${deletingUser.name}" (${deletingUser.email})? This action cannot be undone.`
+            : ''
+        }
+        confirmText="Delete Account"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={submittingDelete}
+        onClose={() => setDeletingUser(null)}
+        onConfirm={handleDeleteUser}
+      />
     </div>
   );
 }

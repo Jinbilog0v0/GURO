@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
-import { Inbox, Lock, WifiOff } from 'lucide-react-native';
+import { Inbox, Lock, WifiOff, Calendar } from 'lucide-react-native';
 import { isLessonLocked, LESSON_SEQUENCE } from '../utils/engine';
 
 import { Colors } from '../theme/colors';
@@ -26,12 +26,13 @@ import { SectionHeader } from '../components/ui/SectionHeader';
 import { SyncBadge } from '../components/shared/SyncBadge';
 import { styles } from '../styles/LessonsScreen.styles';
 import { toast } from '../components';
+import itemBankData from '../../assets/item_bank.json';
 
 const GRADES = [4, 5, 6] as const;
 type Grade = (typeof GRADES)[number];
 
 const SUBJECTS = ['Mathematics', 'English'] as const;
-type Subject = (typeof SUBJECTS)[number];
+type Subject = string;
 
 export function LessonsScreen() {
   const navigation = useNavigation<any>();
@@ -45,21 +46,18 @@ export function LessonsScreen() {
   const appMode = useAppStore((s) => s.appMode);
 
   const activeSubjects = useAppStore((s) => s.activeSubjects || ['Mathematics', 'English']);
+  const activeSchoolYear = useAppStore((s) => s.activeSchoolYear || '2026-2027');
+  const activeTerm = useAppStore((s) => s.activeTerm || 'Quarter 1');
+  const availableSubjects = Array.from(new Set(['Mathematics', 'English', ...(activeSubjects || [])]));
 
   const [selectedSubject, setSelectedSubject] = useState<Subject>('Mathematics');
-
-  useEffect(() => {
-    if (activeSubjects.length > 0 && !activeSubjects.includes(selectedSubject)) {
-      setSelectedSubject(activeSubjects[0] as any);
-    }
-  }, [activeSubjects, selectedSubject]);
 
   const isTimeLimitExceeded =
     parentalControls.dailyTimeLimit > 0 && dailyMinutesUsed >= parentalControls.dailyTimeLimit;
 
   const getMathAverageScore = (grade: number): number => {
     const logs = studentProgress.filter(
-      (p) => p.subject === 'Mathematics' && p.gradeLevel === grade,
+      (p) => (p.subject === 'Mathematics' || p.subject === 'Math') && p.gradeLevel === grade,
     );
     if (logs.length === 0) return 0;
     const sum = logs.reduce((acc, p) => acc + (p.score / p.totalQuestions) * 100, 0);
@@ -69,7 +67,7 @@ export function LessonsScreen() {
   const isEnglishLocked = (gradeLevel: number): boolean => {
     if (selectedSubject !== 'English' || classroomId || !parentalControls.mathBeforeEnglish) return false;
     const mathLogs = studentProgress.filter(
-      (p) => p.subject === 'Mathematics' && p.gradeLevel === gradeLevel,
+      (p) => (p.subject === 'Mathematics' || p.subject === 'Math') && p.gradeLevel === gradeLevel,
     );
     if (mathLogs.length === 0) return false;
     const mathScore = getMathAverageScore(gradeLevel);
@@ -77,21 +75,22 @@ export function LessonsScreen() {
   };
 
   const getTopics = (): { gradeLevel: number; topic: string }[] => {
-    if (!itemBank || !itemBank[selectedSubject]) return [];
+    const effectiveBank = itemBank || (itemBankData as any);
+    if (!effectiveBank || !effectiveBank[selectedSubject]) return [];
     const result: { gradeLevel: number; topic: string }[] = [];
     const targetGrade = preferredGrade.toString();
-    const gradeData = itemBank[selectedSubject][targetGrade];
+    const gradeData = effectiveBank[selectedSubject][targetGrade];
     if (gradeData) {
       for (const topic of Object.keys(gradeData)) {
         if (topic === 'studyContent') continue;
         result.push({ gradeLevel: preferredGrade, topic });
       }
     }
-    // If no lessons for preferred grade, check other grades in itemBank
+    // If no lessons for preferred grade, check other grades in effectiveBank
     if (result.length === 0) {
       const grades = ['4', '5', '6'];
       for (const g of grades) {
-        const otherData = itemBank[selectedSubject][g];
+        const otherData = effectiveBank[selectedSubject][g];
         if (otherData) {
           for (const topic of Object.keys(otherData)) {
             if (topic === 'studyContent') continue;
@@ -100,12 +99,26 @@ export function LessonsScreen() {
         }
       }
     }
+
+    // Sort chronologically by orderIndex ascending, then topic name
+    result.sort((a, b) => {
+      const aData = effectiveBank[selectedSubject]?.[a.gradeLevel.toString()]?.[a.topic];
+      const bData = effectiveBank[selectedSubject]?.[b.gradeLevel.toString()]?.[b.topic];
+      const aOrder = aData?.studyContent?.orderIndex !== undefined ? Number(aData.studyContent.orderIndex) : 999;
+      const bOrder = bData?.studyContent?.orderIndex !== undefined ? Number(bData.studyContent.orderIndex) : 999;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return a.topic.localeCompare(b.topic);
+    });
+
     return result;
   };
 
   const getTopicStats = (gradeLevel: number, topic: string): { completionPercent: number; bestScore: number | null } => {
     const logs = studentProgress.filter(
-      (p) => p.subject === selectedSubject && p.gradeLevel === gradeLevel && p.topic === topic,
+      (p) => {
+        const isMatchSubj = p.subject === selectedSubject || (selectedSubject === 'Mathematics' && p.subject === 'Math');
+        return isMatchSubj && p.gradeLevel === gradeLevel && p.topic === topic;
+      },
     );
     if (logs.length === 0) return { completionPercent: 0, bestScore: null };
     const scores = logs.map((l) => (l.score / l.totalQuestions) * 100);
@@ -114,14 +127,17 @@ export function LessonsScreen() {
   };
 
   const getQuestionCount = (gradeLevel: number, topic: string): number => {
-    const topicData = itemBank?.[selectedSubject]?.[gradeLevel.toString()]?.[topic];
+    const effectiveBank = itemBank || (itemBankData as any);
+    const topicData = effectiveBank?.[selectedSubject]?.[gradeLevel.toString()]?.[topic];
     if (!topicData) return 0;
     let count = 0;
     for (const key of Object.keys(topicData)) {
       if (key === 'studyContent') continue;
       const diffData = topicData[key] as Record<string, unknown[]>;
-      for (const cat of Object.values(diffData)) {
-        if (Array.isArray(cat)) count += cat.length;
+      if (diffData && typeof diffData === 'object') {
+        for (const cat of Object.values(diffData)) {
+          if (Array.isArray(cat)) count += cat.length;
+        }
       }
     }
     return count;
@@ -199,16 +215,34 @@ export function LessonsScreen() {
       {/* Header — O1: SyncBadge added */}
       <View style={styles.headerBar}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Lessons</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <Text style={styles.headerTitle}>Lessons</Text>
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              backgroundColor: 'rgba(17,66,142,0.08)',
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: 'rgba(17,66,142,0.15)',
+            }}>
+              <Calendar size={11} color={Colors.accentPrimary} />
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                S.Y. {activeSchoolYear} • {activeTerm}
+              </Text>
+            </View>
+          </View>
           <Text style={styles.headerSubtitle}>Select a topic to begin learning.</Text>
         </View>
         <SyncBadge />
       </View>
 
       {/* Subject tabs */}
-      {activeSubjects.length > 0 ? (
+      {availableSubjects.length > 0 ? (
         <View style={styles.subjectTabRow}>
-          {SUBJECTS.filter((subj) => activeSubjects.includes(subj)).map((subj) => {
+          {availableSubjects.map((subj) => {
             const active = subj === selectedSubject;
             return (
               <TouchableOpacity

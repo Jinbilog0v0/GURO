@@ -33,7 +33,7 @@ describe('BadgeCase Component', () => {
 
     // First Step should be unlocked because logs length > 0
     expect(screen.getByText('First Step')).toBeInTheDocument();
-    expect(screen.getByText('✓ Completed')).toBeInTheDocument();
+    expect(screen.getByText('Completed')).toBeInTheDocument();
 
     // Perfect 100% should be locked because no quiz has 100% score
     expect(screen.getByText('Perfect 100%')).toBeInTheDocument();

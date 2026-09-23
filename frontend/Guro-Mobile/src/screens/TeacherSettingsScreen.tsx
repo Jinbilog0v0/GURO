@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppStore, resolveServerUrl } from '../store/useAppStore';
 import { FileService } from '../services/fileService';
 import { toast } from '../components';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { Colors } from '../theme/colors';
 import { Spacing, Radius } from '../theme/spacing';
 import { Fonts, FontSizes } from '../theme/typography';
@@ -37,12 +38,14 @@ import {
   Cloud,
   History,
   CheckCircle2,
+  Calendar,
 } from 'lucide-react-native';
 
 export function TeacherSettingsScreen() {
   const navigation = useNavigation<any>();
   const logs = useAppStore((state) => state.logs);
   const addLog = useAppStore((state) => state.addLog);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const clearLogs = useAppStore((state) => state.clearLogs);
 
   const [fullHistoryVisible, setFullHistoryVisible] = useState(false);
@@ -124,6 +127,11 @@ export function TeacherSettingsScreen() {
   const [studentCount, setStudentCount] = useState(0);
   const [createSubject, setCreateSubject] = useState<'Mathematics' | 'English'>('Mathematics');
   const [createGrade, setCreateGrade] = useState<number>(4);
+  const [createSchoolYear, setCreateSchoolYear] = useState<string>('2026-2027');
+  const [createTerm, setCreateTerm] = useState<string>('Quarter 1');
+  const [activeSchoolYear, setActiveSchoolYear] = useState<string>('2026-2027');
+  const [activeTerm, setActiveTerm] = useState<string>('Quarter 1');
+  const [createSection, setCreateSection] = useState('');
   const [createDuration, setCreateDuration] = useState('');
   const [creatingClassroom, setCreatingClassroom] = useState(false);
   const [lockingClassroom, setLockingClassroom] = useState(false);
@@ -132,6 +140,9 @@ export function TeacherSettingsScreen() {
     id: string;
     subject: string;
     gradeLevel: number;
+    sectionName?: string;
+    schoolYear?: string;
+    term?: string;
     createdAt: string;
   }
   const [classroomHistory, setClassroomHistory] = useState<ClassroomRecord[]>([]);
@@ -150,7 +161,7 @@ export function TeacherSettingsScreen() {
 
   const loadClassroomHistory = async () => {
     try {
-      const token = useAppStore.getState().cloudToken;
+      const token = useAppStore.getState().token;
       const resolvedUrl = resolveServerUrl(useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000');
       const cleanUrl = resolvedUrl.replace(/\/+$/, '');
 
@@ -167,6 +178,9 @@ export function TeacherSettingsScreen() {
             id: c.classroomId,
             subject: c.subject,
             gradeLevel: c.gradeLevel,
+            sectionName: c.sectionName,
+            schoolYear: c.schoolYear || c.school_year || '2026-2027',
+            term: c.term || 'Quarter 1',
             createdAt: c.createdAt || new Date().toISOString(),
           }));
           setClassroomHistory(serverClassrooms);
@@ -220,6 +234,12 @@ export function TeacherSettingsScreen() {
       }
       const updatedUser = { ...currentUser, classroomId: record.id };
       useAppStore.setState({ currentUser: updatedUser as any });
+      if (data.schoolYear || record.schoolYear) {
+        setActiveSchoolYear(data.schoolYear || record.schoolYear || '2026-2027');
+      }
+      if (data.term || record.term) {
+        setActiveTerm(data.term || record.term || 'Quarter 1');
+      }
       setClassroomStatus('active');
       toast.success(`Switched to classroom ${record.id}`);
     } catch (e) {
@@ -239,7 +259,15 @@ export function TeacherSettingsScreen() {
     try {
       const resolvedUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
       const cleanUrl = resolveServerUrl(resolvedUrl).replace(/\/+$/, '');
-      const res = await fetch(`${cleanUrl}/api/classroom/verify?code=${encodeURIComponent(code)}`);
+      const token = useAppStore.getState().token;
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`${cleanUrl}/api/classroom/verify?code=${encodeURIComponent(code)}`, { headers });
       if (res.ok) {
         const data = await res.json();
         if (data.expiresAt) {
@@ -249,12 +277,21 @@ export function TeacherSettingsScreen() {
           setClassroomStatus('active');
         }
 
+        if (data.schoolYear) {
+          setActiveSchoolYear(data.schoolYear);
+        }
+        if (data.term) {
+          setActiveTerm(data.term);
+        }
+
         // Count unique studentIds from telemetry
-        const telRes = await fetch(`${cleanUrl}/api/progress?classroomId=${encodeURIComponent(code)}`);
+        const telRes = await fetch(`${cleanUrl}/api/progress?classroomId=${encodeURIComponent(code)}`, { headers });
         if (telRes.ok) {
           const telemetryData = await telRes.json();
-          const uniqueStudents = new Set(telemetryData.map((e: any) => e.studentId));
-          setStudentCount(uniqueStudents.size);
+          if (Array.isArray(telemetryData)) {
+            const uniqueStudents = new Set(telemetryData.map((e: any) => e.studentId));
+            setStudentCount(uniqueStudents.size);
+          }
         }
       } else {
         setClassroomStatus('none');
@@ -278,8 +315,11 @@ export function TeacherSettingsScreen() {
         },
         body: JSON.stringify({
           teacherName: currentUser?.name || 'Teacher',
+          sectionName: createSection.trim(),
           subject: createSubject,
           gradeLevel: createGrade,
+          schoolYear: createSchoolYear,
+          term: createTerm,
           duration: createDuration ? parseInt(createDuration, 10) : null,
         }),
       });
@@ -288,12 +328,18 @@ export function TeacherSettingsScreen() {
         const data = await res.json();
         const updatedUser = { ...currentUser, classroomId: data.classroomId };
         useAppStore.setState({ currentUser: updatedUser as any });
+        setActiveSchoolYear(data.schoolYear || createSchoolYear);
+        setActiveTerm(data.term || createTerm);
         toast.success(`Classroom ${data.classroomId} is active! Share this code with students.`);
         setClassroomStatus('active');
+        setCreateSection('');
         await saveClassroomToHistory({
           id: data.classroomId,
           subject: createSubject,
           gradeLevel: createGrade,
+          sectionName: data.sectionName || createSection.trim() || undefined,
+          schoolYear: data.schoolYear || createSchoolYear,
+          term: data.term || createTerm,
           createdAt: new Date().toISOString(),
         });
       } else {
@@ -557,7 +603,7 @@ export function TeacherSettingsScreen() {
                             borderColor: Colors.border,
                             alignItems: 'center',
                             justifyContent: 'center',
-                            backgroundColor: 'rgba(255,255,255,0.02)',
+                            backgroundColor: Colors.bgInput,
                           },
                           isSel && { backgroundColor: 'rgba(17,66,142,0.08)', borderColor: Colors.accentPrimary },
                         ]}
@@ -589,7 +635,7 @@ export function TeacherSettingsScreen() {
                             borderColor: Colors.border,
                             alignItems: 'center',
                             justifyContent: 'center',
-                            backgroundColor: 'rgba(255,255,255,0.02)',
+                            backgroundColor: Colors.bgInput,
                           },
                           isSel && { backgroundColor: 'rgba(17,66,142,0.08)', borderColor: Colors.accentPrimary },
                         ]}
@@ -601,6 +647,79 @@ export function TeacherSettingsScreen() {
                     );
                   })}
                 </View>
+
+                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.textMain, marginBottom: Spacing.xs }}>
+                  School Year (SY)
+                </Text>
+                <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md }}>
+                  {(['2026-2027', '2027-2028', '2025-2026'] as const).map((sy) => {
+                    const isSel = createSchoolYear === sy;
+                    return (
+                      <TouchableOpacity
+                        key={sy}
+                        onPress={() => setCreateSchoolYear(sy)}
+                        style={[
+                          {
+                            flex: 1,
+                            paddingVertical: Spacing.sm,
+                            borderRadius: Radius.md,
+                            borderWidth: 1,
+                            borderColor: Colors.border,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: Colors.bgInput,
+                          },
+                          isSel && { backgroundColor: 'rgba(17,66,142,0.08)', borderColor: Colors.accentPrimary },
+                        ]}
+                      >
+                        <Text style={[{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }, isSel && { color: Colors.accentPrimary, fontFamily: Fonts.bodyBold }]}>
+                          {sy}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.textMain, marginBottom: Spacing.xs }}>
+                  Academic Term / Quarter
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.md }}>
+                  {(['Quarter 1', 'Quarter 2', 'Quarter 3', 'Quarter 4'] as const).map((q) => {
+                    const isSel = createTerm === q;
+                    return (
+                      <TouchableOpacity
+                        key={q}
+                        onPress={() => setCreateTerm(q)}
+                        style={[
+                          {
+                            flexBasis: '48%',
+                            flexGrow: 1,
+                            paddingVertical: Spacing.sm,
+                            borderRadius: Radius.md,
+                            borderWidth: 1,
+                            borderColor: Colors.border,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: Colors.bgInput,
+                          },
+                          isSel && { backgroundColor: 'rgba(17,66,142,0.08)', borderColor: Colors.accentPrimary },
+                        ]}
+                      >
+                        <Text style={[{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }, isSel && { color: Colors.accentPrimary, fontFamily: Fonts.bodyBold }]}>
+                          {q}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <ThemedTextInput
+                  label="Section Name (Optional)"
+                  placeholder="e.g. Rizal, Emerald, Section A"
+                  value={createSection}
+                  onChangeText={setCreateSection}
+                  containerStyle={styles.inputSpacing}
+                />
 
                 <ThemedTextInput
                   label="Session Duration (Minutes, optional)"
@@ -620,7 +739,7 @@ export function TeacherSettingsScreen() {
               </View>
             ) : (
               <View style={{ gap: Spacing.md }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border }}>
                   <View>
                     <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>INVITE CODE</Text>
                     <Text style={{ fontFamily: Fonts.display, fontSize: 24, color: Colors.textMain, letterSpacing: 2 }}>{currentUser?.classroomId}</Text>
@@ -636,14 +755,21 @@ export function TeacherSettingsScreen() {
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: Spacing.md }}>
-                  <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.03)', padding: Spacing.sm, borderRadius: Radius.sm, alignItems: 'center' }}>
+                  <View style={{ flex: 1, backgroundColor: Colors.bgInput, padding: Spacing.sm, borderRadius: Radius.sm, alignItems: 'center' }}>
                     <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.lg, color: Colors.accentPrimary }}>{studentCount}</Text>
                     <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>Students Paired</Text>
                   </View>
-                  <View style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.03)', padding: Spacing.sm, borderRadius: Radius.sm, alignItems: 'center' }}>
+                  <View style={{ flex: 1, backgroundColor: Colors.bgInput, padding: Spacing.sm, borderRadius: Radius.sm, alignItems: 'center' }}>
                     <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }}>{createSubject}</Text>
                     <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>Subject</Text>
                   </View>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.bgInput, padding: Spacing.sm, borderRadius: Radius.sm }}>
+                  <Calendar size={14} color={Colors.textMuted} />
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                    Academic Period: S.Y. {activeSchoolYear} • {activeTerm}
+                  </Text>
                 </View>
 
                 {classroomStatus === 'active' ? (
@@ -693,7 +819,7 @@ export function TeacherSettingsScreen() {
                       borderRadius: Radius.md,
                       borderWidth: 1,
                       borderColor: isActive ? Colors.accentPrimary : Colors.border,
-                      backgroundColor: isActive ? 'rgba(17,66,142,0.04)' : 'rgba(255,255,255,0.02)',
+                      backgroundColor: isActive ? 'rgba(17,66,142,0.04)' : Colors.bgInput,
                     }}
                   >
                     <View style={{ flex: 1 }}>
@@ -701,7 +827,7 @@ export function TeacherSettingsScreen() {
                         {record.id}
                       </Text>
                       <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: 2 }}>
-                        {record.subject} · Grade {record.gradeLevel} · {new Date(record.createdAt).toLocaleDateString()}
+                        {record.subject} · Grade {record.gradeLevel}{record.sectionName ? ` · Sec: ${record.sectionName}` : ''} · S.Y. {record.schoolYear || '2026-2027'} ({record.term || 'Quarter 1'}) · {new Date(record.createdAt).toLocaleDateString()}
                       </Text>
                     </View>
                     {isActive ? (
@@ -804,7 +930,7 @@ export function TeacherSettingsScreen() {
                         flexDirection: 'row',
                         alignItems: 'center',
                         gap: Spacing.sm,
-                        backgroundColor: 'rgba(255,255,255,0.02)',
+                        backgroundColor: Colors.bgInput,
                         padding: Spacing.sm,
                         borderRadius: Radius.md,
                         borderWidth: 1,
@@ -866,11 +992,11 @@ export function TeacherSettingsScreen() {
           transparent={true}
           onRequestClose={() => setFullHistoryVisible(false)}
         >
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(6, 9, 19, 0.72)', justifyContent: 'flex-end' }}>
             <View style={{
               backgroundColor: Colors.white,
-              borderTopLeftRadius: Radius.lg,
-              borderTopRightRadius: Radius.lg,
+              borderTopLeftRadius: Radius['2xl'],
+              borderTopRightRadius: Radius['2xl'],
               padding: Spacing.lg,
               maxHeight: '80%',
               gap: Spacing.md
@@ -942,25 +1068,25 @@ export function TeacherSettingsScreen() {
           <DangerButton
             label="Log Out of Teacher Account"
             icon={<LogOut size={16} color={Colors.dangerText} style={{ marginRight: 6 }} />}
-            onPress={() => {
-              Alert.alert(
-                'Confirm Logout',
-                'Are you sure you want to log out? You will need to sign in again to access your account.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Logout',
-                    style: 'destructive',
-                    onPress: () => {
-                      logoutFromCloud();
-                      navigation.replace((appMode as string) === 'offline' ? 'StudentDashboard' : 'Login');
-                    },
-                  },
-                ]
-              );
-            }}
+            onPress={() => setShowLogoutConfirm(true)}
           />
         )}
+
+        {/* Teacher Logout Confirmation */}
+        <ConfirmDialog
+          visible={showLogoutConfirm}
+          variant="danger"
+          title="Confirm Logout"
+          description="Are you sure you want to log out? You will need to sign in again to access your account."
+          confirmLabel="Logout"
+          cancelLabel="Cancel"
+          onConfirm={() => {
+            setShowLogoutConfirm(false);
+            logoutFromCloud();
+            navigation.replace((appMode as string) === 'offline' ? 'StudentDashboard' : 'Login');
+          }}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
       </ScrollView>
     </SafeAreaView>
   );

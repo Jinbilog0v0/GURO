@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Save, BookOpen, Languages } from 'lucide-react';
+import { Plus, Trash2, Save, BookOpen, Languages, X, Lightbulb } from 'lucide-react';
 import { toast } from '../../utils/toast';
 
 interface Question {
@@ -59,9 +59,10 @@ const ImageUploadInput: React.FC<{
           <button 
             type="button" 
             onClick={() => onChange('')} 
-            className="absolute -top-1.5 -right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full size-4 flex items-center justify-center text-[9px] font-bold cursor-pointer"
+            className="absolute -top-1.5 -right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full size-4 flex items-center justify-center cursor-pointer"
+            aria-label="Remove image"
           >
-            ✕
+            <X size={10} strokeWidth={3} />
           </button>
         </div>
       )}
@@ -686,8 +687,9 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
                     <label style={{ fontSize: '11px', display: 'flex', flexDirection: 'column', marginBottom: '8px' }}>
                       <span>Enter 4 Options (Select correct answer radio button)</span>
                       {q.type === 'fill-in-the-blank' && (
-                        <span className="text-[11px] text-[#38BDF8] mt-0.5 font-medium">
-                          💡 Prompt must contain exactly one <strong>[[blank]]</strong> placeholder.
+                        <span className="text-[11px] text-[#38BDF8] mt-0.5 font-medium inline-flex items-center gap-1">
+                          <Lightbulb size={12} className="shrink-0" />
+                          <span>Prompt must contain exactly one <strong>[[blank]]</strong> placeholder.</span>
                         </span>
                       )}
                     </label>
@@ -917,9 +919,10 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
                               updated[idx].correctAnswer = Object.entries(pairs).map(([k, v]) => `${k}-${v}`).join(', ');
                               setQuestions(updated);
                             }}
-                            className="text-red-500 hover:text-red-600 px-2 font-bold text-[14px] bg-transparent border-none cursor-pointer"
+                            className="text-red-500 hover:text-red-600 px-2 flex items-center justify-center bg-transparent border-none cursor-pointer"
+                            aria-label="Remove pair"
                           >
-                            ✕
+                            <X size={14} />
                           </button>
                         </div>
                       ))}

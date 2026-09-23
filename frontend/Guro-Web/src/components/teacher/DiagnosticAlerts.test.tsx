@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { DiagnosticAlerts } from './DiagnosticAlerts';
 import '@testing-library/jest-dom';
 
@@ -36,19 +36,24 @@ describe('DiagnosticAlerts Component', () => {
     },
   ];
 
-  test('renders struggling topics and AI curriculum recommendations correctly', () => {
+  test('renders struggling topics and cohort strengths correctly', () => {
     render(<DiagnosticAlerts progressLogs={mockLogs} />);
 
+    // Check header and tally metrics
+    expect(screen.getByText(/Curriculum Health & Strong\/Weak Lessons Tally/i)).toBeInTheDocument();
+    expect(screen.getByText(/Top Mastered Topics \(Cohort Strengths\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Priority Bottlenecks \(Needs Review\)/i)).toBeInTheDocument();
+
     // Adjectives average is 37.5% -> rounded to 38%
-    expect(screen.getByText('Struggling Topics (avg < 80%)')).toBeInTheDocument();
-    expect(screen.getByText('Adjectives (Grade 5 English)')).toBeInTheDocument();
+    expect(screen.getByText(/Adjectives \(G5 English\)/i)).toBeInTheDocument();
     expect(screen.getByText('38%')).toBeInTheDocument();
 
-    // Recommendation card should target Adjectives
-    expect(screen.getByText('Targeted Boost: Adjectives')).toBeInTheDocument();
+    // Fractions is 100%
+    expect(screen.getByText(/Fractions \(G5 Mathematics\)/i)).toBeInTheDocument();
+    expect(screen.getByText('100%')).toBeInTheDocument();
   });
 
-  test('renders stable message if no topic averages are below 80%', () => {
+  test('renders all topics above threshold message when cohort has no weak topics', () => {
     const highScoresOnly = [
       {
         studentId: 'stud-1',
@@ -64,11 +69,7 @@ describe('DiagnosticAlerts Component', () => {
 
     render(<DiagnosticAlerts progressLogs={highScoresOnly} />);
 
-    // Open the collapsed panel
-    const toggleBtn = screen.getByRole('button', { name: /Diagnostic Alerts/i });
-    fireEvent.click(toggleBtn);
-
-    expect(screen.getByText('No topic averages fall below mastery thresholds currently.')).toBeInTheDocument();
-    expect(screen.getByText('Keep building standard lessons!')).toBeInTheDocument();
+    expect(screen.getByText(/Decimals \(G5 Mathematics\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/All topics are above mastery threshold!/i)).toBeInTheDocument();
   });
 });

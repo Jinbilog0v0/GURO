@@ -4,6 +4,8 @@
  * Load these in App.tsx via useFonts().
  */
 
+import { Platform } from 'react-native';
+
 export const Fonts = {
   // Display — Quicksand (headings, logo, labels)
   display: 'Quicksand_700Bold',
@@ -15,6 +17,9 @@ export const Fonts = {
   bodyMedium: 'Quicksand_500Medium',
   bodySemiBold: 'Quicksand_600SemiBold',
   bodyBold: 'Quicksand_700Bold',
+
+  // Monospace
+  mono: Platform.select({ ios: 'Courier New', android: 'monospace', default: 'monospace' }) as string,
 } as const;
 
 export const FontSizes = {
