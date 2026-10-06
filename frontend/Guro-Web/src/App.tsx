@@ -18,8 +18,6 @@ import { SettingsModal } from './components/settings/SettingsModal';
 import {
   LayoutDashboard,
   TrendingUp,
-  Key,
-  PlusCircle,
   User,
   UserPlus,
   Zap,
@@ -28,8 +26,9 @@ import {
   Sun,
   Moon,
   GraduationCap,
-  Target,
   Shield,
+  School,
+  BookOpen,
   X,
   Settings
 } from 'lucide-react';
@@ -517,36 +516,50 @@ function App() {
 
           {isTeacher && (
             isSidebarOpen ? (
-              <div className="flex flex-col">
-                <div className="px-[14px] pt-4 pb-1.5 text-[10.5px] font-extrabold tracking-[0.1em] uppercase text-[var(--text-dark)]">
+              <div className="flex flex-col gap-1 my-1">
+                <div className="px-3.5 pt-3 pb-1 text-[11px] font-extrabold tracking-wider uppercase text-[var(--text-dark)]">
                   Teacher Console
                 </div>
-                <div className="flex flex-col gap-[3px] pl-2 border-l-[1.5px] border-[var(--border-color)] ml-[14px]">
-                  <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'analytics')} aria-current={activeTab === 'teacher' && activeSubTab === 'analytics' ? 'page' : undefined}>
-                    <TrendingUp size={17} className="shrink-0" /><span>Classroom Analytics</span>
-                  </button>
-                  <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('pre-post-test'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'pre-post-test')} aria-current={activeTab === 'teacher' && activeSubTab === 'pre-post-test' ? 'page' : undefined}>
-                    <Target size={17} className="shrink-0" /><span>Pre/Post Growth</span>
-                  </button>
-                  <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('eosy-promotion'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'eosy-promotion')} aria-current={activeTab === 'teacher' && activeSubTab === 'eosy-promotion' ? 'page' : undefined}>
-                    <GraduationCap size={17} className="shrink-0" /><span>EOSY & Promotion</span>
-                  </button>
-                  <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('classroom-pairing'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'classroom-pairing')} aria-current={activeTab === 'teacher' && activeSubTab === 'classroom-pairing' ? 'page' : undefined}>
-                    <Key size={17} className="shrink-0" /><span>Classroom Setup</span>
-                  </button>
-                  <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('manual-lesson'); }} className={navBtn(activeTab === 'teacher' && activeSubTab === 'manual-lesson')} aria-current={activeTab === 'teacher' && activeSubTab === 'manual-lesson' ? 'page' : undefined}>
-                    <PlusCircle size={17} className="shrink-0" /><span>Create Lesson Manually</span>
-                  </button>
-                </div>
+                <button 
+                  onClick={() => { setActiveTab('teacher'); setActiveSubTab('classrooms'); }} 
+                  className={navBtn(activeTab === 'teacher' && (activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing'))} 
+                  aria-current={activeTab === 'teacher' && (activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing') ? 'page' : undefined}
+                >
+                  <School size={18} className="shrink-0 text-sky-500" />
+                  <span>My Classrooms</span>
+                </button>
+                <button 
+                  onClick={() => { setActiveTab('teacher'); setActiveSubTab('lessons'); }} 
+                  className={navBtn(activeTab === 'teacher' && (activeSubTab === 'lessons' || activeSubTab === 'manual-lesson'))} 
+                  aria-current={activeTab === 'teacher' && (activeSubTab === 'lessons' || activeSubTab === 'manual-lesson') ? 'page' : undefined}
+                >
+                  <BookOpen size={18} className="shrink-0 text-emerald-500" />
+                  <span>Lesson Management</span>
+                </button>
+                <button 
+                  onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} 
+                  className={navBtn(activeTab === 'teacher' && (activeSubTab === 'analytics' || activeSubTab === 'pre-post-test'))} 
+                  aria-current={activeTab === 'teacher' && (activeSubTab === 'analytics' || activeSubTab === 'pre-post-test') ? 'page' : undefined}
+                >
+                  <TrendingUp size={18} className="shrink-0 text-indigo-400" />
+                  <span>Classroom Analytics</span>
+                </button>
+                <button 
+                  onClick={() => { setActiveTab('teacher'); setActiveSubTab('eosy-promotion'); }} 
+                  className={navBtn(activeTab === 'teacher' && activeSubTab === 'eosy-promotion')} 
+                  aria-current={activeTab === 'teacher' && activeSubTab === 'eosy-promotion' ? 'page' : undefined}
+                >
+                  <GraduationCap size={18} className="shrink-0 text-amber-500" />
+                  <span>EOSY & Promotion</span>
+                </button>
               </div>
             ) : (
-              <>
-                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'analytics')} title="Classroom Analytics" aria-label="Classroom Analytics"><TrendingUp size={18} /></button>
-                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('pre-post-test'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'pre-post-test')} title="Pre/Post Growth" aria-label="Pre/Post Growth"><Target size={18} /></button>
+              <div className="flex flex-col gap-1">
+                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('classrooms'); }} className={navBtnIcon(activeTab === 'teacher' && (activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing'))} title="My Classrooms" aria-label="My Classrooms"><School size={18} /></button>
+                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('lessons'); }} className={navBtnIcon(activeTab === 'teacher' && (activeSubTab === 'lessons' || activeSubTab === 'manual-lesson'))} title="Lesson Management" aria-label="Lesson Management"><BookOpen size={18} /></button>
+                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} className={navBtnIcon(activeTab === 'teacher' && (activeSubTab === 'analytics' || activeSubTab === 'pre-post-test'))} title="Classroom Analytics" aria-label="Classroom Analytics"><TrendingUp size={18} /></button>
                 <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('eosy-promotion'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'eosy-promotion')} title="EOSY & Promotion" aria-label="EOSY & Promotion"><GraduationCap size={18} /></button>
-                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('classroom-pairing'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'classroom-pairing')} title="Classroom Setup" aria-label="Classroom Setup"><Key size={18} /></button>
-                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('manual-lesson'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'manual-lesson')} title="Create Lesson Manually" aria-label="Create Lesson Manually"><PlusCircle size={18} /></button>
-              </>
+              </div>
             )
           )}
 
@@ -685,11 +698,10 @@ function App() {
                 <span className="text-[var(--text-muted)]">Teacher Console</span>
                 <span className="text-[var(--border-color)]">/</span>
                 <span className="text-[var(--text-main)] font-bold">
-                  {activeSubTab === 'analytics' && 'Classroom Analytics'}
-                  {activeSubTab === 'pre-post-test' && 'Pre/Post-Test Growth'}
+                  {(activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing') && 'My Classrooms'}
+                  {(activeSubTab === 'lessons' || activeSubTab === 'manual-lesson') && 'Lesson Management'}
+                  {(activeSubTab === 'analytics' || activeSubTab === 'pre-post-test') && 'Classroom Analytics'}
                   {activeSubTab === 'eosy-promotion' && 'EOSY & Promotion'}
-                  {activeSubTab === 'classroom-pairing' && 'Classroom Setup'}
-                  {activeSubTab === 'manual-lesson' && 'Create Lesson Manually'}
                 </span>
               </>
             ) : activeTab === 'parent' ? (

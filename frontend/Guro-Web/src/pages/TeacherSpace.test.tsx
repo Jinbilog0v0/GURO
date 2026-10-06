@@ -148,7 +148,7 @@ describe('TeacherSpace Page', () => {
     fireEvent.click(screen.getByText('Generate Classroom Invite Code'));
 
     await waitFor(() => {
-      expect(screen.getByText('CLASS-999')).toBeInTheDocument();
+      expect(screen.getAllByText('CLASS-999').length).toBeGreaterThanOrEqual(1);
     });
     
     expect(localStorage.getItem('guro_teacher_classroom_code')).toBe('CLASS-999');

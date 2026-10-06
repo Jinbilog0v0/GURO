@@ -6,8 +6,11 @@ import { DiagnosticAlerts } from '../components/teacher/DiagnosticAlerts';
 import { ManualLessonBuilder } from '../components/teacher/ManualLessonBuilder';
 import { PrePostTestAnalytics } from '../components/teacher/PrePostTestAnalytics';
 import { EosyPromotionConsole } from '../components/teacher/EosyPromotionConsole';
+import { LessonManagement } from '../components/teacher/LessonManagement';
+import { ClassroomDetailView } from '../components/teacher/ClassroomDetailView';
+import { StudentDirectory } from '../components/teacher/StudentDirectory';
 import { SkeletonStatCards, SkeletonCard, SkeletonTable } from '../components/shared/SkeletonLoader';
-import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock, Search, User, Trash2, Target, GraduationCap, Clock, AlertCircle, Lightbulb, Calendar } from 'lucide-react';
+import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock, Search, User, Users, Trash2, Target, GraduationCap, Clock, AlertCircle, Lightbulb, Calendar, BarChart3 } from 'lucide-react';
 import { toast } from '../utils/toast';
 import { apiFetch } from '../utils/api';
 import { ConfirmModal } from '../components/shared/ConfirmModal';
@@ -23,6 +26,15 @@ interface SyncedEvent {
   timestamp: string;
   classroomId?: string | null;
 }
+
+export type TeacherSubTab = 
+  | 'classrooms' 
+  | 'lessons' 
+  | 'analytics' 
+  | 'eosy-promotion' 
+  | 'classroom-pairing' 
+  | 'manual-lesson' 
+  | 'pre-post-test';
 
 interface TeacherSpaceProps {
   currentUser?: {
@@ -41,8 +53,8 @@ interface TeacherSpaceProps {
   lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null;
   refreshLogs: () => Promise<void>;
   loading: boolean;
-  activeSubTab?: 'analytics' | 'manual-lesson' | 'classroom-pairing' | 'pre-post-test' | 'eosy-promotion';
-  setActiveSubTab?: (tab: 'analytics' | 'manual-lesson' | 'classroom-pairing' | 'pre-post-test' | 'eosy-promotion') => void;
+  activeSubTab?: TeacherSubTab;
+  setActiveSubTab?: (tab: TeacherSubTab) => void;
 }
 
 const getCategoriesAndTypes = (currentSubject: string, currentGrade: string | number) => {
@@ -99,9 +111,18 @@ export function TeacherSpace({
   const [selectedSection, setSelectedSection] = useState('All');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   
-  const [localActiveSubTab, setLocalActiveSubTab] = useState<'analytics' | 'manual-lesson' | 'classroom-pairing' | 'pre-post-test' | 'eosy-promotion'>('analytics');
+  const [localActiveSubTab, setLocalActiveSubTab] = useState<TeacherSubTab>('analytics');
   const activeSubTab = propActiveSubTab !== undefined ? propActiveSubTab : localActiveSubTab;
   const setActiveSubTab = propSetActiveSubTab !== undefined ? propSetActiveSubTab : setLocalActiveSubTab;
+
+  // Drill-down classroom ID state
+  const [selectedClassroomForDetail, setSelectedClassroomForDetail] = useState<string | null>(null);
+
+  // Segmented control for Analytics: 'mastery' | 'directory' | 'growth'
+  const [analyticsSegment, setAnalyticsSegment] = useState<'mastery' | 'directory' | 'growth'>('mastery');
+
+  // Custom lesson authoring inside Lesson Management
+  const [isAuthoringLesson, setIsAuthoringLesson] = useState(false);
 
   // List of all classrooms created by the teacher (scoped to current user)
   const [classroomHistory, setClassroomHistory] = useState<{
@@ -1574,7 +1595,44 @@ export function TeacherSpace({
         </div>
       )}
 
-      {activeSubTab === 'classroom-pairing' ? (
+      {(activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing') ? (
+        selectedClassroomForDetail ? (
+          <ClassroomDetailView
+            classroom={(() => {
+              const found = classroomHistory.find(c => c.id === selectedClassroomForDetail);
+              if (found) {
+                return {
+                  ...found,
+                  customItemBank: classroomData?.classroomId === found.id ? classroomData.customItemBank : undefined
+                };
+              }
+              if (classroomData && classroomData.classroomId === selectedClassroomForDetail) {
+                return {
+                  id: classroomData.classroomId,
+                  teacherName: classroomData.teacherName,
+                  subject: classroomData.subject,
+                  gradeLevel: classroomData.gradeLevel,
+                  sectionName: classroomData.sectionName,
+                  schoolYear: classroomData.schoolYear,
+                  term: classroomData.term,
+                  expiresAt: classroomData.expiresAt,
+                  customItemBank: classroomData.customItemBank
+                };
+              }
+              return {
+                id: selectedClassroomForDetail,
+                teacherName: user?.name || 'Teacher',
+                subject: 'Mathematics',
+                gradeLevel: 4
+              };
+            })()}
+            progressLogs={progressLogs}
+            onBack={() => setSelectedClassroomForDetail(null)}
+            onRefreshLogs={refreshLogs}
+            onEditLesson={(les) => setEditingLesson(les)}
+            onDeleteLesson={(les) => setDeleteTopicTarget(les)}
+          />
+        ) : (
         <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <h3 style={{ fontSize: '18px', color: 'var(--text-main)', fontWeight: 700, margin: 0, paddingLeft: '4px' }}>
             Active Classroom Config & Pairing
@@ -1596,51 +1654,77 @@ export function TeacherSpace({
                   No classrooms created yet. Use the form below to get started!
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '150px', overflowY: 'auto' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto' }}>
                   {classroomHistory.map(c => {
                     const isActive = classroomCode === c.id;
                     return (
-                      <button
+                      <div
                         key={c.id}
-                        onClick={() => {
-                          if (user?.userId) {
-                            localStorage.setItem(`guro_teacher_classroom_code_${user.userId}`, c.id);
-                          }
-                          localStorage.setItem('guro_teacher_classroom_code', c.id);
-                          setClassroomCode(c.id);
-                          setClassroomData({
-                            classroomId: c.id,
-                            teacherName: c.teacherName,
-                            subject: c.subject,
-                            gradeLevel: c.gradeLevel,
-                            schoolYear: c.schoolYear,
-                            term: c.term,
-                            sectionName: c.sectionName,
-                            expiresAt: c.expiresAt
-                          });
-                          setSelectedModules([]);
-                          refreshLogs();
-                        }}
-                        className="btn btn-secondary"
+                        className="flex items-center justify-between gap-2 p-1.5 rounded-xl border transition-all"
                         style={{
-                          justifyContent: 'flex-start',
-                          padding: '10px 14px',
                           border: isActive ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
                           backgroundColor: isActive ? 'var(--accent-primary-glow)' : 'rgba(255,255,255,0.02)',
-                          color: isActive ? 'var(--text-main)' : 'var(--text-muted)',
-                          fontSize: '13px',
-                          textAlign: 'left'
                         }}
                       >
-                        <span style={{ fontWeight: isActive ? 800 : 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (user?.userId) {
+                              localStorage.setItem(`guro_teacher_classroom_code_${user.userId}`, c.id);
+                            }
+                            localStorage.setItem('guro_teacher_classroom_code', c.id);
+                            setClassroomCode(c.id);
+                            setClassroomData({
+                              classroomId: c.id,
+                              teacherName: c.teacherName,
+                              subject: c.subject,
+                              gradeLevel: c.gradeLevel,
+                              schoolYear: c.schoolYear,
+                              term: c.term,
+                              sectionName: c.sectionName,
+                              expiresAt: c.expiresAt
+                            });
+                            setSelectedModules([]);
+                            refreshLogs();
+                          }}
+                          className="flex items-center gap-2 flex-1 text-left bg-transparent border-none cursor-pointer p-1"
+                        >
                           {isActive ? (
-                            <span className="w-2 h-2 rounded-full bg-[#10B981] inline-block shadow-[0_0_8px_#10B981]" />
+                            <span className="w-2 h-2 rounded-full bg-[#10B981] inline-block shadow-[0_0_8px_#10B981] shrink-0" />
                           ) : (
                             <Key size={12} className="text-[var(--text-muted)] inline-block shrink-0" />
                           )}
-                          <span>{c.id} - {c.teacherName} ({c.subject} • Grade {c.gradeLevel}{c.sectionName ? ` • Sec: ${c.sectionName}` : ''} • S.Y. {c.schoolYear || '2026-2027'} {c.term || 'Q1'})</span>
-                        </span>
-                      </button>
+                          <span className="text-xs truncate font-medium text-[var(--text-main)]">
+                            <strong className="font-mono">{c.id}</strong> - {c.teacherName} ({c.subject} • G{c.gradeLevel}{c.sectionName ? ` • ${c.sectionName}` : ''})
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (user?.userId) {
+                              localStorage.setItem(`guro_teacher_classroom_code_${user.userId}`, c.id);
+                            }
+                            localStorage.setItem('guro_teacher_classroom_code', c.id);
+                            setClassroomCode(c.id);
+                            setClassroomData({
+                              classroomId: c.id,
+                              teacherName: c.teacherName,
+                              subject: c.subject,
+                              gradeLevel: c.gradeLevel,
+                              schoolYear: c.schoolYear,
+                              term: c.term,
+                              sectionName: c.sectionName,
+                              expiresAt: c.expiresAt
+                            });
+                            setSelectedClassroomForDetail(c.id);
+                            refreshLogs();
+                          }}
+                          className="px-2 py-1 bg-white/10 hover:bg-white/20 text-xs font-semibold rounded-lg text-indigo-400 border border-indigo-400/20 cursor-pointer shrink-0"
+                          title="Drill down into classroom details"
+                        >
+                          Details →
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -2107,21 +2191,107 @@ export function TeacherSpace({
           </div>
         </div>
       </div>
-      ) : activeSubTab === 'manual-lesson' ? (
-        <ManualLessonBuilder classroomId={classroomCode} />
-      ) : activeSubTab === 'pre-post-test' ? (
-        <PrePostTestAnalytics
-          progressLogs={progressLogs}
-          activeClassroomId={classroomCode}
-          onGoToClassroomSetup={() => setActiveSubTab('classroom-pairing')}
-        />
+      )
+      ) : (activeSubTab === 'lessons' || activeSubTab === 'manual-lesson') ? (
+        isAuthoringLesson || activeSubTab === 'manual-lesson' ? (
+          <div>
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAuthoringLesson(false);
+                  setActiveSubTab('lessons');
+                }}
+                className="btn btn-secondary px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5"
+              >
+                ← Back to Lesson Library
+              </button>
+            </div>
+            <ManualLessonBuilder classroomId={classroomCode} />
+          </div>
+        ) : (
+          <LessonManagement
+            activeClassroomId={classroomCode}
+            classrooms={classroomHistory.map(c => ({
+              id: c.id,
+              teacherName: c.teacherName,
+              subject: c.subject,
+              gradeLevel: c.gradeLevel,
+              sectionName: c.sectionName
+            }))}
+            onCreateLesson={() => setIsAuthoringLesson(true)}
+          />
+        )
       ) : activeSubTab === 'eosy-promotion' ? (
         <EosyPromotionConsole
           classroomCode={classroomCode}
-          onGoToClassroomSetup={() => setActiveSubTab('classroom-pairing')}
+          onGoToClassroomSetup={() => setActiveSubTab('classrooms')}
         />
       ) : (
-        <>
+        /* Analytics SubTab ('analytics' or 'pre-post-test') */
+        <div className="flex flex-col gap-6">
+          {/* Segmented Controller Header for Analytics */}
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[16px] p-2 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setAnalyticsSegment('mastery')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                  analyticsSegment === 'mastery' && activeSubTab !== 'pre-post-test'
+                    ? 'bg-[#11428E] text-white shadow-md'
+                    : 'bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/5'
+                }`}
+              >
+                <BarChart3 size={15} />
+                <span>Classroom Mastery & Telemetry</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAnalyticsSegment('directory')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                  analyticsSegment === 'directory'
+                    ? 'bg-[#11428E] text-white shadow-md'
+                    : 'bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/5'
+                }`}
+              >
+                <Users size={15} />
+                <span>Student Directory</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAnalyticsSegment('growth')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                  analyticsSegment === 'growth' || activeSubTab === 'pre-post-test'
+                    ? 'bg-[#11428E] text-white shadow-md'
+                    : 'bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/5'
+                }`}
+              >
+                <TrendingUp size={15} />
+                <span>Pre / Post Test Growth</span>
+              </button>
+            </div>
+
+            {analyticsSegment === 'mastery' && (
+              <span className="text-xs text-[var(--text-muted)] px-3">
+                {uniqueStudents.length} Students Active • {filteredLogs.length} Sync Records
+              </span>
+            )}
+          </div>
+
+          {/* Render Active Segment */}
+          {analyticsSegment === 'directory' ? (
+            <StudentDirectory
+              progressLogs={progressLogs}
+              activeClassroomId={classroomCode}
+            />
+          ) : (analyticsSegment === 'growth' || activeSubTab === 'pre-post-test') ? (
+            <PrePostTestAnalytics
+              progressLogs={progressLogs}
+              activeClassroomId={classroomCode}
+              onGoToClassroomSetup={() => setActiveSubTab('classrooms')}
+            />
+          ) : (
+            <>
           {classroomCode && classroomData && (
             <div className="px-6 py-3.5 flex justify-between items-center bg-[var(--accent-primary-glow)] border border-[var(--accent-primary)]/20 rounded-[12px] mb-2">
               <span className="text-[13px] color-[var(--accent-secondary)] font-semibold flex items-center gap-2">
@@ -2367,6 +2537,8 @@ export function TeacherSpace({
             )}
           </div>
         </>
+      )}
+        </div>
       )}
       {editingLesson && renderEditModal()}
 

@@ -60,9 +60,10 @@ describe('App Portal and Navigation Layout (Web)', () => {
     
     // Check navigation options visible for Teacher (using getAllByText to avoid breadcrumb duplicates)
     expect(screen.getAllByText('Teacher Console').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('My Classrooms').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Lesson Management').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Classroom Analytics').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Classroom Setup').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Create Lesson Manually').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('EOSY & Promotion').length).toBeGreaterThanOrEqual(1);
     
     // Sync indicator label
     expect(screen.getByText('TEACHER · Sync\'d')).toBeInTheDocument();
