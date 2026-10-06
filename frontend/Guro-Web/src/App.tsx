@@ -693,10 +693,6 @@ function App() {
                 <RotateCw size={13} /><span>Refresh Logs</span>
               </button>
             )}
-            <div className="flex items-center gap-1.5 bg-[#10B981]/8 border border-[#10B981]/20 px-2.5 py-1 rounded-full">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]" aria-hidden="true"></div>
-              <span className="text-[11px] font-bold text-[#10B981] tracking-[0.5px]">Sync Server Active</span>
-            </div>
 
             {/* Dark / Light Mode Toggle in Top Right Navigation */}
             <button
