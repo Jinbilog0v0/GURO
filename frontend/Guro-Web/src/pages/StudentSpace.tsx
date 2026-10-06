@@ -268,6 +268,11 @@ const FALLBACK_ITEM_BANK: ItemBank = {
                             "term": "Comparative Adjective",
                             "definition": "Used to compare two things, usually ending in '-er' or using 'more'.",
                             "examples": ["This cat is faster than that one.", "Math is more exciting than reading."]
+                        },
+                        {
+                            "term": "Superlative Adjective",
+                            "definition": "Used to compare three or more things, showing the highest degree, usually ending in '-est' or using 'most'.",
+                            "examples": ["Mount Everest is the highest mountain.", "He is the most helpful boy in class."]
                         }
                     ],
                     "refresherQuiz": [
@@ -286,10 +291,11 @@ const FALLBACK_ITEM_BANK: ItemBank = {
                     ],
                     "summary": [
                         "Adjectives describe nouns (people, places, things).",
-                        "Use comparative adjectives to compare 2 things (usually ending in -er)."
+                        "Use comparative adjectives to compare 2 things (usually ending in -er).",
+                        "Use superlative adjectives to compare 3 or more things (usually ending in -est)."
                     ]
                 },
-                "Average": {
+                "Easy": {
                     "Multiple-Choice": [
                         {
                             "id": "ENG-G5-ADJ-001",
@@ -302,9 +308,139 @@ const FALLBACK_ITEM_BANK: ItemBank = {
                             }
                         }
                     ]
+                },
+                "Average": {
+                    "Multiple-Choice": [
+                        {
+                            "id": "ENG-G5-ADJ-002",
+                            "questionText": "Choose the correct comparative adjective to complete the sentence: \"My cat is ______ than your cat.\"",
+                            "options": ["fast", "faster", "fastest", "more fast"],
+                            "correctAnswer": "faster",
+                            "feedback": {
+                                "en": "\"Faster\" is the comparative form of \"fast\" and is used when comparing exactly two things, like \"my cat\" and \"your cat\".",
+                                "fil": "\"Faster\" is the comparative form of \"fast\" and is used when comparing exactly two things, like \"my cat\" and \"your cat\"."
+                            }
+                        },
+                        {
+                            "id": "ENG-G5-ADJ-003",
+                            "questionText": "Which word correctly completes the sentence: \"Mount Everest is the ______ mountain in the world.\"",
+                            "options": ["tall", "taller", "tallest", "more tall"],
+                            "correctAnswer": "tallest",
+                            "feedback": {
+                                "en": "\"Tallest\" is the superlative form of \"tall\" and is used when comparing three or more things.",
+                                "fil": "\"Tallest\" is the superlative form of \"tall\" and is used when comparing three or more things."
+                            }
+                        },
+                        {
+                            "id": "ENG-G5-ADJ-GF1",
+                            "type": "fill-in-the-blank",
+                            "questionText": "The energetic puppy chased the [[blank]] ball.",
+                            "options": ["playful", "running", "sleeping", "heavy"],
+                            "correctAnswer": "playful",
+                            "feedback": {
+                                "en": "'Playful' is an adjective that describes the noun 'ball' in a fun context.",
+                                "fil": "'Playful' is an adjective that describes the noun 'ball' in a fun context."
+                            }
+                        }
+                    ]
+                },
+                "Difficult": {
+                    "Multiple-Choice": [
+                        {
+                            "id": "ENG-G5-ADJ-004",
+                            "questionText": "Read the sentence: \"Among the three runners, Sarah was the ______.\" Which adjective form correctly completes the sentence?",
+                            "options": ["quick", "quicker", "quickest", "more quick"],
+                            "correctAnswer": "quickest",
+                            "feedback": {
+                                "en": "Since the sentence compares \"three runners,\" the superlative form \"quickest\" is required.",
+                                "fil": "Since the sentence compares \"three runners,\" the superlative form \"quickest\" is required."
+                            }
+                        },
+                        {
+                            "id": "ENG-G5-ADJ-005",
+                            "questionText": "In the phrase \"She sings beautifully,\" which word is an adjective?",
+                            "options": ["She", "sings", "beautifully", "There is no adjective in this phrase."],
+                            "correctAnswer": "There is no adjective in this phrase.",
+                            "feedback": {
+                                "en": "An adjective modifies a noun or pronoun. \"Beautifully\" is an adverb because it describes how she sings (a verb).",
+                                "fil": "An adjective modifies a noun or pronoun. \"Beautifully\" is an adverb because it describes how she sings (a verb)."
+                            }
+                        },
+                        {
+                            "id": "ENG-G5-ADJ-GF2",
+                            "type": "drag-drop-matching",
+                            "questionText": "Match the adjectives with their opposite meanings (antonyms).",
+                            "options": ["Hot", "Fast", "Big", "Cold", "Slow", "Small"],
+                            "matchingPairs": {
+                                "Hot": "Cold",
+                                "Fast": "Slow",
+                                "Big": "Small"
+                            },
+                            "correctAnswer": "Hot-Cold, Fast-Slow, Big-Small",
+                            "feedback": {
+                                "en": "The correct antonym pairs are Hot/Cold, Fast/Slow, and Big/Small.",
+                                "fil": "The correct antonym pairs are Hot/Cold, Fast/Slow, and Big/Small."
+                            }
+                        }
+                    ]
                 }
             },
             "Short Story Comprehension": {
+                "studyContent": {
+                    "introduction": "Welcome to Grade 5 English! Short Story Comprehension develops your ability to understand, analyze, and interpret written passages. You will learn to identify the main idea, find supporting details, and draw conclusions from what you read.",
+                    "definitions": [
+                        {
+                            "term": "Main Idea",
+                            "definition": "The central or most important point the author wants to communicate in a paragraph or passage.",
+                            "examples": ["In a paragraph about dogs being loyal, the main idea is 'Dogs are loyal companions.'"]
+                        },
+                        {
+                            "term": "Supporting Details",
+                            "definition": "Facts, examples, or reasons that explain or prove the main idea.",
+                            "examples": ["'Dogs guide the blind' and 'Dogs alert owners to danger' support the idea that dogs are loyal."]
+                        },
+                        {
+                            "term": "Inference",
+                            "definition": "A conclusion you draw based on evidence in the text combined with what you already know.",
+                            "examples": ["If a character keeps checking the clock, you can infer they are anxious or waiting for something."]
+                        },
+                        {
+                            "term": "Context Clues",
+                            "definition": "Words or phrases surrounding an unfamiliar word that help you figure out its meaning.",
+                            "examples": ["'The diligent student studied every night' — diligent means hardworking."]
+                        }
+                    ],
+                    "refresherQuiz": [
+                        {
+                            "questionText": "Quick Check: What is the main idea of a paragraph?",
+                            "options": [
+                                "A detail that supports the topic.",
+                                "The most important point the author wants to share.",
+                                "The last sentence of the paragraph.",
+                                "A fact listed in the passage."
+                            ],
+                            "correctAnswer": "The most important point the author wants to share.",
+                            "explanation": "Correct! The main idea is the central message the entire paragraph revolves around."
+                        },
+                        {
+                            "questionText": "Quick Check: What are supporting details?",
+                            "options": [
+                                "New topics added to a story.",
+                                "Facts or examples that explain or prove the main idea.",
+                                "Words used to describe characters.",
+                                "The beginning and ending sentences only."
+                            ],
+                            "correctAnswer": "Facts or examples that explain or prove the main idea.",
+                            "explanation": "Correct! Supporting details back up and strengthen the main idea."
+                        }
+                    ],
+                    "summary": [
+                        "The main idea is the most important point in a passage — often found in the first or last sentence.",
+                        "Supporting details are facts, reasons, or examples that explain the main idea.",
+                        "Use context clues to figure out unfamiliar word meanings.",
+                        "Inferences go beyond the text — combine what the author says with what you know."
+                    ]
+                },
                 "Average": {
                     "Paragraph Comprehension": [
                         {
@@ -328,6 +464,61 @@ const FALLBACK_ITEM_BANK: ItemBank = {
         },
         "6": {
             "Idiomatic Expressions": {
+                "studyContent": {
+                    "introduction": "Welcome to Grade 6 English! Idiomatic Expressions are phrases or sayings whose meanings cannot be understood from the literal definitions of the individual words. Learning idioms helps you understand everyday conversations, stories, and written texts more naturally.",
+                    "definitions": [
+                        {
+                            "term": "Idiom",
+                            "definition": "A group of words with a figurative meaning that is different from its literal meaning.",
+                            "examples": ["'Break a leg' does not mean physically break your leg — it means 'Good luck!'"]
+                        },
+                        {
+                            "term": "Figurative Meaning",
+                            "definition": "The intended, non-literal interpretation of a phrase based on common usage.",
+                            "examples": ["'It's raining cats and dogs' means it is raining very heavily, not that animals are falling from the sky."]
+                        },
+                        {
+                            "term": "Literal Meaning",
+                            "definition": "The exact, word-for-word meaning of a phrase.",
+                            "examples": ["'She ran to the store' — literal: she physically ran to a shop."]
+                        },
+                        {
+                            "term": "Context",
+                            "definition": "The surrounding words and situation that help reveal the intended meaning of an idiom.",
+                            "examples": ["Knowing that someone is nervous before a performance tells you 'Break a leg' means 'Good luck!'"]
+                        }
+                    ],
+                    "refresherQuiz": [
+                        {
+                            "questionText": "Quick Check: What is an idiom?",
+                            "options": [
+                                "A phrase with a literal, exact meaning.",
+                                "A phrase whose figurative meaning differs from its word-by-word definition.",
+                                "A rhyming pair of words.",
+                                "A word borrowed from another language."
+                            ],
+                            "correctAnswer": "A phrase whose figurative meaning differs from its word-by-word definition.",
+                            "explanation": "Correct! Idioms have a special figurative meaning you cannot guess just from the individual words."
+                        },
+                        {
+                            "questionText": "Quick Check: What does 'hit the books' mean?",
+                            "options": [
+                                "To physically strike textbooks.",
+                                "To throw books away.",
+                                "To start studying.",
+                                "To organize your school bag."
+                            ],
+                            "correctAnswer": "To start studying.",
+                            "explanation": "Correct! 'Hit the books' is an idiom meaning to study or begin studying."
+                        }
+                    ],
+                    "summary": [
+                        "Idioms are phrases with figurative, non-literal meanings.",
+                        "You cannot understand an idiom by translating each word individually.",
+                        "Use context clues — the surrounding situation — to figure out what an idiom means.",
+                        "Common Filipino-English idioms include: 'burn the midnight oil' (study late), 'bite the bullet' (endure pain bravely), 'break a leg' (good luck)."
+                    ]
+                },
                 "Difficult": {
                     "Multiple-Choice": [
                         {
