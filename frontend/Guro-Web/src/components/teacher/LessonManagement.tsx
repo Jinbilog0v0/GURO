@@ -29,6 +29,8 @@ export interface ClassroomOption {
 export interface LessonManagementProps {
   activeClassroomId?: string | null;
   classrooms?: ClassroomOption[];
+  initialTab?: 'system' | 'custom';
+  onTabChange?: (tab: 'system' | 'custom') => void;
   onCreateLesson?: () => void;
   onOpenCreateLesson?: () => void;
   onEditCustomLesson?: (lesson: any) => void;
@@ -38,12 +40,20 @@ export interface LessonManagementProps {
 export const LessonManagement: React.FC<LessonManagementProps> = ({
   activeClassroomId: _activeClassroomId,
   classrooms = [],
+  initialTab,
+  onTabChange,
   onCreateLesson,
   onOpenCreateLesson,
   onEditCustomLesson,
   onAssignLessonToClassroom,
 }) => {
-  const [activeTab, setActiveTab] = useState<'system' | 'custom'>('system');
+  const [activeTab, setActiveTab] = useState<'system' | 'custom'>(initialTab || 'system');
+
+  useEffect(() => {
+    if (initialTab && initialTab !== activeTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const [globalBank, setGlobalBank] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -230,7 +240,10 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
           <div className="flex bg-[var(--bg-main)] p-1 rounded-xl border border-[var(--border-color)]">
             <button
               type="button"
-              onClick={() => setActiveTab('system')}
+              onClick={() => {
+                setActiveTab('system');
+                onTabChange?.('system');
+              }}
               className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
                 activeTab === 'system'
                   ? 'bg-[#11428E] text-white shadow-xs'
@@ -242,7 +255,10 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('custom')}
+              onClick={() => {
+                setActiveTab('custom');
+                onTabChange?.('custom');
+              }}
               className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
                 activeTab === 'custom'
                   ? 'bg-purple-600 text-white shadow-xs'

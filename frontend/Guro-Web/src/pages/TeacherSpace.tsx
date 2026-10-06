@@ -30,7 +30,12 @@ interface SyncedEvent {
 export type TeacherSubTab = 
   | 'classrooms' 
   | 'lessons' 
+  | 'lessons-system'
+  | 'lessons-custom'
   | 'analytics' 
+  | 'analytics-mastery'
+  | 'analytics-directory'
+  | 'analytics-growth'
   | 'eosy-promotion' 
   | 'classroom-pairing' 
   | 'manual-lesson' 
@@ -119,7 +124,17 @@ export function TeacherSpace({
   const [selectedClassroomForDetail, setSelectedClassroomForDetail] = useState<string | null>(null);
 
   // Segmented control for Analytics: 'mastery' | 'directory' | 'growth'
-  const [analyticsSegment, setAnalyticsSegment] = useState<'mastery' | 'directory' | 'growth'>('mastery');
+  const [analyticsSegment, setAnalyticsSegment] = useState<'mastery' | 'directory' | 'growth'>(() => {
+    if (activeSubTab === 'analytics-directory') return 'directory';
+    if (activeSubTab === 'analytics-growth' || activeSubTab === 'pre-post-test') return 'growth';
+    return 'mastery';
+  });
+
+  useEffect(() => {
+    if (activeSubTab === 'analytics-directory') setAnalyticsSegment('directory');
+    else if (activeSubTab === 'analytics-growth' || activeSubTab === 'pre-post-test') setAnalyticsSegment('growth');
+    else if (activeSubTab === 'analytics-mastery') setAnalyticsSegment('mastery');
+  }, [activeSubTab]);
 
   // Custom lesson authoring inside Lesson Management
   const [isAuthoringLesson, setIsAuthoringLesson] = useState(false);
@@ -2192,7 +2207,7 @@ export function TeacherSpace({
         </div>
       </div>
       )
-      ) : (activeSubTab === 'lessons' || activeSubTab === 'manual-lesson') ? (
+      ) : (activeSubTab === 'lessons' || activeSubTab === 'lessons-system' || activeSubTab === 'lessons-custom' || activeSubTab === 'manual-lesson') ? (
         isAuthoringLesson || activeSubTab === 'manual-lesson' ? (
           <div>
             <div className="mb-4">
@@ -2212,6 +2227,14 @@ export function TeacherSpace({
         ) : (
           <LessonManagement
             activeClassroomId={classroomCode}
+            initialTab={activeSubTab === 'lessons-custom' ? 'custom' : 'system'}
+            onTabChange={(tab) => {
+              if (tab === 'custom' && activeSubTab !== 'lessons-custom') {
+                setActiveSubTab('lessons-custom');
+              } else if (tab === 'system' && activeSubTab !== 'lessons-system') {
+                setActiveSubTab('lessons-system');
+              }
+            }}
             classrooms={classroomHistory.map(c => ({
               id: c.id,
               teacherName: c.teacherName,
