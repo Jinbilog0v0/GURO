@@ -4,7 +4,8 @@ import { TeacherSettings } from './TeacherSettings';
 import { ParentSettings } from './ParentSettings';
 import { AdminSettings } from './AdminSettings';
 import { SharedSecuritySection } from './SharedSecuritySection';
-import { User, Lock, LogOut, Shield, School, Users, GraduationCap, X, Sun, Moon, Sliders } from 'lucide-react';
+import { ThemePreferencesSection } from './ThemePreferencesSection';
+import { User, Lock, LogOut, Shield, School, Users, GraduationCap, X, Sun, Moon, Sliders, Palette } from 'lucide-react';
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ export interface SettingsModalProps {
   parentAccessCode?: string;
 }
 
-type SettingsTab = 'profile' | 'security' | 'account';
+type SettingsTab = 'profile' | 'preferences' | 'security' | 'account';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
@@ -143,7 +144,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               ) : (
                 <GraduationCap className="size-4 shrink-0" />
               )}
-              <span className="truncate">{role === 'student' ? 'Learning & Display' : 'Profile & Classroom'}</span>
+              <span className="truncate">{role === 'student' ? 'Learning Profile' : 'Profile & Classroom'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('preferences')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer text-left ${
+                activeTab === 'preferences'
+                  ? 'bg-[var(--accent-primary-glow)] text-[var(--accent-primary-text)] shadow-xs font-extrabold ring-1 ring-[var(--accent-primary)]/20'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card)]'
+              }`}
+            >
+              <Palette className="size-4 shrink-0" />
+              <span className="truncate">Theme & Preferences</span>
             </button>
 
             <button
@@ -198,6 +212,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   />
                 )}
               </div>
+            )}
+
+            {activeTab === 'preferences' && (
+              <ThemePreferencesSection
+                isDarkMode={isDarkMode}
+                onToggleTheme={onToggleTheme}
+                role={role}
+              />
             )}
 
             {activeTab === 'security' && <SharedSecuritySection />}

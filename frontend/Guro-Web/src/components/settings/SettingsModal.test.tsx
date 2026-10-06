@@ -56,6 +56,7 @@ describe('SettingsModal Component', () => {
 
     // Menu Bar tabs
     expect(screen.getByText('Profile & Classroom')).toBeInTheDocument();
+    expect(screen.getByText('Theme & Preferences')).toBeInTheDocument();
     expect(screen.getByText('Password & Security')).toBeInTheDocument();
     expect(screen.getByText('Session & Account')).toBeInTheDocument();
 
@@ -84,6 +85,13 @@ describe('SettingsModal Component', () => {
         onSaveProfile={mockOnSaveProfile}
       />
     );
+
+    // Switch to Theme & Preferences tab
+    fireEvent.click(screen.getByText('Theme & Preferences'));
+    expect(screen.getByText('Theme Mode & Appearance')).toBeInTheDocument();
+    expect(screen.getByText('Light Workspace')).toBeInTheDocument();
+    expect(screen.getByText('Dark Workspace')).toBeInTheDocument();
+    expect(screen.getByText('Audio & Narration Feedback')).toBeInTheDocument();
 
     // Switch to Password & Security tab
     fireEvent.click(screen.getByText('Password & Security'));
