@@ -15,7 +15,7 @@ import {
 import { apiFetch } from '../../utils/api';
 import { toast } from '../../utils/toast';
 import { LessonPreviewModal } from './LessonPreviewModal';
-import type { QuestionPreviewItem } from './LessonPreviewModal';
+import type { QuestionPreviewItem, StudyContent } from './LessonPreviewModal';
 
 export interface ClassroomOption {
   id: string;
@@ -66,6 +66,7 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
     grade: string | number;
     topic: string;
     questions: QuestionPreviewItem[];
+    studyContent: StudyContent | null;
     isSystemLesson: boolean;
   } | null>(null);
 
@@ -103,28 +104,59 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
       });
   }, []);
 
-  // Extract all official lessons
+  // Extract all official lessons with correct deep traversal
   const officialLessons: {
     subject: string;
     grade: string;
     topic: string;
+    studyContent: StudyContent | null;
     questions: QuestionPreviewItem[];
   }[] = [];
 
   if (globalBank) {
+    const DIFFICULTY_KEYS = ['Easy', 'Average', 'Difficult'];
     Object.keys(globalBank).forEach(subj => {
       Object.keys(globalBank[subj]).forEach(gr => {
         Object.keys(globalBank[subj][gr]).forEach(tp => {
-          const rawQuestions = globalBank[subj][gr][tp];
-          const questionsList: QuestionPreviewItem[] = Array.isArray(rawQuestions) 
-            ? rawQuestions 
-            : Object.values(rawQuestions);
+          const topicNode = globalBank[subj][gr][tp];
+
+          // Extract studyContent (skip it from question traversal)
+          const studyContentRaw = topicNode?.studyContent ?? null;
+          const extractedStudyContent: StudyContent | null = studyContentRaw ? {
+            introduction: studyContentRaw.introduction || '',
+            definitions: studyContentRaw.definitions || [],
+            refresherQuiz: studyContentRaw.refresherQuiz || [],
+            summary: studyContentRaw.summary || [],
+            imageUrl: studyContentRaw.imageUrl || undefined,
+          } : null;
+
+          // Flatten questions across difficulty tiers and question-type categories
+          const flatQuestions: QuestionPreviewItem[] = [];
+          DIFFICULTY_KEYS.forEach(difficulty => {
+            const diffNode = topicNode[difficulty];
+            if (diffNode && typeof diffNode === 'object') {
+              Object.keys(diffNode).forEach(category => {
+                const list = diffNode[category];
+                if (Array.isArray(list)) {
+                  list.forEach(q => {
+                    flatQuestions.push({
+                      ...q,
+                      difficulty,
+                      type: category,
+                      category,
+                    });
+                  });
+                }
+              });
+            }
+          });
 
           officialLessons.push({
             subject: subj,
             grade: gr,
             topic: tp,
-            questions: questionsList,
+            studyContent: extractedStudyContent,
+            questions: flatQuestions,
           });
         });
       });
@@ -345,7 +377,10 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
                       {item.topic}
                     </h4>
                     <p className="text-xs text-[var(--text-muted)] line-clamp-2">
-                      DepEd official curriculum module containing {item.questions.length} interactive assessment items.
+                      {item.questions.length > 0
+                        ? `${item.questions.length} assessment items — Easy: ${item.questions.filter(q => q.difficulty === 'Easy').length} · Avg: ${item.questions.filter(q => q.difficulty === 'Average').length} · Diff: ${item.questions.filter(q => q.difficulty === 'Difficult').length}`
+                        : 'Official DepEd curriculum module.'
+                      }
                     </p>
                   </div>
 
@@ -359,6 +394,7 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
                         grade: item.grade,
                         topic: item.topic,
                         questions: item.questions,
+                        studyContent: item.studyContent,
                         isSystemLesson: true,
                       })}
                       className="btn btn-secondary flex-1 text-xs py-2 px-3 flex items-center justify-center gap-1.5"
@@ -445,6 +481,7 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
                         grade: item.gradeLevel || item.grade,
                         topic: item.topic || title,
                         questions: questionsList,
+                        studyContent: item.studyContent ?? null,
                         isSystemLesson: false,
                       })}
                       className="btn btn-secondary flex-1 text-xs py-2 px-2 flex items-center justify-center gap-1"
@@ -500,6 +537,7 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
           grade={previewLesson.grade}
           topic={previewLesson.topic}
           questions={previewLesson.questions}
+          studyContent={previewLesson.studyContent}
           isSystemLesson={previewLesson.isSystemLesson}
           onAssignToClass={() => handleOpenAssignModal(previewLesson)}
         />
