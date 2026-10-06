@@ -30,7 +30,6 @@ import {
   GraduationCap,
   Target,
   Shield,
-  Menu,
   X,
   Settings
 } from 'lucide-react';
@@ -440,18 +439,46 @@ function App() {
         }`}
         aria-label="Main navigation"
       >
-        {/* Logo */}
-        <div className={`flex items-center pb-5 mb-1 ${isSidebarOpen ? 'gap-[11px] px-1.5' : 'justify-center'}`}>
-          <div className="w-[42px] h-[42px] shrink-0 rounded-[12px] bg-gradient-to-br from-[#11428E] to-[#1C5BC0] flex items-center justify-center text-white font-extrabold text-sm shadow-[0_6px_16px_rgba(17,66,142,0.34)]">GU</div>
-          {isSidebarOpen && (
-            <div className="leading-tight overflow-hidden">
-              <div className="text-[18px] font-extrabold text-[var(--text-main)]">GURO</div>
-              <div className={`text-[12px] font-semibold ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--text-muted)]'}`}>
-                {isAdmin ? 'Admin Console' 
-                  : currentUser?.role === 'parent' ? 'Parent Portal' 
-                  : 'Teacher Portal'}
+        {/* MenuBar Header with Logo and Close (X) Button */}
+        <div className={`flex items-center pb-5 mb-1 ${isSidebarOpen ? 'justify-between px-1.5' : 'justify-center'}`}>
+          <div className="flex items-center gap-[11px] min-w-0">
+            <button
+              type="button"
+              onClick={!isSidebarOpen ? toggleSidebar : undefined}
+              disabled={isSidebarOpen}
+              aria-label={!isSidebarOpen ? 'Expand menu' : undefined}
+              title={!isSidebarOpen ? 'Click to expand menu' : undefined}
+              className={`w-[42px] h-[42px] shrink-0 rounded-[12px] bg-gradient-to-br from-[#11428E] to-[#1C5BC0] flex items-center justify-center text-white font-extrabold text-sm shadow-[0_6px_16px_rgba(17,66,142,0.34)] border-none p-0 ${
+                !isSidebarOpen 
+                  ? 'cursor-pointer hover:scale-105 active:scale-95 transition-transform' 
+                  : 'cursor-default'
+              }`}
+            >
+              GU
+            </button>
+            {isSidebarOpen && (
+              <div className="leading-tight overflow-hidden">
+                <div className="text-[18px] font-extrabold text-[var(--text-main)]">GURO</div>
+                <div className={`text-[12px] font-semibold ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--text-muted)]'}`}>
+                  {isAdmin ? 'Admin Console' 
+                    : currentUser?.role === 'parent' ? 'Parent Portal' 
+                    : 'Teacher Portal'}
+                </div>
               </div>
-            </div>
+            )}
+          </div>
+
+          {/* Close (X) icon inside the menuBar - only visible when open */}
+          {isSidebarOpen && (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-label="Collapse menu"
+              title="Collapse menu"
+              className="bg-transparent border border-[var(--border-color)] rounded-lg w-7 h-7 flex items-center justify-center cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all duration-200 active:scale-[0.93] shrink-0 ml-2"
+            >
+              <X size={15} />
+            </button>
           )}
         </div>
 
@@ -652,44 +679,33 @@ function App() {
       <main className="flex-1 flex flex-col h-full min-w-0">
         {/* Top Header */}
         <header className="h-[62px] border-b border-[var(--border-color)] flex justify-between items-center px-[30px] bg-[var(--bg-sidebar)]">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={toggleSidebar}
-              aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-              className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--bg-main)] active:scale-[0.93] shrink-0"
-            >
-              {isSidebarOpen ? <X size={15} /> : <Menu size={15} />}
-            </button>
-            <div className="flex items-center gap-1.5 text-xs font-medium">
-              <span className="text-[var(--text-muted)] font-bold">{isAdmin ? 'GURO Admin' : 'GURO'}</span>
-              <span className="text-[var(--border-color)]">/</span>
-              {activeTab === 'teacher' ? (
-                <>
-                  <span className="text-[var(--text-muted)]">Teacher Console</span>
-                  <span className="text-[var(--border-color)]">/</span>
-                  <span className="text-[var(--text-main)] font-bold">
-                    {activeSubTab === 'analytics' && 'Classroom Analytics'}
-                    {activeSubTab === 'pre-post-test' && 'Pre/Post-Test Growth'}
-                    {activeSubTab === 'eosy-promotion' && 'EOSY & Promotion'}
-                    {activeSubTab === 'classroom-pairing' && 'Classroom Setup'}
-                    {activeSubTab === 'manual-lesson' && 'Create Lesson Manually'}
-                  </span>
-                </>
-              ) : activeTab === 'parent' ? (
-                <>
-                  <span className="text-[var(--text-muted)]">Parent Console</span>
-                  <span className="text-[var(--border-color)]">/</span>
-                  <span className="text-[var(--text-main)] font-bold">
-                    {activeSubTab === 'create-student' ? 'Create Student Account' : 'Parent Explorer'}
-                  </span>
-                </>
-              ) : (
+          <div className="flex items-center gap-1.5 text-xs font-medium">
+            {activeTab === 'teacher' ? (
+              <>
+                <span className="text-[var(--text-muted)]">Teacher Console</span>
+                <span className="text-[var(--border-color)]">/</span>
                 <span className="text-[var(--text-main)] font-bold">
-                  {activeTab === 'dashboard' ? (isAdmin ? 'Main Dashboard' : 'System Dashboard')
-                    : 'Lesson Ingestor'}
+                  {activeSubTab === 'analytics' && 'Classroom Analytics'}
+                  {activeSubTab === 'pre-post-test' && 'Pre/Post-Test Growth'}
+                  {activeSubTab === 'eosy-promotion' && 'EOSY & Promotion'}
+                  {activeSubTab === 'classroom-pairing' && 'Classroom Setup'}
+                  {activeSubTab === 'manual-lesson' && 'Create Lesson Manually'}
                 </span>
-              )}
-            </div>
+              </>
+            ) : activeTab === 'parent' ? (
+              <>
+                <span className="text-[var(--text-muted)]">Parent Console</span>
+                <span className="text-[var(--border-color)]">/</span>
+                <span className="text-[var(--text-main)] font-bold">
+                  {activeSubTab === 'create-student' ? 'Create Student Account' : 'Parent Explorer'}
+                </span>
+              </>
+            ) : (
+              <span className="text-[var(--text-main)] font-bold">
+                {activeTab === 'dashboard' ? (isAdmin ? 'Main Dashboard' : 'System Dashboard')
+                  : 'Lesson Ingestor'}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
