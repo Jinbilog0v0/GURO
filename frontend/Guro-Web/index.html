@@ -8,8 +8,29 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <title>GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION</title>
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem('guro_theme');
+          if (theme === 'light') {
+            document.documentElement.classList.add('light-mode');
+          } else {
+            document.documentElement.classList.remove('light-mode');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('guro_theme') === 'light') {
+            document.body.classList.add('light-mode');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

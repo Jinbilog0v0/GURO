@@ -115,8 +115,10 @@ function App() {
 
   useEffect(() => {
     if (isDarkMode) {
+      document.documentElement.classList.remove('light-mode');
       document.body.classList.remove('light-mode');
     } else {
+      document.documentElement.classList.add('light-mode');
       document.body.classList.add('light-mode');
     }
   }, [isDarkMode]);
