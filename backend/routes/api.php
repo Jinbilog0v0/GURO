@@ -43,6 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // User Management
     Route::post('/user/update-profile', [AuthController::class, 'updateProfile']);
+    Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 
     // Developer — Rate Limit Management
     Route::prefix('dev')->group(function () {

@@ -470,6 +470,16 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     });
     const [xpPoints, setXpPoints] = useState<number>(() => parseInt(localStorage.getItem('guro_student_xp') ?? '0', 10) || 0);
 
+    // Sync avatar and outfit live from modal
+    useEffect(() => {
+        const handleAvatarSync = (e: any) => {
+            if (e.detail?.avatar) setAvatarEmoji(e.detail.avatar);
+            if (e.detail?.outfit) setActiveOutfit(e.detail.outfit);
+        };
+        window.addEventListener('guro_avatar_updated', handleAvatarSync);
+        return () => window.removeEventListener('guro_avatar_updated', handleAvatarSync);
+    }, []);
+
     // Screen Time Limits
     const [dailyMinutesUsed, setDailyMinutesUsed] = useState<number>(() => {
         const today = new Date().toISOString().split('T')[0];

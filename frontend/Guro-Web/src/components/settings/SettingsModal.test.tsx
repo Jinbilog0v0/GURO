@@ -157,6 +157,7 @@ describe('SettingsModal Component', () => {
     expect(screen.getByText('Student Learning Settings')).toBeInTheDocument();
     expect(screen.getByText('Share Access with Parent or Guardian')).toBeInTheDocument();
     expect(screen.getByText('GURO-P-8888')).toBeInTheDocument();
-    expect(screen.getByText('Learning Accommodations & Display')).toBeInTheDocument();
+    expect(screen.getByText('Mascot Outfits, Theme & Voice Audio')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Save Name/i })).toBeInTheDocument();
   });
 });

@@ -625,4 +625,32 @@ class AuthController extends Controller
             ],
         ]);
     }
+
+    // POST /api/auth/change-password
+    public function changePassword(Request $request)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['error' => 'Unauthenticated.'], 401);
+        }
+
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:6',
+            'new_password_confirmation' => 'required|string|same:new_password',
+        ]);
+
+        if (! $this->verifyPassword($request->current_password, $user->password_hash)) {
+            return response()->json(['error' => 'Current password does not match our records.'], 422);
+        }
+
+        $user->update([
+            'password_hash' => $this->hashPassword($request->new_password),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password updated successfully.',
+        ]);
+    }
 }

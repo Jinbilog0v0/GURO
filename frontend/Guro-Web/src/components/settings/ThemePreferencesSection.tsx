@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Palette, Volume2, Sparkles, Sun, Moon, Sliders, Check, Play, VolumeX } from 'lucide-react';
+import { Palette, Volume2, Sparkles, Sun, Moon, Sliders, Check, Play, VolumeX, GraduationCap } from 'lucide-react';
 import { toast } from '../../utils/toast';
 
 interface ThemePreferencesSectionProps {
@@ -132,19 +132,25 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
   const handleSelectAvatar = (emoji: string) => {
     setAvatarEmoji(emoji);
     localStorage.setItem('guro_student_avatar', emoji);
+    window.dispatchEvent(new CustomEvent('guro_avatar_updated', {
+      detail: { avatar: emoji, outfit: activeOutfit }
+    }));
     toast.success(`Selected ${emoji} avatar!`);
   };
 
   const handleSelectOutfit = (outfitId: string, label: string) => {
     setActiveOutfit(outfitId);
     localStorage.setItem('guro_student_outfit', outfitId);
+    window.dispatchEvent(new CustomEvent('guro_avatar_updated', {
+      detail: { avatar: avatarEmoji, outfit: outfitId }
+    }));
     toast.success(`Equipped ${label}!`);
   };
 
-  // ── Audio Test Preview Functions ──
+  // ── Audio Test Preview Functions (Web Audio API & Web Speech) ──
   const playChimeAudio = (styleToPlay: string) => {
     setTestingChime(true);
-    setTimeout(() => setTestingChime(false), 800);
+    setTimeout(() => setTestingChime(false), 900);
 
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -179,6 +185,36 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
         gain.connect(ctx.destination);
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + 0.23);
+      } else if (styleToPlay === 'fanfare') {
+        // Royal Brass Fanfare (3 triumphant notes: C4 -> G4 -> C5)
+        const notes = [261.63, 392.00, 523.25];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.12);
+          gain.gain.setValueAtTime(0.24, ctx.currentTime + idx * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.12 + (idx === 2 ? 0.45 : 0.2));
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.12);
+          osc.stop(ctx.currentTime + idx * 0.12 + (idx === 2 ? 0.46 : 0.22));
+        });
+      } else if (styleToPlay === 'magic') {
+        // Magic Sparkle pentatonic glissando (C5 -> D5 -> E5 -> G5 -> A5)
+        const notes = [523.25, 587.33, 659.25, 783.99, 880.00];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.06);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime + idx * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.06 + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + idx * 0.06);
+          osc.stop(ctx.currentTime + idx * 0.06 + 0.26);
+        });
       } else {
         // Classic Bell dual harmonic chime (659.25 Hz & 880 Hz)
         [659.25, 880].forEach((freq) => {
@@ -206,13 +242,24 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
         window.speechSynthesis.cancel();
         let sampleText = 'Hoo-hoo! Hello learner. I am your Wise Owl study guide ready to help you on every question.';
         let pitch = 0.95;
+
         if (voiceGuide === 'astronaut') {
           sampleText = 'Houston, all systems nominal! Astronaut guide ready for mission learning and quiz exploration!';
           pitch = 1.15;
         } else if (voiceGuide === 'robot') {
           sampleText = 'Beep boop! Greetings learner. Robot assistant activated and ready for lesson equations.';
           pitch = 1.35;
+        } else if (voiceGuide === 'mentor') {
+          sampleText = 'Greetings young scholar! Every question is a step toward true mastery. Let us begin!';
+          pitch = 0.85;
+        } else if (voiceGuide === 'superhero') {
+          sampleText = 'Keep going hero! You have the power to solve this problem. Believe in yourself!';
+          pitch = 1.20;
+        } else if (voiceGuide === 'fox') {
+          sampleText = "Aha! Let's examine this puzzle together and find the secret clue!";
+          pitch = 1.05;
         }
+
         const utter = new SpeechSynthesisUtterance(sampleText);
         utter.rate = parseFloat(speechSpeed) || 1.0;
         utter.pitch = pitch;
@@ -249,6 +296,26 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-4xl">
+      {/* ── Teacher Accommodation Preview Badge (When viewing as Teacher / Admin / Parent) ── */}
+      {!isStudent && (
+        <div className="bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-transparent border border-indigo-500/20 rounded-2xl p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <GraduationCap className="size-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-[var(--text-main)]">Teacher Accommodation & Module Testing Preview</h4>
+              <p className="text-xs text-[var(--text-muted)]">
+                You can test and preview how lesson narration, voice speeds, and quiz victory chimes will sound for Grade 4–6 learners.
+              </p>
+            </div>
+          </div>
+          <span className="hidden sm:inline-block px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 shrink-0">
+            Preview Mode
+          </span>
+        </div>
+      )}
+
       {/* ── 1. Color Theme Mode (Dark / Light) ── */}
       <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xs">
         <div className="flex items-center gap-3 mb-4">
@@ -434,7 +501,11 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
           </div>
           <div>
             <h3 className="text-base font-bold text-[var(--text-main)]">Audio & Narration Feedback</h3>
-            <p className="text-xs text-[var(--text-muted)]">Configure quiz victory chimes and test narration companion voices.</p>
+            <p className="text-xs text-[var(--text-muted)]">
+              {isStudent
+                ? 'Configure quiz victory chimes and test narration companion voices.'
+                : 'Preview and calibrate question voice read-aloud speed and victory sounds for your modules.'}
+            </p>
           </div>
         </div>
 
@@ -463,7 +534,7 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Victory Sound Style with Test Button */}
+          {/* Victory Sound Style with Test Button (5 STYLES) */}
           <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)]">
             <div className="flex items-center justify-between">
               <label htmlFor="sound-style" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
@@ -493,11 +564,13 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
             >
               <option value="classic">🔔 Classic Bell</option>
               <option value="arcade">👾 8-Bit Arcade</option>
-              <option value="laser">⚡ Laser Chime</option>
+              <option value="laser">⚡ Sci-Fi Laser</option>
+              <option value="fanfare">🎺 Royal Fanfare</option>
+              <option value="magic">✨ Magic Sparkle</option>
             </select>
           </div>
 
-          {/* Voice Narrator Companion with Test Button */}
+          {/* Voice Narrator Companion with Test Button (6 PERSONAS) */}
           <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)]">
             <div className="flex items-center justify-between">
               <label htmlFor="voice-companion" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
@@ -526,10 +599,13 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
               <option value="owl">🦉 Wise Owl Guide</option>
               <option value="astronaut">👨‍🚀 Astro Explorer</option>
               <option value="robot">🤖 Friendly Robot</option>
+              <option value="mentor">🧙 Master Guro Mentor</option>
+              <option value="superhero">🦸 Super Hero Champion</option>
+              <option value="fox">🦊 Clever Fox Guide</option>
             </select>
           </div>
 
-          {/* Read Aloud Speed with Test Button */}
+          {/* Read Aloud Speed with Test Button (5 SPEEDS) */}
           <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)]">
             <div className="flex items-center justify-between">
               <label htmlFor="read-speed" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
@@ -555,9 +631,11 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
               onChange={(e) => handleChangeSpeechSpeed(e.target.value)}
               className="px-2.5 py-1.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg text-xs font-semibold text-[var(--text-main)] focus:outline-none focus:border-indigo-500 cursor-pointer"
             >
-              <option value="0.8">Gentle Pace (0.8x)</option>
-              <option value="1.0">Standard Speed (1.0x)</option>
-              <option value="1.2">Fast Pace (1.2x)</option>
+              <option value="0.6">🐢 0.6x (Very Gentle / Remedial)</option>
+              <option value="0.8">🚶 0.8x (Relaxed Pace)</option>
+              <option value="1.0">🗣️ 1.0x (Standard Speed)</option>
+              <option value="1.2">🏃 1.2x (Brisk Pace)</option>
+              <option value="1.5">⚡ 1.5x (Speedy Review)</option>
             </select>
           </div>
         </div>

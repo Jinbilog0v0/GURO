@@ -198,6 +198,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       const p = name.split(' ');
                       return onSaveProfile(p[0] || '', '', p.slice(1).join(' '));
                     }}
+                    onNavigateToPreferences={() => setActiveTab('preferences')}
                   />
                 )}
               </div>

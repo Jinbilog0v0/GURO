@@ -80,7 +80,7 @@ describe('SettingsSpace Component', () => {
     expect(screen.getByText('Student Learning')).toBeInTheDocument();
     expect(screen.getByText('Share Access with Parent or Guardian')).toBeInTheDocument();
     expect(screen.getByText('GURO-P-9999')).toBeInTheDocument();
-    expect(screen.getByText('Learning Accommodations & Display')).toBeInTheDocument();
+    expect(screen.getByText('Mascot Outfits, Theme & Voice Audio')).toBeInTheDocument();
   });
 
   it('renders parent settings for parent role with Linked Children and PIN management', () => {
