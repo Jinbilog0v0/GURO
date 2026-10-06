@@ -30,7 +30,9 @@ import {
   School,
   BookOpen,
   X,
-  Settings
+  Settings,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 interface SyncedEvent {
@@ -88,6 +90,14 @@ function App() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
     return localStorage.getItem('guro_sidebar') !== 'collapsed';
+  });
+
+  const [isTeacherDropdownOpen, setIsTeacherDropdownOpen] = useState<boolean>(() => {
+    return localStorage.getItem('guro_teacher_dropdown') !== 'closed';
+  });
+
+  const [isParentDropdownOpen, setIsParentDropdownOpen] = useState<boolean>(() => {
+    return localStorage.getItem('guro_parent_dropdown') !== 'closed';
   });
 
   useEffect(() => {
@@ -425,6 +435,13 @@ function App() {
         : 'bg-transparent text-[var(--text-muted)] hover:bg-[var(--bg-main)]'
     }`;
 
+  const subNavBtn = (active: boolean) =>
+    `flex items-center gap-2.5 border-none px-3 py-2 rounded-lg cursor-pointer text-[13px] text-left transition-all duration-150 w-full ${
+      active
+        ? 'bg-[#11428E]/12 text-[#11428E] dark:text-sky-400 font-bold'
+        : 'bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/5 font-medium'
+    }`;
+
   const isTeacher = !isAdmin && (!currentUser || currentUser.role === 'teacher');
   const isBuilderOrDev = !isAdmin && (!currentUser || currentUser.role === 'lesson-builder' || currentUser.role === 'developer' || currentUser.role === 'teacher');
   const isParent = !isAdmin && (!currentUser || currentUser.role === 'parent');
@@ -516,42 +533,71 @@ function App() {
 
           {isTeacher && (
             isSidebarOpen ? (
-              <div className="flex flex-col gap-1 my-1">
-                <div className="px-3.5 pt-3 pb-1 text-[11px] font-extrabold tracking-wider uppercase text-[var(--text-dark)]">
-                  Teacher Console
-                </div>
-                <button 
-                  onClick={() => { setActiveTab('teacher'); setActiveSubTab('classrooms'); }} 
-                  className={navBtn(activeTab === 'teacher' && (activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing'))} 
-                  aria-current={activeTab === 'teacher' && (activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing') ? 'page' : undefined}
+              <div className="flex flex-col my-1">
+                {/* Main Component Header Button (Clickable Dropdown Toggle) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !isTeacherDropdownOpen;
+                    setIsTeacherDropdownOpen(next);
+                    localStorage.setItem('guro_teacher_dropdown', next ? 'open' : 'closed');
+                  }}
+                  className={`flex items-center justify-between border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-[14px] text-left transition-all duration-200 w-full ${
+                    activeTab === 'teacher'
+                      ? 'bg-[var(--nav-active-bg)] text-[var(--text-main)] font-bold shadow-[inset_3px_0_0_#11428E]'
+                      : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-[var(--bg-main)]'
+                  }`}
+                  aria-expanded={isTeacherDropdownOpen}
+                  aria-label="Toggle Teacher Console sub-menu"
                 >
-                  <School size={18} className="shrink-0 text-sky-500" />
-                  <span>My Classrooms</span>
+                  <div className="flex items-center gap-3">
+                    <School size={18} className="shrink-0 text-sky-500" />
+                    <span>Teacher Console</span>
+                  </div>
+                  {isTeacherDropdownOpen ? (
+                    <ChevronDown size={15} className="text-[var(--text-muted)] shrink-0 transition-transform" />
+                  ) : (
+                    <ChevronRight size={15} className="text-[var(--text-muted)] shrink-0 transition-transform" />
+                  )}
                 </button>
-                <button 
-                  onClick={() => { setActiveTab('teacher'); setActiveSubTab('lessons'); }} 
-                  className={navBtn(activeTab === 'teacher' && (activeSubTab === 'lessons' || activeSubTab === 'manual-lesson'))} 
-                  aria-current={activeTab === 'teacher' && (activeSubTab === 'lessons' || activeSubTab === 'manual-lesson') ? 'page' : undefined}
-                >
-                  <BookOpen size={18} className="shrink-0 text-emerald-500" />
-                  <span>Lesson Management</span>
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} 
-                  className={navBtn(activeTab === 'teacher' && (activeSubTab === 'analytics' || activeSubTab === 'pre-post-test'))} 
-                  aria-current={activeTab === 'teacher' && (activeSubTab === 'analytics' || activeSubTab === 'pre-post-test') ? 'page' : undefined}
-                >
-                  <TrendingUp size={18} className="shrink-0 text-indigo-400" />
-                  <span>Classroom Analytics</span>
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('teacher'); setActiveSubTab('eosy-promotion'); }} 
-                  className={navBtn(activeTab === 'teacher' && activeSubTab === 'eosy-promotion')} 
-                  aria-current={activeTab === 'teacher' && activeSubTab === 'eosy-promotion' ? 'page' : undefined}
-                >
-                  <GraduationCap size={18} className="shrink-0 text-amber-500" />
-                  <span>EOSY & Promotion</span>
-                </button>
+
+                {/* Sub-Components Collapsible Container */}
+                {isTeacherDropdownOpen && (
+                  <div className="flex flex-col gap-1 mt-1 pl-4 ml-3 border-l-2 border-[var(--border-color)]/60 transition-all duration-200">
+                    <button 
+                      onClick={() => { setActiveTab('teacher'); setActiveSubTab('classrooms'); }} 
+                      className={subNavBtn(activeTab === 'teacher' && (activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing'))} 
+                      aria-current={activeTab === 'teacher' && (activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing') ? 'page' : undefined}
+                    >
+                      <School size={15} className="shrink-0 text-sky-500" />
+                      <span>My Classrooms</span>
+                    </button>
+                    <button 
+                      onClick={() => { setActiveTab('teacher'); setActiveSubTab('lessons'); }} 
+                      className={subNavBtn(activeTab === 'teacher' && (activeSubTab === 'lessons' || activeSubTab === 'manual-lesson'))} 
+                      aria-current={activeTab === 'teacher' && (activeSubTab === 'lessons' || activeSubTab === 'manual-lesson') ? 'page' : undefined}
+                    >
+                      <BookOpen size={15} className="shrink-0 text-emerald-500" />
+                      <span>Lesson Management</span>
+                    </button>
+                    <button 
+                      onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} 
+                      className={subNavBtn(activeTab === 'teacher' && (activeSubTab === 'analytics' || activeSubTab === 'pre-post-test'))} 
+                      aria-current={activeTab === 'teacher' && (activeSubTab === 'analytics' || activeSubTab === 'pre-post-test') ? 'page' : undefined}
+                    >
+                      <TrendingUp size={15} className="shrink-0 text-indigo-400" />
+                      <span>Classroom Analytics</span>
+                    </button>
+                    <button 
+                      onClick={() => { setActiveTab('teacher'); setActiveSubTab('eosy-promotion'); }} 
+                      className={subNavBtn(activeTab === 'teacher' && activeSubTab === 'eosy-promotion')} 
+                      aria-current={activeTab === 'teacher' && activeSubTab === 'eosy-promotion' ? 'page' : undefined}
+                    >
+                      <GraduationCap size={15} className="shrink-0 text-amber-500" />
+                      <span>EOSY & Promotion</span>
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex flex-col gap-1">
@@ -565,18 +611,55 @@ function App() {
 
           {isParent && (
             isSidebarOpen ? (
-              <div className="flex flex-col">
-                <div className="px-[14px] pt-4 pb-1.5 text-[10.5px] font-extrabold tracking-[0.1em] uppercase text-[var(--text-dark)]">
-                  Parent Console
-                </div>
-                <div className="flex flex-col gap-[3px] pl-2 border-l-[1.5px] border-[var(--border-color)] ml-[14px]">
-                  <button onClick={() => { setActiveTab('parent'); setActiveSubTab('parent-explorer'); }} className={navBtn(activeTab === 'parent' && activeSubTab === 'parent-explorer')} aria-current={activeTab === 'parent' && activeSubTab === 'parent-explorer' ? 'page' : undefined}>
-                    <User size={17} className="shrink-0" /><span>Parent Explorer</span>
-                  </button>
-                  <button onClick={() => { setActiveTab('parent'); setActiveSubTab('create-student'); }} className={navBtn(activeTab === 'parent' && activeSubTab === 'create-student')} aria-current={activeTab === 'parent' && activeSubTab === 'create-student' ? 'page' : undefined}>
-                    <UserPlus size={17} className="shrink-0" /><span>Create Student</span>
-                  </button>
-                </div>
+              <div className="flex flex-col my-1">
+                {/* Main Component Header Button (Clickable Dropdown Toggle) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !isParentDropdownOpen;
+                    setIsParentDropdownOpen(next);
+                    localStorage.setItem('guro_parent_dropdown', next ? 'open' : 'closed');
+                  }}
+                  className={`flex items-center justify-between border-none px-[14px] py-[10px] rounded-[11px] cursor-pointer text-[14px] text-left transition-all duration-200 w-full ${
+                    activeTab === 'parent'
+                      ? 'bg-[var(--nav-active-bg)] text-[var(--text-main)] font-bold shadow-[inset_3px_0_0_#11428E]'
+                      : 'bg-transparent text-[var(--text-muted)] font-semibold hover:bg-[var(--bg-main)]'
+                  }`}
+                  aria-expanded={isParentDropdownOpen}
+                  aria-label="Toggle Parent Console sub-menu"
+                >
+                  <div className="flex items-center gap-3">
+                    <User size={18} className="shrink-0 text-indigo-400" />
+                    <span>Parent Console</span>
+                  </div>
+                  {isParentDropdownOpen ? (
+                    <ChevronDown size={15} className="text-[var(--text-muted)] shrink-0 transition-transform" />
+                  ) : (
+                    <ChevronRight size={15} className="text-[var(--text-muted)] shrink-0 transition-transform" />
+                  )}
+                </button>
+
+                {/* Sub-Components Collapsible Container */}
+                {isParentDropdownOpen && (
+                  <div className="flex flex-col gap-1 mt-1 pl-4 ml-3 border-l-2 border-[var(--border-color)]/60 transition-all duration-200">
+                    <button 
+                      onClick={() => { setActiveTab('parent'); setActiveSubTab('parent-explorer'); }} 
+                      className={subNavBtn(activeTab === 'parent' && activeSubTab === 'parent-explorer')} 
+                      aria-current={activeTab === 'parent' && activeSubTab === 'parent-explorer' ? 'page' : undefined}
+                    >
+                      <User size={15} className="shrink-0" />
+                      <span>Parent Explorer</span>
+                    </button>
+                    <button 
+                      onClick={() => { setActiveTab('parent'); setActiveSubTab('create-student'); }} 
+                      className={subNavBtn(activeTab === 'parent' && activeSubTab === 'create-student')} 
+                      aria-current={activeTab === 'parent' && activeSubTab === 'create-student' ? 'page' : undefined}
+                    >
+                      <UserPlus size={15} className="shrink-0" />
+                      <span>Create Student</span>
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <>
