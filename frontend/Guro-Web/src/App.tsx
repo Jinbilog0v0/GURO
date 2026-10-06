@@ -571,32 +571,43 @@ function App() {
 
         {/* User footer */}
         {isSidebarOpen ? (
-          <div 
-            onClick={currentUser ? handleOpenProfileModal : undefined}
-            className={`border-t border-[var(--border-color)] pt-[14px] flex items-center gap-[11px] ${currentUser ? 'cursor-pointer group' : ''}`}
-            title={currentUser ? "Edit Profile Settings" : undefined}
-          >
-            <div className={`w-[38px] h-[38px] rounded-full border border-[var(--border-color)] flex items-center justify-center shrink-0 ${isAdmin ? 'bg-[#FBECEE]' : 'bg-[var(--bg-main)]'}`}>
-              {isAdmin ? (
-                <Shield size={18} className="text-[#CE1126]" />
-              ) : currentUser?.role === 'parent' ? (
-                <User size={18} className="text-[var(--text-muted)]" />
-              ) : (
-                <GraduationCap size={18} className="text-[var(--text-muted)]" />
-              )}
-            </div>
-            <div className="flex flex-col flex-1 min-w-0 leading-[1.15]">
-              <span className={`text-sm font-bold text-[var(--text-main)] truncate ${currentUser ? 'group-hover:text-[#2563EB] transition-colors' : ''}`}>
-                {currentUser ? currentUser.name : 'Guest Workspace'}
-              </span>
-              <span className={`text-[11.5px] font-semibold truncate ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--success)]'}`}>
-                {isAdmin ? 'ADMIN · Division Office' : currentUser ? `${currentUser.role.toUpperCase()} · Sync'd` : 'Local Session'}
-              </span>
-            </div>
+          <div className="border-t border-[var(--border-color)] pt-[14px] flex items-center justify-between gap-[11px]">
             <button
-              onClick={toggleTheme}
+              type="button"
+              onClick={currentUser ? handleOpenProfileModal : undefined}
+              className={`flex items-center gap-[11px] flex-1 min-w-0 p-1 -ml-1 rounded-xl text-left transition-all ${
+                currentUser ? 'cursor-pointer hover:bg-[var(--bg-main)] group active:scale-[0.98]' : 'cursor-default'
+              }`}
+              title={currentUser ? "Edit Profile Settings" : undefined}
+              aria-label={currentUser ? `Profile settings for ${currentUser.name}` : "User profile"}
+            >
+              <div className={`w-[38px] h-[38px] rounded-full border border-[var(--border-color)] flex items-center justify-center shrink-0 ${isAdmin ? 'bg-[#FBECEE]' : 'bg-[var(--bg-main)]'}`}>
+                {isAdmin ? (
+                  <Shield size={18} className="text-[#CE1126]" />
+                ) : currentUser?.role === 'parent' ? (
+                  <User size={18} className="text-[var(--text-muted)]" />
+                ) : (
+                  <GraduationCap size={18} className="text-[var(--text-muted)]" />
+                )}
+              </div>
+              <div className="flex flex-col flex-1 min-w-0 leading-[1.15]">
+                <span className={`text-sm font-bold text-[var(--text-main)] truncate ${currentUser ? 'group-hover:text-[#2563EB] transition-colors' : ''}`}>
+                  {currentUser ? currentUser.name : 'Guest Workspace'}
+                </span>
+                <span className={`text-[11.5px] font-semibold truncate ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--success)]'}`}>
+                  {isAdmin ? 'ADMIN · Division Office' : currentUser ? `${currentUser.role.toUpperCase()} · Sync'd` : 'Local Session'}
+                </span>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleTheme();
+              }}
               aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--bg-main)] active:scale-[0.93] shrink-0"
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--bg-main)] hover:text-[var(--text-main)] active:scale-[0.93] shrink-0"
             >
               {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
             </button>
@@ -604,9 +615,14 @@ function App() {
         ) : (
           <div className="border-t border-[var(--border-color)] pt-[14px] flex flex-col items-center gap-2">
             <button
-              onClick={toggleTheme}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleTheme();
+              }}
               aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--bg-main)] active:scale-[0.93]"
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--bg-main)] hover:text-[var(--text-main)] active:scale-[0.93]"
             >
               {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
             </button>
@@ -715,21 +731,41 @@ function App() {
       />
       
       {isProfileModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100/80 animate-in fade-in zoom-in duration-200">
+        <div 
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setIsProfileModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="profile-modal-title"
+        >
+          <div 
+            className="bg-[var(--bg-card)] text-[var(--text-main)] rounded-3xl p-8 max-w-md w-full shadow-2xl border border-[var(--border-color)] relative animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close X button */}
+            <button
+              type="button"
+              onClick={() => setIsProfileModalOpen(false)}
+              className="absolute top-5 right-5 p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+              aria-label="Close profile modal"
+            >
+              <X size={18} />
+            </button>
+
             <div className="text-center mb-6">
-              <h3 className="text-xl font-extrabold text-slate-800 tracking-tight">Edit Your Profile</h3>
-              <p className="text-xs text-slate-400 mt-1">Update your name settings. These changes sync across your workspace.</p>
+              <h3 id="profile-modal-title" className="text-xl font-extrabold text-[var(--text-main)] tracking-tight">Edit Your Profile</h3>
+              <p className="text-xs text-[var(--text-muted)] mt-1">Update your name settings. These changes sync across your workspace.</p>
             </div>
 
             <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">First name</label>
+                  <label htmlFor="edit-first-name" className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">First name</label>
                   <input
+                    id="edit-first-name"
                     type="text"
                     required
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all"
+                    className="w-full px-4 py-2.5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-main)] placeholder-[var(--text-muted)] text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 transition-all"
                     value={editFirstName}
                     onChange={(e) => setEditFirstName(e.target.value)}
                     placeholder="e.g. Maria"
@@ -737,11 +773,12 @@ function App() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Last name</label>
+                  <label htmlFor="edit-last-name" className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Last name</label>
                   <input
+                    id="edit-last-name"
                     type="text"
                     required
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all"
+                    className="w-full px-4 py-2.5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-main)] placeholder-[var(--text-muted)] text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 transition-all"
                     value={editLastName}
                     onChange={(e) => setEditLastName(e.target.value)}
                     placeholder="e.g. Santos"
@@ -750,10 +787,11 @@ function App() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Middle name (Optional)</label>
+                <label htmlFor="edit-middle-name" className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Middle name (Optional)</label>
                 <input
+                  id="edit-middle-name"
                   type="text"
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 focus:bg-white transition-all"
+                  className="w-full px-4 py-2.5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-main)] placeholder-[var(--text-muted)] text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 transition-all"
                   value={editMiddleName}
                   onChange={(e) => setEditMiddleName(e.target.value)}
                   placeholder="e.g. Dela Cruz"
@@ -764,7 +802,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => setIsProfileModalOpen(false)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs transition-colors cursor-pointer text-center"
+                  className="flex-1 py-2.5 bg-[var(--bg-main)] hover:bg-[var(--border-color)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl font-bold text-xs transition-colors cursor-pointer text-center"
                 >
                   Cancel
                 </button>
