@@ -99,7 +99,7 @@ export const ParentSettings: React.FC<ParentSettingsProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-3xl">
+    <div className="flex flex-col gap-6 w-full max-w-4xl">
       {/* Guardian Profile */}
       <form onSubmit={handleSaveGuardian} className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xs flex flex-col gap-4">
         <div>

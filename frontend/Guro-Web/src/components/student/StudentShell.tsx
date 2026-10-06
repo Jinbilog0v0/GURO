@@ -19,6 +19,7 @@ interface StudentShellProps {
     children: React.ReactNode;
     isDarkMode: boolean;
     onToggleTheme: () => void;
+    onOpenSettings?: () => void;
 }
 
 const NAV_ITEMS: { view: ShellView; label: string; Icon: React.FC<any> }[] = [
@@ -42,6 +43,7 @@ export const StudentShell: React.FC<StudentShellProps> = ({
     children,
     isDarkMode,
     onToggleTheme,
+    onOpenSettings,
 }) => {
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -147,6 +149,7 @@ export const StudentShell: React.FC<StudentShellProps> = ({
                             userName={userName}
                             email={email}
                             parentAccessCode={parentAccessCode}
+                            onOpenSettings={onOpenSettings}
                         />
                     </div>
                 </header>

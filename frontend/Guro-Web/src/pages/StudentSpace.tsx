@@ -358,6 +358,7 @@ interface StudentSpaceProps {
     currentUser?: { name: string; email: string; userId: string; classroomId?: string | null } | null;
     isDarkMode: boolean;
     onToggleTheme: () => void;
+    onOpenSettings?: () => void;
 }
 
 type StepType = 'name' | 'grade' | 'dashboard' | 'topics' | 'progress' | 'study' | 'quiz' | 'results' | 'classroom';
@@ -379,7 +380,7 @@ interface TopicStat {
 const STORAGE_KEY_NAME = 'guro_student_name';
 const STORAGE_KEY_GRADE = 'guro_student_grade';
 
-export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, currentUser, isDarkMode, onToggleTheme }) => {
+export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, currentUser, isDarkMode, onToggleTheme, onOpenSettings }) => {
     const savedName = !currentUser ? (localStorage.getItem(STORAGE_KEY_NAME) ?? '') : '';
     const savedGrade = parseInt(localStorage.getItem(STORAGE_KEY_GRADE) ?? '4', 10) || 4;
 
@@ -1314,6 +1315,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                     parentAccessCode={getParentAccessCode(activeStudentId)}
                     isDarkMode={isDarkMode}
                     onToggleTheme={onToggleTheme}
+                    onOpenSettings={onOpenSettings}
                 >
                     {step === 'dashboard' && (
                         <DashboardStep

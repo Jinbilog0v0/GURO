@@ -51,7 +51,7 @@ export const StudentSettings: React.FC<StudentSettingsProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-3xl">
+    <div className="flex flex-col gap-6 w-full max-w-4xl">
       {/* Learner Profile Card */}
       <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xs">
         <div className="flex items-center gap-4 mb-5">

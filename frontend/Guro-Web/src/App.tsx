@@ -14,7 +14,7 @@ const TeacherSpace = lazy(() => import('./pages/TeacherSpace').then(m => ({ defa
 const ParentSpace = lazy(() => import('./pages/ParentSpace').then(m => ({ default: m.ParentSpace })));
 const LessonSpace = lazy(() => import('./pages/LessonSpace').then(m => ({ default: m.LessonSpace })));
 const DashboardSpace = lazy(() => import('./pages/DashboardSpace').then(m => ({ default: m.DashboardSpace })));
-const SettingsSpace = lazy(() => import('./pages/SettingsSpace').then(m => ({ default: m.SettingsSpace })));
+import { SettingsModal } from './components/settings/SettingsModal';
 import {
   LayoutDashboard,
   TrendingUp,
@@ -73,7 +73,6 @@ function App() {
     if (stored) return stored as TabType;
     return 'landing';
   });
-  const [previousTab, setPreviousTab] = useState<TabType>('dashboard');
   const [activeSubTab, setActiveSubTab] = useState<string>(() => {
     const stored = localStorage.getItem('guro_active_sub_tab');
     if (stored) return stored;
@@ -83,6 +82,7 @@ function App() {
   const [classroomMembers, setClassroomMembers] = useState<string[]>([]);
   const [stagedQuestions, setStagedQuestions] = useState<Question[]>([]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     return localStorage.getItem('guro_theme') !== 'light';
@@ -217,8 +217,7 @@ function App() {
 
   const handleOpenProfileModal = () => {
     if (!currentUser) return;
-    setPreviousTab(activeTab === 'settings' ? 'dashboard' : activeTab);
-    setActiveTab('settings');
+    setIsSettingsModalOpen(true);
   };
 
   const handleSaveProfileDirect = async (fName: string, mName: string, lName: string): Promise<boolean> => {
@@ -307,44 +306,38 @@ function App() {
 
   if (activeTab === 'student') {
     return (
-      <Suspense fallback={<PageLoadingSpinner message="Loading Student Space…" />}>
-        <StudentSpace 
-          onExit={handleExitToLanding} 
-          onLogout={() => {
-            setCurrentUser(null);
-            clearAuthToken();
-            handleExitToLanding();
-          }}
-          currentUser={currentUser} 
+      <>
+        <Suspense fallback={<PageLoadingSpinner message="Loading Student Space…" />}>
+          <StudentSpace 
+            onExit={handleExitToLanding} 
+            onLogout={() => {
+              setCurrentUser(null);
+              clearAuthToken();
+              handleExitToLanding();
+            }}
+            currentUser={currentUser} 
+            isDarkMode={isDarkMode}
+            onToggleTheme={toggleTheme}
+            onOpenSettings={() => setIsSettingsModalOpen(true)}
+          />
+        </Suspense>
+        <SettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          currentUser={currentUser}
           isDarkMode={isDarkMode}
           onToggleTheme={toggleTheme}
+          onLogout={() => {
+            setIsSettingsModalOpen(false);
+            setIsLogoutModalOpen(true);
+          }}
+          onSaveProfile={handleSaveProfileDirect}
         />
-      </Suspense>
+      </>
     );
   }
 
-  if (activeTab === 'settings') {
-    return (
-      <div className={`min-h-screen ${isDarkMode ? 'dark' : ''} bg-[var(--bg-main)]`}>
-        <Suspense fallback={<PageLoadingSpinner message="Loading Settings…" />}>
-          <SettingsSpace
-            currentUser={currentUser}
-            onBack={() => setActiveTab(previousTab || 'dashboard')}
-            isDarkMode={isDarkMode}
-            onToggleTheme={toggleTheme}
-            onLogout={() => setIsLogoutModalOpen(true)}
-            onSaveProfile={handleSaveProfileDirect}
-          />
-        </Suspense>
-        <LogoutConfirmModal
-          isOpen={isLogoutModalOpen}
-          onClose={() => setIsLogoutModalOpen(false)}
-          onConfirm={handleConfirmLogout}
-        />
-        <Toaster position="top-center" toastOptions={{ style: { background: '#1e293b', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' } }} />
-      </div>
-    );
-  }
+
 
   const renderContent = () => {
     switch (activeTab) {
@@ -736,6 +729,18 @@ function App() {
           </ErrorBoundary>
         </div>
       </main>
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        currentUser={currentUser}
+        isDarkMode={isDarkMode}
+        onToggleTheme={toggleTheme}
+        onLogout={() => {
+          setIsSettingsModalOpen(false);
+          setIsLogoutModalOpen(true);
+        }}
+        onSaveProfile={handleSaveProfileDirect}
+      />
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}

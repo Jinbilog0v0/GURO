@@ -59,7 +59,7 @@ export const TeacherSettings: React.FC<TeacherSettingsProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-w-3xl">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full max-w-4xl">
       {/* DepEd Professional Credentials Card */}
       <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xs">
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">

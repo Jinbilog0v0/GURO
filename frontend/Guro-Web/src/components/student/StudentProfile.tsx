@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, ChevronDown, Mail, Key } from 'lucide-react';
+import { User, ChevronDown, Mail, Key, Settings } from 'lucide-react';
 
 interface StudentProfileProps {
     userName: string;
     email?: string;
     parentAccessCode?: string;
+    onOpenSettings?: () => void;
 }
 
 export const StudentProfile: React.FC<StudentProfileProps> = ({
     userName = 'Student',
     email,
     parentAccessCode,
+    onOpenSettings,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -60,6 +62,20 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
                     </div>
 
                     <div className="h-px bg-zinc-100" />
+
+                    {onOpenSettings && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsOpen(false);
+                                onOpenSettings();
+                            }}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-zinc-700 hover:bg-zinc-100 transition-colors w-full cursor-pointer"
+                        >
+                            <Settings className="size-3.5 text-zinc-500" />
+                            <span>Learning & Settings</span>
+                        </button>
+                    )}
 
                     {parentAccessCode && (
                         <div className="flex flex-col gap-1.5 bg-amber-50 border border-amber-100 rounded-2xl p-3">
