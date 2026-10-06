@@ -2,7 +2,7 @@
   "expo": {
     "name": "GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION",
     "slug": "GURO-App",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -13,7 +13,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.guro.app",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "NSCameraUsageDescription": "GURO uses the camera to capture documents for AI-powered analysis.",
         "NSMicrophoneUsageDescription": "GURO uses the microphone for voice input features.",
@@ -22,7 +22,7 @@
     },
     "android": {
       "package": "com.guro.app",
-      "versionCode": 1,
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
@@ -47,7 +47,8 @@
       "expo-font",
       "expo-sqlite",
       "expo-document-picker",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-updates"
     ],
     "extra": {
       "eas": {

@@ -1,6 +1,6 @@
 {
   "name": "guro-app",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.2",
@@ -13,6 +13,7 @@
     "@react-navigation/native": "^7.1.0",
     "@react-navigation/native-stack": "^7.17.3",
     "expo": "~56.0.21",
+    "expo-dev-client": "~56.0.27",
     "expo-document-picker": "~56.0.4",
     "expo-file-system": "~56.0.11",
     "expo-font": "~56.0.7",
