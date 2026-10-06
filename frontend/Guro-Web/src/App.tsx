@@ -30,7 +30,8 @@ import {
   Target,
   Shield,
   Menu,
-  X
+  X,
+  Settings
 } from 'lucide-react';
 
 interface SyncedEvent {
@@ -603,13 +604,17 @@ function App() {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                toggleTheme();
+                if (currentUser) {
+                  handleOpenProfileModal();
+                } else {
+                  toast('Please log in to manage profile settings.', { icon: '⚙️' });
+                }
               }}
-              aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              aria-label="Settings"
+              title="Settings"
               className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--bg-main)] hover:text-[var(--text-main)] active:scale-[0.93] shrink-0"
             >
-              {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
+              <Settings size={15} />
             </button>
           </div>
         ) : (
@@ -618,13 +623,17 @@ function App() {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                toggleTheme();
+                if (currentUser) {
+                  handleOpenProfileModal();
+                } else {
+                  toast('Please log in to manage profile settings.', { icon: '⚙️' });
+                }
               }}
-              aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              aria-label="Settings"
+              title="Settings"
               className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--bg-main)] hover:text-[var(--text-main)] active:scale-[0.93]"
             >
-              {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
+              <Settings size={15} />
             </button>
           </div>
         )}
@@ -674,7 +683,7 @@ function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {activeTab === 'teacher' && activeSubTab === 'analytics' && (
               <button
                 onClick={() => fetchLogs(false)}
@@ -688,6 +697,17 @@ function App() {
               <div className="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]" aria-hidden="true"></div>
               <span className="text-[11px] font-bold text-[#10B981] tracking-[0.5px]">Sync Server Active</span>
             </div>
+
+            {/* Dark / Light Mode Toggle in Top Right Navigation */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              className="bg-transparent border border-[var(--border-color)] rounded-lg w-8 h-8 flex items-center justify-center cursor-pointer text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--bg-main)] hover:text-[var(--text-main)] active:scale-[0.93] shrink-0 shadow-xs"
+            >
+              {isDarkMode ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} />}
+            </button>
           </div>
         </header>
 
