@@ -95,21 +95,36 @@ function App() {
     return localStorage.getItem('guro_sidebar') !== 'collapsed';
   });
 
-  // State to track which teacher menu item dropdown is open ('lessons' | 'analytics' | null)
-  const [openTeacherDropdown, setOpenTeacherDropdown] = useState<'lessons' | 'analytics' | null>(() => {
+  // Persistent states for teacher dropdowns (each stays open until clicked again)
+  const [isLessonsMenuOpen, setIsLessonsMenuOpen] = useState<boolean>(() => {
+    const saved = localStorage.getItem('guro_menu_lessons_open');
+    if (saved !== null) return saved === 'true';
     const sub = localStorage.getItem('guro_active_sub_tab');
-    if (sub && (sub.startsWith('lesson') || sub === 'manual-lesson')) return 'lessons';
-    if (sub && (sub.startsWith('analytics') || sub === 'pre-post-test')) return 'analytics';
-    return null;
+    return !!(sub && (sub.startsWith('lesson') || sub === 'manual-lesson'));
   });
 
-  useEffect(() => {
-    if (activeSubTab.startsWith('lesson') || activeSubTab === 'manual-lesson') {
-      setOpenTeacherDropdown('lessons');
-    } else if (activeSubTab.startsWith('analytics') || activeSubTab === 'pre-post-test') {
-      setOpenTeacherDropdown('analytics');
-    }
-  }, [activeSubTab]);
+  const [isAnalyticsMenuOpen, setIsAnalyticsMenuOpen] = useState<boolean>(() => {
+    const saved = localStorage.getItem('guro_menu_analytics_open');
+    if (saved !== null) return saved === 'true';
+    const sub = localStorage.getItem('guro_active_sub_tab');
+    return !!(sub && (sub.startsWith('analytics') || sub === 'pre-post-test'));
+  });
+
+  const toggleLessonsMenu = () => {
+    setIsLessonsMenuOpen((prev) => {
+      const next = !prev;
+      localStorage.setItem('guro_menu_lessons_open', String(next));
+      return next;
+    });
+  };
+
+  const toggleAnalyticsMenu = () => {
+    setIsAnalyticsMenuOpen((prev) => {
+      const next = !prev;
+      localStorage.setItem('guro_menu_analytics_open', String(next));
+      return next;
+    });
+  };
 
   useEffect(() => {
     localStorage.setItem('guro_active_tab', activeTab);
@@ -566,7 +581,7 @@ function App() {
                       onClick={() => {
                         setActiveTab('teacher');
                         setActiveSubTab('lessons');
-                        setOpenTeacherDropdown(prev => prev === 'lessons' ? null : 'lessons');
+                        toggleLessonsMenu();
                       }} 
                       className={`${navBtn(activeTab === 'teacher' && (activeSubTab.startsWith('lesson') || activeSubTab === 'manual-lesson'))} justify-between pr-2`} 
                       aria-current={activeTab === 'teacher' && (activeSubTab.startsWith('lesson') || activeSubTab === 'manual-lesson') ? 'page' : undefined}
@@ -578,12 +593,12 @@ function App() {
                       <span
                         onClick={(e) => {
                           e.stopPropagation();
-                          setOpenTeacherDropdown(prev => prev === 'lessons' ? null : 'lessons');
+                          toggleLessonsMenu();
                         }}
                         className="p-1 rounded-md hover:bg-white/10 text-[var(--text-muted)] cursor-pointer flex items-center justify-center transition-colors"
-                        title={openTeacherDropdown === 'lessons' ? "Collapse lessons" : "Expand lessons"}
+                        title={isLessonsMenuOpen ? "Collapse lessons" : "Expand lessons"}
                       >
-                        {openTeacherDropdown === 'lessons' ? (
+                        {isLessonsMenuOpen ? (
                           <ChevronDown size={15} />
                         ) : (
                           <ChevronRight size={15} />
@@ -592,8 +607,8 @@ function App() {
                     </button>
                   </div>
 
-                  {/* Sub-Components Dropdown */}
-                  {openTeacherDropdown === 'lessons' && (
+                  {/* Sub-Components Dropdown - stays open until clicked again */}
+                  {isLessonsMenuOpen && (
                     <div className="flex flex-col gap-1 ml-5 pl-2.5 my-1 border-l-2 border-[var(--border-color)]">
                       <button
                         onClick={() => { setActiveTab('teacher'); setActiveSubTab('lessons-system'); }}
@@ -627,7 +642,7 @@ function App() {
                       onClick={() => {
                         setActiveTab('teacher');
                         setActiveSubTab('analytics-mastery');
-                        setOpenTeacherDropdown(prev => prev === 'analytics' ? null : 'analytics');
+                        toggleAnalyticsMenu();
                       }} 
                       className={`${navBtn(activeTab === 'teacher' && (activeSubTab.startsWith('analytics') || activeSubTab === 'pre-post-test'))} justify-between pr-2`} 
                       aria-current={activeTab === 'teacher' && (activeSubTab.startsWith('analytics') || activeSubTab === 'pre-post-test') ? 'page' : undefined}
@@ -639,12 +654,12 @@ function App() {
                       <span
                         onClick={(e) => {
                           e.stopPropagation();
-                          setOpenTeacherDropdown(prev => prev === 'analytics' ? null : 'analytics');
+                          toggleAnalyticsMenu();
                         }}
                         className="p-1 rounded-md hover:bg-white/10 text-[var(--text-muted)] cursor-pointer flex items-center justify-center transition-colors"
-                        title={openTeacherDropdown === 'analytics' ? "Collapse analytics" : "Expand analytics"}
+                        title={isAnalyticsMenuOpen ? "Collapse analytics" : "Expand analytics"}
                       >
-                        {openTeacherDropdown === 'analytics' ? (
+                        {isAnalyticsMenuOpen ? (
                           <ChevronDown size={15} />
                         ) : (
                           <ChevronRight size={15} />
@@ -653,8 +668,8 @@ function App() {
                     </button>
                   </div>
 
-                  {/* Sub-Components Dropdown */}
-                  {openTeacherDropdown === 'analytics' && (
+                  {/* Sub-Components Dropdown - stays open until clicked again */}
+                  {isAnalyticsMenuOpen && (
                     <div className="flex flex-col gap-1 ml-5 pl-2.5 my-1 border-l-2 border-[var(--border-color)]">
                       <button
                         onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics-mastery'); }}
