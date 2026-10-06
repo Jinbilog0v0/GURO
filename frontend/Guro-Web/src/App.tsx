@@ -14,6 +14,7 @@ const TeacherSpace = lazy(() => import('./pages/TeacherSpace').then(m => ({ defa
 const ParentSpace = lazy(() => import('./pages/ParentSpace').then(m => ({ default: m.ParentSpace })));
 const LessonSpace = lazy(() => import('./pages/LessonSpace').then(m => ({ default: m.LessonSpace })));
 const DashboardSpace = lazy(() => import('./pages/DashboardSpace').then(m => ({ default: m.DashboardSpace })));
+const SettingsSpace = lazy(() => import('./pages/SettingsSpace').then(m => ({ default: m.SettingsSpace })));
 import {
   LayoutDashboard,
   TrendingUp,
@@ -45,7 +46,7 @@ interface SyncedEvent {
   timestamp: string;
 }
 
-type TabType = 'landing' | 'student' | 'teacher' | 'parent' | 'lesson-builder' | 'dashboard';
+type TabType = 'landing' | 'student' | 'teacher' | 'parent' | 'lesson-builder' | 'dashboard' | 'settings';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<{
@@ -72,6 +73,7 @@ function App() {
     if (stored) return stored as TabType;
     return 'landing';
   });
+  const [previousTab, setPreviousTab] = useState<TabType>('dashboard');
   const [activeSubTab, setActiveSubTab] = useState<string>(() => {
     const stored = localStorage.getItem('guro_active_sub_tab');
     if (stored) return stored;
@@ -81,11 +83,6 @@ function App() {
   const [classroomMembers, setClassroomMembers] = useState<string[]>([]);
   const [stagedQuestions, setStagedQuestions] = useState<Question[]>([]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [editFirstName, setEditFirstName] = useState('');
-  const [editMiddleName, setEditMiddleName] = useState('');
-  const [editLastName, setEditLastName] = useState('');
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     return localStorage.getItem('guro_theme') !== 'light';
@@ -220,51 +217,26 @@ function App() {
 
   const handleOpenProfileModal = () => {
     if (!currentUser) return;
-    
-    // Parse name if individual parts are missing
-    let fName = (currentUser as any).firstName || '';
-    let mName = (currentUser as any).middleName || '';
-    let lName = (currentUser as any).lastName || '';
-    
-    if (!fName && !lName && currentUser.name) {
-      const parts = currentUser.name.split(' ');
-      if (parts.length === 1) {
-        fName = parts[0];
-      } else if (parts.length === 2) {
-        fName = parts[0];
-        lName = parts[1];
-      } else {
-        fName = parts[0];
-        lName = parts[parts.length - 1];
-        mName = parts.slice(1, -1).join(' ');
-      }
-    }
-    
-    setEditFirstName(fName);
-    setEditMiddleName(mName);
-    setEditLastName(lName);
-    setIsProfileModalOpen(true);
+    setPreviousTab(activeTab === 'settings' ? 'dashboard' : activeTab);
+    setActiveTab('settings');
   };
 
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editFirstName.trim() || !editLastName.trim()) {
+  const handleSaveProfileDirect = async (fName: string, mName: string, lName: string): Promise<boolean> => {
+    if (!fName.trim() || !lName.trim()) {
       toast.error('First and Last names are required.');
-      return;
+      return false;
     }
-    setIsSavingProfile(true);
     try {
       const response = await apiFetch('/api/user/update-profile', {
         method: 'POST',
         body: JSON.stringify({
-          first_name: editFirstName.trim(),
-          middle_name: editMiddleName.trim(),
-          last_name: editLastName.trim()
+          first_name: fName.trim(),
+          middle_name: mName.trim(),
+          last_name: lName.trim()
         })
       });
       const data = await response.json();
       if (response.ok && data.success) {
-        // Update user state
         const updatedUser = {
           ...currentUser,
           name: data.user.name,
@@ -275,15 +247,34 @@ function App() {
         setCurrentUser(updatedUser as any);
         localStorage.setItem('guro_user_session', JSON.stringify(updatedUser));
         toast.success('Profile updated successfully!');
-        setIsProfileModalOpen(false);
-      } else {
-        toast.error(data.error || 'Failed to update profile.');
+        return true;
       }
+      toast.error(data.error || 'Failed to update profile.');
+      return false;
     } catch {
       toast.error('Network error. Unable to update profile.');
-    } finally {
-      setIsSavingProfile(false);
+      return false;
     }
+  };
+
+  const handleConfirmLogout = () => {
+    setIsLogoutModalOpen(false);
+    if (currentUser?.userId) {
+      localStorage.removeItem(`guro_teacher_classroom_code_${currentUser.userId}`);
+      localStorage.removeItem(`guro_teacher_classroom_history_${currentUser.userId}`);
+    }
+    localStorage.removeItem('guro_teacher_classroom_code');
+    localStorage.removeItem('guro_teacher_classroom_history');
+    localStorage.removeItem('guro_user_session');
+    localStorage.removeItem('guro_active_tab');
+    localStorage.removeItem('guro_active_sub_tab');
+    localStorage.removeItem('guro_student_step');
+    localStorage.removeItem('guro_student_subject');
+    localStorage.removeItem('guro_student_topic');
+    clearAuthToken();
+    setCurrentUser(null);
+    handleExitToLanding();
+    toast.success('Logged out successfully.');
   };
 
   // Render full screen spaces vs workspace layouts with sidebars
@@ -329,6 +320,29 @@ function App() {
           onToggleTheme={toggleTheme}
         />
       </Suspense>
+    );
+  }
+
+  if (activeTab === 'settings') {
+    return (
+      <div className={`min-h-screen ${isDarkMode ? 'dark' : ''} bg-[var(--bg-main)]`}>
+        <Suspense fallback={<PageLoadingSpinner message="Loading Settings…" />}>
+          <SettingsSpace
+            currentUser={currentUser}
+            onBack={() => setActiveTab(previousTab || 'dashboard')}
+            isDarkMode={isDarkMode}
+            onToggleTheme={toggleTheme}
+            onLogout={() => setIsLogoutModalOpen(true)}
+            onSaveProfile={handleSaveProfileDirect}
+          />
+        </Suspense>
+        <LogoutConfirmModal
+          isOpen={isLogoutModalOpen}
+          onClose={() => setIsLogoutModalOpen(false)}
+          onConfirm={handleConfirmLogout}
+        />
+        <Toaster position="top-center" toastOptions={{ style: { background: '#1e293b', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' } }} />
+      </div>
     );
   }
 
@@ -725,115 +739,8 @@ function App() {
       <LogoutConfirmModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
-        onConfirm={() => {
-          setIsLogoutModalOpen(false);
-          if (currentUser?.userId) {
-            localStorage.removeItem(`guro_teacher_classroom_code_${currentUser.userId}`);
-            localStorage.removeItem(`guro_teacher_classroom_history_${currentUser.userId}`);
-          }
-          localStorage.removeItem('guro_teacher_classroom_code');
-          localStorage.removeItem('guro_teacher_classroom_history');
-          localStorage.removeItem('guro_user_session');
-          localStorage.removeItem('guro_active_tab');
-          localStorage.removeItem('guro_active_sub_tab');
-          localStorage.removeItem('guro_student_step');
-          localStorage.removeItem('guro_student_subject');
-          localStorage.removeItem('guro_student_topic');
-          clearAuthToken();
-          setCurrentUser(null);
-          handleExitToLanding();
-          toast.success('Logged out successfully.');
-        }}
+        onConfirm={handleConfirmLogout}
       />
-      
-      {isProfileModalOpen && (
-        <div 
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
-          onClick={() => setIsProfileModalOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="profile-modal-title"
-        >
-          <div 
-            className="bg-[var(--bg-card)] text-[var(--text-main)] rounded-3xl p-8 max-w-md w-full shadow-2xl border border-[var(--border-color)] relative animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close X button */}
-            <button
-              type="button"
-              onClick={() => setIsProfileModalOpen(false)}
-              className="absolute top-5 right-5 p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
-              aria-label="Close profile modal"
-            >
-              <X size={18} />
-            </button>
-
-            <div className="text-center mb-6">
-              <h3 id="profile-modal-title" className="text-xl font-extrabold text-[var(--text-main)] tracking-tight">Edit Your Profile</h3>
-              <p className="text-xs text-[var(--text-muted)] mt-1">Update your name settings. These changes sync across your workspace.</p>
-            </div>
-
-            <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="edit-first-name" className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">First name</label>
-                  <input
-                    id="edit-first-name"
-                    type="text"
-                    required
-                    className="w-full px-4 py-2.5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-main)] placeholder-[var(--text-muted)] text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 transition-all"
-                    value={editFirstName}
-                    onChange={(e) => setEditFirstName(e.target.value)}
-                    placeholder="e.g. Maria"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="edit-last-name" className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Last name</label>
-                  <input
-                    id="edit-last-name"
-                    type="text"
-                    required
-                    className="w-full px-4 py-2.5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-main)] placeholder-[var(--text-muted)] text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 transition-all"
-                    value={editLastName}
-                    onChange={(e) => setEditLastName(e.target.value)}
-                    placeholder="e.g. Santos"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="edit-middle-name" className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Middle name (Optional)</label>
-                <input
-                  id="edit-middle-name"
-                  type="text"
-                  className="w-full px-4 py-2.5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-main)] placeholder-[var(--text-muted)] text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 transition-all"
-                  value={editMiddleName}
-                  onChange={(e) => setEditMiddleName(e.target.value)}
-                  placeholder="e.g. Dela Cruz"
-                />
-              </div>
-
-              <div className="flex gap-3 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsProfileModalOpen(false)}
-                  className="flex-1 py-2.5 bg-[var(--bg-main)] hover:bg-[var(--border-color)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl font-bold text-xs transition-colors cursor-pointer text-center"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSavingProfile}
-                  className="flex-1 py-2.5 bg-gradient-to-tr from-[#11428E] to-[#2563EB] hover:from-[#0d3470] hover:to-[#1d4ed8] text-white rounded-xl font-bold text-xs transition-colors cursor-pointer text-center shadow-lg shadow-[#11428E]/20"
-                >
-                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
       <Toaster position="top-center" toastOptions={{ style: { background: '#1e293b', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' } }} />
     </div>
   );
