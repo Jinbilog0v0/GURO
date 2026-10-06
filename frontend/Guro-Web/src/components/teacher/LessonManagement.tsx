@@ -252,7 +252,7 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
           </p>
         </div>
 
-        {(onCreateLesson || onOpenCreateLesson) && (
+        {activeTab === 'custom' && (onCreateLesson || onOpenCreateLesson) && (
           <button
             type="button"
             onClick={() => (onCreateLesson ? onCreateLesson() : onOpenCreateLesson?.())}
