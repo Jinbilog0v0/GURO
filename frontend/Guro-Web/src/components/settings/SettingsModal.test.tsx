@@ -93,6 +93,11 @@ describe('SettingsModal Component', () => {
     expect(screen.getByText('Dark Workspace')).toBeInTheDocument();
     expect(screen.getByText('Audio & Narration Feedback')).toBeInTheDocument();
 
+    // Verify audio test buttons exist and are clickable
+    const testBtns = screen.getAllByRole('button', { name: /test/i });
+    expect(testBtns.length).toBeGreaterThanOrEqual(2);
+    fireEvent.click(testBtns[0]);
+
     // Switch to Password & Security tab
     fireEvent.click(screen.getByText('Password & Security'));
     expect(screen.getByText('Change Password')).toBeInTheDocument();

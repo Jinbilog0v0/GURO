@@ -5,7 +5,7 @@ import { ParentSettings } from './ParentSettings';
 import { AdminSettings } from './AdminSettings';
 import { SharedSecuritySection } from './SharedSecuritySection';
 import { ThemePreferencesSection } from './ThemePreferencesSection';
-import { User, Lock, LogOut, Shield, School, Users, GraduationCap, X, Sun, Moon, Sliders, Palette } from 'lucide-react';
+import { User, Lock, LogOut, Shield, School, Users, GraduationCap, X, Sliders, Palette } from 'lucide-react';
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -98,17 +98,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5">
-            {/* Live Theme Toggle inside modal */}
-            <button
-              type="button"
-              onClick={onToggleTheme}
-              aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              className="size-9 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-center cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all shadow-xs active:scale-95"
-            >
-              {isDarkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} />}
-            </button>
-
             {/* Close Button */}
             <button
               type="button"
