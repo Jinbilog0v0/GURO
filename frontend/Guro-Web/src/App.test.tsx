@@ -59,7 +59,7 @@ describe('App Portal and Navigation Layout (Web)', () => {
     expect(screen.queryByText('Admin Console')).not.toBeInTheDocument();
     
     // Check navigation options visible for Teacher (using getAllByText to avoid breadcrumb duplicates)
-    expect(screen.getAllByText('Teacher Console').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Teacher Portal').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('My Classrooms').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Lesson Management').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Classroom Analytics').length).toBeGreaterThanOrEqual(1);

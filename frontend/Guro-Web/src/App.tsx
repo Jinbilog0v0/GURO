@@ -477,7 +477,7 @@ function App() {
       {/* Sidebar Navigation */}
       <aside
         className={`shrink-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col py-5 transition-all duration-300 ${
-          isSidebarOpen ? 'w-64 px-4' : 'w-[60px] px-2'
+          isSidebarOpen ? 'w-72 px-4' : 'w-[64px] px-2'
         }`}
         aria-label="Main navigation"
       >
@@ -560,10 +560,6 @@ function App() {
           {isTeacher && (
             isSidebarOpen ? (
               <div className="flex flex-col gap-1 my-1">
-                <div className="px-3.5 pt-3 pb-1 text-[11px] font-extrabold tracking-wider uppercase text-[var(--text-dark)]">
-                  Teacher Console
-                </div>
-
                 {/* 1. My Classrooms */}
                 <button 
                   onClick={() => { setActiveTab('teacher'); setActiveSubTab('classrooms'); }} 
