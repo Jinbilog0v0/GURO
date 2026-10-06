@@ -1,9 +1,11 @@
 <?php
 
-use App\Models\User;
 use App\Models\Classroom;
 use App\Models\ProgressLog;
+use App\Models\User;
+use App\Services\GeminiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 
 uses(RefreshDatabase::class);
 
@@ -12,13 +14,13 @@ it('can register a new user with PBKDF2 hashing', function () {
         'email' => 'teacher@example.com',
         'password' => 'SecurePassword123!',
         'name' => 'John Doe',
-        'role' => 'teacher'
+        'role' => 'teacher',
     ]);
 
     $response->assertStatus(200)
         ->assertJsonStructure([
             'success',
-            'user' => ['userId', 'email', 'name', 'role', 'classroomId']
+            'user' => ['userId', 'email', 'name', 'role', 'classroomId'],
         ]);
 
     $user = User::where('email', 'teacher@example.com')->first();
@@ -33,21 +35,21 @@ it('can login an existing user', function () {
         'email' => 'parent@example.com',
         'password' => 'ParentPassword123!',
         'name' => 'Jane Smith',
-        'role' => 'parent'
+        'role' => 'parent',
     ]);
 
     // Attempt login
     $response = $this->postJson('/api/auth/login', [
         'email' => 'parent@example.com',
-        'password' => 'ParentPassword123!'
+        'password' => 'ParentPassword123!',
     ]);
 
     $response->assertStatus(200)
         ->assertJson([
-            'success' => true
+            'success' => true,
         ])
         ->assertJsonStructure([
-            'user' => ['userId', 'email', 'name', 'role', 'classroomId']
+            'user' => ['userId', 'email', 'name', 'role', 'classroomId'],
         ]);
 });
 
@@ -62,20 +64,20 @@ it('can promote a guest student to a registered account and migrate logs', funct
         'topic' => 'Fractions',
         'score' => 4,
         'total_questions' => 5,
-        'timestamp' => now()
+        'timestamp' => now(),
     ]);
 
     $response = $this->postJson('/api/auth/promote', [
         'anonymousStudentId' => 'GUEST-XYZ',
         'email' => 'student@example.com',
         'password' => 'StudentPassword123!',
-        'name' => 'Alex Brown'
+        'name' => 'Alex Brown',
     ]);
 
     $response->assertStatus(200)
         ->assertJson([
             'success' => true,
-            'studentId' => 'ALEX-BROWN'
+            'studentId' => 'ALEX-BROWN',
         ]);
 
     // Check that the progress log student_id was migrated
@@ -94,18 +96,18 @@ it('can create a classroom and verify its invite code', function () {
         'email' => 'teacher@example.com',
         'password_hash' => 'somehash',
         'name' => 'Mrs. Davis',
-        'role' => 'teacher'
+        'role' => 'teacher',
     ]);
 
     $response = $this->actingAs($user, 'sanctum')->postJson('/api/classroom/create', [
         'teacherName' => 'Mrs. Davis',
         'subject' => 'English',
-        'gradeLevel' => 5
+        'gradeLevel' => 5,
     ]);
 
     $response->assertStatus(200)
         ->assertJsonStructure([
-            'classroomId', 'teacherName', 'subject', 'gradeLevel', 'customItemBank'
+            'classroomId', 'teacherName', 'subject', 'gradeLevel', 'customItemBank',
         ]);
 
     $classCode = $response->json('classroomId');
@@ -116,7 +118,7 @@ it('can create a classroom and verify its invite code', function () {
         ->assertJson([
             'classroomId' => $classCode,
             'teacherName' => 'Mrs. Davis',
-            'subject' => 'English'
+            'subject' => 'English',
         ]);
 });
 
@@ -132,16 +134,16 @@ it('can sync telemetry progress logs and retrieve them', function () {
                 'topic' => 'Adjectives',
                 'score' => 3,
                 'totalQuestions' => 5,
-                'timestamp' => now()->toIso8601String()
-            ]
-        ]
+                'timestamp' => now()->toIso8601String(),
+            ],
+        ],
     ]);
 
     $response->assertStatus(200)
         ->assertJson([
             'success' => true,
             'received' => 1,
-            'newSynced' => 1
+            'newSynced' => 1,
         ]);
 
     // Setup teacher and classroom to allow secure querying of classroom telemetry
@@ -150,7 +152,7 @@ it('can sync telemetry progress logs and retrieve them', function () {
         'email' => 'teacher-test@example.com',
         'password_hash' => 'somehash',
         'name' => 'Test Teacher',
-        'role' => 'teacher'
+        'role' => 'teacher',
     ]);
 
     Classroom::create([
@@ -168,7 +170,7 @@ it('can sync telemetry progress logs and retrieve them', function () {
         ->assertJsonCount(1)
         ->assertJsonFragment([
             'eventId' => 'LOG-100',
-            'studentId' => 'STUDENT-1'
+            'studentId' => 'STUDENT-1',
         ]);
 
     // Rejects progress request without filters
@@ -187,8 +189,8 @@ it('can sync telemetry progress logs and retrieve them', function () {
         ->assertJsonFragment(['error' => 'Invalid parent access code.']);
 
     // Accept progress request with studentId and correct accessCode
-    $salt = "GURO_PARENT_SALT";
-    $combined = "STUDENT-1" . $salt;
+    $salt = 'GURO_PARENT_SALT';
+    $combined = 'STUDENT-1'.$salt;
     $sum = 0;
     $len = strlen($combined);
     for ($i = 0; $i < $len; $i++) {
@@ -201,7 +203,7 @@ it('can sync telemetry progress logs and retrieve them', function () {
         ->assertJsonCount(1)
         ->assertJsonFragment([
             'eventId' => 'LOG-100',
-            'studentId' => 'STUDENT-1'
+            'studentId' => 'STUDENT-1',
         ]);
 });
 
@@ -211,10 +213,10 @@ it('can generate a lesson from text', function () {
         'email' => 'teacher@example.com',
         'password_hash' => 'somehash',
         'name' => 'Mrs. Davis',
-        'role' => 'teacher'
+        'role' => 'teacher',
     ]);
 
-    $this->mock(App\Services\GeminiService::class, function ($mock) {
+    $this->mock(GeminiService::class, function ($mock) {
         $mock->shouldReceive('generateQuestions')
             ->once()
             ->with('English', 5, 'Nouns', 'Lesson Content', null)
@@ -222,9 +224,9 @@ it('can generate a lesson from text', function () {
                 'studyContent' => [
                     'introduction' => 'Intro text',
                     'definitions' => [],
-                    'summary' => []
+                    'summary' => [],
                 ],
-                'questions' => []
+                'questions' => [],
             ]);
     });
 
@@ -238,9 +240,9 @@ it('can generate a lesson from text', function () {
     $response->assertStatus(200)
         ->assertJson([
             'studyContent' => [
-                'introduction' => 'Intro text'
+                'introduction' => 'Intro text',
             ],
-            'questions' => []
+            'questions' => [],
         ]);
 });
 
@@ -250,10 +252,10 @@ it('can generate a lesson from PDF base64', function () {
         'email' => 'teacher@example.com',
         'password_hash' => 'somehash',
         'name' => 'Mrs. Davis',
-        'role' => 'teacher'
+        'role' => 'teacher',
     ]);
 
-    $this->mock(App\Services\GeminiService::class, function ($mock) {
+    $this->mock(GeminiService::class, function ($mock) {
         $mock->shouldReceive('generateQuestions')
             ->once()
             ->with('English', 5, 'Nouns', null, 'encoded_pdf_data')
@@ -261,9 +263,9 @@ it('can generate a lesson from PDF base64', function () {
                 'studyContent' => [
                     'introduction' => 'Intro text',
                     'definitions' => [],
-                    'summary' => []
+                    'summary' => [],
                 ],
-                'questions' => []
+                'questions' => [],
             ]);
     });
 
@@ -277,9 +279,9 @@ it('can generate a lesson from PDF base64', function () {
     $response->assertStatus(200)
         ->assertJson([
             'studyContent' => [
-                'introduction' => 'Intro text'
+                'introduction' => 'Intro text',
             ],
-            'questions' => []
+            'questions' => [],
         ]);
 });
 
@@ -290,20 +292,20 @@ it('can request and verify recovery code for teacher@guro.dev', function () {
         'email' => 'teacher@guro.dev',
         'password_hash' => 'oldsalt:oldhash',
         'name' => 'Seeded Teacher',
-        'role' => 'teacher'
+        'role' => 'teacher',
     ]);
 
     // Send code
     $response = $this->postJson('/api/auth/forgot-password/send-code', [
         'email' => 'teacher@guro.dev',
-        'role' => 'teacher'
+        'role' => 'teacher',
     ]);
 
     // Assert successful response
     $response->assertStatus(200);
 
     // Get code from cache
-    $code = Illuminate\Support\Facades\Cache::get('password_reset_code_teacher@guro.dev');
+    $code = Cache::get('password_reset_code_teacher@guro.dev');
     expect($code)->not->toBeNull();
 
     // Verify code and reset password
@@ -311,12 +313,12 @@ it('can request and verify recovery code for teacher@guro.dev', function () {
         'email' => 'teacher@guro.dev',
         'role' => 'teacher',
         'code' => $code,
-        'new_password' => 'NewSecurePassword123!'
+        'new_password' => 'NewSecurePassword123!',
     ]);
 
     $verifyResponse->assertStatus(200)
         ->assertJson([
-            'success' => true
+            'success' => true,
         ]);
 
     // Reload user and verify password hash changed
@@ -330,13 +332,13 @@ it('can update user profile names', function () {
         'email' => 'student@guro.dev',
         'password_hash' => 'hash',
         'name' => 'Neal Claro',
-        'role' => 'student'
+        'role' => 'student',
     ]);
 
     $response = $this->actingAs($user, 'sanctum')->postJson('/api/user/update-profile', [
         'first_name' => 'Neal',
         'middle_name' => 'Jean',
-        'last_name' => 'Claro'
+        'last_name' => 'Claro',
     ]);
 
     $response->assertStatus(200)
@@ -347,7 +349,7 @@ it('can update user profile names', function () {
                 'firstName' => 'Neal',
                 'middleName' => 'Jean',
                 'lastName' => 'Claro',
-            ]
+            ],
         ]);
 
     $user->refresh();
@@ -364,7 +366,7 @@ it('enforces strict grade level matching when pairing student to a classroom', f
         'password_hash' => 'hash',
         'name' => 'Teacher J',
         'role' => 'teacher',
-        'verification_status' => 'approved'
+        'verification_status' => 'approved',
     ]);
 
     $classroom = Classroom::create([
@@ -375,7 +377,7 @@ it('enforces strict grade level matching when pairing student to a classroom', f
         'grade_level' => 6,
         'school_year' => '2026-2027',
         'term' => 'Quarter 1',
-        'custom_item_bank' => (object) []
+        'custom_item_bank' => (object) [],
     ]);
 
     // Attempt pairing with mismatched Grade 4 -> Expect 422
@@ -386,7 +388,7 @@ it('enforces strict grade level matching when pairing student to a classroom', f
     ]);
     $failResponse->assertStatus(422)
         ->assertJson([
-            'error' => 'Grade mismatch. This classroom is strictly for Grade 6 students only.'
+            'error' => 'Grade mismatch. This classroom is strictly for Grade 6 students only.',
         ]);
 
     // Attempt pairing with matching Grade 6 -> Expect 200
@@ -402,8 +404,8 @@ it('enforces strict grade level matching when pairing student to a classroom', f
                 'classroomId' => 'ENG-G6-TEST',
                 'teacherName' => 'Teacher J',
                 'subject' => 'English',
-                'gradeLevel' => 6
-            ]
+                'gradeLevel' => 6,
+            ],
         ]);
 });
 
@@ -414,7 +416,7 @@ it('returns dynamic active subjects scoped to teacher grade level setup', functi
         'password_hash' => 'hash',
         'name' => 'Teacher Maria',
         'role' => 'teacher',
-        'verification_status' => 'approved'
+        'verification_status' => 'approved',
     ]);
 
     $engClass = Classroom::create([
@@ -425,14 +427,14 @@ it('returns dynamic active subjects scoped to teacher grade level setup', functi
         'grade_level' => 6,
         'school_year' => '2026-2027',
         'term' => 'Quarter 1',
-        'custom_item_bank' => (object) []
+        'custom_item_bank' => (object) [],
     ]);
 
     // When teacher only has English for Grade 6
     $res1 = $this->getJson('/api/classroom/active-subjects?classroomId=ENG-G6-SUBJ');
     $res1->assertStatus(200)
         ->assertJson([
-            'subjects' => ['English']
+            'subjects' => ['English'],
         ]);
 
     // If teacher also creates a Mathematics classroom for Grade 6
@@ -444,7 +446,7 @@ it('returns dynamic active subjects scoped to teacher grade level setup', functi
         'grade_level' => 6,
         'school_year' => '2026-2027',
         'term' => 'Quarter 1',
-        'custom_item_bank' => (object) []
+        'custom_item_bank' => (object) [],
     ]);
 
     $res2 = $this->getJson('/api/classroom/active-subjects?classroomId=ENG-G6-SUBJ');
@@ -461,7 +463,7 @@ it('returns empty list for newly created teacher with no classrooms', function (
         'password_hash' => 'hash',
         'name' => 'Brand New Teacher',
         'role' => 'teacher',
-        'verification_status' => 'approved'
+        'verification_status' => 'approved',
     ]);
 
     $token = $newTeacher->createToken('test')->plainTextToken;
@@ -471,9 +473,8 @@ it('returns empty list for newly created teacher with no classrooms', function (
 
     $res->assertStatus(200)
         ->assertJson([
-            'classrooms' => []
+            'classrooms' => [],
         ]);
 
     expect($res->json('classrooms'))->toHaveCount(0);
 });
-

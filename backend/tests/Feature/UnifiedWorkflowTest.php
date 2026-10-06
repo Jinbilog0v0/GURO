@@ -1,8 +1,7 @@
 <?php
 
-use App\Models\User;
 use App\Models\Classroom;
-use App\Models\ProgressLog;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -14,14 +13,14 @@ it('executes the full unified workflow (Teacher -> Student -> Parent)', function
         'email' => 'teacher@guro.dev',
         'password_hash' => 'some_hash',
         'name' => 'Mrs. Davis',
-        'role' => 'teacher'
+        'role' => 'teacher',
     ]);
 
     // Create Classroom via API
     $classResponse = $this->actingAs($teacher, 'sanctum')->postJson('/api/classroom/create', [
         'teacherName' => 'Mrs. Davis',
         'subject' => 'Mathematics',
-        'gradeLevel' => 4
+        'gradeLevel' => 4,
     ]);
 
     $classResponse->assertStatus(200);
@@ -34,7 +33,7 @@ it('executes the full unified workflow (Teacher -> Student -> Parent)', function
         'email' => 'student@guro.dev',
         'password_hash' => 'some_hash',
         'name' => 'Alex',
-        'role' => 'student'
+        'role' => 'student',
     ]);
 
     // Student verifies the classroom invite code
@@ -44,7 +43,7 @@ it('executes the full unified workflow (Teacher -> Student -> Parent)', function
             'classroomId' => $classroomId,
             'teacherName' => 'Mrs. Davis',
             'subject' => 'Mathematics',
-            'gradeLevel' => 4
+            'gradeLevel' => 4,
         ]);
 
     // Student downloads the item bank
@@ -63,22 +62,22 @@ it('executes the full unified workflow (Teacher -> Student -> Parent)', function
                 'topic' => 'Fractions',
                 'score' => 4,
                 'totalQuestions' => 5,
-                'timestamp' => now()->toIso8601String()
-            ]
-        ]
+                'timestamp' => now()->toIso8601String(),
+            ],
+        ],
     ]);
 
     $syncResponse->assertStatus(200)
         ->assertJson([
             'success' => true,
             'received' => 1,
-            'newSynced' => 1
+            'newSynced' => 1,
         ]);
 
     // ── STEP 4: Parent Log-In & Progress Tracker Query ──
     // Parent fetches child's telemetry statistics (requires parent access code)
-    $salt = "GURO_PARENT_SALT";
-    $combined = $student->user_id . $salt;
+    $salt = 'GURO_PARENT_SALT';
+    $combined = $student->user_id.$salt;
     $sum = 0;
     $len = strlen($combined);
     for ($i = 0; $i < $len; $i++) {

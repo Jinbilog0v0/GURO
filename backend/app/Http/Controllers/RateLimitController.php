@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\RateLimitConfig;
 use App\Models\AiGenerationLog;
+use App\Models\RateLimitConfig;
 use Illuminate\Http\Request;
 
 class RateLimitController extends Controller
@@ -12,6 +12,7 @@ class RateLimitController extends Controller
     public function index()
     {
         $configs = RateLimitConfig::orderBy('role')->get();
+
         return response()->json($configs);
     }
 
@@ -19,10 +20,10 @@ class RateLimitController extends Controller
     public function upsert(Request $request, string $role)
     {
         $data = $request->validate([
-            'max_requests'   => 'required|integer|min:1|max:1000',
+            'max_requests' => 'required|integer|min:1|max:1000',
             'window_minutes' => 'required|integer|min:1|max:1440',
-            'is_enabled'     => 'required|boolean',
-            'notes'          => 'nullable|string|max:500',
+            'is_enabled' => 'required|boolean',
+            'notes' => 'nullable|string|max:500',
         ]);
 
         $config = RateLimitConfig::updateOrCreate(
@@ -37,6 +38,7 @@ class RateLimitController extends Controller
     public function destroy(string $role)
     {
         RateLimitConfig::where('role', $role)->delete();
+
         return response()->json(['success' => true]);
     }
 
@@ -58,14 +60,14 @@ class RateLimitController extends Controller
                 ->get();
 
             $results[] = [
-                'role'           => $role,
-                'max_requests'   => $config->max_requests,
+                'role' => $role,
+                'max_requests' => $config->max_requests,
                 'window_minutes' => $config->window_minutes,
-                'users'          => $rows->map(fn ($r) => [
+                'users' => $rows->map(fn ($r) => [
                     'user_id' => $r->user_id,
-                    'name'    => optional($r->user)->name,
-                    'email'   => optional($r->user)->email,
-                    'count'   => $r->count,
+                    'name' => optional($r->user)->name,
+                    'email' => optional($r->user)->email,
+                    'count' => $r->count,
                     'over_limit' => $r->count >= $config->max_requests,
                 ]),
             ];

@@ -10,12 +10,14 @@ export const styles = StyleSheet.create({
   },
 
   headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     backgroundColor: Colors.bgSidebar,
-    gap: 2,
+    gap: Spacing.sm,
   },
   headerTitle: {
     fontFamily: Fonts.display,

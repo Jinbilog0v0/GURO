@@ -16,7 +16,7 @@ class AdminController extends Controller
     private function authorizeAdmin(Request $request): void
     {
         $user = $request->user();
-        if (!$user || !in_array($user->role, ['admin', 'developer'])) {
+        if (! $user || ! in_array($user->role, ['admin', 'developer'])) {
             abort(403, 'Unauthorized. Administrator access required.');
         }
     }
@@ -31,13 +31,14 @@ class AdminController extends Controller
 
     private function formatIso($date): ?string
     {
-        if (!$date) {
+        if (! $date) {
             return null;
         }
         if ($date instanceof \DateTimeInterface) {
             return $date->format(\DateTimeInterface::ATOM);
         }
         $ts = strtotime($date);
+
         return $ts ? date('c', $ts) : (string) $date;
     }
 
@@ -71,7 +72,7 @@ class AdminController extends Controller
         $health = [
             'database' => $dbStatus,
             'cache' => Cache::has('global_item_bank') ? 'Cached (Active)' : 'Ready (Cold)',
-            'aiEngine' => !empty($geminiKey) ? 'Configured (Gemini 2.5 Flash)' : 'Missing GEMINI_API_KEY',
+            'aiEngine' => ! empty($geminiKey) ? 'Configured (Gemini 2.5 Flash)' : 'Missing GEMINI_API_KEY',
             'itemBankStorage' => file_exists($itemBankPath) ? 'Online (JSON Valid)' : 'Missing Asset File',
             'serverTime' => now()->toIso8601String(),
         ];
@@ -99,11 +100,11 @@ class AdminController extends Controller
         $this->authorizeAdmin($request);
 
         Cache::forget('global_item_bank');
-        
+
         // Find and forget classroom caches
         $classrooms = Classroom::pluck('classroom_id');
         foreach ($classrooms as $cid) {
-            Cache::forget('classroom_bank_' . strtoupper($cid));
+            Cache::forget('classroom_bank_'.strtoupper($cid));
         }
 
         return response()->json([
@@ -125,9 +126,36 @@ class AdminController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('user_id', 'like', "%{$search}%")
-                  ->orWhere('school_name', 'like', "%{$search}%");
+                    ->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('user_id', 'like', "%{$search}%")
+                    ->orWhere('school_name', 'like', "%{$search}%");
+
+                if (str_contains($search, ',')) {
+                    $parts = array_map('trim', explode(',', $search, 2));
+                    $l = $parts[0] ?? '';
+                    $f = $parts[1] ?? '';
+                    if ($l !== '' && $f !== '') {
+                        $q->orWhere(function ($sub) use ($l, $f) {
+                            $sub->where('last_name', 'like', "%{$l}%")
+                                ->where('first_name', 'like', "%{$f}%");
+                        });
+                    }
+                } else {
+                    $words = preg_split('/\s+/', $search);
+                    if (count($words) >= 2) {
+                        $w1 = $words[0];
+                        $w2 = $words[count($words) - 1];
+                        $q->orWhere(function ($sub) use ($w1, $w2) {
+                            $sub->where(function ($s1) use ($w1, $w2) {
+                                $s1->where('last_name', 'like', "%{$w1}%")->where('first_name', 'like', "%{$w2}%");
+                            })->orWhere(function ($s2) use ($w1, $w2) {
+                                $s2->where('first_name', 'like', "%{$w1}%")->where('last_name', 'like', "%{$w2}%");
+                            });
+                        });
+                    }
+                }
             });
         }
 
@@ -186,7 +214,7 @@ class AdminController extends Controller
         ]);
 
         $user = User::where('id', $id)->orWhere('user_id', $id)->first();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User not found.'], 404);
         }
 
@@ -218,7 +246,7 @@ class AdminController extends Controller
         ]);
 
         $user = User::where('id', $id)->orWhere('user_id', $id)->first();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User not found.'], 404);
         }
 
@@ -237,7 +265,7 @@ class AdminController extends Controller
         $this->authorizeAdmin($request);
 
         $user = User::where('id', $id)->orWhere('user_id', $id)->first();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User not found.'], 404);
         }
 
@@ -268,7 +296,7 @@ class AdminController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('classroom_id', 'like', "%{$search}%")
-                  ->orWhere('teacher_name', 'like', "%{$search}%");
+                    ->orWhere('teacher_name', 'like', "%{$search}%");
             });
         }
 
@@ -306,7 +334,7 @@ class AdminController extends Controller
         $this->authorizeAdmin($request);
 
         $classroom = Classroom::where('id', $id)->orWhere('classroom_id', $id)->first();
-        if (!$classroom) {
+        if (! $classroom) {
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
 
@@ -326,7 +354,7 @@ class AdminController extends Controller
         return response()->json([
             'success' => true,
             'message' => $msg,
-            'isLocked' => !$isCurrentlyLocked,
+            'isLocked' => ! $isCurrentlyLocked,
         ]);
     }
 
@@ -341,7 +369,7 @@ class AdminController extends Controller
         ]);
 
         $classroom = Classroom::where('id', $id)->orWhere('classroom_id', $id)->first();
-        if (!$classroom) {
+        if (! $classroom) {
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
 
@@ -364,7 +392,7 @@ class AdminController extends Controller
         $this->authorizeAdmin($request);
 
         $classroom = Classroom::where('id', $id)->orWhere('classroom_id', $id)->first();
-        if (!$classroom) {
+        if (! $classroom) {
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
 
@@ -390,11 +418,11 @@ class AdminController extends Controller
         $engLogs = $allLogs->where('subject', 'English');
 
         $mathAvg = $mathLogs->count() > 0
-            ? round($mathLogs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100))
+            ? round($mathLogs->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100))
             : 0;
 
         $engAvg = $engLogs->count() > 0
-            ? round($engLogs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100))
+            ? round($engLogs->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100))
             : 0;
 
         // Grade level averages
@@ -404,21 +432,21 @@ class AdminController extends Controller
             $gradeBreakdown["Grade {$grade}"] = [
                 'totalAttempts' => $gradeLogs->count(),
                 'averageScore' => $gradeLogs->count() > 0
-                    ? round($gradeLogs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100))
+                    ? round($gradeLogs->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100))
                     : 0,
                 'masteryRate' => $gradeLogs->count() > 0
-                    ? round(($gradeLogs->filter(fn($l) => ($l->score / max(1, $l->total_questions)) >= 0.8)->count() / max(1, $gradeLogs->count())) * 100)
+                    ? round(($gradeLogs->filter(fn ($l) => ($l->score / max(1, $l->total_questions)) >= 0.8)->count() / max(1, $gradeLogs->count())) * 100)
                     : 0,
             ];
         }
 
         // Topic mastery statistics
         $topicsData = [];
-        $topicGroups = $allLogs->groupBy(fn($l) => "{$l->subject}_{$l->grade_level}_{$l->topic}");
+        $topicGroups = $allLogs->groupBy(fn ($l) => "{$l->subject}_{$l->grade_level}_{$l->topic}");
         foreach ($topicGroups as $key => $group) {
             $sample = $group->first();
-            $avgScore = round($group->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100));
-            $masteredCount = $group->filter(fn($l) => ($l->score / max(1, $l->total_questions)) >= 0.8)->count();
+            $avgScore = round($group->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100));
+            $masteredCount = $group->filter(fn ($l) => ($l->score / max(1, $l->total_questions)) >= 0.8)->count();
             $masteryRate = round(($masteredCount / max(1, $group->count())) * 100);
 
             $topicsData[] = [
@@ -469,9 +497,37 @@ class AdminController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('school_name', 'like', "%{$search}%")
-                  ->orWhere('school_id_number', 'like', "%{$search}%");
+                    ->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('user_id', 'like', "%{$search}%")
+                    ->orWhere('school_name', 'like', "%{$search}%")
+                    ->orWhere('school_id_number', 'like', "%{$search}%");
+
+                if (str_contains($search, ',')) {
+                    $parts = array_map('trim', explode(',', $search, 2));
+                    $l = $parts[0] ?? '';
+                    $f = $parts[1] ?? '';
+                    if ($l !== '' && $f !== '') {
+                        $q->orWhere(function ($sub) use ($l, $f) {
+                            $sub->where('last_name', 'like', "%{$l}%")
+                                ->where('first_name', 'like', "%{$f}%");
+                        });
+                    }
+                } else {
+                    $words = preg_split('/\s+/', $search);
+                    if (count($words) >= 2) {
+                        $w1 = $words[0];
+                        $w2 = $words[count($words) - 1];
+                        $q->orWhere(function ($sub) use ($w1, $w2) {
+                            $sub->where(function ($s1) use ($w1, $w2) {
+                                $s1->where('last_name', 'like', "%{$w1}%")->where('first_name', 'like', "%{$w2}%");
+                            })->orWhere(function ($s2) use ($w1, $w2) {
+                                $s2->where('first_name', 'like', "%{$w1}%")->where('last_name', 'like', "%{$w2}%");
+                            });
+                        });
+                    }
+                }
             });
         }
 
@@ -519,7 +575,7 @@ class AdminController extends Controller
         ]);
 
         $user = User::where('id', $id)->orWhere('user_id', $id)->first();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Teacher account not found.'], 404);
         }
 
@@ -558,6 +614,7 @@ class AdminController extends Controller
             $user->verified_at = now();
             $user->verified_by = $request->user()->id;
             $user->save();
+
             return response()->json([
                 'success' => true,
                 'message' => "Teacher application for {$user->name} has been marked as rejected.",
@@ -579,7 +636,7 @@ class AdminController extends Controller
         $this->authorizeAdmin($request);
 
         $user = User::where('id', $id)->orWhere('user_id', $id)->first();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Teacher account not found.'], 404);
         }
 

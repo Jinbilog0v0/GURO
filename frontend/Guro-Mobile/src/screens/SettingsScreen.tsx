@@ -1015,7 +1015,7 @@ export function SettingsScreen({ navigation }: Props) {
           <Text style={styles.backBtnText}>← Return</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>System Settings</Text>
+        <Text style={styles.headerTitle}>GURO System Settings</Text>
 
         <View style={styles.headerSubtitleBadge}>
           <Text style={styles.headerSubtitleText}>

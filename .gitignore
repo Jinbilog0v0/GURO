@@ -44,3 +44,7 @@ yarn-error.*
 # local postgres data cluster
 pgdata/
 
+# Documentation manuscripts and report generation scripts
+docs/
+scripts/
+

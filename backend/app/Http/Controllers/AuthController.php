@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Classroom;
+use App\Models\ClassroomMember;
 use App\Models\ProgressLog;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -71,7 +74,7 @@ class AuthController extends Controller
         $idDocument = $request->input('id_document') ?: $request->input('id_document_path');
 
         if ($firstName !== '' && $lastName !== '') {
-            $fullName = trim($firstName . ($middleName !== '' ? ' ' . $middleName : '') . ' ' . $lastName);
+            $fullName = trim($firstName.($middleName !== '' ? ' '.$middleName : '').' '.$lastName);
         } else {
             $fullName = $name;
             $parts = explode(' ', $fullName);
@@ -182,7 +185,7 @@ class AuthController extends Controller
         if ($request->filled('role')) {
             $expectedRole = strtolower(trim($request->input('role')));
             if ($expectedRole === 'admin') {
-                if (!in_array($user->role, ['admin', 'developer'])) {
+                if (! in_array($user->role, ['admin', 'developer'])) {
                     return response()->json(['error' => "Access denied: This account is registered as a {$user->role}, not an administrator."], 403);
                 }
             } elseif ($expectedRole !== strtolower($user->role)) {
@@ -201,6 +204,7 @@ class AuthController extends Controller
             }
             if ($status === 'rejected') {
                 $reason = $user->rejection_reason ?: 'Institutional credentials could not be validated.';
+
                 return response()->json([
                     'error' => "Your teacher account registration was not approved. Reason: {$reason}",
                     'verification_status' => 'rejected',
@@ -211,17 +215,17 @@ class AuthController extends Controller
         $token = $user->createToken('app')->plainTextToken;
 
         $classroomId = $user->classroom_id;
-        if ($user->role === 'student' && !$classroomId) {
-            $member = \App\Models\ClassroomMember::where('student_id', $user->user_id)->first();
+        if ($user->role === 'student' && ! $classroomId) {
+            $member = ClassroomMember::where('student_id', $user->user_id)->first();
             if ($member) {
                 $classroomId = $member->classroom_id;
             }
         }
-        if ($user->role === 'teacher' && !$classroomId) {
-            $classroom = \App\Models\Classroom::where(function ($q) use ($user) {
+        if ($user->role === 'teacher' && ! $classroomId) {
+            $classroom = Classroom::where(function ($q) use ($user) {
                 $q->where('teacher_user_id', $user->id)
-                  ->orWhere('teacher_user_id', $user->user_id)
-                  ->orWhere('teacher_name', $user->name);
+                    ->orWhere('teacher_user_id', $user->user_id)
+                    ->orWhere('teacher_name', $user->name);
             })->orderBy('created_at', 'desc')->first();
             if ($classroom) {
                 $classroomId = $classroom->classroom_id;
@@ -281,7 +285,7 @@ class AuthController extends Controller
         $name = trim($request->input('name', ''));
 
         if ($firstName !== '' && $lastName !== '') {
-            $fullName = trim($firstName . ($middleName !== '' ? ' ' . $middleName : '') . ' ' . $lastName);
+            $fullName = trim($firstName.($middleName !== '' ? ' '.$middleName : '').' '.$lastName);
         } else {
             $fullName = $name;
             $parts = explode(' ', $fullName);
@@ -306,12 +310,12 @@ class AuthController extends Controller
         $passwordHash = $this->hashPassword($password);
         $newStudentId = strtoupper(str_replace(' ', '-', $fullName));
         if (User::where('user_id', $newStudentId)->exists()) {
-            $newStudentId .= '-' . strtoupper(Str::random(4));
+            $newStudentId .= '-'.strtoupper(Str::random(4));
         }
 
         $normalized = strtoupper(preg_replace('/\s+/', '-', trim($newStudentId)));
-        $salt = "GURO_PARENT_SALT";
-        $combined = $normalized . $salt;
+        $salt = 'GURO_PARENT_SALT';
+        $combined = $normalized.$salt;
         $sum = 0;
         $len = strlen($combined);
         for ($i = 0; $i < $len; $i++) {
@@ -371,7 +375,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $email)->where('role', $role)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'No account found with this email and role.'], 404);
         }
 
@@ -379,28 +383,28 @@ class AuthController extends Controller
         $code = (string) mt_rand(100000, 999999);
 
         // Store code in cache for 15 minutes
-        Cache::put('password_reset_code_' . $email, $code, now()->addMinutes(15));
+        Cache::put('password_reset_code_'.$email, $code, now()->addMinutes(15));
 
         // Always log OTP for local debugging
-        \Illuminate\Support\Facades\Log::info("[Password Recovery Code] OTP Code for {$email} is: {$code}");
+        Log::info("[Password Recovery Code] OTP Code for {$email} is: {$code}");
 
         // Call Resend API to send the email
         try {
             $apiKey = env('RESEND_API_KEY');
             $response = Http::withoutVerifying()->withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
+                'Authorization' => 'Bearer '.$apiKey,
                 'Content-Type' => 'application/json',
             ])->post('https://api.resend.com/emails', [
                 'from' => 'GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Recovery <onboarding@resend.dev>',
                 'to' => [$email],
                 'subject' => 'GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Account Password Reset Code',
-                'html' => '<h3>Reset Your Password</h3><p>Hello,</p><p>You requested a password reset for your GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION account. Use the verification code below to proceed:</p><h2 style="color: #11428E; letter-spacing: 2px;">' . $code . '</h2><p>This code is valid for 15 minutes.</p><p>If you did not request this, you can safely ignore this email.</p><br><p>Best regards,<br>The GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Team</p>',
+                'html' => '<h3>Reset Your Password</h3><p>Hello,</p><p>You requested a password reset for your GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION account. Use the verification code below to proceed:</p><h2 style="color: #11428E; letter-spacing: 2px;">'.$code.'</h2><p>This code is valid for 15 minutes.</p><p>If you did not request this, you can safely ignore this email.</p><br><p>Best regards,<br>The GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Team</p>',
             ]);
 
             if ($response->failed()) {
                 $responseBody = $response->body();
-                \Illuminate\Support\Facades\Log::error('[Resend Email failed] API Response: ' . $responseBody);
-                
+                Log::error('[Resend Email failed] API Response: '.$responseBody);
+
                 // If sandbox restriction, return code in response for testing convenience
                 if (strpos($responseBody, 'validation_error') !== false && strpos($responseBody, 'testing emails') !== false) {
                     return response()->json([
@@ -409,11 +413,12 @@ class AuthController extends Controller
                         'sandbox' => true,
                     ]);
                 }
-                
+
                 return response()->json(['error' => 'Failed to send recovery email. Please try again later.'], 500);
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('[Resend Exception] ' . $e->getMessage());
+            Log::error('[Resend Exception] '.$e->getMessage());
+
             return response()->json(['error' => 'Could not connect to recovery email service.'], 500);
         }
 
@@ -443,14 +448,14 @@ class AuthController extends Controller
 
         $user = User::where('email', $email)->where('role', $role)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'No account found with this email and role.'], 404);
         }
 
         // Verify stored code
-        $storedCode = Cache::get('password_reset_code_' . $email);
+        $storedCode = Cache::get('password_reset_code_'.$email);
 
-        if (!$storedCode || $storedCode !== $code) {
+        if (! $storedCode || $storedCode !== $code) {
             return response()->json(['error' => 'Invalid or expired verification code.'], 400);
         }
 
@@ -459,7 +464,7 @@ class AuthController extends Controller
         $user->save();
 
         // Clear cache
-        Cache::forget('password_reset_code_' . $email);
+        Cache::forget('password_reset_code_'.$email);
 
         return response()->json([
             'success' => true,
@@ -497,7 +502,7 @@ class AuthController extends Controller
         $section = trim($request->input('section', ''));
 
         if ($firstName !== '' && $lastName !== '') {
-            $fullName = trim($firstName . ($middleName !== '' ? ' ' . $middleName : '') . ' ' . $lastName);
+            $fullName = trim($firstName.($middleName !== '' ? ' '.$middleName : '').' '.$lastName);
         } else {
             $fullName = $name;
             $parts = explode(' ', $fullName);
@@ -525,12 +530,12 @@ class AuthController extends Controller
         $passwordHash = $this->hashPassword($password);
         $newStudentId = strtoupper(str_replace(' ', '-', $fullName));
         if (User::where('user_id', $newStudentId)->exists()) {
-            $newStudentId .= '-' . strtoupper(Str::random(4));
+            $newStudentId .= '-'.strtoupper(Str::random(4));
         }
 
         $normalized = strtoupper(preg_replace('/\s+/', '-', trim($newStudentId)));
-        $salt = "GURO_PARENT_SALT";
-        $combined = $normalized . $salt;
+        $salt = 'GURO_PARENT_SALT';
+        $combined = $normalized.$salt;
         $sum = 0;
         $len = strlen($combined);
         for ($i = 0; $i < $len; $i++) {
@@ -571,7 +576,7 @@ class AuthController extends Controller
     public function updateProfile(Request $request)
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
@@ -585,11 +590,11 @@ class AuthController extends Controller
         $middleName = trim($request->input('middle_name', ''));
         $lastName = trim($request->input('last_name'));
 
-        $fullName = trim($firstName . ($middleName !== '' ? ' ' . $middleName : '') . ' ' . $lastName);
+        $fullName = trim($firstName.($middleName !== '' ? ' '.$middleName : '').' '.$lastName);
 
         if ($user->role === 'student') {
             preg_match('/\(([^)]+)\)/', $user->user_id, $matches);
-            if (!empty($matches)) {
+            if (! empty($matches)) {
                 $section = $matches[1];
                 $fullName = "{$fullName} ({$section})";
             }

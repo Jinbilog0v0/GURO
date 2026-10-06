@@ -90,22 +90,22 @@ export function AppNavigator() {
       <Stack.Screen
         name="Study"
         component={StudyScreen}
-        options={{ title: 'Study Guide' }}
+        options={{ title: 'GURO Study Guide' }}
       />
       <Stack.Screen
         name="Assessment"
         component={AssessmentScreen}
-        options={{ title: 'Quiz Assessment' }}
+        options={{ title: 'GURO Assessment' }}
       />
       <Stack.Screen
         name="Details"
         component={DetailsScreen}
-        options={{ title: 'Report View' }}
+        options={{ title: 'GURO Report View' }}
       />
       <Stack.Screen
         name="StudentProgressReport"
         component={StudentProgressReportScreen}
-        options={{ title: "Learner's Progress Report" }}
+        options={{ title: "GURO Learner's Progress Report" }}
       />
     </Stack.Navigator>
   );

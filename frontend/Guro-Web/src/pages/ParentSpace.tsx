@@ -29,22 +29,27 @@ const RowRenderer = ({
   index,
   style,
   studentLogs,
-  lastUpdatedCell
+  lastUpdatedCell,
+  currentTime
 }: {
   index: number;
   style: React.CSSProperties;
   studentLogs: SyncedEvent[];
   lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null;
+  currentTime?: number;
 }) => {
   const log = studentLogs[index];
   if (!log) return null;
   const percentage = Math.round((log.score / log.totalQuestions) * 100);
   const isLast = index === studentLogs.length - 1;
+  const now = currentTime ?? (lastUpdatedCell ? lastUpdatedCell.timestamp : 0);
   const isRecentlyUpdated =
-    lastUpdatedCell &&
-    lastUpdatedCell.studentId.toLowerCase() === log.studentId.toLowerCase() &&
-    lastUpdatedCell.topic === log.topic &&
-    Date.now() - lastUpdatedCell.timestamp < 5000;
+    Boolean(
+      lastUpdatedCell &&
+      lastUpdatedCell.studentId.toLowerCase() === log.studentId.toLowerCase() &&
+      lastUpdatedCell.topic === log.topic &&
+      now - lastUpdatedCell.timestamp < 5000
+    );
 
   let pulseClass = '';
   if (isRecentlyUpdated) {
@@ -130,6 +135,16 @@ export function ParentSpace({
     return localStorage.getItem('guro_parent_searched') === 'true';
   });
   const [loading, setLoading] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!lastUpdatedCell) return;
+    setCurrentTime(Date.now());
+    const timer = setTimeout(() => {
+      setCurrentTime(Date.now());
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [lastUpdatedCell]);
 
   // Student creation states
   const [newStudentFirstName, setNewStudentFirstName] = useState('');
@@ -191,6 +206,7 @@ export function ParentSpace({
 
   // Load initial logs on mount if already searched
   useEffect(() => {
+    let isMounted = true;
     if (searched && studentIdInput.trim() && accessCodeInput.trim()) {
       const fetchLogsOnMount = async () => {
         setLoading(true);
@@ -199,22 +215,29 @@ export function ParentSpace({
           const response = await apiFetch(`/api/progress?studentId=${encodeURIComponent(studentIdInput.trim())}&accessCode=${encodeURIComponent(accessCodeInput.trim())}`);
           if (response.ok) {
             const data = await response.json();
-            setStudentLogs(data);
+            if (isMounted) setStudentLogs(data);
           } else {
             const errData = await response.json().catch(() => ({}));
-            setErrorMsg(errData.error || 'Failed to retrieve logs. Please verify the credentials.');
-            setStudentLogs([]);
+            if (isMounted) {
+              setErrorMsg(errData.error || 'Failed to retrieve logs. Please verify the credentials.');
+              setStudentLogs([]);
+            }
           }
         } catch (err) {
           console.error('[ParentSpace] Fetch logs error:', err);
-          setErrorMsg('A network error occurred. Please try again.');
-          setStudentLogs([]);
+          if (isMounted) {
+            setErrorMsg('A network error occurred. Please try again.');
+            setStudentLogs([]);
+          }
         } finally {
-          setLoading(false);
+          if (isMounted) setLoading(false);
         }
       };
       fetchLogsOnMount();
     }
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -430,11 +453,11 @@ export function ParentSpace({
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div className="form-group" style={{ flex: 1, minWidth: '200px' }}>
               <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
-                Child's Device or Student ID
+                Child's Name (Last Name, First Name) or Student ID
               </label>
               <input
                 type="text"
-                placeholder="e.g. GURO-STUDENT-LOCAL"
+                placeholder="e.g. Cruz, Juan or Student ID"
                 value={studentIdInput}
                 onChange={(e) => setStudentIdInput(e.target.value)}
                 className="form-control"
@@ -492,7 +515,7 @@ export function ParentSpace({
           <div className="glass-panel text-center px-10 py-15 flex flex-col items-center gap-3">
             <Inbox className="size-12 text-slate-500 opacity-40" />
             <p className="text-[15px] font-bold text-[var(--text-main)]">
-              No reports registered for device ID <strong>"{studentIdInput}"</strong>.
+              No reports registered for <strong>"{studentIdInput}"</strong>.
             </p>
             <p className="text-xs text-[var(--text-muted)] max-w-[450px] leading-[18px]">
               Ensure your child has submitted quiz results in their mobile app and that you have clicked "Sync Progress Now" in the mobile Parent Space.
@@ -542,12 +565,12 @@ export function ParentSpace({
                     <Calendar size={18} className="text-[var(--accent-primary)] shrink-0" />
                     <span>Practice Timeline History</span>
                   </h3>
-                  <List<{ studentLogs: SyncedEvent[]; lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null }>
+                  <List<{ studentLogs: SyncedEvent[]; lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null; currentTime: number }>
                     style={{ overflowX: 'hidden', height: 500, width: '100%' }}
                     rowCount={studentLogs.length}
                     rowHeight={115}
                     rowComponent={RowRenderer}
-                    rowProps={{ studentLogs, lastUpdatedCell }}
+                    rowProps={{ studentLogs, lastUpdatedCell, currentTime }}
                   />
                 </div>
               </div>
@@ -558,9 +581,9 @@ export function ParentSpace({
         /* Prompt to search */
         <div className="glass-panel text-center px-10 py-15 flex flex-col items-center gap-3">
           <BarChart3 className="size-12 text-[var(--accent-primary)] opacity-60" />
-          <p className="text-[15px] font-bold text-[var(--text-main)]">Enter a Student ID and Access Code to query performance history</p>
+          <p className="text-[15px] font-bold text-[var(--text-main)]">Search for your child by Name (Last Name, First Name) or Student ID and Access Code</p>
           <p className="text-xs text-[var(--text-muted)] max-w-[450px] leading-[18px]">
-            You can find the Student ID and the 6-Digit Parent Access Code on the home dashboard settings modal of the child's mobile app.
+            Enter your child's name in standard format (e.g. "Cruz, Juan"), their Student ID, or email, along with the 6-Digit Parent Access Code to query synced performance history.
           </p>
         </div>
       )}

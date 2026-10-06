@@ -69,7 +69,7 @@ class GeminiService
         }
 
         $prompt .= "- Feedback: Provide detailed step-by-step explanations in English for why the correct answer is right (populate both 'en' and 'fil' feedback keys).\n".
-                   "- Educational Visuals: Suggest relevant Unsplash educational photo URLs for studyContent and question visual aids where helpful.";
+                   '- Educational Visuals: Suggest relevant Unsplash educational photo URLs for studyContent and question visual aids where helpful.';
 
         $parts[] = ['text' => $prompt];
 
@@ -104,11 +104,11 @@ class GeminiService
                     'properties' => [
                         'introduction' => [
                             'type' => 'STRING',
-                            'description' => 'A welcoming, engaging, child-friendly introduction to the topic suitable for Grade ' . $grade . ' students.'
+                            'description' => 'A welcoming, engaging, child-friendly introduction to the topic suitable for Grade '.$grade.' students.',
                         ],
                         'imageUrl' => [
                             'type' => 'STRING',
-                            'description' => 'Optional. A valid high-quality educational illustration or photo URL from Unsplash representing the topic.'
+                            'description' => 'Optional. A valid high-quality educational illustration or photo URL from Unsplash representing the topic.',
                         ],
                         'definitions' => [
                             'type' => 'ARRAY',
@@ -118,46 +118,46 @@ class GeminiService
                                 'properties' => [
                                     'term' => [
                                         'type' => 'STRING',
-                                        'description' => 'The vocabulary term or core concept.'
+                                        'description' => 'The vocabulary term or core concept.',
                                     ],
                                     'definition' => [
                                         'type' => 'STRING',
-                                        'description' => 'A simple, child-friendly definition.'
+                                        'description' => 'A simple, child-friendly definition.',
                                     ],
                                     'examples' => [
                                         'type' => 'ARRAY',
                                         'description' => '2-3 simple, relatable real-world examples illustrating the term.',
-                                        'items' => ['type' => 'STRING']
+                                        'items' => ['type' => 'STRING'],
                                     ],
                                     'imageUrl' => [
                                         'type' => 'STRING',
-                                        'description' => 'Optional. A valid high-quality educational illustration or photo URL from Unsplash representing this term/concept.'
+                                        'description' => 'Optional. A valid high-quality educational illustration or photo URL from Unsplash representing this term/concept.',
                                     ],
                                 ],
-                                'required' => ['term', 'definition', 'examples']
-                            ]
+                                'required' => ['term', 'definition', 'examples'],
+                            ],
                         ],
                         'orderIndex' => [
                             'type' => 'INTEGER',
-                            'description' => 'Sequential lesson order index (e.g. 1, 2, 3...) indicating pedagogical progression order within the grade level.'
+                            'description' => 'Sequential lesson order index (e.g. 1, 2, 3...) indicating pedagogical progression order within the grade level.',
                         ],
                         'quarter' => [
                             'type' => 'STRING',
-                            'description' => 'Academic term or DepEd quarter, e.g. "Quarter 1", "Quarter 2", "Quarter 3", "Quarter 4".'
+                            'description' => 'Academic term or DepEd quarter, e.g. "Quarter 1", "Quarter 2", "Quarter 3", "Quarter 4".',
                         ],
                         'bloomLevel' => [
                             'type' => 'STRING',
-                            'description' => 'Primary Bloom cognitive level for this lesson (e.g., "Remembering", "Understanding", "Applying", "Analyzing").'
+                            'description' => 'Primary Bloom cognitive level for this lesson (e.g., "Remembering", "Understanding", "Applying", "Analyzing").',
                         ],
                         'prerequisites' => [
                             'type' => 'ARRAY',
                             'description' => 'Optional list of prerequisite topic names that should precede this lesson.',
-                            'items' => ['type' => 'STRING']
+                            'items' => ['type' => 'STRING'],
                         ],
                         'summary' => [
                             'type' => 'ARRAY',
                             'description' => 'A bulleted list of 3-5 key takeaway points of the lesson.',
-                            'items' => ['type' => 'STRING']
+                            'items' => ['type' => 'STRING'],
                         ],
                         'refresherQuiz' => [
                             'type' => 'ARRAY',
@@ -167,27 +167,27 @@ class GeminiService
                                 'properties' => [
                                     'questionText' => [
                                         'type' => 'STRING',
-                                        'description' => 'A simple, quick question about the concepts introduced.'
+                                        'description' => 'A simple, quick question about the concepts introduced.',
                                     ],
                                     'options' => [
                                         'type' => 'ARRAY',
                                         'description' => 'Exactly 3 simple, child-friendly options.',
-                                        'items' => ['type' => 'STRING']
+                                        'items' => ['type' => 'STRING'],
                                     ],
                                     'correctAnswer' => [
                                         'type' => 'STRING',
-                                        'description' => 'The correct option value, which must match exactly one of the options.'
+                                        'description' => 'The correct option value, which must match exactly one of the options.',
                                     ],
                                     'explanation' => [
                                         'type' => 'STRING',
-                                        'description' => 'A short, positive, child-friendly explanation for why this is correct.'
-                                    ]
+                                        'description' => 'A short, positive, child-friendly explanation for why this is correct.',
+                                    ],
                                 ],
-                                'required' => ['questionText', 'options', 'correctAnswer', 'explanation']
-                            ]
-                        ]
+                                'required' => ['questionText', 'options', 'correctAnswer', 'explanation'],
+                            ],
+                        ],
                     ],
-                    'required' => ['introduction', 'definitions', 'summary', 'refresherQuiz', 'imageUrl']
+                    'required' => ['introduction', 'definitions', 'summary', 'refresherQuiz', 'imageUrl'],
                 ],
                 'questions' => [
                     'type' => 'ARRAY',
@@ -214,11 +214,11 @@ class GeminiService
                                     'properties' => [
                                         'key' => [
                                             'type' => 'STRING',
-                                            'description' => 'The word or phrase on the left side.'
+                                            'description' => 'The word or phrase on the left side.',
                                         ],
                                         'value' => [
                                             'type' => 'STRING',
-                                            'description' => 'The matching word or phrase on the right side.'
+                                            'description' => 'The matching word or phrase on the right side.',
                                         ],
                                     ],
                                     'required' => ['key', 'value'],
@@ -289,7 +289,7 @@ class GeminiService
                 }
             }
 
-            if (!isset($result['studyContent']['orderIndex']) || !is_numeric($result['studyContent']['orderIndex'])) {
+            if (! isset($result['studyContent']['orderIndex']) || ! is_numeric($result['studyContent']['orderIndex'])) {
                 $result['studyContent']['orderIndex'] = 1;
             }
             if (empty($result['studyContent']['quarter'])) {
@@ -310,7 +310,7 @@ class GeminiService
                     $q['matchingPairs'] = $pairs;
                 }
 
-                if (!empty($q['imageUrl'])) {
+                if (! empty($q['imageUrl'])) {
                     $q['imageUrl'] = self::resolveEducationalVisual(
                         $q['imageUrl'],
                         $subject,

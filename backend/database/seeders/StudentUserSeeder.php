@@ -1,9 +1,9 @@
 <?php
+
 namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class StudentUserSeeder extends Seeder
 {
@@ -11,19 +11,21 @@ class StudentUserSeeder extends Seeder
     {
         $salt = bin2hex(random_bytes(16));
         $hash = hash_pbkdf2('sha512', $password, $salt, 1000, 64);
+
         return "{$salt}:{$hash}";
     }
 
     private function getParentAccessCode(string $studentId): string
     {
         $normalized = strtoupper(preg_replace('/\s+/', '-', trim($studentId)));
-        $salt = "GURO_PARENT_SALT";
-        $combined = $normalized . $salt;
+        $salt = 'GURO_PARENT_SALT';
+        $combined = $normalized.$salt;
         $sum = 0;
         $len = strlen($combined);
         for ($i = 0; $i < $len; $i++) {
             $sum += ord($combined[$i]) * ($i + 1);
         }
+
         return (string) (100000 + ($sum % 900000));
     }
 
@@ -34,7 +36,7 @@ class StudentUserSeeder extends Seeder
         $name = 'Sample Student';
         $studentId = 'SAMPLE-STUDENT';
 
-        if (!User::where('email', $email)->exists()) {
+        if (! User::where('email', $email)->exists()) {
             User::create([
                 'user_id' => 'SAMPLE-STUDENT',
                 'email' => $email,

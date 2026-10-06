@@ -216,7 +216,7 @@ export function LessonsScreen() {
       <View style={styles.headerBar}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <Text style={styles.headerTitle}>Lessons</Text>
+            <Text style={styles.headerTitle}>GURO Lessons</Text>
             <View style={{
               flexDirection: 'row',
               alignItems: 'center',

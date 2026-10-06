@@ -48,7 +48,7 @@ import {
 import { toast } from '../components';
 
 import { Colors } from '../theme/colors';
-import { Fonts, FontSizes } from '../theme/typography';
+import { Fonts, FontSizes, LetterSpacing } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
 import { Badges } from '../theme/styles';
 import { GlassCard } from '../components/ui/GlassCard';
@@ -366,8 +366,29 @@ export function StudentDashboard() {
       {/* Header */}
       <View style={styles.headerBar}>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
-            GURO
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.accentPrimary, letterSpacing: LetterSpacing.tight }}>
+              GURO
+            </Text>
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              backgroundColor: 'rgba(17,66,142,0.08)',
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: 'rgba(17,66,142,0.15)',
+            }}>
+              <Calendar size={11} color={Colors.accentPrimary} />
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                S.Y. {activeSchoolYear} • {activeTerm}
+              </Text>
+            </View>
+          </View>
+          <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
+            DepEd-Aligned Interactive Learning
           </Text>
         </View>
         <SyncBadge />
@@ -441,30 +462,24 @@ export function StudentDashboard() {
             </TouchableOpacity>
             
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.white }}>
-                Welcome back, {studentName}!
-              </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 2 }}>
+                <View style={{
+                  backgroundColor: 'rgba(255,255,255,0.22)',
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  borderRadius: Radius.full,
+                }}>
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 9, color: Colors.white, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Student Dashboard
+                  </Text>
+                </View>
                 <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: 'rgba(255,255,255,0.9)' }}>
                   Level {level} Explorer
                 </Text>
-                <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  backgroundColor: 'rgba(255,255,255,0.18)',
-                  paddingHorizontal: 8,
-                  paddingVertical: 3,
-                  borderRadius: Radius.full,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.25)',
-                }}>
-                  <Calendar size={11} color={Colors.white} />
-                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.white }}>
-                    S.Y. {activeSchoolYear} • {activeTerm}
-                  </Text>
-                </View>
               </View>
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.white }}>
+                Welcome back, {studentName}!
+              </Text>
             </View>
           </View>
 

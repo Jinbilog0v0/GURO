@@ -52,7 +52,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test": "jest --testTimeout=30000"
+    "test": "jest --testTimeout=30000 --forceExit"
   },
   "jest": {
     "preset": "jest-expo",

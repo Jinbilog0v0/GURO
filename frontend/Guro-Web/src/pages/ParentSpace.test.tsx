@@ -42,6 +42,7 @@ describe('ParentSpace Page', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
   });
 
   test('renders the Parent Progress Explorer header', () => {
@@ -51,7 +52,7 @@ describe('ParentSpace Page', () => {
 
   test('prompts to search when no student is searched', () => {
     render(<ParentSpace progressLogs={mockProgressLogs} lastUpdatedCell={null} />);
-    expect(screen.getByText('Enter a Student ID and Access Code to query performance history')).toBeInTheDocument();
+    expect(screen.getByText(/Search for your child by Name/i)).toBeInTheDocument();
   });
 
   test('searches for a student and displays their stats', async () => {
@@ -65,7 +66,7 @@ describe('ParentSpace Page', () => {
 
     render(<ParentSpace progressLogs={mockProgressLogs} lastUpdatedCell={null} />);
     
-    const idInput = screen.getByPlaceholderText('e.g. GURO-STUDENT-LOCAL');
+    const idInput = screen.getByPlaceholderText(/e\.g\. Cruz, Juan or Student ID/i);
     const codeInput = screen.getByPlaceholderText('e.g. 123456');
     const searchBtn = screen.getByRole('button', { name: /Search Reports/i });
 
@@ -78,7 +79,8 @@ describe('ParentSpace Page', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Completed Quests')).toBeInTheDocument();
-    }, { timeout: 1000 });
+      expect(screen.queryByText('Retrieving learning curves...')).not.toBeInTheDocument();
+    }, { timeout: 2000 });
 
     expect(screen.getByText('2')).toBeInTheDocument(); // 2 quests
     expect(screen.getByText('85%')).toBeInTheDocument(); // Avg of 80 and 90
@@ -100,7 +102,7 @@ describe('ParentSpace Page', () => {
 
     render(<ParentSpace progressLogs={mockProgressLogs} lastUpdatedCell={null} />);
     
-    const idInput = screen.getByPlaceholderText('e.g. GURO-STUDENT-LOCAL');
+    const idInput = screen.getByPlaceholderText(/e\.g\. Cruz, Juan or Student ID/i);
     const codeInput = screen.getByPlaceholderText('e.g. 123456');
     const searchBtn = screen.getByRole('button', { name: /Search Reports/i });
 
@@ -109,14 +111,15 @@ describe('ParentSpace Page', () => {
     fireEvent.click(searchBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/No reports registered for device ID/i)).toBeInTheDocument();
-    }, { timeout: 1000 });
+      expect(screen.getByText(/No reports registered for/i)).toBeInTheDocument();
+      expect(screen.queryByText('Retrieving learning curves...')).not.toBeInTheDocument();
+    }, { timeout: 2000 });
   });
 
   test('clears inputs when Clear button is clicked', () => {
     render(<ParentSpace progressLogs={mockProgressLogs} lastUpdatedCell={null} />);
     
-    const idInput = screen.getByPlaceholderText('e.g. GURO-STUDENT-LOCAL') as HTMLInputElement;
+    const idInput = screen.getByPlaceholderText(/e\.g\. Cruz, Juan or Student ID/i) as HTMLInputElement;
     const codeInput = screen.getByPlaceholderText('e.g. 123456') as HTMLInputElement;
     
     fireEvent.change(idInput, { target: { value: 'STUDENT-1' } });

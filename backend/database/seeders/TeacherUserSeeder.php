@@ -38,7 +38,7 @@ class TeacherUserSeeder extends Seeder
         }
 
         $email2 = 'teacher@guro.dev';
-        if (!User::where('email', $email2)->exists()) {
+        if (! User::where('email', $email2)->exists()) {
             User::create([
                 'user_id' => 'USR-TEACHER',
                 'email' => $email2,

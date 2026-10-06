@@ -244,9 +244,14 @@ SIGNATORIES:
   }
 
   const roster = reportData?.roster || [];
-  const filteredRoster = roster.filter(s => 
-    !searchFilter.trim() || s.studentId.toLowerCase().includes(searchFilter.toLowerCase())
-  );
+  const filteredRoster = roster.filter(s => {
+    if (!searchFilter.trim()) return true;
+    const lower = searchFilter.toLowerCase();
+    const terms = lower.replace(/,/g, ' ').split(/\s+/).filter(Boolean);
+    const idLower = s.studentId.toLowerCase();
+    const nameLower = (s.studentName || '').toLowerCase();
+    return terms.every(t => idLower.includes(t) || nameLower.includes(t));
+  });
 
   const eligibleCount = roster.filter(s => s.status === 'ELIGIBLE FOR PROMOTION').length;
   const promotedCount = roster.filter(s => s.status.toLowerCase() === 'promoted').length;

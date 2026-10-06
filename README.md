@@ -76,27 +76,32 @@ Category dropdown options and interactive question types in the manual lesson bu
   - 🔴 **Retained** ($< 60\%$)
 * **Batch Promotion Execution:** Teachers select eligible learners to execute grade-level promotions (e.g. Grade 4 $\to$ Grade 5, Grade 5 $\to$ Grade 6). Promotions automatically archive permanent transcripts into the `student_academic_records` table.
 * **Official SF9 Printout:** Teachers can generate and print official School Form 9 (SF9) Learner Progress Reports complete with DepEd header, quarterly grades, pre/post gain summary, and certificate of promotion.
+### 10. Teacher Institutional Verification Gate
+* **Application Screening:** Public self-registration for teachers places the new account in a `pending` status.
+* **Administrative Approval:** Administrators review institutional credentials (school name, teacher ID, document verification) from the Staff & IT Console (`/api/admin/teacher-verifications`). Teachers cannot create live classrooms until officially approved.
 
 ---
 
-## Default Administrative Credentials (Seeded)
+## Default Seeded Credentials
 
-For local development and testing, default administrative credentials can be seeded via `php artisan db:seed --class=DeveloperUserSeeder`:
-* **Email:** `nealjeanclaro@guro.dev`
-* **Password:** `JinBilog0v0`
-* **Role:** `developer` / `admin`
-* **Default Admin Passkey:** `GURO_ADMIN_SECRET_2026` (configurable via `ADMIN_REGISTRATION_KEY` in `.env`)
+For local development and testing, default credentials can be seeded via `php artisan db:seed`:
+
+| Role | Email | Password | Details / Notes |
+| :--- | :--- | :--- | :--- |
+| **Developer / Admin** | `nealjeanclaro@guro.dev` | `JinBilog0v0` | Full administrative & dev controls (`Admin Passkey: GURO_ADMIN_SECRET_2026`) |
+| **Teacher** | `teacher@guro.dev` | `Password123` | Approved teacher account with classroom management & SF9 generation |
+| **Parent** | `parent@guro.dev` | `Password123` | Pre-linked parent profile with student progress telemetry access |
 
 ---
 
 ## Project Structure
 
 ```text
-GURO-App/
-├── backend/            # Laravel backend API server
-└── frontend/           # Frontend client workspace
-    ├── Guro-Mobile/    # React Native client application
-    └── Guro-Web/       # React/Vite teacher and parent administration web portal
+GURO/
+├── backend/            # Laravel backend API server & Gemini AI service
+└── frontend/           # Multi-client frontend workspace
+    ├── Guro-Mobile/    # React Native / Expo offline-first learner application
+    └── Guro-Web/       # React/Vite teacher, parent & staff administration portal
 ```
 
 ---
@@ -110,6 +115,7 @@ composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate
+php artisan db:seed
 php artisan serve
 ```
 
@@ -129,9 +135,20 @@ npx expo start
 
 ---
 
-## Test Suites
+## Test Suites & Code Quality
 
-Run the test suites in their respective directories:
-* **Backend:** `./vendor/bin/pest`
-* **Web Portal:** `npm run test`
-* **Mobile App:** `npm run test`
+Run the test and verification suites in their respective project directories:
+
+### Backend (Laravel API)
+* **Code Style (Pint):** `vendor/bin/pint --test` (or `vendor/bin/pint` to auto-fix)
+* **Feature & Unit Tests (Pest):** `php artisan test`
+
+### Web Portal (Guro-Web)
+* **Linter (ESLint):** `npm run lint`
+* **Type Check (TypeScript):** `npx tsc -b`
+* **Component & Page Tests (Jest):** `npm run test`
+* **Production Build (Vite):** `npm run build`
+
+### Mobile App (Guro-Mobile)
+* **Type Check (TypeScript):** `npx tsc --noEmit`
+* **Unit, Flow & Store Tests (Jest-Expo):** `npm run test`

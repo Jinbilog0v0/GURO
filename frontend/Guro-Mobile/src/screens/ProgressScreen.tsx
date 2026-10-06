@@ -138,7 +138,7 @@ export function ProgressScreen() {
       <View style={styles.headerBar}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <Text style={styles.headerTitle}>Progress</Text>
+            <Text style={styles.headerTitle}>GURO Progress</Text>
             <View style={{
               flexDirection: 'row',
               alignItems: 'center',

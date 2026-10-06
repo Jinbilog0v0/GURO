@@ -39,6 +39,7 @@ import { PinPad } from '../components/shared/PinPad';
 import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { SyncBadge } from '../components/shared/SyncBadge';
 import { styles } from '../styles/ProfileScreen.styles';
 import { toast } from '../components';
 
@@ -206,8 +207,11 @@ export function ProfileScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerTitle}>Student Profile</Text>
-        <Text style={styles.headerSubtitle}>Account &amp; learning preferences.</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>GURO Profile</Text>
+          <Text style={styles.headerSubtitle}>Account &amp; learning preferences.</Text>
+        </View>
+        <SyncBadge />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

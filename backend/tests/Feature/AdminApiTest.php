@@ -1,17 +1,17 @@
 <?php
 
-use App\Models\User;
 use App\Models\Classroom;
-use App\Models\ClassroomMember;
 use App\Models\ProgressLog;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-function createAdminUser() {
+function createAdminUser()
+{
     $salt = bin2hex(random_bytes(16));
     $hash = hash_pbkdf2('sha512', 'adminpass123', $salt, 1000, 64);
-    
+
     return User::create([
         'user_id' => 'USR-ADMIN01',
         'email' => 'admin@guro.dev',
@@ -333,4 +333,3 @@ it('can delete a teacher verification application from admin side', function () 
 
     expect(User::where('user_id', 'USR-DEL-TEACH')->exists())->toBeFalse();
 });
-

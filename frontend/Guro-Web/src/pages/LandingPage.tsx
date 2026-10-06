@@ -53,7 +53,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
     const [idDocument, setIdDocument] = useState<string | null>(null);
     const [idDocumentName, setIdDocumentName] = useState('');
     const [roleSelection, setRoleSelection] = useState('teacher');
-    const [loginRole, setLoginRole] = useState<'student' | 'teacher' | 'parent'>('teacher');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [authError, setAuthError] = useState('');
     const [pendingNotice, setPendingNotice] = useState<string | null>(null);
@@ -130,7 +129,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                 body: JSON.stringify({ 
                     email: email.trim(), 
                     password,
-                    role: isAdminMode ? 'admin' : loginRole
+                    role: isAdminMode ? 'admin' : undefined
                 }),
             });
             if (res.ok) {
@@ -223,7 +222,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                 // If this is a teacher account, they must wait for admin verification
                 if (data.pendingVerification || data.user?.verificationStatus === 'pending' || effectiveRole === 'teacher') {
                     setView('login');
-                    setLoginRole('teacher');
                     setPendingNotice('Teacher registration submitted! Your institutional credentials are now pending System Admin verification. Please wait for admin approval before logging in.');
                     toast.success('Registration submitted! Please wait for admin approval before signing in.', { duration: 6000 });
                     setPassword('');
@@ -328,17 +326,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
         },
     ];
 
-    // ── Shared sub-components ─────────────────────────────────────────────────
-
-    const Brand = () => (
-        <div className="flex flex-col items-center gap-1 text-center">
-            <GuroLogoGraphic onClick={handleLogoClick} />
-            <h1 className="text-5xl font-extrabold tracking-tight text-[#11428E] mt-1">GURO</h1>
-            <p className="text-base font-semibold text-[#A01322]">GUIDED UNIFIED RESOURCE OPTIMIZATION</p>
-            <p className="text-sm text-[var(--text-muted)] mt-0.5">Your Learning Companion for Math &amp; English</p>
-        </div>
-    );
-
     // ── Input field helper ────────────────────────────────────────────────────
 
     const inputCls = "w-full pl-10 pr-4 py-3 bg-[var(--bg-main)]/60 border border-[var(--border-color)] rounded-xl text-[var(--text-main)] placeholder-[var(--text-dark)] text-sm focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 transition-all";
@@ -393,7 +380,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
 
             <div className="flex w-full max-w-5xl flex-col items-center gap-10 relative z-10">
 
-                <Brand />
+                <div className="flex flex-col items-center gap-1 text-center">
+                    <GuroLogoGraphic onClick={handleLogoClick} />
+                    <h1 className="text-5xl font-extrabold tracking-tight text-[#11428E] mt-1">GURO</h1>
+                    <p className="text-base font-semibold text-[#A01322]">GUIDED UNIFIED RESOURCE OPTIMIZATION</p>
+                    <p className="text-sm text-[var(--text-muted)] mt-0.5">Your Learning Companion for Math &amp; English</p>
+                </div>
 
                 {/* ── Login ── */}
                 {view === 'login' && (
@@ -443,8 +435,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                         )}
 
                         <form onSubmit={handleLogin} className="flex flex-col gap-4">
-                            {/* Role selection for Sign In */}
-                            {isAdminMode ? (
+                            {/* Admin mode indicator if active */}
+                            {isAdminMode && (
                                 <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-semibold">
                                     <div className="flex items-center gap-2">
                                         <Terminal className="size-4 text-emerald-400" />
@@ -457,31 +449,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                     >
                                         Standard Mode
                                     </button>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col gap-1.5">
-                                    <label className={labelCls}>Specify Role</label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {(['teacher', 'student', 'parent'] as const).map((r) => {
-                                            const active = loginRole === r;
-                                            const IconComponent = r === 'teacher' ? School : r === 'student' ? GraduationCap : Users;
-                                            return (
-                                                <button
-                                                    key={r}
-                                                    type="button"
-                                                    onClick={() => { setLoginRole(r); setAuthError(''); }}
-                                                    className={`py-2 px-3 rounded-xl border text-xs font-bold capitalize cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
-                                                        active
-                                                            ? 'bg-[#11428E]/20 border-[#11428E] text-[#3b82f6]'
-                                                            : 'bg-[var(--bg-main)]/50 border-[var(--border-color)] text-[var(--text-muted)] hover:bg-[var(--bg-main)]'
-                                                    }`}
-                                                >
-                                                    <IconComponent size={14} className={active ? 'text-[#3b82f6]' : 'text-[var(--text-dark)]'} />
-                                                    <span>{r}</span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
                                 </div>
                             )}
 

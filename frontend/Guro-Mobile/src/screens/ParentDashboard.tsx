@@ -602,7 +602,7 @@ export function ParentDashboard({ navigation }: Props) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flex: 1 }}>
           <View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <Text style={styles.headerTitle}>Parent Progress Explorer</Text>
+              <Text style={styles.headerTitle}>GURO Parent Explorer</Text>
               <View style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -654,11 +654,11 @@ export function ParentDashboard({ navigation }: Props) {
           />
 
           <ThemedTextInput
-            label="Child's Device or Student ID"
-            placeholder="e.g. GURO-STUDENT-LOCAL"
+            label="Child's Name (Last Name, First Name) or Student ID"
+            placeholder="e.g. Cruz, Juan or Student ID"
             value={searchStudentId}
             onChangeText={setSearchStudentId}
-            autoCapitalize="characters"
+            autoCapitalize="words"
             containerStyle={{ marginBottom: Spacing.md }}
           />
 
@@ -714,7 +714,7 @@ export function ParentDashboard({ navigation }: Props) {
               <View style={{ alignItems: 'center', paddingVertical: Spacing.xl, gap: Spacing.sm }}>
                 <ClipboardList size={36} color={Colors.textDark} style={{ opacity: 0.5 }} />
                 <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.md, color: Colors.textMain, textAlign: 'center' }}>
-                  No reports registered for device ID "{searchStudentId}"
+                  No reports registered for "{searchStudentId}"
                 </Text>
                 <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted, textAlign: 'center', paddingHorizontal: Spacing.md }}>
                   Ensure your child has submitted quiz results in their mobile app and that you have clicked "Sync Progress Now" in the mobile Parent Space.

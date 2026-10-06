@@ -13,45 +13,45 @@ return new class extends Migration
     {
         // 1. Add academic year and term to classrooms
         Schema::table('classrooms', function (Blueprint $table) {
-            if (!Schema::hasColumn('classrooms', 'school_year')) {
+            if (! Schema::hasColumn('classrooms', 'school_year')) {
                 $table->string('school_year', 20)->default('2026-2027')->after('grade_level');
             }
-            if (!Schema::hasColumn('classrooms', 'term')) {
+            if (! Schema::hasColumn('classrooms', 'term')) {
                 $table->string('term', 20)->default('Quarter 1')->after('school_year');
             }
         });
 
         // 2. Add assessment_type, school_year, and term to progress_logs
         Schema::table('progress_logs', function (Blueprint $table) {
-            if (!Schema::hasColumn('progress_logs', 'assessment_type')) {
+            if (! Schema::hasColumn('progress_logs', 'assessment_type')) {
                 $table->string('assessment_type', 30)->default('practice')->after('difficulty'); // 'pre-test', 'post-test', 'practice', 'checkpoint'
             }
-            if (!Schema::hasColumn('progress_logs', 'school_year')) {
+            if (! Schema::hasColumn('progress_logs', 'school_year')) {
                 $table->string('school_year', 20)->default('2026-2027')->after('assessment_type');
             }
-            if (!Schema::hasColumn('progress_logs', 'term')) {
+            if (! Schema::hasColumn('progress_logs', 'term')) {
                 $table->string('term', 20)->default('Quarter 1')->after('school_year');
             }
         });
 
         // 3. Add promotion tracking columns to classroom_members
         Schema::table('classroom_members', function (Blueprint $table) {
-            if (!Schema::hasColumn('classroom_members', 'status')) {
+            if (! Schema::hasColumn('classroom_members', 'status')) {
                 $table->string('status', 30)->default('enrolled')->after('student_id'); // 'enrolled', 'promoted', 'retained', 'remedial'
             }
-            if (!Schema::hasColumn('classroom_members', 'promoted_to_grade')) {
+            if (! Schema::hasColumn('classroom_members', 'promoted_to_grade')) {
                 $table->integer('promoted_to_grade')->nullable()->after('status');
             }
-            if (!Schema::hasColumn('classroom_members', 'final_average')) {
+            if (! Schema::hasColumn('classroom_members', 'final_average')) {
                 $table->float('final_average')->nullable()->after('promoted_to_grade');
             }
-            if (!Schema::hasColumn('classroom_members', 'promoted_at')) {
+            if (! Schema::hasColumn('classroom_members', 'promoted_at')) {
                 $table->timestamp('promoted_at')->nullable()->after('final_average');
             }
         });
 
         // 4. Create student_academic_records for long-term SF9/SF10 transcripts
-        if (!Schema::hasTable('student_academic_records')) {
+        if (! Schema::hasTable('student_academic_records')) {
             Schema::create('student_academic_records', function (Blueprint $table) {
                 $table->id();
                 $table->string('student_id', 100);

@@ -48,7 +48,7 @@ interface TeacherSpaceProps {
 const getCategoriesAndTypes = (currentSubject: string, currentGrade: string | number) => {
   const gNum = Number(currentGrade);
   let categories: string[] = [];
-  let types = ['multiple-choice', 'fill-in-the-blank', 'drag-drop-matching', 'true-false'];
+  const types = ['multiple-choice', 'fill-in-the-blank', 'drag-drop-matching', 'true-false'];
 
   if (currentSubject.toLowerCase() === 'mathematics') {
     if (gNum === 4) {
@@ -420,12 +420,20 @@ export function TeacherSpace({
   const [selectedModules, setSelectedModules] = useState<{subject: string; grade: string; topic: string}[]>([]);
 
   useEffect(() => {
+    let isMounted = true;
     if (activeSubTab === 'classroom-pairing' && !globalBank) {
       apiFetch('/api/item-bank')
         .then(res => res.json())
-        .then(data => setGlobalBank(data))
-        .catch(err => console.error('Error loading global templates:', err));
+        .then(data => {
+          if (isMounted) setGlobalBank(data);
+        })
+        .catch(err => {
+          if (isMounted) console.error('Error loading global templates:', err);
+        });
     }
+    return () => {
+      isMounted = false;
+    };
   }, [activeSubTab, globalBank]);
 
   useEffect(() => {
@@ -492,9 +500,19 @@ export function TeacherSpace({
   const filteredLogs = progressLogs.filter((log) => {
     const matchesClassroom = !classroomCode || !log.classroomId || log.classroomId.toUpperCase() === classroomCode.toUpperCase();
     
-    const matchesSearch =
-      log.studentId.toLowerCase().includes(filterText.toLowerCase()) ||
-      log.topic.toLowerCase().includes(filterText.toLowerCase());
+    let matchesSearch = true;
+    if (filterText) {
+      const lowerSearch = filterText.toLowerCase();
+      const terms = lowerSearch.replace(/,/g, ' ').split(/\s+/).filter(Boolean);
+      const studentIdLower = log.studentId.toLowerCase();
+      const topicLower = log.topic.toLowerCase();
+      const { name } = parseStudentId(log.studentId);
+      const nameLower = name.toLowerCase();
+
+      matchesSearch = 
+        terms.every(t => studentIdLower.includes(t) || nameLower.includes(t)) ||
+        topicLower.includes(lowerSearch);
+    }
     
     const matchesSubject = selectedSubject === 'All' ||
       ((selectedSubject.toLowerCase() === 'mathematics' || selectedSubject.toLowerCase() === 'math')
@@ -555,11 +573,15 @@ export function TeacherSpace({
     // 2. Filter by Search Query
     if (filterText) {
       const lowerSearch = filterText.toLowerCase();
-      const matchesName = name.toLowerCase().includes(lowerSearch) || studentId.toLowerCase().includes(lowerSearch);
+      const terms = lowerSearch.replace(/,/g, ' ').split(/\s+/).filter(Boolean);
+      const nameLower = name.toLowerCase();
+      const studentIdLower = studentId.toLowerCase();
+
+      const matchesTerms = terms.every(t => nameLower.includes(t) || studentIdLower.includes(t));
       const matchesLogs = progressLogs.some(
         log => log.studentId === studentId && log.topic.toLowerCase().includes(lowerSearch)
       );
-      if (!matchesName && !matchesLogs) return false;
+      if (!matchesTerms && !matchesLogs) return false;
     }
 
     return true;
@@ -2389,43 +2411,31 @@ function InviteExpirationTimer({
   expiresAt?: string | null; 
   onExpired: () => void 
 }) {
-  const [timeLeft, setTimeLeft] = useState<string>('');
-  const [isExpired, setIsExpired] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const [isLocking, setIsLocking] = useState(false);
 
   useEffect(() => {
-    if (!expiresAt) {
-      setTimeLeft('Always Open (No Limit)');
-      setIsExpired(false);
-      return;
-    }
-
-    let intervalId: ReturnType<typeof setInterval>;
-
-    const checkExpiry = () => {
-      const expiryTime = new Date(expiresAt).getTime();
-      const diff = expiryTime - Date.now();
-      if (diff <= 0) {
-        setTimeLeft('Expired / Locked');
-        setIsExpired(true);
-        clearInterval(intervalId);
-        onExpired();
-        return true;
-      }
-
-      const mins = Math.floor(diff / 60000);
-      const secs = Math.floor((diff % 60000) / 1000);
-      setTimeLeft(`Expires in ${mins}m ${secs}s`);
-      setIsExpired(false);
-      return false;
-    };
-
-    const expired = checkExpiry();
-    if (expired) return;
-
-    intervalId = setInterval(checkExpiry, 1000);
+    if (!expiresAt) return;
+    const intervalId = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
     return () => clearInterval(intervalId);
   }, [expiresAt, classroomCode]);
+
+  const expiryTime = expiresAt ? new Date(expiresAt).getTime() : null;
+  const diff = expiryTime !== null ? expiryTime - now : null;
+  const isExpired = diff !== null && diff <= 0;
+  const timeLeft = !expiresAt
+    ? 'Always Open (No Limit)'
+    : isExpired
+      ? 'Expired / Locked'
+      : `Expires in ${Math.floor(diff! / 60000)}m ${Math.floor((diff! % 60000) / 1000)}s`;
+
+  useEffect(() => {
+    if (isExpired) {
+      onExpired();
+    }
+  }, [isExpired, onExpired]);
 
   const handleLockNow = async () => {
     setIsLocking(true);

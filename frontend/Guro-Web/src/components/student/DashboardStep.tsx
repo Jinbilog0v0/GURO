@@ -246,10 +246,6 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                                     <span className="bg-white/25 text-white font-extrabold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full">
                                         Student Dashboard
                                     </span>
-                                    <span className="bg-white/20 text-white font-extrabold text-[10px] tracking-wide px-3 py-1 rounded-full flex items-center gap-1">
-                                        <Calendar className="size-3 shrink-0 text-white" />
-                                        <span>S.Y. {schoolYear} • {term}</span>
-                                    </span>
                                 </div>
                                 <h1 className="text-2xl md:text-3xl font-black mt-2">
                                     Welcome back, {userName}!

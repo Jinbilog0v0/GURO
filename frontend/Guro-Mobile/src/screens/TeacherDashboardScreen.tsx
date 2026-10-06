@@ -703,7 +703,7 @@ export function TeacherDashboardScreen() {
             )}
             <View style={styles.headerLeft}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <Text style={styles.screenTitle} numberOfLines={1}>{isPinMode ? 'Teacher Evaluation' : 'Teacher Console'}</Text>
+                <Text style={styles.screenTitle} numberOfLines={1}>{isPinMode ? 'GURO Teacher Evaluation' : 'GURO Teacher Console'}</Text>
                 <View style={{
                   flexDirection: 'row',
                   alignItems: 'center',

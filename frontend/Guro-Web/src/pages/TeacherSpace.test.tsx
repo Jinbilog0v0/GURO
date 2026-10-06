@@ -44,7 +44,7 @@ describe('TeacherSpace Page', () => {
     });
   });
 
-  test('renders the Teacher Console header', () => {
+  test('renders the Teacher Console header', async () => {
     render(
       <TeacherSpace 
         progressLogs={mockProgressLogs} 
@@ -53,10 +53,10 @@ describe('TeacherSpace Page', () => {
         loading={false} 
       />
     );
-    expect(screen.getByText('Teacher Console')).toBeInTheDocument();
+    expect(await screen.findByText('Teacher Console')).toBeInTheDocument();
   });
 
-  test('displays summary statistics correctly', () => {
+  test('displays summary statistics correctly', async () => {
     render(
       <TeacherSpace 
         progressLogs={mockProgressLogs} 
@@ -65,6 +65,7 @@ describe('TeacherSpace Page', () => {
         loading={false} 
       />
     );
+    expect(await screen.findByText('Teacher Console')).toBeInTheDocument();
     
     // Total sync reports - expect 2
     const totalReportsCard = screen.getByText('Total Sync Reports').parentElement;
@@ -96,7 +97,7 @@ describe('TeacherSpace Page', () => {
     expect(progressTable).not.toHaveTextContent('STUDENT-2');
   });
 
-  test('switching to Classroom Setup tab', () => {
+  test('switching to Classroom Setup tab', async () => {
     render(
       <TeacherSpace 
         progressLogs={mockProgressLogs} 
@@ -109,7 +110,7 @@ describe('TeacherSpace Page', () => {
     const setupTabBtn = screen.getByText('Classroom Setup');
     fireEvent.click(setupTabBtn);
 
-    expect(screen.getByText(/Active Classroom Config & Pairing/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Active Classroom Config & Pairing/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText('e.g. Teacher Maria')).toBeInTheDocument();
   });
 

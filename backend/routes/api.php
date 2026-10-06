@@ -1,10 +1,10 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassroomController;
-use App\Http\Controllers\SyncController;
 use App\Http\Controllers\RateLimitController;
-use App\Http\Controllers\AdminController;
+use App\Http\Controllers\SyncController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [AuthController::class, 'unauthorized'])->name('login');
@@ -46,28 +46,28 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Developer — Rate Limit Management
     Route::prefix('dev')->group(function () {
-        Route::get('/rate-limits',          [RateLimitController::class, 'index']);
-        Route::put('/rate-limits/{role}',   [RateLimitController::class, 'upsert']);
-        Route::delete('/rate-limits/{role}',[RateLimitController::class, 'destroy']);
-        Route::get('/rate-limits/usage',    [RateLimitController::class, 'usage']);
+        Route::get('/rate-limits', [RateLimitController::class, 'index']);
+        Route::put('/rate-limits/{role}', [RateLimitController::class, 'upsert']);
+        Route::delete('/rate-limits/{role}', [RateLimitController::class, 'destroy']);
+        Route::get('/rate-limits/usage', [RateLimitController::class, 'usage']);
     });
 
     // Admin & IT Governance Suite
     Route::prefix('admin')->group(function () {
-        Route::get('/overview',                         [AdminController::class, 'overview']);
-        Route::post('/cache-purge',                     [AdminController::class, 'purgeCache']);
-        Route::get('/users',                            [AdminController::class, 'getUsers']);
-        Route::post('/users/{id}/update-role',          [AdminController::class, 'updateUserRole']);
-        Route::post('/users/{id}/reset-password',       [AdminController::class, 'resetUserPassword']);
-        Route::delete('/users/{id}',                    [AdminController::class, 'deleteUser']);
-        Route::get('/classrooms',                       [AdminController::class, 'getClassrooms']);
-        Route::post('/classrooms/{id}/toggle-lock',     [AdminController::class, 'toggleLockClassroom']);
-        Route::post('/classrooms/{id}/reassign',        [AdminController::class, 'reassignClassroom']);
-        Route::delete('/classrooms/{id}',               [AdminController::class, 'deleteClassroom']);
-        Route::get('/reports/summary',                  [AdminController::class, 'getReportsSummary']);
-        Route::get('/sync-logs',                        [AdminController::class, 'getSyncTelemetry']);
-        Route::get('/teacher-verifications',            [AdminController::class, 'getTeacherVerifications']);
-        Route::post('/teacher-verifications/{id}/review',[AdminController::class, 'reviewTeacherVerification']);
-        Route::delete('/teacher-verifications/{id}',     [AdminController::class, 'deleteTeacherVerification']);
+        Route::get('/overview', [AdminController::class, 'overview']);
+        Route::post('/cache-purge', [AdminController::class, 'purgeCache']);
+        Route::get('/users', [AdminController::class, 'getUsers']);
+        Route::post('/users/{id}/update-role', [AdminController::class, 'updateUserRole']);
+        Route::post('/users/{id}/reset-password', [AdminController::class, 'resetUserPassword']);
+        Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
+        Route::get('/classrooms', [AdminController::class, 'getClassrooms']);
+        Route::post('/classrooms/{id}/toggle-lock', [AdminController::class, 'toggleLockClassroom']);
+        Route::post('/classrooms/{id}/reassign', [AdminController::class, 'reassignClassroom']);
+        Route::delete('/classrooms/{id}', [AdminController::class, 'deleteClassroom']);
+        Route::get('/reports/summary', [AdminController::class, 'getReportsSummary']);
+        Route::get('/sync-logs', [AdminController::class, 'getSyncTelemetry']);
+        Route::get('/teacher-verifications', [AdminController::class, 'getTeacherVerifications']);
+        Route::post('/teacher-verifications/{id}/review', [AdminController::class, 'reviewTeacherVerification']);
+        Route::delete('/teacher-verifications/{id}', [AdminController::class, 'deleteTeacherVerification']);
     });
 });

@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AiGenerationLog;
 use App\Models\Classroom;
 use App\Models\ClassroomMember;
 use App\Models\ProgressLog;
+use App\Models\RateLimitConfig;
 use App\Models\StudentAcademicRecord;
 use App\Models\User;
-use App\Models\RateLimitConfig;
-use App\Models\AiGenerationLog;
 use App\Services\GeminiService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class ClassroomController extends Controller
@@ -32,6 +33,7 @@ class ClassroomController extends Controller
         if (in_array($user->role, ['admin', 'developer'])) {
             return true;
         }
+
         return ((int) $classroom->teacher_user_id === (int) $user->id)
             || ($classroom->teacher_user_id === $user->user_id)
             || ($classroom->teacher_name === $user->name);
@@ -45,27 +47,30 @@ class ClassroomController extends Controller
         try {
             if ($classroomId) {
                 $classroom = Classroom::where('classroom_id', strtoupper($classroomId))->first();
-                if (!$classroom) {
+                if (! $classroom) {
                     return response()->json(['error' => 'Classroom not found.'], 404);
                 }
 
-                $data = \Illuminate\Support\Facades\Cache::remember("classroom_bank_" . strtoupper($classroomId), 3600, function () use ($classroom) {
+                $data = Cache::remember('classroom_bank_'.strtoupper($classroomId), 3600, function () use ($classroom) {
                     $path = $this->getItemBankPath();
                     $globalBank = file_exists($path) ? (json_decode(file_get_contents($path), true) ?: []) : [];
 
-                    if (! empty($classroom->custom_item_bank) && count((array)$classroom->custom_item_bank) > 0) {
-                        return array_replace_recursive($globalBank, (array)$classroom->custom_item_bank);
+                    if (! empty($classroom->custom_item_bank) && count((array) $classroom->custom_item_bank) > 0) {
+                        return array_replace_recursive($globalBank, (array) $classroom->custom_item_bank);
                     }
+
                     return $globalBank;
                 });
+
                 return response()->json($data);
             }
 
-            $data = \Illuminate\Support\Facades\Cache::remember('global_item_bank', 3600, function () {
+            $data = Cache::remember('global_item_bank', 3600, function () {
                 $path = $this->getItemBankPath();
                 if (! file_exists($path)) {
                     return [];
                 }
+
                 return json_decode(file_get_contents($path), true) ?: [];
             });
 
@@ -112,10 +117,10 @@ class ClassroomController extends Controller
                     : $config->window_minutes;
 
                 return response()->json([
-                    'error'          => "AI generation rate limit reached. You have used {$usageCount}/{$config->max_requests} requests in the last {$config->window_minutes} minutes.",
-                    'limit'          => $config->max_requests,
+                    'error' => "AI generation rate limit reached. You have used {$usageCount}/{$config->max_requests} requests in the last {$config->window_minutes} minutes.",
+                    'limit' => $config->max_requests,
                     'window_minutes' => $config->window_minutes,
-                    'used'           => $usageCount,
+                    'used' => $usageCount,
                     'reset_in_minutes' => max(1, $resetIn),
                 ], 429);
             }
@@ -139,12 +144,12 @@ class ClassroomController extends Controller
             // Log successful generation for rate tracking
             AiGenerationLog::create([
                 'user_id' => $user->id,
-                'role'    => $role,
+                'role' => $role,
             ]);
 
             return response()->json($result);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Gemini generation failed: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'Gemini generation failed: '.$e->getMessage()], 500);
         }
     }
 
@@ -199,8 +204,8 @@ class ClassroomController extends Controller
                 }
 
                 $type = $q['type'] ?? null;
-                if (!$type || $type === 'multiple-choice') {
-                    if (!empty($q['matchingPairs'])) {
+                if (! $type || $type === 'multiple-choice') {
+                    if (! empty($q['matchingPairs'])) {
                         $type = 'drag-drop-matching';
                     } elseif (str_contains($q['questionText'], '[[blank]]') || str_contains($q['questionText'], '____') || str_contains($q['questionText'], '______')) {
                         $type = 'fill-in-the-blank';
@@ -224,7 +229,7 @@ class ClassroomController extends Controller
             }
 
             file_put_contents($path, json_encode($bank, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-            \Illuminate\Support\Facades\Cache::forget('global_item_bank');
+            Cache::forget('global_item_bank');
 
             return response()->json(['success' => true, 'count' => count($questions)]);
         } catch (\Exception $e) {
@@ -266,12 +271,12 @@ class ClassroomController extends Controller
     public function getActiveSubjects(Request $request)
     {
         $classroomId = $request->query('classroomId');
-        if (!$classroomId) {
+        if (! $classroomId) {
             return response()->json(['subjects' => ['Mathematics', 'English']]);
         }
 
         $classroom = Classroom::where('classroom_id', strtoupper($classroomId))->first();
-        if (!$classroom) {
+        if (! $classroom) {
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
 
@@ -296,15 +301,15 @@ class ClassroomController extends Controller
             ->toArray();
 
         // If no subjects found from other classrooms, use this classroom's primary subject
-        if (empty($subjects) && !empty($classroom->subject)) {
+        if (empty($subjects) && ! empty($classroom->subject)) {
             $subjects = [$classroom->subject];
         }
 
         // Also check if custom_item_bank has custom subjects defined for this grade level
-        if (!empty($classroom->custom_item_bank) && is_array($classroom->custom_item_bank)) {
+        if (! empty($classroom->custom_item_bank) && is_array($classroom->custom_item_bank)) {
             foreach ($classroom->custom_item_bank as $bankSubj => $gradeData) {
-                if (is_array($gradeData) && isset($gradeData[(string)$gradeLevel])) {
-                    if (!in_array($bankSubj, $subjects)) {
+                if (is_array($gradeData) && isset($gradeData[(string) $gradeLevel])) {
+                    if (! in_array($bankSubj, $subjects)) {
                         $subjects[] = $bankSubj;
                     }
                 }
@@ -322,14 +327,14 @@ class ClassroomController extends Controller
     public function getMyClassrooms(Request $request)
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
         }
 
         $classrooms = Classroom::where(function ($q) use ($user) {
             $q->where('teacher_user_id', $user->id)
-              ->orWhere('teacher_user_id', $user->user_id)
-              ->orWhere('teacher_name', $user->name);
+                ->orWhere('teacher_user_id', $user->user_id)
+                ->orWhere('teacher_name', $user->name);
         })
             ->orderBy('created_at', 'desc')
             ->get()
@@ -370,7 +375,7 @@ class ClassroomController extends Controller
         $status = $user ? ($user->fresh()->verification_status ?? 'approved') : 'approved';
         if ($user && $user->role === 'teacher' && $status !== 'approved') {
             return response()->json([
-                'error' => 'Account verification required before creating live classrooms. Your application is currently ' . $status . ' administrator review.',
+                'error' => 'Account verification required before creating live classrooms. Your application is currently '.$status.' administrator review.',
                 'verification_status' => $status,
                 'rejection_reason' => $user->fresh()->rejection_reason,
             ], 403);
@@ -395,7 +400,7 @@ class ClassroomController extends Controller
                 $baseCode = "{$subjectPrefix}-G{$gradeLevel}-{$sectionSlug}";
                 $classroomId = $baseCode;
                 while (Classroom::where('classroom_id', $classroomId)->exists()) {
-                    $classroomId = "{$baseCode}-" . strtoupper(Str::random(3));
+                    $classroomId = "{$baseCode}-".strtoupper(Str::random(3));
                 }
             } else {
                 $randomSuffix = strtoupper(Str::random(3));
@@ -407,8 +412,8 @@ class ClassroomController extends Controller
         }
 
         $expiresAt = null;
-        if ($duration && (int)$duration > 0) {
-            $expiresAt = now()->addMinutes((int)$duration);
+        if ($duration && (int) $duration > 0) {
+            $expiresAt = now()->addMinutes((int) $duration);
         }
 
         $classroom = Classroom::create([
@@ -493,15 +498,15 @@ class ClassroomController extends Controller
             $bank = $classroom->custom_item_bank ?: [];
             foreach ($selections as $sel) {
                 $subj = $sel['subject'] ?? null;
-                $grd = (string)($sel['grade'] ?? '');
+                $grd = (string) ($sel['grade'] ?? '');
                 $top = $sel['topic'] ?? null;
 
                 if ($subj && $grd && $top) {
                     if (isset($globalBank[$subj][$grd][$top])) {
-                        if (!isset($bank[$subj])) {
+                        if (! isset($bank[$subj])) {
                             $bank[$subj] = [];
                         }
-                        if (!isset($bank[$subj][$grd])) {
+                        if (! isset($bank[$subj][$grd])) {
                             $bank[$subj][$grd] = [];
                         }
                         $bank[$subj][$grd][$top] = $globalBank[$subj][$grd][$top];
@@ -514,7 +519,7 @@ class ClassroomController extends Controller
         }
 
         $classroom->save();
-        \Illuminate\Support\Facades\Cache::forget("classroom_bank_" . strtoupper($classroomId));
+        Cache::forget('classroom_bank_'.strtoupper($classroomId));
 
         return response()->json(['success' => true, 'customItemBank' => $classroom->custom_item_bank]);
     }
@@ -564,12 +569,16 @@ class ClassroomController extends Controller
         // Find max orderIndex across all existing topics
         $maxOrderIndex = 0;
         foreach ($bank as $subjKey => $grades) {
-            if (!is_array($grades)) continue;
+            if (! is_array($grades)) {
+                continue;
+            }
             foreach ($grades as $gradeKey => $topics) {
-                if (!is_array($topics)) continue;
+                if (! is_array($topics)) {
+                    continue;
+                }
                 foreach ($topics as $topicKey => $topicData) {
                     if (isset($topicData['studyContent']['orderIndex'])) {
-                        $maxOrderIndex = max($maxOrderIndex, (int)$topicData['studyContent']['orderIndex']);
+                        $maxOrderIndex = max($maxOrderIndex, (int) $topicData['studyContent']['orderIndex']);
                     }
                 }
             }
@@ -606,8 +615,8 @@ class ClassroomController extends Controller
             }
 
             $type = $q['type'] ?? null;
-            if (!$type || $type === 'multiple-choice') {
-                if (!empty($q['matchingPairs'])) {
+            if (! $type || $type === 'multiple-choice') {
+                if (! empty($q['matchingPairs'])) {
                     $type = 'drag-drop-matching';
                 } elseif (str_contains($q['questionText'], '[[blank]]') || str_contains($q['questionText'], '____') || str_contains($q['questionText'], '______')) {
                     $type = 'fill-in-the-blank';
@@ -636,7 +645,7 @@ class ClassroomController extends Controller
         $classroom->save();
 
         // Bust cache
-        \Illuminate\Support\Facades\Cache::forget("classroom_bank_" . strtoupper($classroomId));
+        Cache::forget('classroom_bank_'.strtoupper($classroomId));
 
         return response()->json([
             'success' => true,
@@ -673,7 +682,7 @@ class ClassroomController extends Controller
         $bank = $classroom->custom_item_bank ?: [];
         if (isset($bank[$subject][$grade][$topic])) {
             unset($bank[$subject][$grade][$topic]);
-            
+
             // Clean up empty arrays to keep it clean
             if (empty($bank[$subject][$grade])) {
                 unset($bank[$subject][$grade]);
@@ -681,10 +690,10 @@ class ClassroomController extends Controller
             if (empty($bank[$subject])) {
                 unset($bank[$subject]);
             }
-            
+
             $classroom->custom_item_bank = $bank;
             $classroom->save();
-            \Illuminate\Support\Facades\Cache::forget("classroom_bank_" . strtoupper($classroomId));
+            Cache::forget('classroom_bank_'.strtoupper($classroomId));
         }
 
         return response()->json(['success' => true, 'customItemBank' => $classroom->custom_item_bank]);
@@ -716,12 +725,12 @@ class ClassroomController extends Controller
 
         if ($studentGrade && (int) $studentGrade !== (int) $classroom->grade_level) {
             return response()->json([
-                'error' => "Grade mismatch. This classroom is strictly for Grade {$classroom->grade_level} students only."
+                'error' => "Grade mismatch. This classroom is strictly for Grade {$classroom->grade_level} students only.",
             ], 422);
         }
 
         // Register student to classroom
-        $member = \App\Models\ClassroomMember::firstOrCreate(
+        $member = ClassroomMember::firstOrCreate(
             [
                 'classroom_id' => $classroomId,
                 'student_id' => $studentId,
@@ -737,7 +746,7 @@ class ClassroomController extends Controller
         }
 
         // Also update the student user's classroom_id column if the user exists
-        $studentUser = \App\Models\User::where('user_id', $studentId)->first();
+        $studentUser = User::where('user_id', $studentId)->first();
         if ($studentUser) {
             $studentUser->classroom_id = $classroomId;
             $studentUser->save();
@@ -752,7 +761,7 @@ class ClassroomController extends Controller
                 'subject' => $classroom->subject,
                 'gradeLevel' => $classroom->grade_level,
                 'sectionName' => $classroom->section_name,
-            ]
+            ],
         ]);
     }
 
@@ -776,7 +785,7 @@ class ClassroomController extends Controller
         $members = ClassroomMember::where('classroom_id', strtoupper($classroomId))
             ->orderBy('student_id', 'asc')
             ->get()
-            ->map(fn($m) => [
+            ->map(fn ($m) => [
                 'studentId' => $m->student_id,
                 'sectionName' => $m->section_name ?? $classroom->section_name,
                 'status' => $m->status ?? 'enrolled',
@@ -813,7 +822,7 @@ class ClassroomController extends Controller
         // Query all progress logs for this classroom or enrolled students
         $logs = ProgressLog::where(function ($q) use ($classroomId, $studentIds) {
             $q->where('classroom_id', strtoupper($classroomId))
-              ->orWhereIn('student_id', $studentIds);
+                ->orWhereIn('student_id', $studentIds);
         })->get();
 
         $roster = [];
@@ -828,12 +837,12 @@ class ClassroomController extends Controller
             $preLogs = $sLogs->where('assessment_type', 'pre-test');
             $postLogs = $sLogs->where('assessment_type', 'post-test');
 
-            $preAvg = $preLogs->count() > 0 
-                ? round($preLogs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100), 1)
+            $preAvg = $preLogs->count() > 0
+                ? round($preLogs->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100), 1)
                 : null;
 
-            $postAvg = $postLogs->count() > 0 
-                ? round($postLogs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100), 1)
+            $postAvg = $postLogs->count() > 0
+                ? round($postLogs->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100), 1)
                 : null;
 
             $learningGain = null;
@@ -846,26 +855,26 @@ class ClassroomController extends Controller
             }
 
             // 2. Term-by-Term (Quarterly) Averages
-            $q1Logs = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 1', 'Term 1']));
-            $q2Logs = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 2', 'Term 2']));
-            $q3Logs = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 3', 'Term 3']));
-            $q4Logs = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 4', 'Term 4']));
+            $q1Logs = $sLogs->filter(fn ($l) => in_array($l->term, ['Quarter 1', 'Term 1']));
+            $q2Logs = $sLogs->filter(fn ($l) => in_array($l->term, ['Quarter 2', 'Term 2']));
+            $q3Logs = $sLogs->filter(fn ($l) => in_array($l->term, ['Quarter 3', 'Term 3']));
+            $q4Logs = $sLogs->filter(fn ($l) => in_array($l->term, ['Quarter 4', 'Term 4']));
 
-            $q1Avg = $q1Logs->count() > 0 ? round($q1Logs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100), 1) : null;
-            $q2Avg = $q2Logs->count() > 0 ? round($q2Logs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100), 1) : null;
-            $q3Avg = $q3Logs->count() > 0 ? round($q3Logs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100), 1) : null;
-            $q4Avg = $q4Logs->count() > 0 ? round($q4Logs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100), 1) : null;
+            $q1Avg = $q1Logs->count() > 0 ? round($q1Logs->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100), 1) : null;
+            $q2Avg = $q2Logs->count() > 0 ? round($q2Logs->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100), 1) : null;
+            $q3Avg = $q3Logs->count() > 0 ? round($q3Logs->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100), 1) : null;
+            $q4Avg = $q4Logs->count() > 0 ? round($q4Logs->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100), 1) : null;
 
             // Compute overall general average (DepEd passing standard >= 75)
-            $allScores = $sLogs->map(fn($l) => ($l->score / max(1, $l->total_questions)) * 100);
+            $allScores = $sLogs->map(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100);
             $generalAverage = $allScores->count() > 0 ? round($allScores->avg(), 1) : 0;
 
             // Promotion status
             $currentGrade = (int) $classroom->grade_level;
             $nextGrade = $currentGrade < 6 ? $currentGrade + 1 : 6;
-            
+
             $status = $member->status;
-            if (!$status || $status === 'enrolled') {
+            if (! $status || $status === 'enrolled') {
                 if ($generalAverage >= 75) {
                     $status = 'ELIGIBLE FOR PROMOTION';
                 } elseif ($generalAverage >= 60) {
@@ -943,22 +952,22 @@ class ClassroomController extends Controller
                 ->first();
 
             $sLogs = ProgressLog::where('student_id', $sId)
-                ->where(function($q) use ($classroomId) {
+                ->where(function ($q) use ($classroomId) {
                     $q->where('classroom_id', $classroomId)->orWhereNull('classroom_id');
                 })->get();
 
-            $preAvg = $sLogs->where('assessment_type', 'pre-test')->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100);
-            $postAvg = $sLogs->where('assessment_type', 'post-test')->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100);
-            $learningGain = ($preAvg !== null && $postAvg !== null && $preAvg < 100) 
-                ? (($postAvg - $preAvg) / (100 - $preAvg)) * 100 
+            $preAvg = $sLogs->where('assessment_type', 'pre-test')->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100);
+            $postAvg = $sLogs->where('assessment_type', 'post-test')->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100);
+            $learningGain = ($preAvg !== null && $postAvg !== null && $preAvg < 100)
+                ? (($postAvg - $preAvg) / (100 - $preAvg)) * 100
                 : null;
 
-            $q1Avg = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 1', 'Term 1']))->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100);
-            $q2Avg = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 2', 'Term 2']))->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100);
-            $q3Avg = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 3', 'Term 3']))->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100);
-            $q4Avg = $sLogs->filter(fn($l) => in_array($l->term, ['Quarter 4', 'Term 4']))->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100);
+            $q1Avg = $sLogs->filter(fn ($l) => in_array($l->term, ['Quarter 1', 'Term 1']))->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100);
+            $q2Avg = $sLogs->filter(fn ($l) => in_array($l->term, ['Quarter 2', 'Term 2']))->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100);
+            $q3Avg = $sLogs->filter(fn ($l) => in_array($l->term, ['Quarter 3', 'Term 3']))->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100);
+            $q4Avg = $sLogs->filter(fn ($l) => in_array($l->term, ['Quarter 4', 'Term 4']))->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100);
 
-            $allAvg = $sLogs->avg(fn($l) => ($l->score / max(1, $l->total_questions)) * 100) ?: 75.0;
+            $allAvg = $sLogs->avg(fn ($l) => ($l->score / max(1, $l->total_questions)) * 100) ?: 75.0;
             $finalAvg = round($allAvg, 1);
 
             if ($member) {
@@ -1004,7 +1013,7 @@ class ClassroomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Successfully promoted " . count($promotedResults) . " student(s) to Grade {$nextGrade}!",
+            'message' => 'Successfully promoted '.count($promotedResults)." student(s) to Grade {$nextGrade}!",
             'promotedCount' => count($promotedResults),
             'promotedStudents' => $promotedResults,
         ]);

@@ -1,4 +1,5 @@
 <?php
+
 namespace Database\Seeders;
 
 use App\Models\User;
@@ -10,6 +11,7 @@ class ParentUserSeeder extends Seeder
     {
         $salt = bin2hex(random_bytes(16));
         $hash = hash_pbkdf2('sha512', $password, $salt, 1000, 64);
+
         return "{$salt}:{$hash}";
     }
 
@@ -18,7 +20,7 @@ class ParentUserSeeder extends Seeder
         $email = 'parent@guro.dev';
         $password = 'Password123';
 
-        if (!User::where('email', $email)->exists()) {
+        if (! User::where('email', $email)->exists()) {
             User::create([
                 'user_id' => 'USR-PARENT',
                 'email' => $email,

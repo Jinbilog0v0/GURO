@@ -65,7 +65,6 @@ export function LoginScreen({ navigation }: Props) {
   const { loginToCloud, currentUser, appMode, guestName, setAppMode, setGuestName, setStudentId, serverUrl, setServerUrl, setPreferredGrade } = useAppStore();
 
   const [isAdminMode, setIsAdminMode] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<Role | null>('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [offlineFirstName, setOfflineFirstName] = useState('');
@@ -289,11 +288,6 @@ export function LoginScreen({ navigation }: Props) {
     let valid = true;
     setEmailError('');
     setPasswordError('');
-
-    if (!isAdminMode && !selectedRole) {
-      toast.warning('Please select a role (Teacher, Student, or Parent) before signing in.');
-      valid = false;
-    }
     
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
@@ -315,33 +309,28 @@ export function LoginScreen({ navigation }: Props) {
     if (!valid) return;
 
     setLoading(true);
-    const result = await loginToCloud(trimmedEmail, password, isAdminMode ? 'admin' : (selectedRole || undefined));
+    const result = await loginToCloud(trimmedEmail, password, isAdminMode ? 'admin' : undefined);
     setLoading(false);
 
     if (result.success) {
       const user = useAppStore.getState().currentUser;
       if (user) {
         const isAdminOrDev = user.role === 'admin' || user.role === 'developer';
-        if (user.role !== selectedRole && !isAdminOrDev && !isAdminMode) {
-          useAppStore.getState().logoutFromCloud();
-          toast.error(`Role Mismatch: This account is registered as a ${user.role}, not a ${selectedRole}.`);
-        } else {
-           setAppMode('online');
-           if (user.role === 'student') {
-              let resolvedGrade = 4;
-              const serverClassroomId = user.classroomId;
-              if (serverClassroomId) {
-                const gradeMatch = serverClassroomId.match(/-G([4-6])-/i);
-                if (gradeMatch) {
-                  resolvedGrade = parseInt(gradeMatch[1], 10);
-                }
-              }
-              setPreferredGrade(resolvedGrade);
+        setAppMode('online');
+        if (user.role === 'student') {
+          let resolvedGrade = 4;
+          const serverClassroomId = user.classroomId;
+          if (serverClassroomId) {
+            const gradeMatch = serverClassroomId.match(/-G([4-6])-/i);
+            if (gradeMatch) {
+              resolvedGrade = parseInt(gradeMatch[1], 10);
             }
-           const roleDisplay = isAdminOrDev ? 'Staff / Administrator' : ((selectedRole || user.role).charAt(0).toUpperCase() + (selectedRole || user.role).slice(1));
-           toast.success(`Welcome back, ${user.name}! Logged in as ${roleDisplay}.`);
-           routeByRole(user.role);
+          }
+          setPreferredGrade(resolvedGrade);
         }
+        const roleDisplay = isAdminOrDev ? 'Staff / Administrator' : (user.role.charAt(0).toUpperCase() + user.role.slice(1));
+        toast.success(`Welcome back, ${user.name}! Logged in as ${roleDisplay}.`);
+        routeByRole(user.role);
       }
     } else {
       let displayMessage = result.message || 'Login Failed';
@@ -457,7 +446,7 @@ export function LoginScreen({ navigation }: Props) {
               </Text>
             </View>
 
-            {isAdminMode ? (
+            {isAdminMode && (
               <View style={{
                 backgroundColor: '#0F172A',
                 borderRadius: 14,
@@ -480,42 +469,6 @@ export function LoginScreen({ navigation }: Props) {
                     Standard Mode
                   </Text>
                 </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.rolesRow}>
-                {ROLES.map((role) => {
-                  const isSelected = selectedRole === role.id;
-                  const IconComponent = role.icon;
-                  
-                  let activeColor: string = Colors.accentPrimary;
-                  let activeBg: string = 'rgba(17,66,142,0.08)';
-                  if (role.id === 'teacher') {
-                    activeColor = Colors.accentSecondary;
-                    activeBg = 'rgba(160,19,34,0.08)';
-                  } else if (role.id === 'parent') {
-                    activeColor = '#F59E0B';
-                    activeBg = 'rgba(245,158,11,0.08)';
-                  }
-
-                  return (
-                    <TouchableOpacity
-                      key={role.id}
-                      onPress={() => setSelectedRole(role.id)}
-                      activeOpacity={0.8}
-                      style={[
-                        styles.rolePill,
-                        isSelected && {
-                          backgroundColor: activeBg,
-                          borderColor: activeColor,
-                        },
-                        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }
-                      ]}
-                    >
-                       <IconComponent size={16} color={isSelected ? activeColor : '#94A3B8'} />
-                       <Text style={[styles.rolePillText, isSelected && { color: activeColor, fontFamily: Fonts.bodySemiBold }]}>{role.title}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
               </View>
             )}
 

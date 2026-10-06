@@ -78,7 +78,7 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
   const getCategoriesAndTypes = (currentSubject: string, currentGrade: string | number) => {
     const gNum = Number(currentGrade);
     let categories: string[] = [];
-    let types = ['multiple-choice', 'fill-in-the-blank', 'drag-drop-matching', 'true-false', 'swipe-card'];
+    const types = ['multiple-choice', 'fill-in-the-blank', 'drag-drop-matching', 'true-false', 'swipe-card'];
 
     if (currentSubject.toLowerCase() === 'mathematics') {
       types.push('fraction-builder');

@@ -32,7 +32,12 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
   const allTopics = Array.from(new Set(progressLogs.map((log) => log.topic)));
 
   const filteredStudents = studentSearch.trim()
-    ? allStudents.filter((s) => s.toLowerCase().includes(studentSearch.toLowerCase()))
+    ? allStudents.filter((s) => {
+        const lower = studentSearch.toLowerCase();
+        const terms = lower.replace(/,/g, ' ').split(/\s+/).filter(Boolean);
+        const sLower = s.toLowerCase();
+        return terms.every(t => sLower.includes(t));
+      })
     : allStudents;
 
   const visibleTopics = topicFilter === 'All' ? allTopics : allTopics.filter((t) => t === topicFilter);
