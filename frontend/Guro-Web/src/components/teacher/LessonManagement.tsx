@@ -10,7 +10,6 @@ import {
   Edit3, 
   Sparkles,
   School,
-  Layers,
   X
 } from 'lucide-react';
 import { apiFetch } from '../../utils/api';
@@ -41,7 +40,7 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
   activeClassroomId: _activeClassroomId,
   classrooms = [],
   initialTab,
-  onTabChange,
+  onTabChange: _onTabChange,
   onCreateLesson,
   onOpenCreateLesson,
   onEditCustomLesson,
@@ -235,39 +234,26 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
 
       {/* Tabs and Filters Navigation */}
       <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 sm:p-5 flex flex-col gap-4 shadow-xs">
-        {/* Sub-Tabs: System vs Custom */}
-        <div className="flex items-center justify-between flex-wrap gap-3 border-b border-[var(--border-color)] pb-4">
-          <div className="flex bg-[var(--bg-main)] p-1 rounded-xl border border-[var(--border-color)]">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('system');
-                onTabChange?.('system');
-              }}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                activeTab === 'system'
-                  ? 'bg-[#11428E] text-white shadow-xs'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-              }`}
-            >
-              <Layers size={14} />
-              <span>Official DepEd Lessons ({officialLessons.length})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('custom');
-                onTabChange?.('custom');
-              }}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                activeTab === 'custom'
-                  ? 'bg-purple-600 text-white shadow-xs'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-              }`}
-            >
-              <Sparkles size={14} />
-              <span>My Custom Lessons ({customLessons.length})</span>
-            </button>
+        {/* Library Header & Filter Count Indicator */}
+        <div className="flex items-center justify-between flex-wrap gap-3 border-b border-[var(--border-color)] pb-3">
+          <div className="flex items-center gap-2.5">
+            {activeTab === 'system' ? (
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#11428E] inline-block shadow-[0_0_8px_rgba(17,66,142,0.4)]" />
+                <span className="text-sm font-bold text-[var(--text-main)]">Official DepEd Curriculum</span>
+                <span className="text-[11px] font-semibold text-[var(--text-muted)] bg-[var(--border-color)]/30 px-2.5 py-0.5 rounded-full border border-[var(--border-color)]">
+                  {officialLessons.length} Modules
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block shadow-[0_0_8px_rgba(168,85,247,0.4)]" />
+                <span className="text-sm font-bold text-[var(--text-main)]">My Custom Lessons</span>
+                <span className="text-[11px] font-semibold text-[var(--text-muted)] bg-[var(--border-color)]/30 px-2.5 py-0.5 rounded-full border border-[var(--border-color)]">
+                  {customLessons.length} Authored
+                </span>
+              </div>
+            )}
           </div>
 
           <span className="text-xs text-[var(--text-muted)]">

@@ -10,7 +10,7 @@ import { LessonManagement } from '../components/teacher/LessonManagement';
 import { ClassroomDetailView } from '../components/teacher/ClassroomDetailView';
 import { StudentDirectory } from '../components/teacher/StudentDirectory';
 import { SkeletonStatCards, SkeletonCard, SkeletonTable } from '../components/shared/SkeletonLoader';
-import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock, Search, User, Users, Trash2, Target, GraduationCap, Clock, AlertCircle, Lightbulb, Calendar, BarChart3 } from 'lucide-react';
+import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock, Search, User, Trash2, Target, GraduationCap, Clock, AlertCircle, Lightbulb, Calendar } from 'lucide-react';
 import { toast } from '../utils/toast';
 import { apiFetch } from '../utils/api';
 import { ConfirmModal } from '../components/shared/ConfirmModal';
@@ -2253,53 +2253,7 @@ export function TeacherSpace({
       ) : (
         /* Analytics SubTab ('analytics' or 'pre-post-test') */
         <div className="flex flex-col gap-6">
-          {/* Segmented Controller Header for Analytics */}
-          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[16px] p-2 flex items-center justify-between shadow-sm">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setAnalyticsSegment('mastery')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                  analyticsSegment === 'mastery' && activeSubTab !== 'pre-post-test'
-                    ? 'bg-[#11428E] text-white shadow-md'
-                    : 'bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/5'
-                }`}
-              >
-                <BarChart3 size={15} />
-                <span>Classroom Mastery & Telemetry</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setAnalyticsSegment('directory')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                  analyticsSegment === 'directory'
-                    ? 'bg-[#11428E] text-white shadow-md'
-                    : 'bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/5'
-                }`}
-              >
-                <Users size={15} />
-                <span>Student Directory</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setAnalyticsSegment('growth')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                  analyticsSegment === 'growth' || activeSubTab === 'pre-post-test'
-                    ? 'bg-[#11428E] text-white shadow-md'
-                    : 'bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/5'
-                }`}
-              >
-                <TrendingUp size={15} />
-                <span>Pre / Post Test Growth</span>
-              </button>
-            </div>
-
-            {analyticsSegment === 'mastery' && (
-              <span className="text-xs text-[var(--text-muted)] px-3">
-                {uniqueStudents.length} Students Active • {filteredLogs.length} Sync Records
-              </span>
-            )}
-          </div>
+          {/* Render Active Segment based on MenuBar Dropdown selection */}
 
           {/* Render Active Segment */}
           {analyticsSegment === 'directory' ? (
