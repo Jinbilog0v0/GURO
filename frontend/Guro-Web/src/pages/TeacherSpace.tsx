@@ -1639,6 +1639,30 @@ export function TeacherSpace({
             onRefreshLogs={refreshLogs}
             onEditLesson={(les) => setEditingLesson(les)}
             onDeleteLesson={(les) => setDeleteTopicTarget(les)}
+            isActive={classroomCode === selectedClassroomForDetail}
+            onSetActiveClassroom={(id) => {
+              if (user?.userId) {
+                localStorage.setItem(`guro_teacher_classroom_code_${user.userId}`, id);
+              }
+              localStorage.setItem('guro_teacher_classroom_code', id);
+              setClassroomCode(id);
+              const found = classroomHistory.find(c => c.id === id);
+              if (found) {
+                setClassroomData({
+                  classroomId: found.id,
+                  teacherName: found.teacherName,
+                  subject: found.subject,
+                  gradeLevel: found.gradeLevel,
+                  schoolYear: found.schoolYear,
+                  term: found.term,
+                  sectionName: found.sectionName,
+                  expiresAt: found.expiresAt
+                });
+              }
+              setSelectedModules([]);
+              refreshLogs();
+              toast.success(`Classroom ${id} is now your active session.`);
+            }}
           />
         ) : (
           <ClassroomManagement

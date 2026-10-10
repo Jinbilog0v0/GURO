@@ -11,7 +11,8 @@ import {
   Calculator, 
   User, 
   Copy, 
-  CheckCircle2 
+  CheckCircle2,
+  Zap
 } from 'lucide-react';
 import { toast } from '../../utils/toast';
 import { apiFetch } from '../../utils/api';
@@ -34,6 +35,8 @@ export interface ClassroomDetailViewProps {
   onRefreshLogs: () => void;
   onEditLesson?: (lesson: any) => void;
   onDeleteLesson?: (lesson: any) => void;
+  isActive?: boolean;
+  onSetActiveClassroom?: (id: string) => void;
 }
 
 export const ClassroomDetailView: React.FC<ClassroomDetailViewProps> = ({
@@ -43,6 +46,8 @@ export const ClassroomDetailView: React.FC<ClassroomDetailViewProps> = ({
   onRefreshLogs,
   onEditLesson,
   onDeleteLesson,
+  isActive = false,
+  onSetActiveClassroom,
 }) => {
   const [activeTab, setActiveTab] = useState<'session' | 'students' | 'lessons' | 'mastery'>('session');
   const [copiedCode, setCopiedCode] = useState(false);
@@ -116,11 +121,27 @@ export const ClassroomDetailView: React.FC<ClassroomDetailViewProps> = ({
           <span>Back to All Classrooms</span>
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          {isActive ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+              <span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10B981] animate-pulse" />
+              <span>Active Classroom</span>
+            </span>
+          ) : onSetActiveClassroom ? (
+            <button
+              type="button"
+              onClick={() => onSetActiveClassroom(classroom.id)}
+              className="btn btn-primary text-xs px-3.5 py-2 flex items-center gap-1.5 rounded-xl shadow-xs cursor-pointer font-bold"
+            >
+              <Zap size={14} className="text-amber-300" />
+              <span>Set as Active Classroom</span>
+            </button>
+          ) : null}
+
           <button
             type="button"
             onClick={handleCopyCode}
-            className="btn btn-secondary text-xs px-3 py-2 flex items-center gap-1.5 rounded-xl"
+            className="btn btn-secondary text-xs px-3 py-2 flex items-center gap-1.5 rounded-xl cursor-pointer font-semibold"
             title="Copy invite code"
           >
             {copiedCode ? <CheckCircle2 size={13} className="text-emerald-500" /> : <Copy size={13} />}

@@ -87,7 +87,7 @@ describe('ClassroomManagement', () => {
   test('filters classroom list via subject filter tabs', () => {
     render(<ClassroomManagement {...defaultProps} />);
 
-    const englishPill = screen.getByRole('button', { name: /^english/i });
+    const englishPill = screen.getByRole('button', { name: 'English' });
     fireEvent.click(englishPill);
 
     expect(screen.queryByText('MATH-101')).not.toBeInTheDocument();

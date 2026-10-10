@@ -458,9 +458,16 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
                           {item.subject}
                         </span>
                       </div>
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/10 text-purple-600 border border-purple-500/20">
-                        Grade {item.gradeLevel || item.grade}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {item.isNew && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 animate-pulse">
+                            NEW
+                          </span>
+                        )}
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-500/10 text-purple-600 border border-purple-500/20">
+                          Grade {item.gradeLevel || item.grade}
+                        </span>
+                      </div>
                     </div>
 
                     <h4 className="text-base font-bold text-[var(--text-main)] group-hover:text-purple-400 transition-colors mt-1">

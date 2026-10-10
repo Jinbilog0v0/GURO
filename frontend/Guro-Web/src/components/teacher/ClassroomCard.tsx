@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, BookOpen, Copy, Check, ArrowRight, Zap, Calendar, User } from 'lucide-react';
+import { Calculator, BookOpen, Copy, Check, ArrowRight, Calendar, User } from 'lucide-react';
 import { toast } from '../../utils/toast';
 
 export interface ClassroomItem {
@@ -16,14 +16,13 @@ export interface ClassroomItem {
 export interface ClassroomCardProps {
   classroom: ClassroomItem;
   isActive: boolean;
-  onSelectActive: (id: string) => void;
+  onSelectActive?: (id: string) => void;
   onViewDetails: (id: string) => void;
 }
 
 export const ClassroomCard: React.FC<ClassroomCardProps> = ({
   classroom,
   isActive,
-  onSelectActive,
   onViewDetails,
 }) => {
   const [copied, setCopied] = useState(false);
@@ -39,10 +38,19 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({
 
   return (
     <div
-      className={`bg-[var(--bg-card)] border rounded-3xl p-5 flex flex-col justify-between gap-4 transition-all duration-300 shadow-xs hover:shadow-md ${
+      onClick={() => onViewDetails(classroom.id)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onViewDetails(classroom.id);
+        }
+      }}
+      className={`bg-[var(--bg-card)] border rounded-3xl p-5 flex flex-col justify-between gap-4 transition-all duration-300 shadow-xs hover:shadow-lg cursor-pointer active:scale-[0.99] group text-left ${
         isActive
-          ? 'border-[#11428E] ring-2 ring-[#11428E]/20 bg-[var(--accent-primary-glow)]/40'
-          : 'border-[var(--border-color)] hover:border-[#11428E]/40'
+          ? 'border-[#11428E] ring-2 ring-[#11428E]/20 bg-[var(--accent-primary-glow)]/40 hover:border-[#11428E]'
+          : 'border-[var(--border-color)] hover:border-[#11428E]'
       }`}
     >
       {/* Top Header: Subject Icon & Active Pill */}
@@ -61,7 +69,7 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({
               <span>&bull;</span>
               <span>Grade {classroom.gradeLevel}</span>
             </span>
-            <h4 className="text-base font-extrabold text-[var(--text-main)] truncate mt-0.5">
+            <h4 className="text-base font-extrabold text-[var(--text-main)] truncate mt-0.5 group-hover:text-[#11428E] transition-colors">
               {classroom.sectionName ? `Section ${classroom.sectionName}` : `${classroom.subject} Class`}
             </h4>
           </div>
@@ -113,32 +121,13 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({
         </span>
       </div>
 
-      {/* Actions */}
-      <div className="grid grid-cols-2 gap-2 pt-2">
-        {!isActive ? (
-          <button
-            type="button"
-            onClick={() => onSelectActive(classroom.id)}
-            className="px-3 py-2 rounded-xl text-xs font-bold border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[#11428E]/10 hover:border-[#11428E] text-[var(--text-main)] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <Zap size={13} className="text-amber-500" />
-            <span>Set Active</span>
-          </button>
-        ) : (
-          <div className="px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center justify-center gap-1.5 select-none">
-            <Check size={13} strokeWidth={2.5} />
-            <span>Connected</span>
-          </div>
-        )}
-
-        <button
-          type="button"
-          onClick={() => onViewDetails(classroom.id)}
-          className="btn btn-secondary px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
-        >
+      {/* Clickable Card Footer Cue */}
+      <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-muted)] group-hover:text-[var(--text-main)] pt-2 border-t border-[var(--border-color)]/60 transition-colors">
+        <span className="text-[11px]">Classroom Dashboard & Roster</span>
+        <span className="flex items-center gap-1 text-[11px] font-bold text-[#11428E] group-hover:translate-x-1 transition-transform">
           <span>Details</span>
-          <ArrowRight size={13} />
-        </button>
+          <ArrowRight size={12} />
+        </span>
       </div>
     </div>
   );

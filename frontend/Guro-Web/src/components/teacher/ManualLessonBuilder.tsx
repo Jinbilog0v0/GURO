@@ -354,6 +354,27 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
         throw new Error(err.error || 'Failed to save lesson');
       }
 
+      // Sync to local custom lessons storage with isNew flag
+      const newCustomLesson = {
+        id: `custom-${Date.now()}`,
+        title: topic.trim(),
+        topic: topic.trim(),
+        subject,
+        grade: parseInt(grade),
+        gradeLevel: parseInt(grade),
+        questions,
+        studyContent,
+        isNew: true,
+        createdAt: new Date().toISOString(),
+      };
+      try {
+        const existing = JSON.parse(localStorage.getItem('guro_teacher_custom_lessons') || '[]');
+        const updated = [newCustomLesson, ...existing.filter((l: any) => (l.topic || l.title) !== topic.trim())];
+        localStorage.setItem('guro_teacher_custom_lessons', JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to sync custom lesson to localStorage:', e);
+      }
+
       toast.success(`Successfully saved "${topic.trim()}" lesson with ${questions.length} questions manually!`);
       // Reset forms
       setTopic('');

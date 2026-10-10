@@ -13,7 +13,6 @@ describe('ClassroomCard', () => {
     term: 'Quarter 1',
   };
 
-  const mockOnSelectActive = jest.fn();
   const mockOnViewDetails = jest.fn();
 
   beforeEach(() => {
@@ -25,7 +24,6 @@ describe('ClassroomCard', () => {
       <ClassroomCard
         classroom={mockClassroom}
         isActive={false}
-        onSelectActive={mockOnSelectActive}
         onViewDetails={mockOnViewDetails}
       />
     );
@@ -37,57 +35,75 @@ describe('ClassroomCard', () => {
     expect(screen.getByText(/Grade 4/i)).toBeInTheDocument();
   });
 
-  test('indicates active state with badge', () => {
+  test('indicates active state with top badge and grade badge when inactive', () => {
     const { rerender } = render(
       <ClassroomCard
         classroom={mockClassroom}
         isActive={false}
-        onSelectActive={mockOnSelectActive}
         onViewDetails={mockOnViewDetails}
       />
     );
 
     expect(screen.queryByText('Active')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /set active/i })).toBeInTheDocument();
+    expect(screen.getByText('G4')).toBeInTheDocument();
 
     rerender(
       <ClassroomCard
         classroom={mockClassroom}
         isActive={true}
-        onSelectActive={mockOnSelectActive}
         onViewDetails={mockOnViewDetails}
       />
     );
 
     expect(screen.getByText('Active')).toBeInTheDocument();
-    expect(screen.getByText('Connected')).toBeInTheDocument();
   });
 
-  test('triggers onViewDetails when Details button is clicked', () => {
+  test('triggers onViewDetails when clicking anywhere on the card', () => {
     render(
       <ClassroomCard
         classroom={mockClassroom}
         isActive={false}
-        onSelectActive={mockOnSelectActive}
         onViewDetails={mockOnViewDetails}
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /details/i }));
+    fireEvent.click(screen.getByRole('button', { name: /section rizal/i }));
     expect(mockOnViewDetails).toHaveBeenCalledWith('MATH-4-RIZAL-789');
   });
 
-  test('triggers onSelectActive when Set Active is clicked', () => {
+  test('triggers onViewDetails on keyboard Enter', () => {
     render(
       <ClassroomCard
         classroom={mockClassroom}
         isActive={false}
-        onSelectActive={mockOnSelectActive}
         onViewDetails={mockOnViewDetails}
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /set active/i }));
-    expect(mockOnSelectActive).toHaveBeenCalledWith('MATH-4-RIZAL-789');
+    fireEvent.keyDown(screen.getByRole('button', { name: /section rizal/i }), { key: 'Enter' });
+    expect(mockOnViewDetails).toHaveBeenCalledWith('MATH-4-RIZAL-789');
+  });
+
+  test('copy button copies code and does not trigger onViewDetails', () => {
+    // Mock navigator.clipboard
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: jest.fn().mockResolvedValue(undefined),
+      },
+    });
+
+    render(
+      <ClassroomCard
+        classroom={mockClassroom}
+        isActive={false}
+        onViewDetails={mockOnViewDetails}
+      />
+    );
+
+    const copyBtn = screen.getByTitle(/copy classroom code/i);
+    fireEvent.click(copyBtn);
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('MATH-4-RIZAL-789');
+    expect(mockOnViewDetails).not.toHaveBeenCalled();
   });
 });

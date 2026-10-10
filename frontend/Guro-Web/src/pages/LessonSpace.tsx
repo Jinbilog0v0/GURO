@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from '../utils/toast';
 import { apiFetch } from '../utils/api';
-import { BookOpenText, Wrench, FolderOpen, Folder, FileText, Star, BookOpen, FileCheck, Loader2, X, Zap, Briefcase, Check, AlertTriangle, Hourglass, Languages, Lightbulb } from 'lucide-react';
+import { BookOpenText, Wrench, FolderOpen, Folder, FileText, Star, BookOpen, FileCheck, Loader2, X, Zap, Briefcase, Check, Sparkles, Hourglass, Languages, Lightbulb } from 'lucide-react';
 
 export interface Question {
   id: string;
@@ -118,7 +118,6 @@ export function LessonSpace({
        (currentUser?.userId ? localStorage.getItem(`guro_teacher_classroom_code_${currentUser.userId}`) : null) || 
        localStorage.getItem('guro_teacher_classroom_code'))
     : null;
-  const isMissingClassroom = isTeacher && !classCode;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -206,44 +205,72 @@ export function LessonSpace({
 
   const handleSave = async () => {
     if (stagedQuestions.length === 0) return;
-    if (isTeacher && !classCode) {
-      toast.error('Active Classroom Code Required.');
-      return;
-    }
 
     setIsCommiting(true);
-    const saveToastId = toast.loading('Saving questions to database...');
+    const saveToastId = toast.loading('Saving questions to custom lesson bank...');
     try {
-      const endpoint = isTeacher ? '/api/classroom/update-lesson' : '/api/save';
-      const payload = isTeacher ? {
-        classroomId: classCode,
-        subject,
-        grade: parseInt(grade),
-        topic: topic.trim(),
-        questions: stagedQuestions,
-        studyContent: stagedStudyContent,
-      } : {
-        subject,
-        grade: parseInt(grade),
-        topic: topic.trim(),
-        questions: stagedQuestions,
-        studyContent: stagedStudyContent,
-      };
-
-      const response = await apiFetch(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: 'Failed to save questions' }));
-        throw new Error(err.error || 'Failed to save questions');
-      }
-
-      const count = stagedQuestions.length;
       if (isTeacher) {
-        toast.success(`Successfully committed ${count} questions to your classroom's custom bank!`, { id: saveToastId });
+        // Save to custom lessons in localStorage with isNew badge
+        const newCustomLesson = {
+          id: `custom-${Date.now()}`,
+          title: topic.trim(),
+          topic: topic.trim(),
+          subject,
+          grade: parseInt(grade),
+          gradeLevel: parseInt(grade),
+          questions: stagedQuestions,
+          studyContent: stagedStudyContent,
+          isNew: true,
+          createdAt: new Date().toISOString(),
+        };
+
+        try {
+          const existing = JSON.parse(localStorage.getItem('guro_teacher_custom_lessons') || '[]');
+          const updated = [newCustomLesson, ...existing.filter((l: any) => (l.topic || l.title) !== topic.trim())];
+          localStorage.setItem('guro_teacher_custom_lessons', JSON.stringify(updated));
+        } catch (err) {
+          console.error('Failed to sync to custom lessons storage:', err);
+        }
+
+        // Also sync to active classroom backend if active class exists
+        if (classCode) {
+          try {
+            await apiFetch('/api/classroom/update-lesson', {
+              method: 'POST',
+              body: JSON.stringify({
+                classroomId: classCode,
+                subject,
+                grade: parseInt(grade),
+                topic: topic.trim(),
+                questions: stagedQuestions,
+                studyContent: stagedStudyContent,
+              }),
+            });
+          } catch (e) {
+            console.warn('Backend classroom sync skipped or failed:', e);
+          }
+        }
+
+        const count = stagedQuestions.length;
+        toast.success(`Successfully committed ${count} questions to your Custom Lessons!`, { id: saveToastId });
       } else {
+        const response = await apiFetch('/api/save', {
+          method: 'POST',
+          body: JSON.stringify({
+            subject,
+            grade: parseInt(grade),
+            topic: topic.trim(),
+            questions: stagedQuestions,
+            studyContent: stagedStudyContent,
+          }),
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({ error: 'Failed to save questions' }));
+          throw new Error(err.error || 'Failed to save questions');
+        }
+
+        const count = stagedQuestions.length;
         toast.success(`Successfully committed ${count} questions to Guro-Mobile global item bank!`, { id: saveToastId });
       }
       setStagedQuestions([]);
@@ -472,23 +499,10 @@ export function LessonSpace({
             <BookOpenText className="size-5 text-blue-500" /> Lesson Plan Ingestion
           </h3>
           
-          {isMissingClassroom && (
-            <div style={{
-              padding: '12px 16px',
-              backgroundColor: 'rgba(160, 19, 34, 0.1)',
-              border: '1px solid rgba(160, 19, 34, 0.2)',
-              borderRadius: '8px',
-              color: '#A01322',
-              fontSize: '12px',
-              lineHeight: '18px',
-              fontWeight: 600,
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '8px'
-            }}>
-              <AlertTriangle className="size-4 shrink-0 mt-0.5" />
-              <span>Active Classroom Code Required: Go to the <strong>Classroom Setup</strong> tab in the Teacher Console first so that your custom ingested lessons can be saved to your classroom's private bank.</span>
+          {isTeacher && (
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3 flex items-start gap-2.5 text-xs text-purple-700 dark:text-purple-300 font-semibold mb-2">
+              <Sparkles className="size-4 text-purple-500 shrink-0 mt-0.5" />
+              <span>Ingested lessons are saved directly into your <strong>Custom Lessons</strong> library with a <strong>NEW</strong> badge, ready to be assigned to any classroom.</span>
             </div>
           )}
           
@@ -675,8 +689,8 @@ export function LessonSpace({
             </h3>
             <button
               onClick={handleSave}
-              className={`btn btn-primary flex items-center gap-2 ${stagedQuestions.length === 0 || isCommiting || isMissingClassroom ? 'btn-disabled' : ''}`}
-              disabled={stagedQuestions.length === 0 || isCommiting || isMissingClassroom}
+              className={`btn btn-primary flex items-center gap-2 ${stagedQuestions.length === 0 || isCommiting ? 'btn-disabled' : ''}`}
+              disabled={stagedQuestions.length === 0 || isCommiting}
             >
               {isCommiting ? (
                 <>
