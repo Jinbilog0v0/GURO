@@ -110,8 +110,8 @@ describe('TeacherSpace Page', () => {
     const setupTabBtn = screen.getByText('Classroom Setup');
     fireEvent.click(setupTabBtn);
 
-    expect(await screen.findByText(/Active Classroom Config & Pairing/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('e.g. Teacher Maria')).toBeInTheDocument();
+    expect(await screen.findByText('My Classrooms')).toBeInTheDocument();
+    expect(screen.getByText('Set Up New Classroom')).toBeInTheDocument();
   });
 
   test('creating a new classroom', async () => {
@@ -144,7 +144,11 @@ describe('TeacherSpace Page', () => {
 
     fireEvent.click(screen.getByText('Classroom Setup'));
     
-    fireEvent.change(screen.getByPlaceholderText('e.g. Teacher Maria'), { target: { value: 'Teacher Maria' } });
+    // Open the creation modal
+    fireEvent.click(await screen.findByRole('button', { name: /Set Up New Classroom/i }));
+
+    expect(screen.getByRole('heading', { name: 'Set Up New Classroom' })).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText(/e.g. Teacher Maria/i), { target: { value: 'Teacher Maria' } });
     fireEvent.click(screen.getByText('Generate Classroom Invite Code'));
 
     await waitFor(() => {

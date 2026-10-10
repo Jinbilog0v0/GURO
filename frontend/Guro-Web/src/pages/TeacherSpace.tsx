@@ -8,9 +8,10 @@ import { PrePostTestAnalytics } from '../components/teacher/PrePostTestAnalytics
 import { EosyPromotionConsole } from '../components/teacher/EosyPromotionConsole';
 import { LessonManagement } from '../components/teacher/LessonManagement';
 import { ClassroomDetailView } from '../components/teacher/ClassroomDetailView';
+import { ClassroomManagement } from '../components/teacher/ClassroomManagement';
 import { StudentDirectory } from '../components/teacher/StudentDirectory';
 import { SkeletonStatCards, SkeletonCard, SkeletonTable } from '../components/shared/SkeletonLoader';
-import { School, TrendingUp, Key, Edit3, RotateCw, Folder, Plus, Zap, Settings, LogOut, Calculator, BookOpen, Check, ClipboardList, X, Lock, Search, User, Trash2, Target, GraduationCap, Clock, AlertCircle, Lightbulb, Calendar } from 'lucide-react';
+import { School, TrendingUp, Key, Edit3, RotateCw, Plus, Calculator, BookOpen, X, Search, User, Target, GraduationCap, Clock, AlertCircle, Lightbulb, Calendar } from 'lucide-react';
 import { toast } from '../utils/toast';
 import { apiFetch } from '../utils/api';
 import { ConfirmModal } from '../components/shared/ConfirmModal';
@@ -181,14 +182,6 @@ export function TeacherSpace({
     expiresAt?: string | null;
   } | null>(null);
 
-  const [setupName, setSetupName] = useState('');
-  const [setupSection, setSetupSection] = useState('');
-  const [setupSubject, setSetupSubject] = useState('Mathematics');
-  const [setupGrade, setSetupGrade] = useState(4);
-  const [setupSchoolYear, setSetupSchoolYear] = useState('2026-2027');
-  const [setupTerm, setSetupTerm] = useState('Quarter 1');
-  const [setupDuration, setSetupDuration] = useState(0);
-  const [isCreatingClass, setIsCreatingClass] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
 
   const fetchClassroomData = async (code: string) => {
@@ -1541,7 +1534,7 @@ export function TeacherSpace({
             </h2>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-700 dark:text-sky-300 text-xs font-bold shadow-xs" title="Current Academic Period">
               <Calendar className="size-3.5 text-sky-500 shrink-0" />
-              <span>Academic Period: S.Y. {classroomData?.schoolYear || setupSchoolYear || '2026-2027'} • {classroomData?.term || setupTerm || 'Quarter 1'}</span>
+              <span>Academic Period: S.Y. {classroomData?.schoolYear || '2026-2027'} • {classroomData?.term || 'Quarter 1'}</span>
             </div>
             <div className="flex bg-white/5 border border-[var(--border-color)] rounded-[10px] p-1 gap-1 flex-wrap">
               <button
@@ -1648,565 +1641,148 @@ export function TeacherSpace({
             onDeleteLesson={(les) => setDeleteTopicTarget(les)}
           />
         ) : (
-        <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <h3 style={{ fontSize: '18px', color: 'var(--text-main)', fontWeight: 700, margin: 0, paddingLeft: '4px' }}>
-            Active Classroom Config & Pairing
-          </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', width: '100%' }}>
-
-          {/* Left Column: Classroom Directory & Creation Form */}
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '18px', padding: '24px 26px', display: 'flex', flexDirection: 'column', gap: '24px', boxShadow: '0 2px 10px rgba(20,30,55,0.06)' }}>
-            <h3 style={{ fontSize: '18px', color: 'var(--text-main)', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Folder size={18} className="text-[#11428E] shrink-0" />
-              <span>Classroom Directory</span>
-            </h3>
-
-            {/* Switch / Select Classroom List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label>Select Active Classroom Session</label>
-              {classroomHistory.length === 0 ? (
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic', padding: '10px 0' }}>
-                  No classrooms created yet. Use the form below to get started!
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto' }}>
-                  {classroomHistory.map(c => {
-                    const isActive = classroomCode === c.id;
-                    return (
-                      <div
-                        key={c.id}
-                        className="flex items-center justify-between gap-2 p-1.5 rounded-xl border transition-all"
-                        style={{
-                          border: isActive ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
-                          backgroundColor: isActive ? 'var(--accent-primary-glow)' : 'rgba(255,255,255,0.02)',
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (user?.userId) {
-                              localStorage.setItem(`guro_teacher_classroom_code_${user.userId}`, c.id);
-                            }
-                            localStorage.setItem('guro_teacher_classroom_code', c.id);
-                            setClassroomCode(c.id);
-                            setClassroomData({
-                              classroomId: c.id,
-                              teacherName: c.teacherName,
-                              subject: c.subject,
-                              gradeLevel: c.gradeLevel,
-                              schoolYear: c.schoolYear,
-                              term: c.term,
-                              sectionName: c.sectionName,
-                              expiresAt: c.expiresAt
-                            });
-                            setSelectedModules([]);
-                            refreshLogs();
-                          }}
-                          className="flex items-center gap-2 flex-1 text-left bg-transparent border-none cursor-pointer p-1"
-                        >
-                          {isActive ? (
-                            <span className="w-2 h-2 rounded-full bg-[#10B981] inline-block shadow-[0_0_8px_#10B981] shrink-0" />
-                          ) : (
-                            <Key size={12} className="text-[var(--text-muted)] inline-block shrink-0" />
-                          )}
-                          <span className="text-xs truncate font-medium text-[var(--text-main)]">
-                            <strong className="font-mono">{c.id}</strong> - {c.teacherName} ({c.subject} • G{c.gradeLevel}{c.sectionName ? ` • ${c.sectionName}` : ''})
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (user?.userId) {
-                              localStorage.setItem(`guro_teacher_classroom_code_${user.userId}`, c.id);
-                            }
-                            localStorage.setItem('guro_teacher_classroom_code', c.id);
-                            setClassroomCode(c.id);
-                            setClassroomData({
-                              classroomId: c.id,
-                              teacherName: c.teacherName,
-                              subject: c.subject,
-                              gradeLevel: c.gradeLevel,
-                              schoolYear: c.schoolYear,
-                              term: c.term,
-                              sectionName: c.sectionName,
-                              expiresAt: c.expiresAt
-                            });
-                            setSelectedClassroomForDetail(c.id);
-                            refreshLogs();
-                          }}
-                          className="px-2 py-1 bg-white/10 hover:bg-white/20 text-xs font-semibold rounded-lg text-indigo-400 border border-indigo-400/20 cursor-pointer shrink-0"
-                          title="Drill down into classroom details"
-                        >
-                          Details →
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Creation Form (Always Visible) */}
-            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <span style={{ fontSize: '14px', color: 'var(--text-main)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Plus size={16} className="text-[#11428E] shrink-0" /> Setup a New Classroom
-              </span>
-
-              <div className="form-group">
-                <label>Teacher Name</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Teacher Maria" 
-                  value={setupName}
-                  onChange={(e) => setSetupName(e.target.value)}
-                  style={{ padding: '10px 14px' }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Section Name</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Rizal, Emerald, Section A (Optional)" 
-                  value={setupSection}
-                  onChange={(e) => setSetupSection(e.target.value)}
-                  style={{ padding: '10px 14px' }}
-                />
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', display: 'block' }}>
-                  Generates dedicated classroom code with section slug (e.g. ENG-G6-RIZAL)
-                </span>
-              </div>
-
-              <div className="form-group">
-                <label>Subject Focus</label>
-                <select 
-                  value={setupSubject} 
-                  onChange={(e) => setSetupSubject(e.target.value)}
-                  style={{ padding: '10px 14px' }}
-                >
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="English">English</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="form-group">
-                  <label>Grade Level</label>
-                  <select 
-                    value={setupGrade} 
-                    onChange={(e) => setSetupGrade(Number(e.target.value))}
-                    style={{ padding: '10px 14px' }}
-                  >
-                    <option value={4}>Grade 4</option>
-                    <option value={5}>Grade 5</option>
-                    <option value={6}>Grade 6</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>School Year (SY)</label>
-                  <select 
-                    value={setupSchoolYear} 
-                    onChange={(e) => setSetupSchoolYear(e.target.value)}
-                    style={{ padding: '10px 14px' }}
-                  >
-                    <option value="2026-2027">2026-2027</option>
-                    <option value="2027-2028">2027-2028</option>
-                    <option value="2025-2026">2025-2026</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Academic Term / Quarter</label>
-                <select 
-                  value={setupTerm} 
-                  onChange={(e) => setSetupTerm(e.target.value)}
-                  style={{ padding: '10px 14px' }}
-                >
-                  <option value="Quarter 1">Quarter 1 (Term 1)</option>
-                  <option value="Quarter 2">Quarter 2 (Term 2)</option>
-                  <option value="Quarter 3">Quarter 3 (Term 3)</option>
-                  <option value="Quarter 4">Quarter 4 (Term 4)</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Session Invite Duration</label>
-                <select 
-                  value={setupDuration} 
-                  onChange={(e) => setSetupDuration(Number(e.target.value))}
-                  style={{ padding: '10px 14px' }}
-                >
-                  <option value={0}>No Limit (Always Open)</option>
-                  <option value={30}>30 Minutes</option>
-                  <option value={60}>1 Hour</option>
-                  <option value={120}>2 Hours</option>
-                  <option value={1440}>24 Hours</option>
-                </select>
-              </div>
-
-              <button 
-                type="button" 
-                className="btn btn-primary"
-                disabled={isCreatingClass || isPendingVerification || isRejectedVerification}
-                onClick={async () => {
-                  if (isPendingVerification) {
-                    toast.error('Classroom generation is restricted until teacher verification is approved by an administrator.');
-                    return;
+          <ClassroomManagement
+            classrooms={classroomHistory.map(c => ({
+              id: c.id,
+              teacherName: c.teacherName,
+              subject: c.subject,
+              gradeLevel: c.gradeLevel,
+              sectionName: c.sectionName,
+              schoolYear: c.schoolYear,
+              term: c.term,
+              expiresAt: c.expiresAt
+            }))}
+            activeClassroomCode={classroomCode}
+            activeClassroomData={classroomData}
+            onSelectActiveClassroom={(id) => {
+              if (user?.userId) {
+                localStorage.setItem(`guro_teacher_classroom_code_${user.userId}`, id);
+              }
+              localStorage.setItem('guro_teacher_classroom_code', id);
+              setClassroomCode(id);
+              const found = classroomHistory.find(c => c.id === id);
+              if (found) {
+                setClassroomData({
+                  classroomId: found.id,
+                  teacherName: found.teacherName,
+                  subject: found.subject,
+                  gradeLevel: found.gradeLevel,
+                  schoolYear: found.schoolYear,
+                  term: found.term,
+                  sectionName: found.sectionName,
+                  expiresAt: found.expiresAt
+                });
+              }
+              setSelectedModules([]);
+              refreshLogs();
+            }}
+            onDeselectActiveClassroom={() => {
+              if (user?.userId) {
+                localStorage.removeItem(`guro_teacher_classroom_code_${user.userId}`);
+              }
+              localStorage.removeItem('guro_teacher_classroom_code');
+              setClassroomCode(null);
+              setClassroomData(null);
+              setSelectedModules([]);
+              refreshLogs();
+            }}
+            onViewClassroomDetails={(id) => {
+              setSelectedClassroomForDetail(id);
+            }}
+            onCreateClassroom={async (formData) => {
+              try {
+                const res = await apiFetch('/api/classroom/create', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(formData)
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  if (user?.userId) {
+                    localStorage.setItem(`guro_teacher_classroom_code_${user.userId}`, data.classroomId);
                   }
-                  if (isRejectedVerification) {
-                    toast.error('Classroom generation is disabled for rejected accounts. Please contact support.');
-                    return;
-                  }
-                  if (!setupName.trim()) {
-                    toast.error('Please enter your name.');
-                    return;
-                  }
-                  setIsCreatingClass(true);
-                  try {
-                    const res = await apiFetch('/api/classroom/create', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        teacherName: setupName.trim(),
-                        sectionName: setupSection.trim(),
-                        subject: setupSubject,
-                        gradeLevel: setupGrade,
-                        schoolYear: setupSchoolYear,
-                        term: setupTerm,
-                        duration: setupDuration
-                      })
-                    });
-                    if (res.ok) {
-                      const data = await res.json();
-                      if (user?.userId) {
-                        localStorage.setItem(`guro_teacher_classroom_code_${user.userId}`, data.classroomId);
-                      }
-                      localStorage.setItem('guro_teacher_classroom_code', data.classroomId);
-                      setClassroomCode(data.classroomId);
-                      setClassroomData(data);
-                      setSetupName('');
-                      setSetupSection('');
-                      refreshLogs();
-                      
-                      // Add to history
-                      setClassroomHistory((prev) => {
-                        if (prev.some(c => c.id === data.classroomId)) return prev;
-                        const updated = [...prev, {
-                          id: data.classroomId,
-                          teacherName: data.teacherName,
-                          subject: data.subject,
-                          gradeLevel: data.gradeLevel,
-                          schoolYear: data.schoolYear,
-                          term: data.term,
-                          sectionName: data.sectionName || data.section_name || setupSection.trim() || undefined,
-                          expiresAt: data.expiresAt
-                        }];
-                        if (user?.userId) {
-                          localStorage.setItem(`guro_teacher_classroom_history_${user.userId}`, JSON.stringify(updated));
-                        }
-                        localStorage.setItem('guro_teacher_classroom_history', JSON.stringify(updated));
-                        return updated;
-                      });
-                    } else {
-                      const errData = await res.json().catch(() => null);
-                      throw new Error(errData?.error || 'Failed to create classroom.');
+                  localStorage.setItem('guro_teacher_classroom_code', data.classroomId);
+                  setClassroomCode(data.classroomId);
+                  setClassroomData(data);
+                  refreshLogs();
+
+                  setClassroomHistory((prev) => {
+                    if (prev.some(c => c.id === data.classroomId)) return prev;
+                    const updated = [...prev, {
+                      id: data.classroomId,
+                      teacherName: data.teacherName,
+                      subject: data.subject,
+                      gradeLevel: data.gradeLevel,
+                      schoolYear: data.schoolYear,
+                      term: data.term,
+                      sectionName: data.sectionName || data.section_name || formData.sectionName || undefined,
+                      expiresAt: data.expiresAt
+                    }];
+                    if (user?.userId) {
+                      localStorage.setItem(`guro_teacher_classroom_history_${user.userId}`, JSON.stringify(updated));
                     }
-                  } catch (e: any) {
-                    toast.error(e.message || 'Error occurred.');
-                  } finally {
-                    setIsCreatingClass(false);
-                  }
-                }}
-                style={{ marginTop: '5px' }}
-              >
-                {isCreatingClass ? 'Generating Code...' : isPendingVerification ? (
-                  <span className="flex items-center justify-center gap-1.5 opacity-80">
-                    <Lock size={14} className="shrink-0" />
-                    <span>Verification Pending (Classroom Locked)</span>
-                  </span>
-                ) : isRejectedVerification ? (
-                  <span className="flex items-center justify-center gap-1.5 opacity-80">
-                    <Lock size={14} className="shrink-0" />
-                    <span>Verification Rejected</span>
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center gap-1.5">
-                    <Zap size={14} className="shrink-0" />
-                    <span>Generate Classroom Invite Code</span>
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Right Column: Active Session Configurations */}
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '18px', padding: '24px 26px', display: 'flex', flexDirection: 'column', gap: '24px', boxShadow: '0 2px 10px rgba(20,30,55,0.06)' }}>
-            {classroomCode && classroomData ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-                  <h3 style={{ fontSize: '18px', color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Settings size={18} className="text-[#11428E] shrink-0" />
-                    <span>Session Control</span>
-                  </h3>
-                  <button
-                    onClick={() => {
-                      if (user?.userId) {
-                        localStorage.removeItem(`guro_teacher_classroom_code_${user.userId}`);
-                      }
-                      localStorage.removeItem('guro_teacher_classroom_code');
-                      setClassroomCode(null);
-                      setClassroomData(null);
-                      setSelectedModules([]);
-                      refreshLogs();
-                    }}
-                    className="btn btn-secondary flex items-center gap-1.5"
-                    style={{ padding: '6px 12px', fontSize: '12px' }}
-                  >
-                    <LogOut size={12} className="shrink-0" />
-                    <span>Deselect Session</span>
-                  </button>
-                </div>
-
-                <div style={{ padding: '20px', backgroundColor: 'var(--accent-primary-glow)', border: '1px solid var(--accent-primary-glow)', borderRadius: '14px', textAlign: 'center' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>Invite Code for Students</span>
-                  <div style={{ fontSize: '32px', fontWeight: 800, color: '#11428E', letterSpacing: '3px', marginTop: '6px', fontFamily: 'monospace' }}>
-                    {classroomCode}
-                  </div>
-                  
-                  {/* Expiration timer display */}
-                  <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <InviteExpirationTimer 
-                      classroomCode={classroomCode}
-                      expiresAt={classroomData.expiresAt} 
-                      onExpired={() => {
-                        fetchClassroomData(classroomCode);
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: 'var(--text-main)', backgroundColor: 'var(--bg-main)', padding: '14px', borderRadius: '11px', border: '1px solid var(--border-color)' }}>
-                  <div><strong>Teacher Name:</strong> {classroomData.teacherName}</div>
-                  <div><strong>Subject Focus:</strong> {classroomData.subject}</div>
-                  <div><strong>Grade Level:</strong> Grade {classroomData.gradeLevel}</div>
-                  {classroomData.sectionName && (
-                    <div><strong>Section:</strong> {classroomData.sectionName}</div>
-                  )}
-                  <div><strong>School Year:</strong> {classroomData.schoolYear || '2026-2027'}</div>
-                  <div><strong>Academic Term:</strong> {classroomData.term || 'Quarter 1'}</div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Select Modules to Claim:
-                  </span>
-                  {globalBank ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto', padding: '12px', border: '1px solid var(--border-color)', borderRadius: '10px', backgroundColor: 'var(--bg-main)' }}>
-                      {getSelectableTopics().map((mod) => {
-                        const isClaimed = isTopicAlreadyClaimed(mod.subject, mod.grade, mod.topic);
-                        const isSelected = isClaimed || selectedModules.some(
-                          s => s.subject === mod.subject && s.grade === mod.grade && s.topic === mod.topic
-                        );
-                        return (
-                          <label 
-                            key={`${mod.subject}-${mod.grade}-${mod.topic}`} 
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '10px', 
-                              cursor: isClaimed ? 'not-allowed' : 'pointer', 
-                              fontSize: '13px', 
-                              padding: '6px 10px', 
-                              borderRadius: '6px', 
-                              color: isClaimed ? 'var(--text-muted)' : 'var(--text-main)',
-                              backgroundColor: isClaimed ? 'rgba(255,255,255,0.01)' : isSelected ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
-                              opacity: isClaimed ? 0.7 : 1,
-                              transition: 'background-color 0.2s',
-                              textTransform: 'none'
-                            }}
-                          >
-                            <input 
-                              type="checkbox" 
-                              checked={isSelected}
-                              disabled={isClaimed}
-                              onChange={() => {
-                                if (isClaimed) return;
-                                if (isSelected) {
-                                  setSelectedModules(prev => prev.filter(
-                                    s => !(s.subject === mod.subject && s.grade === mod.grade && s.topic === mod.topic)
-                                  ));
-                                } else {
-                                  setSelectedModules(prev => [...prev, mod]);
-                                }
-                              }}
-                              style={{ width: '16px', height: '16px', cursor: isClaimed ? 'not-allowed' : 'pointer' }}
-                            />
-                            <span className="flex items-center gap-1.5">
-                              {mod.subject === 'Mathematics' ? (
-                                <Calculator size={14} className="text-[#11428E] shrink-0" />
-                              ) : (
-                                <BookOpen size={14} className="text-emerald-500 shrink-0" />
-                              )}
-                              <strong>{mod.subject === 'Mathematics' ? 'Math' : 'English'}</strong> (Grade {mod.grade}) - {mod.topic}
-                              {isClaimed && (
-                                <span style={{ marginLeft: '8px', fontSize: '11px', color: 'var(--success)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] inline-block shadow-[0_0_6px_#10B981]" />
-                                  <span>Claimed</span>
-                                </span>
-                              )}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                      Loading available templates...
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', gap: '16px', marginTop: '10px' }}>
-                  {(() => {
-                    const selectable = getSelectableTopics();
-                    const unclaimedSelectable = selectable.filter(m => !isTopicAlreadyClaimed(m.subject, m.grade, m.topic));
-                    const newClaims = selectedModules.filter(m => !isTopicAlreadyClaimed(m.subject, m.grade, m.topic));
-                    const allClaimed = unclaimedSelectable.length === 0;
-
-                    return (
-                      <button 
-                        type="button" 
-                        className="btn btn-primary" 
-                        disabled={isClaiming || allClaimed || newClaims.length === 0}
-                        onClick={async () => {
-                          if (newClaims.length === 0) {
-                            toast.error('Please select at least one new module to claim.');
-                            return;
-                          }
-                          setIsClaiming(true);
-                          try {
-                            const res = await apiFetch('/api/classroom/claim', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ 
-                                classroomId: classroomCode,
-                                selections: newClaims
-                              })
-                            });
-                            if (res.ok) {
-                              const data = await res.json();
-                              toast.success(`Successfully claimed ${newClaims.length} curriculum template(s)!`);
-                              setClassroomData(prev => prev ? {
-                                ...prev,
-                                customItemBank: data.customItemBank
-                              } : null);
-                            } else {
-                              throw new Error('Failed to claim template.');
-                            }
-                          } catch (e: any) {
-                            toast.error(e.message || 'Error claiming template.');
-                          } finally {
-                            setIsClaiming(false);
-                          }
-                        }}
-                        style={{ 
-                          flex: 1,
-                          opacity: allClaimed ? 0.5 : 1,
-                          cursor: allClaimed ? 'not-allowed' : 'pointer'
-                        }}
-                      >
-                        {isClaiming ? (
-                          'Claiming Templates...'
-                        ) : allClaimed ? (
-                          <span className="flex items-center justify-center gap-1.5">
-                            <Check size={16} className="text-[#10B981] shrink-0" strokeWidth={3} />
-                            <span>All Curriculum Active</span>
-                          </span>
-                        ) : (
-                          <span className="flex items-center justify-center gap-1.5">
-                            <ClipboardList size={16} className="shrink-0" />
-                            <span>Claim Selected ({newClaims.length} New)</span>
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })()}
-                </div>
-
-                {/* Active Classroom Lessons (Edit & Delete) */}
-                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Active Classroom Lessons ({getActiveClassroomTopics().length}):
-                  </span>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
-                    {getActiveClassroomTopics().map((mod) => (
-                      <div 
-                        key={`${mod.subject}-${mod.grade}-${mod.topic}`}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '8px 12px',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '8px',
-                          backgroundColor: 'var(--bg-main)',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                          {mod.subject === 'Mathematics' ? (
-                            <Calculator size={14} className="text-[#3b82f6] shrink-0" />
-                          ) : (
-                            <BookOpen size={14} className="text-emerald-500 shrink-0" />
-                          )}
-                          <span style={{ fontSize: '13px', color: 'var(--text-main)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                            <strong>{mod.topic}</strong> (G{mod.grade})
-                          </span>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleStartEdit(mod.subject, mod.grade, mod.topic, mod.data)}
-                            className="bg-transparent border-none text-[var(--accent-primary-text)] hover:opacity-80 cursor-pointer p-1"
-                            title="Edit Lesson"
-                          >
-                            <Edit3 size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteTopic(mod.subject, mod.grade, mod.topic)}
-                            className="bg-transparent border-none text-[var(--accent-secondary)] hover:opacity-80 cursor-pointer p-1"
-                            title="Delete Lesson"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {getActiveClassroomTopics().length === 0 && (
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center', padding: '10px' }}>
-                        No lessons claimed yet.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: '300px', color: 'var(--text-muted)' }}>
-                <School size={48} className="text-slate-400 shrink-0" />
-                <span style={{ fontSize: '15px', fontWeight: 600, textAlign: 'center' }}>No Active Classroom Selected</span>
-                <span style={{ fontSize: '12px', textAlign: 'center', maxWidth: '300px' }}>
-                  Select an existing classroom from the Directory on the left, or create a new session code to begin managing paired templates.
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-      )
+                    localStorage.setItem('guro_teacher_classroom_history', JSON.stringify(updated));
+                    return updated;
+                  });
+                  toast.success(`Classroom ${data.classroomId} created successfully!`);
+                } else {
+                  const errData = await res.json().catch(() => null);
+                  throw new Error(errData?.error || 'Failed to create classroom.');
+                }
+              } catch (e: any) {
+                toast.error(e.message || 'Error occurred.');
+                throw e;
+              }
+            }}
+            defaultTeacherName={user?.name || ''}
+            isPendingVerification={isPendingVerification}
+            isRejectedVerification={isRejectedVerification}
+            selectableTopics={getSelectableTopics()}
+            isTopicClaimed={(sub, gr, top) => isTopicAlreadyClaimed(sub, gr, top)}
+            onClaimTopics={async (newClaims) => {
+              setIsClaiming(true);
+              try {
+                const res = await apiFetch('/api/classroom/claim', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    classroomId: classroomCode,
+                    selections: newClaims
+                  })
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  toast.success(`Successfully claimed ${newClaims.length} curriculum template(s)!`);
+                  setClassroomData(prev => prev ? {
+                    ...prev,
+                    customItemBank: data.customItemBank
+                  } : null);
+                } else {
+                  throw new Error('Failed to claim template.');
+                }
+              } catch (e: any) {
+                toast.error(e.message || 'Error claiming template.');
+              } finally {
+                setIsClaiming(false);
+              }
+            }}
+            isClaiming={isClaiming}
+            activeClassroomTopics={getActiveClassroomTopics()}
+            onEditLesson={(sub, gr, top, data) => handleStartEdit(sub, gr, top, data)}
+            onDeleteLesson={(sub, gr, top) => handleDeleteTopic(sub, gr, top)}
+            onLockClassroom={async () => {
+              if (!classroomCode) return;
+              const res = await apiFetch('/api/classroom/lock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ classroomId: classroomCode })
+              });
+              if (res.ok) {
+                fetchClassroomData(classroomCode);
+              }
+            }}
+          />
+        )
       ) : (activeSubTab === 'lessons' || activeSubTab === 'lessons-system' || activeSubTab === 'lessons-custom' || activeSubTab === 'manual-lesson') ? (
         isAuthoringLesson || activeSubTab === 'manual-lesson' ? (
           <div>
@@ -2547,87 +2123,6 @@ function StatCard({ label, value, accentColor, valueColor }: {
       <span className="absolute left-0 top-4 bottom-4 w-1 rounded-[0_4px_4px_0]" style={{ background: accentColor }} />
       <div className="text-[11px] font-extrabold tracking-[0.08em] uppercase text-[var(--text-muted)]">{label}</div>
       <div className="text-[34px] font-extrabold mt-2 text-[var(--text-main)]" style={valueColor ? { color: valueColor } : undefined}>{value}</div>
-    </div>
-  );
-}
-
-function InviteExpirationTimer({ 
-  classroomCode, 
-  expiresAt, 
-  onExpired 
-}: { 
-  classroomCode: string; 
-  expiresAt?: string | null; 
-  onExpired: () => void 
-}) {
-  const [now, setNow] = useState(() => Date.now());
-  const [isLocking, setIsLocking] = useState(false);
-
-  useEffect(() => {
-    if (!expiresAt) return;
-    const intervalId = setInterval(() => {
-      setNow(Date.now());
-    }, 1000);
-    return () => clearInterval(intervalId);
-  }, [expiresAt, classroomCode]);
-
-  const expiryTime = expiresAt ? new Date(expiresAt).getTime() : null;
-  const diff = expiryTime !== null ? expiryTime - now : null;
-  const isExpired = diff !== null && diff <= 0;
-  const timeLeft = !expiresAt
-    ? 'Always Open (No Limit)'
-    : isExpired
-      ? 'Expired / Locked'
-      : `Expires in ${Math.floor(diff! / 60000)}m ${Math.floor((diff! % 60000) / 1000)}s`;
-
-  useEffect(() => {
-    if (isExpired) {
-      onExpired();
-    }
-  }, [isExpired, onExpired]);
-
-  const handleLockNow = async () => {
-    setIsLocking(true);
-    try {
-      const res = await apiFetch('/api/classroom/lock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classroomId: classroomCode })
-      });
-      if (res.ok) {
-        onExpired();
-      }
-    } catch (e) {
-      console.error('Error locking session:', e);
-    } finally {
-      setIsLocking(false);
-    }
-  };
-
-  if (isExpired) {
-    return (
-      <span className="text-xs text-[var(--danger)] font-bold inline-flex items-center gap-1.5">
-        <Lock size={12} /> Expiration Status: Locked / Closed
-      </span>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs text-[var(--success)] font-bold flex items-center gap-1.5">
-        <span className="w-2 h-2 rounded-full bg-[#10B981] inline-block shadow-[0_0_8px_#10B981]" />
-        <span>Active - {timeLeft}</span>
-      </span>
-      {expiresAt && (
-        <button
-          onClick={handleLockNow}
-          disabled={isLocking}
-          className="btn btn-secondary px-2 py-1 text-[10px] rounded flex items-center gap-1"
-        >
-          <Lock size={10} className="shrink-0" />
-          <span>Lock Now</span>
-        </button>
-      )}
     </div>
   );
 }
