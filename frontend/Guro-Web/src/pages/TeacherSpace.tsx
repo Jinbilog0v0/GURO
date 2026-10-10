@@ -10,6 +10,7 @@ import { LessonManagement } from '../components/teacher/LessonManagement';
 import { ClassroomDetailView } from '../components/teacher/ClassroomDetailView';
 import { ClassroomManagement } from '../components/teacher/ClassroomManagement';
 import { StudentDirectory } from '../components/teacher/StudentDirectory';
+import { LessonSpace } from './LessonSpace';
 import { SkeletonStatCards, SkeletonCard, SkeletonTable } from '../components/shared/SkeletonLoader';
 import { School, TrendingUp, Key, Edit3, RotateCw, Plus, Calculator, BookOpen, X, Search, User, Target, GraduationCap, Clock, AlertCircle, Lightbulb, Calendar } from 'lucide-react';
 import { toast } from '../utils/toast';
@@ -33,10 +34,12 @@ export type TeacherSubTab =
   | 'lessons' 
   | 'lessons-system'
   | 'lessons-custom'
+  | 'lesson-ingestor'
   | 'analytics' 
   | 'analytics-mastery'
   | 'analytics-directory'
   | 'analytics-growth'
+  | 'analytics-eosy'
   | 'eosy-promotion' 
   | 'classroom-pairing' 
   | 'manual-lesson' 
@@ -124,16 +127,18 @@ export function TeacherSpace({
   // Drill-down classroom ID state
   const [selectedClassroomForDetail, setSelectedClassroomForDetail] = useState<string | null>(null);
 
-  // Segmented control for Analytics: 'mastery' | 'directory' | 'growth'
-  const [analyticsSegment, setAnalyticsSegment] = useState<'mastery' | 'directory' | 'growth'>(() => {
+  // Segmented control for Analytics: 'mastery' | 'directory' | 'growth' | 'eosy'
+  const [analyticsSegment, setAnalyticsSegment] = useState<'mastery' | 'directory' | 'growth' | 'eosy'>(() => {
     if (activeSubTab === 'analytics-directory') return 'directory';
     if (activeSubTab === 'analytics-growth' || activeSubTab === 'pre-post-test') return 'growth';
+    if (activeSubTab === 'analytics-eosy' || activeSubTab === 'eosy-promotion') return 'eosy';
     return 'mastery';
   });
 
   useEffect(() => {
     if (activeSubTab === 'analytics-directory') setAnalyticsSegment('directory');
     else if (activeSubTab === 'analytics-growth' || activeSubTab === 'pre-post-test') setAnalyticsSegment('growth');
+    else if (activeSubTab === 'analytics-eosy' || activeSubTab === 'eosy-promotion') setAnalyticsSegment('eosy');
     else if (activeSubTab === 'analytics-mastery') setAnalyticsSegment('mastery');
   }, [activeSubTab]);
 
@@ -1538,20 +1543,40 @@ export function TeacherSpace({
             </div>
             <div className="flex bg-white/5 border border-[var(--border-color)] rounded-[10px] p-1 gap-1 flex-wrap">
               <button
-                onClick={() => setActiveSubTab('analytics')}
+                onClick={() => {
+                  setActiveSubTab('analytics-mastery');
+                  setAnalyticsSegment('mastery');
+                }}
                 className={`px-3.5 py-1.5 border-none font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 flex items-center gap-1.5 ${
-                  activeSubTab === 'analytics'
+                  ((activeSubTab === 'analytics' || activeSubTab === 'analytics-mastery') && analyticsSegment === 'mastery')
                     ? 'bg-white/10 text-[var(--text-main)]'
                     : 'bg-transparent text-[var(--text-muted)]'
                 }`}
               >
                 <TrendingUp size={14} className="shrink-0" />
-                <span>Classroom Analytics</span>
+                <span>Classroom Mastery</span>
               </button>
               <button
-                onClick={() => setActiveSubTab('pre-post-test')}
+                onClick={() => {
+                  setActiveSubTab('analytics-directory');
+                  setAnalyticsSegment('directory');
+                }}
                 className={`px-3.5 py-1.5 border-none font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 flex items-center gap-1.5 ${
-                  activeSubTab === 'pre-post-test'
+                  analyticsSegment === 'directory' || activeSubTab === 'analytics-directory'
+                    ? 'bg-white/10 text-[var(--text-main)]'
+                    : 'bg-transparent text-[var(--text-muted)]'
+                }`}
+              >
+                <User size={14} className="shrink-0" />
+                <span>Student Directory</span>
+              </button>
+              <button
+                onClick={() => {
+                  setActiveSubTab('pre-post-test');
+                  setAnalyticsSegment('growth');
+                }}
+                className={`px-3.5 py-1.5 border-none font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 flex items-center gap-1.5 ${
+                  analyticsSegment === 'growth' || activeSubTab === 'pre-post-test' || activeSubTab === 'analytics-growth'
                     ? 'bg-white/10 text-[var(--text-main)]'
                     : 'bg-transparent text-[var(--text-muted)]'
                 }`}
@@ -1560,15 +1585,18 @@ export function TeacherSpace({
                 <span>Pre/Post Growth</span>
               </button>
               <button
-                onClick={() => setActiveSubTab('eosy-promotion')}
+                onClick={() => {
+                  setActiveSubTab('eosy-promotion');
+                  setAnalyticsSegment('eosy');
+                }}
                 className={`px-3.5 py-1.5 border-none font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 flex items-center gap-1.5 ${
-                  activeSubTab === 'eosy-promotion'
+                  analyticsSegment === 'eosy' || activeSubTab === 'eosy-promotion' || activeSubTab === 'analytics-eosy'
                     ? 'bg-white/10 text-[var(--text-main)]'
                     : 'bg-transparent text-[var(--text-muted)]'
                 }`}
               >
                 <GraduationCap size={14} className="shrink-0" />
-                <span>EOSY Promotion</span>
+                <span>EOSY & Promotion</span>
               </button>
               <button
                 onClick={() => setActiveSubTab('classroom-pairing')}
@@ -1807,8 +1835,23 @@ export function TeacherSpace({
             }}
           />
         )
-      ) : (activeSubTab === 'lessons' || activeSubTab === 'lessons-system' || activeSubTab === 'lessons-custom' || activeSubTab === 'manual-lesson') ? (
-        isAuthoringLesson || activeSubTab === 'manual-lesson' ? (
+      ) : (activeSubTab === 'lessons' || activeSubTab === 'lessons-system' || activeSubTab === 'lessons-custom' || activeSubTab === 'manual-lesson' || activeSubTab === 'lesson-ingestor') ? (
+        activeSubTab === 'lesson-ingestor' ? (
+          <div>
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSubTab('lessons-custom');
+                }}
+                className="btn btn-secondary px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5"
+              >
+                ← Back to Lesson Library
+              </button>
+            </div>
+            <LessonSpace currentUser={user} />
+          </div>
+        ) : isAuthoringLesson || activeSubTab === 'manual-lesson' ? (
           <div>
             <div className="mb-4">
               <button
@@ -1843,18 +1886,13 @@ export function TeacherSpace({
               sectionName: c.sectionName
             }))}
             onCreateLesson={() => setIsAuthoringLesson(true)}
+            onOpenCreateLesson={() => setIsAuthoringLesson(true)}
+            onOpenIngestor={() => setActiveSubTab('lesson-ingestor')}
           />
         )
-      ) : activeSubTab === 'eosy-promotion' ? (
-        <EosyPromotionConsole
-          classroomCode={classroomCode}
-          onGoToClassroomSetup={() => setActiveSubTab('classrooms')}
-        />
       ) : (
-        /* Analytics SubTab ('analytics' or 'pre-post-test') */
+        /* Analytics SubTab ('analytics', 'analytics-mastery', 'analytics-directory', 'pre-post-test', 'eosy-promotion', etc.) */
         <div className="flex flex-col gap-6">
-          {/* Render Active Segment based on MenuBar Dropdown selection */}
-
           {/* Render Active Segment */}
           {analyticsSegment === 'directory' ? (
             <StudentDirectory
@@ -1865,6 +1903,11 @@ export function TeacherSpace({
             <PrePostTestAnalytics
               progressLogs={progressLogs}
               activeClassroomId={classroomCode}
+              onGoToClassroomSetup={() => setActiveSubTab('classrooms')}
+            />
+          ) : (analyticsSegment === 'eosy' || activeSubTab === 'eosy-promotion' || activeSubTab === 'analytics-eosy') ? (
+            <EosyPromotionConsole
+              classroomCode={classroomCode}
               onGoToClassroomSetup={() => setActiveSubTab('classrooms')}
             />
           ) : (

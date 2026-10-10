@@ -37,7 +37,9 @@ import {
   Users,
   BarChart3,
   Award,
-  Calendar
+  Calendar,
+  Sparkles,
+  Edit3
 } from 'lucide-react';
 
 interface SyncedEvent {
@@ -485,7 +487,7 @@ function App() {
     }`;
 
   const isTeacher = !isAdmin && (!currentUser || currentUser.role === 'teacher');
-  const isBuilderOrDev = !isAdmin && (!currentUser || currentUser.role === 'lesson-builder' || currentUser.role === 'developer' || currentUser.role === 'teacher');
+  const isBuilderOrDev = !isAdmin && (currentUser?.role === 'lesson-builder' || currentUser?.role === 'developer');
   const isParent = !isAdmin && (!currentUser || currentUser.role === 'parent');
 
   return (
@@ -637,10 +639,17 @@ function App() {
                         <span>My Custom Lessons</span>
                       </button>
                       <button
+                        onClick={() => { setActiveTab('teacher'); setActiveSubTab('lesson-ingestor'); }}
+                        className={subNavBtn(activeTab === 'teacher' && activeSubTab === 'lesson-ingestor')}
+                      >
+                        <Sparkles size={14} className="shrink-0 text-amber-400" />
+                        <span>AI Lesson Ingestor</span>
+                      </button>
+                      <button
                         onClick={() => { setActiveTab('teacher'); setActiveSubTab('manual-lesson'); }}
                         className={subNavBtn(activeTab === 'teacher' && activeSubTab === 'manual-lesson')}
                       >
-                        <Zap size={14} className="shrink-0 text-amber-400" />
+                        <Edit3 size={14} className="shrink-0 text-emerald-400" />
                         <span>Create Lesson Manually</span>
                       </button>
                     </div>
@@ -656,8 +665,8 @@ function App() {
                         setActiveSubTab('analytics-mastery');
                         toggleAnalyticsMenu();
                       }} 
-                      className={`${navBtn(activeTab === 'teacher' && (activeSubTab.startsWith('analytics') || activeSubTab === 'pre-post-test'))} justify-between pr-2`} 
-                      aria-current={activeTab === 'teacher' && (activeSubTab.startsWith('analytics') || activeSubTab === 'pre-post-test') ? 'page' : undefined}
+                      className={`${navBtn(activeTab === 'teacher' && (activeSubTab.startsWith('analytics') || activeSubTab === 'pre-post-test' || activeSubTab === 'eosy-promotion'))} justify-between pr-2`} 
+                      aria-current={activeTab === 'teacher' && (activeSubTab.startsWith('analytics') || activeSubTab === 'pre-post-test' || activeSubTab === 'eosy-promotion') ? 'page' : undefined}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <TrendingUp size={18} className="shrink-0 text-indigo-400" />
@@ -704,26 +713,22 @@ function App() {
                         <TrendingUp size={14} className="shrink-0 text-amber-400" />
                         <span>Pre / Post Test Growth</span>
                       </button>
+                      <button
+                        onClick={() => { setActiveTab('teacher'); setActiveSubTab('eosy-promotion'); }}
+                        className={subNavBtn(activeTab === 'teacher' && activeSubTab === 'eosy-promotion')}
+                      >
+                        <GraduationCap size={14} className="shrink-0 text-amber-500" />
+                        <span>EOSY & Promotion</span>
+                      </button>
                     </div>
                   )}
                 </div>
-
-                {/* 4. EOSY & Promotion */}
-                <button 
-                  onClick={() => { setActiveTab('teacher'); setActiveSubTab('eosy-promotion'); }} 
-                  className={navBtn(activeTab === 'teacher' && activeSubTab === 'eosy-promotion')} 
-                  aria-current={activeTab === 'teacher' && activeSubTab === 'eosy-promotion' ? 'page' : undefined}
-                >
-                  <GraduationCap size={18} className="shrink-0 text-amber-500" />
-                  <span>EOSY & Promotion</span>
-                </button>
               </div>
             ) : (
               <div className="flex flex-col gap-1">
                 <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('classrooms'); }} className={navBtnIcon(activeTab === 'teacher' && (activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing'))} title="My Classrooms" aria-label="My Classrooms"><School size={18} /></button>
-                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('lessons'); }} className={navBtnIcon(activeTab === 'teacher' && (activeSubTab === 'lessons' || activeSubTab === 'manual-lesson'))} title="Lesson Management" aria-label="Lesson Management"><BookOpen size={18} /></button>
-                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} className={navBtnIcon(activeTab === 'teacher' && (activeSubTab === 'analytics' || activeSubTab === 'pre-post-test'))} title="Classroom Analytics" aria-label="Classroom Analytics"><TrendingUp size={18} /></button>
-                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('eosy-promotion'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'eosy-promotion')} title="EOSY & Promotion" aria-label="EOSY & Promotion"><GraduationCap size={18} /></button>
+                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('lessons'); }} className={navBtnIcon(activeTab === 'teacher' && (activeSubTab.startsWith('lesson') || activeSubTab === 'manual-lesson'))} title="Lesson Management" aria-label="Lesson Management"><BookOpen size={18} /></button>
+                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} className={navBtnIcon(activeTab === 'teacher' && (activeSubTab.startsWith('analytics') || activeSubTab === 'pre-post-test' || activeSubTab === 'eosy-promotion'))} title="Classroom Analytics" aria-label="Classroom Analytics"><TrendingUp size={18} /></button>
               </div>
             )
           )}

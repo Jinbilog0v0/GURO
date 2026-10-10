@@ -32,6 +32,7 @@ export interface LessonManagementProps {
   onTabChange?: (tab: 'system' | 'custom') => void;
   onCreateLesson?: () => void;
   onOpenCreateLesson?: () => void;
+  onOpenIngestor?: () => void;
   onEditCustomLesson?: (lesson: any) => void;
   onAssignLessonToClassroom?: (classroomId: string, moduleInfo: { subject: string; grade: string; topic: string }) => Promise<boolean>;
 }
@@ -43,6 +44,7 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
   onTabChange: _onTabChange,
   onCreateLesson,
   onOpenCreateLesson,
+  onOpenIngestor,
   onEditCustomLesson,
   onAssignLessonToClassroom,
 }) => {
@@ -252,15 +254,29 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
           </p>
         </div>
 
-        {activeTab === 'custom' && (onCreateLesson || onOpenCreateLesson) && (
-          <button
-            type="button"
-            onClick={() => (onCreateLesson ? onCreateLesson() : onOpenCreateLesson?.())}
-            className="btn btn-primary flex items-center gap-2 text-xs py-2.5 px-4 rounded-xl shadow-md"
-          >
-            <Plus size={16} />
-            <span>Create New Custom Lesson</span>
-          </button>
+        {activeTab === 'custom' && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {onOpenIngestor && (
+              <button
+                type="button"
+                onClick={onOpenIngestor}
+                className="btn btn-secondary flex items-center gap-2 text-xs py-2.5 px-3.5 rounded-xl border border-purple-500/30 hover:border-purple-500 text-purple-600 dark:text-purple-400 font-bold hover:bg-purple-500/10 transition-colors shadow-xs"
+              >
+                <Sparkles size={15} />
+                <span>AI Lesson Ingestor</span>
+              </button>
+            )}
+            {(onCreateLesson || onOpenCreateLesson) && (
+              <button
+                type="button"
+                onClick={() => (onCreateLesson ? onCreateLesson() : onOpenCreateLesson?.())}
+                className="btn btn-primary flex items-center gap-2 text-xs py-2.5 px-4 rounded-xl shadow-md"
+              >
+                <Plus size={16} />
+                <span>Create Manually</span>
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -425,15 +441,28 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
             <p className="text-xs max-w-md mx-auto">
               You haven't authored any custom lessons yet. Use the Lesson Builder to create questions, visual puzzles, and tailored diagnostic quizzes.
             </p>
-            {onOpenCreateLesson && (
-              <button
-                type="button"
-                onClick={onOpenCreateLesson}
-                className="btn btn-primary text-xs px-4 py-2 mt-2"
-              >
-                Create Your First Lesson
-              </button>
-            )}
+            <div className="flex items-center gap-2.5 mt-2 flex-wrap justify-center">
+              {onOpenIngestor && (
+                <button
+                  type="button"
+                  onClick={onOpenIngestor}
+                  className="btn btn-secondary text-xs px-4 py-2 flex items-center gap-2 border border-purple-500/30 text-purple-600 dark:text-purple-400 font-bold hover:bg-purple-500/10"
+                >
+                  <Sparkles size={14} />
+                  <span>AI Lesson Ingestor</span>
+                </button>
+              )}
+              {(onCreateLesson || onOpenCreateLesson) && (
+                <button
+                  type="button"
+                  onClick={() => (onCreateLesson ? onCreateLesson() : onOpenCreateLesson?.())}
+                  className="btn btn-primary text-xs px-4 py-2 flex items-center gap-1.5"
+                >
+                  <Plus size={14} />
+                  <span>Create Manually</span>
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

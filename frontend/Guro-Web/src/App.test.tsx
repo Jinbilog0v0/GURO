@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import App from './App';
 import '@testing-library/jest-dom';
 
@@ -63,6 +63,10 @@ describe('App Portal and Navigation Layout (Web)', () => {
     expect(screen.getAllByText('My Classrooms').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Lesson Management').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Classroom Analytics').length).toBeGreaterThanOrEqual(1);
+    
+    // Expand Classroom Analytics dropdown to verify EOSY & Promotion is nested inside
+    const analyticsBtn = screen.getByRole('button', { name: /Classroom Analytics/i });
+    fireEvent.click(analyticsBtn);
     expect(screen.getAllByText('EOSY & Promotion').length).toBeGreaterThanOrEqual(1);
     
     // Sync indicator label
