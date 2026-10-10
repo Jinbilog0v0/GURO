@@ -35,7 +35,9 @@ import {
   ChevronRight,
   Layers,
   Users,
-  BarChart3
+  BarChart3,
+  Award,
+  Calendar
 } from 'lucide-react';
 
 interface SyncedEvent {
@@ -122,6 +124,20 @@ function App() {
     setIsAnalyticsMenuOpen((prev) => {
       const next = !prev;
       localStorage.setItem('guro_menu_analytics_open', String(next));
+      return next;
+    });
+  };
+
+  const [isParentExplorerMenuOpen, setIsParentExplorerMenuOpen] = useState<boolean>(() => {
+    const saved = localStorage.getItem('guro_menu_parent_explorer_open');
+    if (saved !== null) return saved === 'true';
+    return true;
+  });
+
+  const toggleParentExplorerMenu = () => {
+    setIsParentExplorerMenuOpen((prev) => {
+      const next = !prev;
+      localStorage.setItem('guro_menu_parent_explorer_open', String(next));
       return next;
     });
   };
@@ -714,24 +730,85 @@ function App() {
 
           {isParent && (
             isSidebarOpen ? (
-              <div className="flex flex-col">
-                <div className="px-[14px] pt-4 pb-1.5 text-[10.5px] font-extrabold tracking-[0.1em] uppercase text-[var(--text-dark)]">
-                  Parent Console
+              <div className="flex flex-col gap-1 my-1">
+                {/* 1. Child Progress Explorer (Expandable Tree with Sub-Components) */}
+                <div className="flex flex-col">
+                  <div className="flex items-center">
+                    <button 
+                      onClick={() => {
+                        setActiveTab('parent');
+                        setActiveSubTab('parent-overview');
+                        toggleParentExplorerMenu();
+                      }} 
+                      className={`${navBtn(activeTab === 'parent' && (activeSubTab.startsWith('parent-') || activeSubTab === 'parent-explorer'))} justify-between pr-2`} 
+                      aria-current={activeTab === 'parent' && (activeSubTab.startsWith('parent-') || activeSubTab === 'parent-explorer') ? 'page' : undefined}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <User size={18} className="shrink-0 text-pink-500" />
+                        <span className="truncate">Child Explorer</span>
+                      </div>
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleParentExplorerMenu();
+                        }}
+                        className="p-1 rounded-md hover:bg-white/10 text-[var(--text-muted)] cursor-pointer flex items-center justify-center transition-colors"
+                        title={isParentExplorerMenuOpen ? "Collapse explorer" : "Expand explorer"}
+                      >
+                        {isParentExplorerMenuOpen ? (
+                          <ChevronDown size={15} />
+                        ) : (
+                          <ChevronRight size={15} />
+                        )}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Sub-Components Dropdown - stays open until clicked again */}
+                  {isParentExplorerMenuOpen && (
+                    <div className="flex flex-col gap-1 ml-5 pl-2.5 my-1 border-l-2 border-[var(--border-color)]">
+                      <button
+                        onClick={() => { setActiveTab('parent'); setActiveSubTab('parent-overview'); }}
+                        className={subNavBtn(activeTab === 'parent' && (activeSubTab === 'parent-overview' || activeSubTab === 'parent-explorer'))}
+                      >
+                        <BarChart3 size={14} className="shrink-0 text-pink-400" />
+                        <span>Overview &amp; AI Report</span>
+                      </button>
+                      <button
+                        onClick={() => { setActiveTab('parent'); setActiveSubTab('parent-badges'); }}
+                        className={subNavBtn(activeTab === 'parent' && activeSubTab === 'parent-badges')}
+                      >
+                        <Award size={14} className="shrink-0 text-amber-400" />
+                        <span>Activity &amp; Badges</span>
+                      </button>
+                      <button
+                        onClick={() => { setActiveTab('parent'); setActiveSubTab('parent-timeline'); }}
+                        className={subNavBtn(activeTab === 'parent' && activeSubTab === 'parent-timeline')}
+                      >
+                        <Calendar size={14} className="shrink-0 text-sky-400" />
+                        <span>Practice Timeline</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className="flex flex-col gap-[3px] pl-2 border-l-[1.5px] border-[var(--border-color)] ml-[14px]">
-                  <button onClick={() => { setActiveTab('parent'); setActiveSubTab('parent-explorer'); }} className={navBtn(activeTab === 'parent' && activeSubTab === 'parent-explorer')} aria-current={activeTab === 'parent' && activeSubTab === 'parent-explorer' ? 'page' : undefined}>
-                    <User size={17} className="shrink-0" /><span>Parent Explorer</span>
-                  </button>
-                  <button onClick={() => { setActiveTab('parent'); setActiveSubTab('create-student'); }} className={navBtn(activeTab === 'parent' && activeSubTab === 'create-student')} aria-current={activeTab === 'parent' && activeSubTab === 'create-student' ? 'page' : undefined}>
-                    <UserPlus size={17} className="shrink-0" /><span>Create Student</span>
-                  </button>
-                </div>
+
+                {/* 2. Register Student Account */}
+                <button 
+                  onClick={() => { setActiveTab('parent'); setActiveSubTab('parent-create-student'); }} 
+                  className={navBtn(activeTab === 'parent' && (activeSubTab === 'create-student' || activeSubTab === 'parent-create-student' || activeSubTab === 'parent-students'))} 
+                  aria-current={activeTab === 'parent' && (activeSubTab === 'create-student' || activeSubTab === 'parent-create-student' || activeSubTab === 'parent-students') ? 'page' : undefined}
+                >
+                  <UserPlus size={18} className="shrink-0 text-indigo-400" />
+                  <span>Register Student</span>
+                </button>
               </div>
             ) : (
-              <>
-                <button onClick={() => { setActiveTab('parent'); setActiveSubTab('parent-explorer'); }} className={navBtnIcon(activeTab === 'parent' && activeSubTab === 'parent-explorer')} title="Parent Explorer" aria-label="Parent Explorer"><User size={18} /></button>
-                <button onClick={() => { setActiveTab('parent'); setActiveSubTab('create-student'); }} className={navBtnIcon(activeTab === 'parent' && activeSubTab === 'create-student')} title="Create Student" aria-label="Create Student"><UserPlus size={18} /></button>
-              </>
+              <div className="flex flex-col gap-1">
+                <button onClick={() => { setActiveTab('parent'); setActiveSubTab('parent-overview'); }} className={navBtnIcon(activeTab === 'parent' && (activeSubTab === 'parent-overview' || activeSubTab === 'parent-explorer'))} title="Overview & AI Report" aria-label="Overview & AI Report"><BarChart3 size={18} /></button>
+                <button onClick={() => { setActiveTab('parent'); setActiveSubTab('parent-badges'); }} className={navBtnIcon(activeTab === 'parent' && activeSubTab === 'parent-badges')} title="Activity & Badges" aria-label="Activity & Badges"><Award size={18} /></button>
+                <button onClick={() => { setActiveTab('parent'); setActiveSubTab('parent-timeline'); }} className={navBtnIcon(activeTab === 'parent' && activeSubTab === 'parent-timeline')} title="Practice Timeline" aria-label="Practice Timeline"><Calendar size={18} /></button>
+                <button onClick={() => { setActiveTab('parent'); setActiveSubTab('parent-create-student'); }} className={navBtnIcon(activeTab === 'parent' && (activeSubTab === 'create-student' || activeSubTab === 'parent-create-student' || activeSubTab === 'parent-students'))} title="Register Student" aria-label="Register Student"><UserPlus size={18} /></button>
+              </div>
             )
           )}
 
@@ -861,10 +938,13 @@ function App() {
               </>
             ) : activeTab === 'parent' ? (
               <>
-                <span className="text-[var(--text-muted)]">Parent Console</span>
+                <span className="text-[var(--text-muted)]">Parent Portal</span>
                 <span className="text-[var(--border-color)]">/</span>
                 <span className="text-[var(--text-main)] font-bold">
-                  {activeSubTab === 'create-student' ? 'Create Student Account' : 'Parent Explorer'}
+                  {(activeSubTab === 'parent-overview' || activeSubTab === 'parent-explorer') && 'Child Explorer / Overview & AI Report'}
+                  {activeSubTab === 'parent-badges' && 'Child Explorer / Activity & Badges'}
+                  {activeSubTab === 'parent-timeline' && 'Child Explorer / Practice Timeline'}
+                  {(activeSubTab === 'create-student' || activeSubTab === 'parent-create-student' || activeSubTab === 'parent-students') && 'Student Account Management / Register Student'}
                 </span>
               </>
             ) : (

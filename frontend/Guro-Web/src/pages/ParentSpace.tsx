@@ -1,122 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
-import { List } from 'react-window';
-import { Search, AlertCircle, Inbox, BarChart3, Calculator, BookOpen, User, Star, TrendingUp, AlertTriangle, Calendar, Trash2, UserPlus, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
-import { ActivityHeatmap } from '../components/parent/ActivityHeatmap';
-import { TutorReport } from '../components/parent/TutorReport';
-import { BadgeCase } from '../components/parent/BadgeCase';
-import { toast } from '../utils/toast';
+import { Search, AlertCircle, Trash2, User, Users, BarChart3, Inbox } from 'lucide-react';
+import { ParentOverview } from '../components/parent/ParentOverview';
+import { ParentActivityBadges } from '../components/parent/ParentActivityBadges';
+import { ParentTimeline } from '../components/parent/ParentTimeline';
+import { ParentStudentRegistration } from '../components/parent/ParentStudentRegistration';
+import type { SyncedEvent } from '../components/parent/ParentOverview';
+import type { LinkedStudentProfile } from '../components/parent/ParentStudentRegistration';
 
-interface SyncedEvent {
-  studentId: string;
-  eventId: string;
-  subject: string;
-  gradeLevel: number;
-  topic: string;
-  score: number;
-  totalQuestions: number;
-  timestamp: string;
-}
-
-interface ParentSpaceProps {
+export interface ParentSpaceProps {
   progressLogs?: SyncedEvent[];
   lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null;
   activeSubTab?: string;
   setActiveSubTab?: (tab: any) => void;
 }
-
-const RowRenderer = ({
-  index,
-  style,
-  studentLogs,
-  lastUpdatedCell,
-  currentTime
-}: {
-  index: number;
-  style: React.CSSProperties;
-  studentLogs: SyncedEvent[];
-  lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null;
-  currentTime?: number;
-}) => {
-  const log = studentLogs[index];
-  if (!log) return null;
-  const percentage = Math.round((log.score / log.totalQuestions) * 100);
-  const isLast = index === studentLogs.length - 1;
-  const now = currentTime ?? (lastUpdatedCell ? lastUpdatedCell.timestamp : 0);
-  const isRecentlyUpdated =
-    Boolean(
-      lastUpdatedCell &&
-      lastUpdatedCell.studentId.toLowerCase() === log.studentId.toLowerCase() &&
-      lastUpdatedCell.topic === log.topic &&
-      now - lastUpdatedCell.timestamp < 5000
-    );
-
-  let pulseClass = '';
-  if (isRecentlyUpdated) {
-    pulseClass = percentage >= 80 ? 'flash-green' : percentage >= 50 ? 'flash-yellow' : 'flash-red';
-  }
-
-  return (
-    <div
-      style={{
-        ...style,
-        paddingLeft: '24px',
-        boxSizing: 'border-box'
-      }}
-    >
-      <div
-        className={`relative flex gap-4 rounded-[8px] p-[6px] transition-all duration-500 ease-in-out h-[100px] box-border ${pulseClass}`}
-      >
-        {/* Timeline dot connector line */}
-        {!isLast && (
-          <div
-            className="absolute left-[-16px] w-[2px] bg-[var(--border-color)]"
-            style={{
-              bottom: 0,
-              top: '24px',
-              height: 'calc(100% + 20px)' // Extends down to next item
-            }}
-          />
-        )}
-        
-        {/* Bullet icon */}
-        <div 
-          className={`absolute left-[-22px] top-[4px] w-3.5 h-3.5 rounded-[7px] border-2 z-10 ${
-            percentage >= 80 
-              ? 'bg-emerald-950 border-emerald-500' 
-              : percentage >= 50 
-                ? 'bg-amber-950 border-amber-500' 
-                 : 'bg-red-950 border-red-500'
-          }`} 
-        />
-
-        <div className="flex-1 bg-[var(--bg-main)]/40 border border-[var(--border-color)] rounded-[12px] flex flex-col justify-center h-full box-border px-4 py-3">
-          <div className="flex justify-between items-center mb-1.5">
-            <h4 className="text-sm font-extrabold text-[var(--text-main)]">
-             {log.subject === 'Mathematics' ? (
-                <Calculator className="size-4 text-[var(--accent-primary)]" />
-             ) : (
-              <BookOpen className="size-4 text-emerald-500" />
-            )}{' '}{log.topic}
-            </h4>
-            <span className={
-              percentage >= 80 
-                ? "px-2 py-0.75 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
-                : percentage >= 50 
-                  ? "px-2 py-0.75 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20" 
-                  : "px-2 py-0.75 rounded-md text-[10px] font-bold bg-red-500/10 text-red-500 border border-red-500/20"
-            }>
-              Score: {log.score} / {log.totalQuestions} ({percentage}%)
-            </span>
-          </div>
-          <p className="text-[11px] text-[var(--text-muted)]">
-            Grade {log.gradeLevel} {log.subject} • Synced on {new Date(log.timestamp).toLocaleDateString()} at {new Date(log.timestamp).toLocaleTimeString()}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export function ParentSpace({
   lastUpdatedCell,
@@ -137,6 +34,16 @@ export function ParentSpace({
   const [loading, setLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
 
+  // Linked children list from localStorage for quick child switcher
+  const [linkedChildren] = useState<LinkedStudentProfile[]>(() => {
+    try {
+      const saved = localStorage.getItem('guro_parent_linked_children');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   useEffect(() => {
     if (!lastUpdatedCell) return;
     setCurrentTime(Date.now());
@@ -145,64 +52,6 @@ export function ParentSpace({
     }, 5000);
     return () => clearTimeout(timer);
   }, [lastUpdatedCell]);
-
-  // Student creation states
-  const [newStudentFirstName, setNewStudentFirstName] = useState('');
-  const [newStudentMiddleName, setNewStudentMiddleName] = useState('');
-  const [newStudentLastName, setNewStudentLastName] = useState('');
-  const [newStudentSection, setNewStudentSection] = useState('');
-  const [newStudentEmail, setNewStudentEmail] = useState('');
-  const [newStudentPassword, setNewStudentPassword] = useState('');
-  const [createStudentError, setCreateStudentError] = useState<string | null>(null);
-  const [createStudentSuccess, setCreateStudentSuccess] = useState<any>(null);
-  const [isCreatingStudent, setIsCreatingStudent] = useState(false);
-  const [showStudentPassword, setShowStudentPassword] = useState(false);
-
-  const handleCreateStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreateStudentError(null);
-    setCreateStudentSuccess(null);
-    setIsCreatingStudent(true);
-
-    try {
-      const response = await apiFetch('/api/parent/create-student', {
-        method: 'POST',
-        body: JSON.stringify({
-          first_name: newStudentFirstName.trim(),
-          middle_name: newStudentMiddleName.trim(),
-          last_name: newStudentLastName.trim(),
-          email: newStudentEmail.trim().toLowerCase(),
-          password: newStudentPassword,
-          section: newStudentSection.trim(),
-        })
-      });
-
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setCreateStudentSuccess(data.student);
-        toast.success(`Successfully created student account for ${data.student.name}!`);
-        
-        // Auto-fill inputs and trigger search
-        setStudentIdInput(data.student.studentId);
-        setAccessCodeInput(data.student.accessCode);
-        
-        // Reset form
-        setNewStudentFirstName('');
-        setNewStudentMiddleName('');
-        setNewStudentLastName('');
-        setNewStudentSection('');
-        setNewStudentEmail('');
-        setNewStudentPassword('');
-      } else {
-        setCreateStudentError(data.error || 'Failed to create student account.');
-      }
-    } catch (err) {
-      console.error('[ParentSpace] Create student error:', err);
-      setCreateStudentError('A network error occurred. Please try again.');
-    } finally {
-      setIsCreatingStudent(false);
-    }
-  };
 
   // Load initial logs on mount if already searched
   useEffect(() => {
@@ -263,16 +112,21 @@ export function ParentSpace({
     localStorage.removeItem('guro_parent_searched');
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!studentIdInput.trim() || !accessCodeInput.trim()) return;
+  const handleSearch = async (e?: React.FormEvent, customId?: string, customCode?: string) => {
+    if (e) e.preventDefault();
+    const idToUse = (customId ?? studentIdInput).trim();
+    const codeToUse = (customCode ?? accessCodeInput).trim();
+    if (!idToUse || !codeToUse) return;
+
+    if (customId) setStudentIdInput(customId);
+    if (customCode) setAccessCodeInput(customCode);
 
     setLoading(true);
     setSearched(true);
     setErrorMsg(null);
-    
+
     try {
-      const response = await apiFetch(`/api/progress?studentId=${encodeURIComponent(studentIdInput.trim())}&accessCode=${encodeURIComponent(accessCodeInput.trim())}`);
+      const response = await apiFetch(`/api/progress?studentId=${encodeURIComponent(idToUse)}&accessCode=${encodeURIComponent(codeToUse)}`);
       if (response.ok) {
         const data = await response.json();
         setStudentLogs(data);
@@ -290,299 +144,174 @@ export function ParentSpace({
     }
   };
 
-  // Math calculations
-  const totalQuizzes = studentLogs.length;
-  const getAverageScore = () => {
-    if (totalQuizzes === 0) return 0;
-    const sum = studentLogs.reduce((acc, curr) => acc + (curr.score / curr.totalQuestions) * 100, 0);
-    return Math.round(sum / totalQuizzes);
+  const handleSelectChildFromLinked = (childId: string, childCode: string) => {
+    handleSearch(undefined, childId, childCode);
+    if (activeSubTab === 'create-student' || activeSubTab === 'parent-create-student' || activeSubTab === 'parent-students') {
+      setActiveSubTab?.('parent-overview');
+    }
   };
 
-  const avgScore = getAverageScore();
-  if (activeSubTab === 'create-student') {
+  // Render registration view if on student registration sub-tab
+  if (activeSubTab === 'create-student' || activeSubTab === 'parent-create-student' || activeSubTab === 'parent-students') {
     return (
-      <div className="fade-in flex flex-col items-center justify-center gap-6 w-full py-8">
-        <div className="mb-2 text-center max-w-xl">
-          <h2 style={{ color: 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            <UserPlus className="size-6 text-pink-500" /> Create Student Account
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
-            Register a secure credentials profile for your child. They can use these credentials to log in on Guro-Web or the mobile app.
-          </p>
-        </div>
-
-        <div className="w-full max-w-xl glass-panel p-8 shadow-xl border border-[var(--border-color)]">
-          <form onSubmit={handleCreateStudent} className="flex flex-col gap-4">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">First Name</label>
-                <input
-                  type="text"
-                  placeholder="First name..."
-                  value={newStudentFirstName}
-                  onChange={(e) => setNewStudentFirstName(e.target.value)}
-                  className="form-control w-full"
-                  style={{ width: '100%' }}
-                  required
-                />
-              </div>
-              <div className="form-group" style={{ margin: 0 }}>
-                <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">Last Name</label>
-                <input
-                  type="text"
-                  placeholder="Last name..."
-                  value={newStudentLastName}
-                  onChange={(e) => setNewStudentLastName(e.target.value)}
-                  className="form-control w-full"
-                  style={{ width: '100%' }}
-                  required
-                />
-              </div>
-            </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">Middle Name (Optional)</label>
-              <input
-                type="text"
-                placeholder="Middle name..."
-                value={newStudentMiddleName}
-                onChange={(e) => setNewStudentMiddleName(e.target.value)}
-                className="form-control w-full"
-                style={{ width: '100%' }}
-              />
-            </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">Section (Optional)</label>
-              <input
-                type="text"
-                placeholder="e.g. Bonifacio, Rizal, Section A..."
-                value={newStudentSection}
-                onChange={(e) => setNewStudentSection(e.target.value)}
-                className="form-control w-full"
-                style={{ width: '100%' }}
-              />
-            </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">Student Email</label>
-              <input
-                type="email"
-                placeholder="Child's login email..."
-                value={newStudentEmail}
-                onChange={(e) => setNewStudentEmail(e.target.value)}
-                className="form-control w-full"
-                style={{ width: '100%' }}
-                required
-              />
-            </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="text-xs font-bold text-[var(--text-main)] mb-1.5 block">Password</label>
-              <div className="relative">
-                <input
-                  type={showStudentPassword ? 'text' : 'password'}
-                  placeholder="Choose password..."
-                  value={newStudentPassword}
-                  onChange={(e) => setNewStudentPassword(e.target.value)}
-                  className="form-control w-full pr-10"
-                  style={{ width: '100%' }}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowStudentPassword(!showStudentPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer bg-transparent border-none p-0 flex items-center justify-center"
-                >
-                  {showStudentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            {createStudentError && (
-              <div className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1.5">
-                <AlertCircle className="size-4" /> {createStudentError}
-              </div>
-            )}
-
-            {createStudentSuccess && (
-              <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-800 text-xs font-semibold mt-2 flex flex-col gap-2">
-                <p className="font-extrabold text-emerald-950 flex items-center gap-1.5">
-                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                  <span>Account Created Successfully!</span>
-                </p>
-                <p className="mt-1">Student ID: <code className="font-mono bg-emerald-500/5 px-1 py-0.5 rounded text-sm font-bold">{createStudentSuccess.studentId}</code></p>
-                <p>Access Code: <code className="font-mono bg-emerald-500/5 px-1 py-0.5 rounded text-sm font-bold">{createStudentSuccess.accessCode}</code></p>
-                <p className="text-[11px] text-emerald-700 mt-1" style={{ lineHeight: '15px' }}>Credentials have been saved. Your child can now log in using this email and password!</p>
-                
-                <button
-                  type="button"
-                  onClick={() => setActiveSubTab?.('parent-explorer')}
-                  className="btn btn-primary w-full py-2.5 mt-2 flex items-center justify-center gap-1.5 font-bold text-xs cursor-pointer"
-                >
-                  Go to Explorer Dashboard & Sync
-                </button>
-              </div>
-            )}
-
-            {!createStudentSuccess && (
-              <button
-                type="submit"
-                disabled={isCreatingStudent}
-                className="btn btn-primary w-full py-3 mt-3 flex items-center justify-center gap-1.5 font-bold text-sm cursor-pointer"
-              >
-                {isCreatingStudent ? 'Registering...' : 'Register Student'}
-              </button>
-            )}
-          </form>
-        </div>
-      </div>
+      <ParentStudentRegistration
+        onSelectStudentForExplorer={(sId, aCode) => {
+          handleSelectChildFromLinked(sId, aCode);
+        }}
+      />
     );
   }
 
   return (
-    <div className="fade-in flex flex-col gap-6 w-full">
-      <div className="mb-2">
-        <h2 style={{ color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <User className="size-6 text-pink-500" /> Parent Progress Explorer
+    <div className="flex flex-col gap-6 w-full animate-in fade-in duration-200">
+      {/* Page Title */}
+      <div>
+        <h2 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2 m-0">
+          <User className="size-6 text-pink-500" />
+          <span>Parent Progress Explorer</span>
         </h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
-          Enter your child's unique mobile identifier and 6-digit access code to view practice results and telemetry synced from their device.
+        <p className="text-xs text-[var(--text-muted)] mt-1">
+          Enter your child's mobile identifier or full name and 6-digit access code to view learning analytics.
         </p>
       </div>
 
-      <div className="flex flex-col gap-6 w-full">
-        {/* Left columns: Search Reports */}
-        <form onSubmit={handleSearch} className="glass-panel px-6 py-5 w-full">
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <div className="form-group" style={{ flex: 1, minWidth: '200px' }}>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
-                Child's Name (Last Name, First Name) or Student ID
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Cruz, Juan or Student ID"
-                value={studentIdInput}
-                onChange={(e) => setStudentIdInput(e.target.value)}
-                className="form-control"
-                style={{ width: '100%' }}
-                required
-              />
-            </div>
-            <div className="form-group" style={{ flex: 1, minWidth: '200px' }}>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
-                6-Digit Parent Access Code
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 123456"
-                value={accessCodeInput}
-                onChange={(e) => setAccessCodeInput(e.target.value)}
-                className="form-control"
-                style={{ width: '100%' }}
-                maxLength={6}
-                required
-              />
-            </div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <button type="submit" className="btn btn-primary px-6 cursor-pointer" style={{ height: '42px' }}>
-                <span className="flex items-center justify-center gap-1.5"><Search className="size-4" /> Search Reports</span>
-              </button>
-              {(studentIdInput || accessCodeInput) && (
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  aria-label="Clear Search"
-                  className="px-3 border border-[var(--border-color)] text-[var(--text-muted)] rounded-[10px] cursor-pointer transition-all duration-200 hover:bg-[var(--danger)]/10 hover:text-[var(--danger)] hover:border-[var(--danger)]/20 active:scale-[0.97] flex items-center justify-center"
-                  style={{ height: '42px' }}
-                >
-                  <Trash2 className="size-4" />
-                </button>
-              )}
-            </div>
+      {/* Top Credentials & Child Switcher Bar */}
+      <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 flex flex-col gap-4 shadow-xs">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-end gap-3 w-full">
+          <div className="flex-1 min-w-[200px] w-full flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-[var(--text-muted)] flex items-center gap-1.5">
+              <User size={13} className="text-pink-500" />
+              <span>Child's Name (Last Name, First Name) or Student ID</span>
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. Cruz, Juan or Student ID"
+              value={studentIdInput}
+              onChange={(e) => setStudentIdInput(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-xs text-[var(--text-main)] focus:outline-none focus:border-pink-500 transition-colors"
+              required
+            />
           </div>
-          {errorMsg && (
-            <div style={{ marginTop: '12px', color: 'var(--danger)', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <AlertCircle className="size-4" /> {errorMsg}
-            </div>
-          )}
+
+          <div className="w-full sm:w-48 flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-[var(--text-muted)]">
+              6-Digit Access Code
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. 123456"
+              value={accessCodeInput}
+              onChange={(e) => setAccessCodeInput(e.target.value)}
+              maxLength={6}
+              className="w-full px-3.5 py-2.5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-xs text-[var(--text-main)] focus:outline-none focus:border-pink-500 font-mono tracking-wider transition-colors"
+              required
+            />
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              type="submit"
+              className="btn btn-primary flex-1 sm:flex-initial text-xs py-2.5 px-5 flex items-center justify-center gap-1.5 rounded-xl font-bold cursor-pointer shadow-xs"
+            >
+              <Search size={14} />
+              <span>Search Reports</span>
+            </button>
+            {(studentIdInput || accessCodeInput) && (
+              <button
+                type="button"
+                onClick={handleClear}
+                aria-label="Clear Search"
+                className="size-9.5 rounded-xl border border-[var(--border-color)] text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 hover:border-rose-500/20 transition-colors flex items-center justify-center cursor-pointer shrink-0"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
         </form>
+
+        {errorMsg && (
+          <div className="text-xs font-bold text-rose-500 flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-xl">
+            <AlertCircle size={14} className="shrink-0" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {/* Quick Child Switcher Pills (if parents have linked children stored) */}
+        {linkedChildren.length > 0 && (
+          <div className="flex items-center gap-2 pt-2 border-t border-[var(--border-color)] flex-wrap">
+            <span className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1">
+              <Users size={12} className="text-indigo-400" />
+              <span>Switch Child:</span>
+            </span>
+            {linkedChildren.map(child => {
+              const isSelected = studentIdInput.toLowerCase() === child.studentId.toLowerCase();
+              return (
+                <button
+                  key={child.studentId}
+                  type="button"
+                  onClick={() => handleSelectChildFromLinked(child.studentId, child.accessCode)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-pink-500 text-white shadow-xs'
+                      : 'bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)] hover:border-pink-500/40'
+                  }`}
+                >
+                  <span>{child.name}</span>
+                  <span className={`text-[10px] font-mono ${isSelected ? 'text-pink-100' : 'text-[var(--text-muted)]'}`}>
+                    ({child.studentId})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
+      {/* Main Content Area */}
       {loading ? (
-        <div className="text-center px-10 py-15 flex flex-col items-center gap-3">
-          <div className="spinner"></div>
-          <p className="text-[var(--accent-primary)] font-semibold text-sm">Retrieving learning curves...</p>
+        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-16 text-center flex flex-col items-center justify-center gap-3 shadow-xs">
+          <div className="spinner" />
+          <p className="text-xs font-bold text-[var(--text-muted)]">
+            Retrieving learning curves...
+          </p>
         </div>
       ) : searched ? (
         studentLogs.length === 0 ? (
-          <div className="glass-panel text-center px-10 py-15 flex flex-col items-center gap-3">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-16 text-center flex flex-col items-center justify-center gap-3 shadow-xs">
             <Inbox className="size-12 text-slate-500 opacity-40" />
-            <p className="text-[15px] font-bold text-[var(--text-main)]">
-              No reports registered for <strong>"{studentIdInput}"</strong>.
-            </p>
-            <p className="text-xs text-[var(--text-muted)] max-w-[450px] leading-[18px]">
-              Ensure your child has submitted quiz results in their mobile app and that you have clicked "Sync Progress Now" in the mobile Parent Space.
+            <h4 className="text-base font-bold text-[var(--text-main)] m-0">
+              No reports registered for "{studentIdInput}"
+            </h4>
+            <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">
+              Ensure your child has submitted quiz results in their app and that you have clicked "Sync Progress Now" in the mobile Parent Space.
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-6 fade-in">
-            {/* Stats Dashboard cards */}
-            <div className="grid grid-cols-3 gap-5">
-              <div className="glass-panel p-5 flex flex-col gap-1.5 items-center">
-                <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.5px]">Completed Quests</span>
-                <span className="text-[26px] font-bold text-[var(--text-main)]">{totalQuizzes}</span>
-              </div>
-              <div className="glass-panel p-5 flex flex-col gap-1.5 items-center">
-                <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.5px]">Average Accuracy</span>
-                <span className="text-[26px] font-bold text-[#10B981]">{avgScore}%</span>
-              </div>
-              <div className="glass-panel p-5 flex flex-col gap-1.5 items-center">
-                <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.5px]">Learning Status</span>
-                <span className="font-bold flex items-center justify-center gap-1.5" style={{ color: avgScore >= 80 ? '#10B981' : (avgScore >= 50 ? '#F59E0B' : '#EF4444'), fontSize: 22 }}>
-                  <span>{avgScore >= 80 ? 'Advanced' : avgScore >= 50 ? 'Progressing' : 'Remedial'}</span>
-                  {avgScore >= 80 ? (
-                    <Star size={18} className="text-[#10B981] fill-[#10B981] shrink-0" />
-                  ) : avgScore >= 50 ? (
-                    <TrendingUp size={18} className="text-[#F59E0B] shrink-0" />
-                  ) : (
-                    <AlertTriangle size={18} className="text-red-500 shrink-0" />
-                  )}
-                </span>
-              </div>
-            </div>
-
-            {/* AI Report Card block */}
-            <TutorReport logs={studentLogs} />
-
-            {/* Split layout block: Tracker columns on left, Timeline logs on right */}
-            <div className="grid grid-cols-2 gap-6 items-start">
-              <div className="flex flex-col gap-6">
-                <ActivityHeatmap logs={studentLogs} />
-                <BadgeCase logs={studentLogs} />
-              </div>
-              
-              <div className="flex flex-col">
-                {/* Performance Timeline feed */}
-                <div className="glass-panel p-6">
-                  <h3 className="text-base mb-5 flex items-center gap-2">
-                    <Calendar size={18} className="text-[var(--accent-primary)] shrink-0" />
-                    <span>Practice Timeline History</span>
-                  </h3>
-                  <List<{ studentLogs: SyncedEvent[]; lastUpdatedCell: { studentId: string; topic: string; timestamp: number } | null; currentTime: number }>
-                    style={{ overflowX: 'hidden', height: 500, width: '100%' }}
-                    rowCount={studentLogs.length}
-                    rowHeight={115}
-                    rowComponent={RowRenderer}
-                    rowProps={{ studentLogs, lastUpdatedCell, currentTime }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          /* Render Selected Sub-Component */
+          activeSubTab === 'parent-badges' ? (
+            <ParentActivityBadges logs={studentLogs} />
+          ) : activeSubTab === 'parent-timeline' ? (
+            <ParentTimeline
+              logs={studentLogs}
+              lastUpdatedCell={lastUpdatedCell}
+              currentTime={currentTime}
+            />
+          ) : (
+            /* Default: parent-overview or parent-explorer */
+            <ParentOverview
+              logs={studentLogs}
+              studentNameOrId={studentIdInput}
+            />
+          )
         )
       ) : (
         /* Prompt to search */
-        <div className="glass-panel text-center px-10 py-15 flex flex-col items-center gap-3">
-          <BarChart3 className="size-12 text-[var(--accent-primary)] opacity-60" />
-          <p className="text-[15px] font-bold text-[var(--text-main)]">Search for your child by Name (Last Name, First Name) or Student ID and Access Code</p>
-          <p className="text-xs text-[var(--text-muted)] max-w-[450px] leading-[18px]">
+        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-16 text-center flex flex-col items-center justify-center gap-3 shadow-xs">
+          <BarChart3 className="size-12 text-pink-500 opacity-60" />
+          <h4 className="text-base font-bold text-[var(--text-main)] m-0">
+            Search for your child by Name or Student ID
+          </h4>
+          <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto leading-relaxed">
             Enter your child's name in standard format (e.g. "Cruz, Juan"), their Student ID, or email, along with the 6-Digit Parent Access Code to query synced performance history.
           </p>
         </div>

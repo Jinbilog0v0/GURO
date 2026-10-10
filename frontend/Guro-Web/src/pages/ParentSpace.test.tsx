@@ -134,4 +134,51 @@ describe('ParentSpace Page', () => {
     expect(idInput.value).toBe('');
     expect(codeInput.value).toBe('');
   });
+
+  test('renders student registration form when activeSubTab is create-student', () => {
+    render(<ParentSpace activeSubTab="create-student" lastUpdatedCell={null} />);
+    expect(screen.getByText('Student Account Registration & Management')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('e.g. Juan')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Register Student Account/i })).toBeInTheDocument();
+  });
+
+  test('renders activity badges subcomponent when activeSubTab is parent-badges and student searched', async () => {
+    localStorage.setItem('guro_parent_searched', 'true');
+    localStorage.setItem('guro_parent_student_id', 'STUDENT-1');
+    localStorage.setItem('guro_parent_access_code', '123456');
+
+    const mockFetch = jest.fn().mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(mockProgressLogs),
+      })
+    );
+    global.fetch = mockFetch as any;
+
+    render(<ParentSpace activeSubTab="parent-badges" lastUpdatedCell={null} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Practice Habit & Milestones/i)).toBeInTheDocument();
+    });
+  });
+
+  test('renders timeline subcomponent when activeSubTab is parent-timeline and student searched', async () => {
+    localStorage.setItem('guro_parent_searched', 'true');
+    localStorage.setItem('guro_parent_student_id', 'STUDENT-1');
+    localStorage.setItem('guro_parent_access_code', '123456');
+
+    const mockFetch = jest.fn().mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(mockProgressLogs),
+      })
+    );
+    global.fetch = mockFetch as any;
+
+    render(<ParentSpace activeSubTab="parent-timeline" lastUpdatedCell={null} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Practice Timeline History/i)).toBeInTheDocument();
+    });
+  });
 });

@@ -1,0 +1,528 @@
+export interface QuestionItem {
+    id: string;
+    questionText: string;
+    options: string[];
+    correctAnswer: string;
+    feedback: {
+        en: string;
+        fil: string;
+    };
+    type?: 'multiple-choice' | 'fill-in-the-blank' | 'drag-drop-matching' | 'true-false' | 'swipe-card' | 'fraction-builder';
+    matchingPairs?: Record<string, string>;
+    imageUrl?: string;
+}
+
+export interface ItemBank {
+    [subject: string]: {
+        [grade: string]: {
+            [topic: string]: {
+                studyContent?: any;
+                [difficulty: string]: {
+                    [category: string]: QuestionItem[];
+                } | any;
+            };
+        };
+    };
+}
+
+export const FALLBACK_ITEM_BANK: ItemBank = {
+    "Mathematics": {
+        "4": {
+            "Fractions": {
+                "studyContent": {
+                    "introduction": "Welcome to Grade 4 Math! Fractions represent equal parts of a whole or set.",
+                    "definitions": [
+                        {
+                            "term": "Numerator & Denominator",
+                            "definition": "The top number (numerator) tells how many parts you have; the bottom number (denominator) tells total equal parts.",
+                            "examples": ["In 3/4, 3 is the numerator and 4 is the denominator."]
+                        },
+                        {
+                            "term": "Like Fractions",
+                            "definition": "Fractions that have the exact same denominator.",
+                            "examples": ["1/4 and 2/4 have the same denominator (4)."]
+                        }
+                    ],
+                    "refresherQuiz": [
+                        {
+                            "questionText": "Quick Check: In the fraction 3/5, what is the numerator?",
+                            "options": ["3", "5", "8", "2"],
+                            "correctAnswer": "3",
+                            "explanation": "Correct! The numerator is the top number in a fraction."
+                        },
+                        {
+                            "questionText": "Quick Check: What is 1/4 + 2/4?",
+                            "options": ["3/8", "3/4", "2/4", "1/2"],
+                            "correctAnswer": "3/4",
+                            "explanation": "Correct! When denominators match, simply add the top numbers: 1 + 2 = 3/4."
+                        }
+                    ],
+                    "summary": [
+                        "Numerators count parts; denominators count total equal pieces.",
+                        "To add like fractions, add the top numbers and keep the denominator."
+                    ]
+                },
+                "Easy": {
+                    "Multiple-Choice": [
+                        {
+                            "id": "MATH-G4-FRAC-001",
+                            "questionText": "What is the sum of 1/4 and 2/4?",
+                            "options": ["1/4", "2/4", "3/4", "4/4"],
+                            "correctAnswer": "3/4",
+                            "feedback": {
+                                "en": "Since the denominators are the same, simply add the numerators: 1 + 2 = 3. Keep the denominator: 3/4.",
+                                "fil": "Since the denominators are the same, simply add the numerators: 1 + 2 = 3. Keep the denominator: 3/4."
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "5": {
+            "Decimals": {
+                "studyContent": {
+                    "introduction": "Welcome to Grade 5 Math! Decimals express numbers that include whole numbers and fractional tenths or hundredths.",
+                    "definitions": [
+                        {
+                            "term": "Decimal Place Values",
+                            "definition": "Positions to the right of the decimal point: tenths (0.1) and hundredths (0.01).",
+                            "examples": ["In 0.25, 2 is in the tenths place and 5 is in the hundredths place."]
+                        },
+                        {
+                            "term": "Decimal Multiplication",
+                            "definition": "Multiply numbers as whole numbers first, then count total decimal places in factors to place the point in the product.",
+                            "examples": ["0.5 × 0.2 = 0.10 (2 decimal places total)."]
+                        }
+                    ],
+                    "refresherQuiz": [
+                        {
+                            "questionText": "Quick Check: In 0.75, which digit is in the tenths place?",
+                            "options": ["7", "5", "0", "75"],
+                            "correctAnswer": "7",
+                            "explanation": "Correct! The first digit to the right of the decimal point is the tenths place."
+                        },
+                        {
+                            "questionText": "Quick Check: Multiply 0.3 by 0.3. What is the result?",
+                            "options": ["0.9", "0.09", "9.0", "0.009"],
+                            "correctAnswer": "0.09",
+                            "explanation": "Correct! 3 × 3 = 9. Counting 2 decimal places gives 0.09."
+                        }
+                    ],
+                    "summary": [
+                        "Decimals extend place values into parts of ten and hundred.",
+                        "Always align decimal places when performing arithmetic."
+                    ]
+                },
+                "Average": {
+                    "Multiple-Choice": [
+                        {
+                            "id": "MATH-G5-DEC-002",
+                            "questionText": "Multiply 0.5 by 0.2. What is the product?",
+                            "options": ["0.1", "0.01", "1.0", "0.001"],
+                            "correctAnswer": "0.1",
+                            "feedback": {
+                                "en": "Multiplying 5 by 2 gives 10. Since there are two decimal places in total in the factors, place the decimal point two spaces left: 0.10 or 0.1.",
+                                "fil": "Multiplying 5 by 2 gives 10. Since there are two decimal places in total in the factors, place the decimal point two spaces left: 0.10 or 0.1."
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "6": {
+            "Algebraic Equations": {
+                "studyContent": {
+                    "introduction": "Welcome to Grade 6 Math! Algebraic equations express mathematical statements where two expressions are equal.",
+                    "definitions": [
+                        {
+                            "term": "Variable & Equation",
+                            "definition": "A variable is a letter representing an unknown number (e.g. x). An equation states that two expressions are equal.",
+                            "examples": ["In 3x - 5 = 16, x is the variable."]
+                        },
+                        {
+                            "term": "Inverse Operations",
+                            "definition": "Operations that undo each other, used to isolate the variable on one side.",
+                            "examples": ["Addition undoes subtraction; division undoes multiplication."]
+                        }
+                    ],
+                    "refresherQuiz": [
+                        {
+                            "questionText": "Quick Check: To solve x + 8 = 15, what operation should you perform to isolate x?",
+                            "options": ["Subtract 8 from both sides", "Add 8 to both sides", "Multiply by 8", "Divide by 15"],
+                            "correctAnswer": "Subtract 8 from both sides",
+                            "explanation": "Correct! Subtraction is the inverse operation of addition."
+                        },
+                        {
+                            "questionText": "Quick Check: Solve for x in 2x = 10.",
+                            "options": ["x = 5", "x = 8", "x = 12", "x = 20"],
+                            "correctAnswer": "x = 5",
+                            "explanation": "Correct! Divide both sides by 2: 10 / 2 = 5."
+                        }
+                    ],
+                    "summary": [
+                        "Variables represent unknown quantities.",
+                        "Use inverse operations on both sides of the equation to isolate the variable."
+                    ]
+                },
+                "Difficult": {
+                    "Multiple-Choice": [
+                        {
+                            "id": "MATH-G6-ALG-003",
+                            "questionText": "Solve for x: 3x - 5 = 16.",
+                            "options": ["x = 3", "x = 7", "x = 9", "x = 21"],
+                            "correctAnswer": "x = 7",
+                            "feedback": {
+                                "en": "Add 5 to both sides to get 3x = 21, then divide by 3 to find x = 7.",
+                                "fil": "Add 5 to both sides to get 3x = 21, then divide by 3 to find x = 7."
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "English": {
+        "4": {
+            "Figurative Language": {
+                "studyContent": {
+                    "introduction": "Welcome to Grade 4 English! Figurative language uses words in imaginative ways to create vivid pictures.",
+                    "definitions": [
+                        {
+                            "term": "Simile",
+                            "definition": "Compares two different things using words such as 'like' or 'as'.",
+                            "examples": ["Her cheeks are like red roses.", "Brave as a lion."]
+                        },
+                        {
+                            "term": "Metaphor",
+                            "definition": "Compares two different things directly without using 'like' or 'as'.",
+                            "examples": ["Time is gold.", "He is a shining star."]
+                        }
+                    ],
+                    "refresherQuiz": [
+                        {
+                            "questionText": "Quick Check: Which sentence uses a Simile?",
+                            "options": ["He is a lion in battle.", "She is as fast as a cheetah.", "The wind sang a song.", "Books are keys to wisdom."],
+                            "correctAnswer": "She is as fast as a cheetah.",
+                            "explanation": "Correct! It uses 'as...as' to make a direct comparison."
+                        },
+                        {
+                            "questionText": "Quick Check: 'Time is money' is an example of which figure of speech?",
+                            "options": ["Simile", "Metaphor", "Onomatopoeia", "Hyperbole"],
+                            "correctAnswer": "Metaphor",
+                            "explanation": "Correct! It compares time directly to money without using 'like' or 'as'."
+                        }
+                    ],
+                    "summary": [
+                        "Similes use 'like' or 'as' for comparison.",
+                        "Metaphors compare directly without 'like' or 'as'."
+                    ]
+                },
+                "Easy": {
+                    "Figures of Speech": [
+                        {
+                            "id": "ENG-G4-FIG-001",
+                            "questionText": "Which of the following sentences is a simile?",
+                            "options": [
+                                "He is a shining star.",
+                                "Her cheeks are like red roses.",
+                                "The wind whispered in the night.",
+                                "Time is gold."
+                            ],
+                            "correctAnswer": "Her cheeks are like red roses.",
+                            "feedback": {
+                                "en": "A simile compares two things using \"like\" or \"as\". Here, cheeks are compared to roses using \"like\".",
+                                "fil": "A simile compares two things using \"like\" or \"as\". Here, cheeks are compared to roses using \"like\"."
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "5": {
+            "Adjectives": {
+                "studyContent": {
+                    "introduction": "Hello learner! Today, we will explore Adjectives. Adjectives are words that describe nouns or pronouns. They tell us more about people, places, animals, or things!",
+                    "definitions": [
+                        {
+                            "term": "Adjective",
+                            "definition": "A word that describes or modifies a noun or pronoun (e.g. size, color, shape).",
+                            "examples": ["The big blue balloon", "She is a happy student."]
+                        },
+                        {
+                            "term": "Comparative Adjective",
+                            "definition": "Used to compare two things, usually ending in '-er' or using 'more'.",
+                            "examples": ["This cat is faster than that one.", "Math is more exciting than reading."]
+                        },
+                        {
+                            "term": "Superlative Adjective",
+                            "definition": "Used to compare three or more things, showing the highest degree, usually ending in '-est' or using 'most'.",
+                            "examples": ["Mount Everest is the highest mountain.", "He is the most helpful boy in class."]
+                        }
+                    ],
+                    "refresherQuiz": [
+                        {
+                            "questionText": "Quick Check: Which of the following words is an adjective describing size?",
+                            "options": ["Run", "Gigantic", "Quickly", "Cat"],
+                            "correctAnswer": "Gigantic",
+                            "explanation": "Correct! 'Gigantic' is an adjective describing the size of a noun."
+                        },
+                        {
+                            "questionText": "Quick Check: What suffix is added to compare two items (Comparative)?",
+                            "options": ["-est", "-ing", "-er", "-ly"],
+                            "correctAnswer": "-er",
+                            "explanation": "Correct! Comparative adjectives usually end in '-er' (e.g., taller, faster)."
+                        }
+                    ],
+                    "summary": [
+                        "Adjectives describe nouns (people, places, things).",
+                        "Use comparative adjectives to compare 2 things (usually ending in -er).",
+                        "Use superlative adjectives to compare 3 or more things (usually ending in -est)."
+                    ]
+                },
+                "Easy": {
+                    "Multiple-Choice": [
+                        {
+                            "id": "ENG-G5-ADJ-001",
+                            "questionText": "Which word in the sentence \"The big dog barked loudly\" is an adjective?",
+                            "options": ["The", "big", "dog", "loudly"],
+                            "correctAnswer": "big",
+                            "feedback": {
+                                "en": "An adjective describes a noun or pronoun. In this sentence, \"big\" describes the noun \"dog\".",
+                                "fil": "An adjective describes a noun or pronoun. In this sentence, \"big\" describes the noun \"dog\"."
+                            }
+                        }
+                    ]
+                },
+                "Average": {
+                    "Multiple-Choice": [
+                        {
+                            "id": "ENG-G5-ADJ-002",
+                            "questionText": "Choose the correct comparative adjective to complete the sentence: \"My cat is ______ than your cat.\"",
+                            "options": ["fast", "faster", "fastest", "more fast"],
+                            "correctAnswer": "faster",
+                            "feedback": {
+                                "en": "\"Faster\" is the comparative form of \"fast\" and is used when comparing exactly two things, like \"my cat\" and \"your cat\".",
+                                "fil": "\"Faster\" is the comparative form of \"fast\" and is used when comparing exactly two things, like \"my cat\" and \"your cat\"."
+                            }
+                        },
+                        {
+                            "id": "ENG-G5-ADJ-003",
+                            "questionText": "Which word correctly completes the sentence: \"Mount Everest is the ______ mountain in the world.\"",
+                            "options": ["tall", "taller", "tallest", "more tall"],
+                            "correctAnswer": "tallest",
+                            "feedback": {
+                                "en": "\"Tallest\" is the superlative form of \"tall\" and is used when comparing three or more things.",
+                                "fil": "\"Tallest\" is the superlative form of \"tall\" and is used when comparing three or more things."
+                            }
+                        },
+                        {
+                            "id": "ENG-G5-ADJ-GF1",
+                            "type": "fill-in-the-blank",
+                            "questionText": "The energetic puppy chased the [[blank]] ball.",
+                            "options": ["playful", "running", "sleeping", "heavy"],
+                            "correctAnswer": "playful",
+                            "feedback": {
+                                "en": "'Playful' is an adjective that describes the noun 'ball' in a fun context.",
+                                "fil": "'Playful' is an adjective that describes the noun 'ball' in a fun context."
+                            }
+                        }
+                    ]
+                },
+                "Difficult": {
+                    "Multiple-Choice": [
+                        {
+                            "id": "ENG-G5-ADJ-004",
+                            "questionText": "Read the sentence: \"Among the three runners, Sarah was the ______.\" Which adjective form correctly completes the sentence?",
+                            "options": ["quick", "quicker", "quickest", "more quick"],
+                            "correctAnswer": "quickest",
+                            "feedback": {
+                                "en": "Since the sentence compares \"three runners,\" the superlative form \"quickest\" is required.",
+                                "fil": "Since the sentence compares \"three runners,\" the superlative form \"quickest\" is required."
+                            }
+                        },
+                        {
+                            "id": "ENG-G5-ADJ-005",
+                            "questionText": "In the phrase \"She sings beautifully,\" which word is an adjective?",
+                            "options": ["She", "sings", "beautifully", "There is no adjective in this phrase."],
+                            "correctAnswer": "There is no adjective in this phrase.",
+                            "feedback": {
+                                "en": "An adjective modifies a noun or pronoun. \"Beautifully\" is an adverb because it describes how she sings (a verb).",
+                                "fil": "An adjective modifies a noun or pronoun. \"Beautifully\" is an adverb because it describes how she sings (a verb)."
+                            }
+                        },
+                        {
+                            "id": "ENG-G5-ADJ-GF2",
+                            "type": "drag-drop-matching",
+                            "questionText": "Match the adjectives with their opposite meanings (antonyms).",
+                            "options": ["Hot", "Fast", "Big", "Cold", "Slow", "Small"],
+                            "matchingPairs": {
+                                "Hot": "Cold",
+                                "Fast": "Slow",
+                                "Big": "Small"
+                            },
+                            "correctAnswer": "Hot-Cold, Fast-Slow, Big-Small",
+                            "feedback": {
+                                "en": "The correct antonym pairs are Hot/Cold, Fast/Slow, and Big/Small.",
+                                "fil": "The correct antonym pairs are Hot/Cold, Fast/Slow, and Big/Small."
+                            }
+                        }
+                    ]
+                }
+            },
+            "Short Story Comprehension": {
+                "studyContent": {
+                    "introduction": "Welcome to Grade 5 English! Short Story Comprehension develops your ability to understand, analyze, and interpret written passages. You will learn to identify the main idea, find supporting details, and draw conclusions from what you read.",
+                    "definitions": [
+                        {
+                            "term": "Main Idea",
+                            "definition": "The central or most important point the author wants to communicate in a paragraph or passage.",
+                            "examples": ["In a paragraph about dogs being loyal, the main idea is 'Dogs are loyal companions.'"]
+                        },
+                        {
+                            "term": "Supporting Details",
+                            "definition": "Facts, examples, or reasons that explain or prove the main idea.",
+                            "examples": ["'Dogs guide the blind' and 'Dogs alert owners to danger' support the idea that dogs are loyal."]
+                        },
+                        {
+                            "term": "Inference",
+                            "definition": "A conclusion you draw based on evidence in the text combined with what you already know.",
+                            "examples": ["If a character keeps checking the clock, you can infer they are anxious or waiting for something."]
+                        },
+                        {
+                            "term": "Context Clues",
+                            "definition": "Words or phrases surrounding an unfamiliar word that help you figure out its meaning.",
+                            "examples": ["'The diligent student studied every night' — diligent means hardworking."]
+                        }
+                    ],
+                    "refresherQuiz": [
+                        {
+                            "questionText": "Quick Check: What is the main idea of a paragraph?",
+                            "options": [
+                                "A detail that supports the topic.",
+                                "The most important point the author wants to share.",
+                                "The last sentence of the paragraph.",
+                                "A fact listed in the passage."
+                            ],
+                            "correctAnswer": "The most important point the author wants to share.",
+                            "explanation": "Correct! The main idea is the central message the entire paragraph revolves around."
+                        },
+                        {
+                            "questionText": "Quick Check: What are supporting details?",
+                            "options": [
+                                "New topics added to a story.",
+                                "Facts or examples that explain or prove the main idea.",
+                                "Words used to describe characters.",
+                                "The beginning and ending sentences only."
+                            ],
+                            "correctAnswer": "Facts or examples that explain or prove the main idea.",
+                            "explanation": "Correct! Supporting details back up and strengthen the main idea."
+                        }
+                    ],
+                    "summary": [
+                        "The main idea is the most important point in a passage — often found in the first or last sentence.",
+                        "Supporting details are facts, reasons, or examples that explain the main idea.",
+                        "Use context clues to figure out unfamiliar word meanings.",
+                        "Inferences go beyond the text — combine what the author says with what you know."
+                    ]
+                },
+                "Average": {
+                    "Paragraph Comprehension": [
+                        {
+                            "id": "ENG-G5-RC-002",
+                            "questionText": "Read the text: \"Maria worked diligently on her science project every night, verifying every source. When the results were announced, she won first place.\" What is the main idea of this paragraph?",
+                            "options": [
+                                "Maria loves science projects.",
+                                "Hard work leads to success.",
+                                "The competition was very easy.",
+                                "Maria did not sleep well."
+                            ],
+                            "correctAnswer": "Hard work leads to success.",
+                            "feedback": {
+                                "en": "The paragraph shows how Maria worked hard (\"diligently every night\") and was rewarded with success (\"won first place\").",
+                                "fil": "The paragraph shows how Maria worked hard (\"diligently every night\") and was rewarded with success (\"won first place\")."
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "6": {
+            "Idiomatic Expressions": {
+                "studyContent": {
+                    "introduction": "Welcome to Grade 6 English! Idiomatic Expressions are phrases or sayings whose meanings cannot be understood from the literal definitions of the individual words. Learning idioms helps you understand everyday conversations, stories, and written texts more naturally.",
+                    "definitions": [
+                        {
+                            "term": "Idiom",
+                            "definition": "A group of words with a figurative meaning that is different from its literal meaning.",
+                            "examples": ["'Break a leg' does not mean physically break your leg — it means 'Good luck!'"]
+                        },
+                        {
+                            "term": "Figurative Meaning",
+                            "definition": "The intended, non-literal interpretation of a phrase based on common usage.",
+                            "examples": ["'It's raining cats and dogs' means it is raining very heavily, not that animals are falling from the sky."]
+                        },
+                        {
+                            "term": "Literal Meaning",
+                            "definition": "The exact, word-for-word meaning of a phrase.",
+                            "examples": ["'She ran to the store' — literal: she physically ran to a shop."]
+                        },
+                        {
+                            "term": "Context",
+                            "definition": "The surrounding words and situation that help reveal the intended meaning of an idiom.",
+                            "examples": ["Knowing that someone is nervous before a performance tells you 'Break a leg' means 'Good luck!'"]
+                        }
+                    ],
+                    "refresherQuiz": [
+                        {
+                            "questionText": "Quick Check: What is an idiom?",
+                            "options": [
+                                "A phrase with a literal, exact meaning.",
+                                "A phrase whose figurative meaning differs from its word-by-word definition.",
+                                "A rhyming pair of words.",
+                                "A word borrowed from another language."
+                            ],
+                            "correctAnswer": "A phrase whose figurative meaning differs from its word-by-word definition.",
+                            "explanation": "Correct! Idioms have a special figurative meaning you cannot guess just from the individual words."
+                        },
+                        {
+                            "questionText": "Quick Check: What does 'hit the books' mean?",
+                            "options": [
+                                "To physically strike textbooks.",
+                                "To throw books away.",
+                                "To start studying.",
+                                "To organize your school bag."
+                            ],
+                            "correctAnswer": "To start studying.",
+                            "explanation": "Correct! 'Hit the books' is an idiom meaning to study or begin studying."
+                        }
+                    ],
+                    "summary": [
+                        "Idioms are phrases with figurative, non-literal meanings.",
+                        "You cannot understand an idiom by translating each word individually.",
+                        "Use context clues — the surrounding situation — to figure out what an idiom means.",
+                        "Common Filipino-English idioms include: 'burn the midnight oil' (study late), 'bite the bullet' (endure pain bravely), 'break a leg' (good luck)."
+                    ]
+                },
+                "Difficult": {
+                    "Multiple-Choice": [
+                        {
+                            "id": "ENG-G6-IDIOM-003",
+                            "questionText": "What does the idiom \"burn the midnight oil\" mean?",
+                            "options": [
+                                "To light a candle during a power outage.",
+                                "To work or study late into the night.",
+                                "To waste oil or fuel resources.",
+                                "To start a fire accidentally."
+                            ],
+                            "correctAnswer": "To work or study late into the night.",
+                            "feedback": {
+                                "en": "The idiom refers to staying awake late into the night working or studying, historically by the light of an oil lamp.",
+                                "fil": "The idiom refers to staying awake late into the night working or studying, historically by the light of an oil lamp."
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+};
