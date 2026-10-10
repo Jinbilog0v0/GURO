@@ -41,4 +41,26 @@ describe('StudentProfile Component', () => {
     
     expect(screen.getByText('guest@guro.local')).toBeInTheDocument();
   });
+
+  test('displays parentAccessCode and copies it on button click', () => {
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: jest.fn(),
+      },
+    });
+
+    render(<StudentProfile userName="NJ" parentAccessCode="654321" />);
+
+    const triggerBtn = screen.getByRole('button', { name: /NJ/i });
+    fireEvent.click(triggerBtn);
+
+    expect(screen.getByText('654321')).toBeInTheDocument();
+    expect(screen.getByText('Share with Parent')).toBeInTheDocument();
+
+    const copyBtn = screen.getByTitle('Copy Access Code');
+    fireEvent.click(copyBtn);
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('654321');
+  });
 });
+

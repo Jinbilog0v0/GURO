@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, ChevronDown, Mail, Key, Settings } from 'lucide-react';
+import { User, ChevronDown, Mail, Key, Settings, Copy, Check } from 'lucide-react';
+import { toast } from '../../utils/toast';
 
 interface StudentProfileProps {
     userName: string;
@@ -15,6 +16,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
     onOpenSettings,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [copied, setCopied] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -79,14 +81,29 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
 
                     {parentAccessCode && (
                         <div className="flex flex-col gap-1.5 bg-amber-50 border border-amber-100 rounded-2xl p-3">
-                            <p className="text-xs font-bold text-amber-700 flex items-center gap-1.5">
-                                <Key className="size-3.5 text-amber-500 shrink-0" />
-                                Share with Parent
-                            </p>
-                            <p className="text-[11px] text-zinc-500 leading-relaxed">
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs font-bold text-amber-700 flex items-center gap-1.5 m-0">
+                                    <Key className="size-3.5 text-amber-500 shrink-0" />
+                                    Share with Parent
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(parentAccessCode);
+                                        setCopied(true);
+                                        toast.success('Parent Access Code copied to clipboard!');
+                                        setTimeout(() => setCopied(false), 2000);
+                                    }}
+                                    className="p-1 rounded-md hover:bg-amber-100 text-amber-700 transition-colors cursor-pointer"
+                                    title="Copy Access Code"
+                                >
+                                    {copied ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5 text-amber-600" />}
+                                </button>
+                            </div>
+                            <p className="text-[11px] text-zinc-500 leading-relaxed m-0">
                                 Show this code to your parent or guardian to let them track your progress.
                             </p>
-                            <p className="text-center font-black text-base text-[#11428E] tracking-widest mt-0.5 select-all bg-white border border-amber-200 rounded-xl px-3 py-2">
+                            <p className="text-center font-black text-base text-[#11428E] tracking-widest mt-0.5 select-all bg-white border border-amber-200 rounded-xl px-3 py-2 m-0">
                                 {parentAccessCode}
                             </p>
                         </div>

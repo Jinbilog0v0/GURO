@@ -35,7 +35,7 @@ export function ParentSpace({
   const [currentTime, setCurrentTime] = useState(() => Date.now());
 
   // Linked children list from localStorage for quick child switcher
-  const [linkedChildren] = useState<LinkedStudentProfile[]>(() => {
+  const [linkedChildren, setLinkedChildren] = useState<LinkedStudentProfile[]>(() => {
     try {
       const saved = localStorage.getItem('guro_parent_linked_children');
       return saved ? JSON.parse(saved) : [];
@@ -43,6 +43,15 @@ export function ParentSpace({
       return [];
     }
   });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('guro_parent_linked_children');
+      if (saved) setLinkedChildren(JSON.parse(saved));
+    } catch {
+      // ignore
+    }
+  }, [activeSubTab]);
 
   useEffect(() => {
     if (!lastUpdatedCell) return;
