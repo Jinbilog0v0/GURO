@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Users, 
   Search, 
@@ -6,7 +7,10 @@ import {
   X,
   ChevronRight,
   LayoutList,
-  LayoutGrid
+  LayoutGrid,
+  Target,
+  CheckCircle2,
+  TrendingUp
 } from 'lucide-react';
 
 export interface SyncedEvent {
@@ -32,6 +36,19 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
   const [statusFilter, setStatusFilter] = useState<'All' | 'Mastery' | 'Review' | 'Remediation'>('All');
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
+
+  // Close modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedStudent) {
+        setSelectedStudent(null);
+      }
+    };
+    if (selectedStudent) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedStudent]);
 
   // Group unique students
   const allStudentIds = Array.from(new Set(progressLogs.map(l => l.studentId)));
@@ -344,28 +361,47 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
       )}
 
       {/* Student Detailed Telemetry Modal */}
-      {activeStudentProfile && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      {activeStudentProfile && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedStudent(null);
+          }}
+        >
+          <div 
+            className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
             {/* Modal Header */}
-            <div className="p-5 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-sidebar)]">
-              <div className="flex items-center gap-3">
-                <div className="size-11 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold">
-                  <User size={20} />
+            <div className="p-5 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-sidebar)] shrink-0">
+              <div className="flex items-center gap-3.5">
+                <div className="size-11 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold shrink-0">
+                  <User size={22} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[var(--text-main)] m-0 font-mono">
-                    {activeStudentProfile.studentId}
-                  </h3>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h3 className="text-base font-bold text-[var(--text-main)] m-0 font-mono">
+                      {activeStudentProfile.studentId}
+                    </h3>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border ${
+                      activeStudentProfile.status === 'Mastery' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' :
+                      activeStudentProfile.status === 'Review' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' :
+                      'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                    }`}>
+                      {activeStudentProfile.status}
+                    </span>
+                  </div>
                   <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                    Grade {activeStudentProfile.gradeLevel} • {activeStudentProfile.totalQuizzes} Total Quiz Records
+                    Grade {activeStudentProfile.gradeLevel} • {activeStudentProfile.totalQuizzes} Assessment Record{activeStudentProfile.totalQuizzes === 1 ? '' : 's'}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedStudent(null)}
-                className="size-8 rounded-lg border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                className="size-8 rounded-lg border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
                 aria-label="Close modal"
               >
                 <X size={16} />
@@ -373,61 +409,114 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 flex-1 overflow-y-auto flex flex-col gap-4">
-              {/* Quick Summary Pill */}
-              <div className="grid grid-cols-3 gap-3 p-3.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-center">
-                <div>
-                  <span className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Overall Accuracy</span>
-                  <div className="text-lg font-bold mt-1" style={{
-                    color: activeStudentProfile.averageScore >= 80 ? '#10B981' : activeStudentProfile.averageScore >= 50 ? '#F59E0B' : '#A01322'
-                  }}>
-                    {activeStudentProfile.averageScore}%
+            <div className="p-5 flex-1 overflow-y-auto flex flex-col gap-5">
+              {/* Quick Summary KPI Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center gap-3">
+                  <div 
+                    className="size-10 rounded-lg flex items-center justify-center shrink-0" 
+                    style={{
+                      backgroundColor: activeStudentProfile.averageScore >= 80 ? 'rgba(16, 185, 129, 0.12)' : activeStudentProfile.averageScore >= 50 ? 'rgba(245, 158, 11, 0.12)' : 'rgba(225, 29, 72, 0.12)',
+                      color: activeStudentProfile.averageScore >= 80 ? '#10B981' : activeStudentProfile.averageScore >= 50 ? '#F59E0B' : '#E11D48'
+                    }}
+                  >
+                    <Target size={20} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Overall Accuracy</span>
+                    <div 
+                      className="text-xl font-extrabold font-mono mt-0.5" 
+                      style={{
+                        color: activeStudentProfile.averageScore >= 80 ? '#10B981' : activeStudentProfile.averageScore >= 50 ? '#F59E0B' : '#E11D48'
+                      }}
+                    >
+                      {activeStudentProfile.averageScore}%
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <span className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Completed Tests</span>
-                  <div className="text-lg font-bold text-[var(--text-main)] mt-1">
-                    {activeStudentProfile.totalQuizzes}
+
+                <div className="p-3.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center gap-3">
+                  <div className="size-10 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                    <CheckCircle2 size={20} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Completed Tests</span>
+                    <div className="text-xl font-extrabold font-mono text-[var(--text-main)] mt-0.5">
+                      {activeStudentProfile.totalQuizzes}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <span className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Mastery Status</span>
-                  <div className="text-lg font-bold text-indigo-400 mt-1">
-                    {activeStudentProfile.status}
+
+                <div className="p-3.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center gap-3">
+                  <div 
+                    className="size-10 rounded-lg flex items-center justify-center shrink-0" 
+                    style={{
+                      backgroundColor: activeStudentProfile.status === 'Mastery' ? 'rgba(16, 185, 129, 0.12)' : activeStudentProfile.status === 'Review' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(225, 29, 72, 0.12)',
+                      color: activeStudentProfile.status === 'Mastery' ? '#10B981' : activeStudentProfile.status === 'Review' ? '#F59E0B' : '#E11D48'
+                    }}
+                  >
+                    <TrendingUp size={20} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Mastery Status</span>
+                    <div 
+                      className="text-base font-bold mt-0.5" 
+                      style={{
+                        color: activeStudentProfile.status === 'Mastery' ? '#10B981' : activeStudentProfile.status === 'Review' ? '#F59E0B' : '#E11D48'
+                      }}
+                    >
+                      {activeStudentProfile.status}
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Attempt History Table */}
-              <div className="flex flex-col gap-2">
-                <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider m-0">
-                  Topic Assessments History
-                </h4>
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider m-0">
+                    Topic Assessments History
+                  </h4>
+                  <span className="text-[11px] text-[var(--text-muted)] font-medium">
+                    {activeStudentProfile.logs.length} record{activeStudentProfile.logs.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+
                 <div className="overflow-x-auto rounded-xl border border-[var(--border-color)]">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="bg-[var(--bg-sidebar)] text-[var(--text-muted)]">
-                      <tr className="border-b border-[var(--border-color)]">
-                        <th className="py-2.5 px-3 font-bold">Topic</th>
-                        <th className="py-2.5 px-3 font-bold">Subject</th>
-                        <th className="py-2.5 px-3 font-bold">Score</th>
-                        <th className="py-2.5 px-3 font-bold">Accuracy</th>
-                        <th className="py-2.5 px-3 font-bold">Date</th>
+                      <tr className="border-b border-[var(--border-color)] text-[11px] uppercase tracking-wider font-bold">
+                        <th className="py-2.5 px-3.5 font-bold">Topic</th>
+                        <th className="py-2.5 px-3.5 font-bold">Subject</th>
+                        <th className="py-2.5 px-3.5 font-bold text-center">Score</th>
+                        <th className="py-2.5 px-3.5 font-bold text-center">Accuracy</th>
+                        <th className="py-2.5 px-3.5 font-bold text-right">Date</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-[var(--border-color)]">
                       {activeStudentProfile.logs.map((lg) => {
                         const pct = Math.round((lg.score / lg.totalQuestions) * 100);
+                        const accColor = pct >= 80 ? 'text-emerald-500' : pct >= 50 ? 'text-amber-500' : 'text-rose-500';
+                        const subjectBadge = 
+                          lg.subject === 'Science' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20' :
+                          lg.subject === 'Mathematics' ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' :
+                          'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20';
+
                         return (
-                          <tr key={lg.eventId} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-main)]">
-                            <td className="py-2.5 px-3 font-semibold text-[var(--text-main)]">{lg.topic}</td>
-                            <td className="py-2.5 px-3 text-[var(--text-muted)]">{lg.subject}</td>
-                            <td className="py-2.5 px-3 text-[var(--text-main)] font-mono">{lg.score} / {lg.totalQuestions}</td>
-                            <td className="py-2.5 px-3 font-bold">
-                              <span style={{ color: pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#A01322' }}>
-                                {pct}%
+                          <tr key={lg.eventId} className="hover:bg-[var(--bg-main)]/60 transition-colors">
+                            <td className="py-3 px-3.5 font-semibold text-[var(--text-main)]">{lg.topic}</td>
+                            <td className="py-3 px-3.5">
+                              <span className={`inline-block px-2 py-0.5 rounded-md text-[10.5px] font-semibold border ${subjectBadge}`}>
+                                {lg.subject}
                               </span>
                             </td>
-                            <td className="py-2.5 px-3 text-[var(--text-muted)]">
+                            <td className="py-3 px-3.5 text-center font-mono font-medium text-[var(--text-main)]">
+                              {lg.score} / {lg.totalQuestions}
+                            </td>
+                            <td className="py-3 px-3.5 text-center font-mono font-bold">
+                              <span className={accColor}>{pct}%</span>
+                            </td>
+                            <td className="py-3 px-3.5 text-right text-[var(--text-muted)] text-[11px]">
                               {new Date(lg.timestamp).toLocaleDateString()}
                             </td>
                           </tr>
@@ -440,17 +529,18 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t border-[var(--border-color)] flex justify-end bg-[var(--bg-sidebar)]">
+            <div className="p-4 border-t border-[var(--border-color)] flex justify-end bg-[var(--bg-sidebar)] shrink-0">
               <button
                 type="button"
                 onClick={() => setSelectedStudent(null)}
-                className="btn btn-secondary text-xs px-4 py-2"
+                className="btn btn-secondary text-xs px-4 py-2 rounded-lg cursor-pointer font-bold"
               >
                 Close Profile
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
