@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Save, BookOpen, Languages, X, Lightbulb, UploadCloud } from 'lucide-react';
+import { Plus, Trash2, Save, BookOpen, Languages, X, Lightbulb, UploadCloud, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 import { toast } from '../../utils/toast';
 
 interface Question {
@@ -146,6 +146,8 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
   const [lessonText, setLessonText] = useState('');
   const [lessonImage, setLessonImage] = useState('');
 
+  const [enableRefresher, setEnableRefresher] = useState(false);
+  const [activeRefresherIdx, setActiveRefresherIdx] = useState<number | null>(0);
   const [refresherQuestions, setRefresherQuestions] = useState<{
     questionText: string;
     options: string[];
@@ -353,17 +355,19 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
     setIsSubmitting(true);
     try {
       const endpoint = classroomId ? '/api/classroom/update-lesson' : '/api/save';
-      const validRefreshers = refresherQuestions
-        .filter(q => q.questionText.trim() && q.options.every(o => o.trim()) && q.correctAnswer)
-        .map(q => {
-          const idx = q.correctAnswer === 'A' ? 0 : (q.correctAnswer === 'B' ? 1 : 2);
-          return {
-            questionText: q.questionText.trim(),
-            options: q.options.map(o => o.trim()),
-            correctAnswer: q.options[idx].trim(),
-            explanation: q.explanation.trim() || 'Great job!'
-          };
-        });
+      const validRefreshers = enableRefresher
+        ? refresherQuestions
+            .filter(q => q.questionText.trim() && q.options.every(o => o.trim()) && q.correctAnswer)
+            .map(q => {
+              const idx = q.correctAnswer === 'A' ? 0 : (q.correctAnswer === 'B' ? 1 : 2);
+              return {
+                questionText: q.questionText.trim(),
+                options: q.options.map(o => o.trim()),
+                correctAnswer: q.options[idx].trim(),
+                explanation: q.explanation.trim() || 'Great job!'
+              };
+            })
+        : [];
 
       const studyContent = lessonText.trim()
         ? { 
@@ -419,6 +423,11 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
       setTopic('');
       setLessonText('');
       setLessonImage('');
+      setEnableRefresher(false);
+      setActiveRefresherIdx(0);
+      setRefresherQuestions([
+        { questionText: '', options: ['', '', ''], correctAnswer: '', explanation: '' }
+      ]);
       setQuestions([
         {
           id: 'ENG-G5-TOPIC-001',
@@ -493,110 +502,208 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
             onChange={setLessonImage}
           />
 
-          <div className="form-group border-t border-[var(--border-color)] pt-4 mt-2.5">
-            <div className="flex justify-between items-center mb-3">
-              <h4 className="text-[13px] font-extrabold text-[var(--accent-primary-text)] uppercase tracking-[0.5px]">
-                Refresher Quiz Checkpoints (1 to 3 Activities)
-              </h4>
-              {refresherQuestions.length < 3 && (
-                <button
-                  type="button"
-                  onClick={() => setRefresherQuestions(prev => [...prev, { questionText: '', options: ['', '', ''], correctAnswer: '', explanation: '' }])}
-                  className="btn btn-secondary px-2.5 py-1 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
-                >
-                  + Add Checkpoint
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-4">
-              {refresherQuestions.map((q, idx) => (
-                <div key={idx} className="flex flex-col gap-3 p-4 bg-[var(--bg-sidebar)] border border-[var(--border-color)] rounded-2xl relative">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[11px] font-bold text-[var(--text-muted)]">Checkpoint Activity #{idx + 1}</span>
-                    {refresherQuestions.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => setRefresherQuestions(prev => prev.filter((_, i) => i !== idx))}
-                        className="text-rose-600 hover:text-rose-800 text-[11px] font-bold cursor-pointer"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-[var(--text-main)] mb-1 block">Refresher Question Text</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Which word is a simile?"
-                      value={q.questionText}
-                      onChange={(e) => {
-                        const updated = [...refresherQuestions];
-                        updated[idx].questionText = e.target.value;
-                        setRefresherQuestions(updated);
-                      }}
-                      className="w-full text-xs"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    {['A', 'B', 'C'].map((optLabel, optIdx) => (
-                      <div key={optLabel}>
-                        <label className="text-[11px] font-bold text-[var(--text-main)] mb-1 block">Option {optLabel}</label>
-                        <input
-                          type="text"
-                          placeholder={`Option ${optLabel}`}
-                          value={q.options[optIdx]}
-                          onChange={(e) => {
-                            const updated = [...refresherQuestions];
-                            const opts = [...updated[idx].options];
-                            opts[optIdx] = e.target.value;
-                            updated[idx].options = opts;
-                            setRefresherQuestions(updated);
-                          }}
-                          className="w-full text-xs"
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3.5">
-                    <div>
-                      <label className="text-[11px] font-bold text-[var(--text-main)] mb-1 block">Correct Option</label>
-                      <select
-                        value={q.correctAnswer}
-                        onChange={(e) => {
-                          const updated = [...refresherQuestions];
-                          updated[idx].correctAnswer = e.target.value;
-                          setRefresherQuestions(updated);
-                        }}
-                        className="w-full text-xs"
-                      >
-                        <option value="">-- Select --</option>
-                        <option value="A">Option A</option>
-                        <option value="B">Option B</option>
-                        <option value="C">Option C</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-[var(--text-main)] mb-1 block">Explanation</label>
-                      <input
-                        type="text"
-                        placeholder="relatable explanation..."
-                        value={q.explanation}
-                        onChange={(e) => {
-                          const updated = [...refresherQuestions];
-                          updated[idx].explanation = e.target.value;
-                          setRefresherQuestions(updated);
-                        }}
-                        className="w-full text-xs"
-                      />
-                    </div>
-                  </div>
+          <div className="border-t border-[var(--border-color)] pt-4 mt-2.5 flex flex-col gap-3">
+            {/* Opt-in Header & Switch Toggle */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <HelpCircle size={14} className="text-[#11428E] dark:text-sky-400 shrink-0" />
+                  <span className="text-[12px] font-extrabold text-[var(--text-main)]">
+                    In-Slide Checkpoints
+                  </span>
+                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)]">
+                    Optional
+                  </span>
                 </div>
-              ))}
+                <span className="text-[11px] text-[var(--text-muted)] mt-0.5 line-clamp-1">
+                  Mini interactive checks during study slides
+                </span>
+              </div>
+
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input 
+                  type="checkbox" 
+                  checked={enableRefresher} 
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setEnableRefresher(checked);
+                    if (checked && refresherQuestions.length === 0) {
+                      setRefresherQuestions([{ questionText: '', options: ['', '', ''], correctAnswer: '', explanation: '' }]);
+                      setActiveRefresherIdx(0);
+                    }
+                  }} 
+                  className="sr-only peer" 
+                />
+                <div className="w-8 h-4.5 bg-zinc-300 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-[#11428E]"></div>
+              </label>
             </div>
+
+            {enableRefresher && (
+              <div className="flex flex-col gap-3 mt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[11px] text-[var(--text-muted)] flex items-start gap-2">
+                  <Lightbulb size={13} className="text-[#11428E] dark:text-sky-400 shrink-0 mt-0.5" />
+                  <span>
+                    Students answer these 1 to 3 "Quick Checks" while reading the lesson slides before taking the formal scored quiz.
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  {refresherQuestions.map((q, idx) => {
+                    const isExpanded = activeRefresherIdx === idx;
+                    const isConfigured = q.questionText.trim() && q.options.every(o => o.trim()) && q.correctAnswer;
+
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`rounded-xl border transition-all ${
+                          isExpanded 
+                            ? 'bg-[var(--bg-main)] border-[#11428E]/40 shadow-xs' 
+                            : 'bg-[var(--bg-card)] border-[var(--border-color)] hover:border-[var(--text-muted)]'
+                        }`}
+                      >
+                        {/* Accordion Pill Header */}
+                        <div 
+                          onClick={() => setActiveRefresherIdx(isExpanded ? null : idx)}
+                          className="p-3 flex items-center justify-between gap-2 cursor-pointer select-none"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="size-5 rounded-md bg-[#11428E]/10 text-[#11428E] dark:text-sky-300 text-[10px] font-black flex items-center justify-center shrink-0">
+                              #{idx + 1}
+                            </span>
+                            <span className="text-xs font-bold text-[var(--text-main)] truncate max-w-[150px]">
+                              {q.questionText.trim() || `Activity #${idx + 1}`}
+                            </span>
+                            {isConfigured ? (
+                              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
+                                Ready
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
+                                Draft
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {refresherQuestions.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRefresherQuestions(prev => prev.filter((_, i) => i !== idx));
+                                  if (activeRefresherIdx === idx) setActiveRefresherIdx(null);
+                                }}
+                                className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-500/10 rounded-md transition-colors cursor-pointer"
+                                title="Remove checkpoint"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            )}
+                            {isExpanded ? <ChevronUp size={14} className="text-[var(--text-muted)]" /> : <ChevronDown size={14} className="text-[var(--text-muted)]" />}
+                          </div>
+                        </div>
+
+                        {/* Accordion Expanded Body */}
+                        {isExpanded && (
+                          <div className="p-3 pt-0 border-t border-[var(--border-color)]/60 flex flex-col gap-3 mt-1">
+                            <div>
+                              <label className="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider mb-1 block">
+                                Question Text
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="e.g. Which word is a simile?"
+                                value={q.questionText}
+                                onChange={(e) => {
+                                  const updated = [...refresherQuestions];
+                                  updated[idx].questionText = e.target.value;
+                                  setRefresherQuestions(updated);
+                                }}
+                                className="w-full text-xs py-1.5 px-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)]"
+                              />
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider block">
+                                Answer Options & Correct Choice
+                              </label>
+                              {['A', 'B', 'C'].map((optLabel, optIdx) => {
+                                const isCorrect = q.correctAnswer === optLabel;
+                                return (
+                                  <div key={optLabel} className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = [...refresherQuestions];
+                                        updated[idx].correctAnswer = optLabel;
+                                        setRefresherQuestions(updated);
+                                      }}
+                                      className={`size-6 rounded-md text-[10px] font-black flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                                        isCorrect
+                                          ? 'bg-emerald-500 text-white shadow-xs'
+                                          : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                                      }`}
+                                      title={isCorrect ? 'Correct option' : `Click to mark Option ${optLabel} as correct`}
+                                    >
+                                      {optLabel}
+                                    </button>
+                                    <input
+                                      type="text"
+                                      placeholder={`Option ${optLabel}...`}
+                                      value={q.options[optIdx]}
+                                      onChange={(e) => {
+                                        const updated = [...refresherQuestions];
+                                        const opts = [...updated[idx].options];
+                                        opts[optIdx] = e.target.value;
+                                        updated[idx].options = opts;
+                                        setRefresherQuestions(updated);
+                                      }}
+                                      className="flex-1 text-xs py-1.5 px-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)]"
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider mb-1 block">
+                                Short Feedback Explanation
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Explain why the answer is correct..."
+                                value={q.explanation}
+                                onChange={(e) => {
+                                  const updated = [...refresherQuestions];
+                                  updated[idx].explanation = e.target.value;
+                                  setRefresherQuestions(updated);
+                                }}
+                                className="w-full text-xs py-1.5 px-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-main)]"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {refresherQuestions.length < 3 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newIdx = refresherQuestions.length;
+                        setRefresherQuestions(prev => [...prev, { questionText: '', options: ['', '', ''], correctAnswer: '', explanation: '' }]);
+                        setActiveRefresherIdx(newIdx);
+                      }}
+                      className="w-full py-2 border border-dashed border-[var(--border-color)] hover:border-[#11428E] rounded-xl text-xs font-bold text-[var(--text-muted)] hover:text-[#11428E] dark:hover:text-sky-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer bg-[var(--bg-main)] hover:bg-[var(--bg-card)]"
+                    >
+                      <Plus size={13} />
+                      <span>Add Checkpoint ({refresherQuestions.length}/3)</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <button
