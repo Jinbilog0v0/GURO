@@ -33,16 +33,20 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
 
     return (
         <div className="relative inline-block text-left" ref={dropdownRef}>
-            {/* Profile trigger capsule */}
+            {/* Profile trigger avatar icon/picture */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full shadow-md text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all hover:scale-[1.02] active:scale-[0.98] font-bold text-sm cursor-pointer z-30"
+                aria-label={`Account menu for ${userName}`}
+                title={`Account menu (${userName})`}
+                className="relative flex items-center justify-center size-9 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] hover:bg-[var(--bg-main)] hover:ring-2 hover:ring-[#11428E]/20 transition-all hover:scale-105 active:scale-95 cursor-pointer z-30"
             >
-                <div className="size-6 bg-gradient-to-tr from-[#11428E] to-[#A01322] rounded-full flex items-center justify-center text-white text-xs font-black shadow-inner">
+                <div className="size-7 bg-gradient-to-tr from-[#11428E] to-[#A01322] rounded-full flex items-center justify-center text-white text-xs font-black shadow-inner">
                     {userName ? userName.charAt(0).toUpperCase() : 'S'}
                 </div>
-                <span className="max-w-[100px] truncate">{userName}</span>
-                <ChevronDown className={`size-4 text-[var(--text-muted)] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                <span className="sr-only">{userName}</span>
+                <div className="absolute -bottom-0.5 -right-0.5 size-3.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full flex items-center justify-center shadow-xs">
+                    <ChevronDown className={`size-2 text-[var(--text-muted)] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                </div>
             </button>
 
             {/* Dropdown Card */}

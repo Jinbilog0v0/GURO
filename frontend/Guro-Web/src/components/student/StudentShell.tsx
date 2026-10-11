@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, BookOpen, BarChart2, Wifi, WifiOff, Menu, X, GraduationCap, Sun, Moon, LogOut, Calendar } from 'lucide-react';
+import { LayoutDashboard, BookOpen, BarChart2, Wifi, WifiOff, Menu, X, GraduationCap, Sun, Moon, LogOut, Calendar, Settings } from 'lucide-react';
 import { StudentProfile } from './StudentProfile';
 
 export type ShellView = 'dashboard' | 'lessons' | 'progress' | 'classroom';
@@ -81,8 +81,8 @@ export const StudentShell: React.FC<StudentShellProps> = ({
                     })}
                 </nav>
 
-                {/* Logout button at bottom of sidebar */}
-                <div className="p-3 border-t border-[var(--border-color)]">
+                {/* Logout button + Account & Settings at bottom of sidebar */}
+                <div className="p-3 border-t border-[var(--border-color)] flex flex-col gap-2">
                     <button
                         onClick={onLogout}
                         className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-[var(--accent-secondary)] hover:bg-[var(--accent-secondary-glow)] transition-all cursor-pointer"
@@ -90,6 +90,41 @@ export const StudentShell: React.FC<StudentShellProps> = ({
                         <LogOut className="size-4 text-[var(--accent-secondary)]" />
                         Log Out
                     </button>
+
+                    {/* Account and Settings in bottom of sidebar */}
+                    <div className="pt-2 border-t border-[var(--border-color)]/60 flex items-center justify-between gap-2">
+                        <button
+                            type="button"
+                            onClick={onOpenSettings}
+                            className="flex items-center gap-2.5 flex-1 min-w-0 p-1.5 -ml-1 rounded-xl text-left hover:bg-[var(--bg-main)] transition-all cursor-pointer group"
+                            title={`Account profile (${userName}) - Click to open settings`}
+                            aria-label={`Account profile for ${userName}`}
+                        >
+                            <div className="size-8 rounded-full bg-gradient-to-tr from-[#11428E] to-[#A01322] flex items-center justify-center text-white text-xs font-black shadow-xs shrink-0">
+                                {userName ? userName.charAt(0).toUpperCase() : 'S'}
+                            </div>
+                            <div className="flex flex-col min-w-0 leading-tight">
+                                <span className="text-xs font-bold text-[var(--text-main)] truncate group-hover:text-[#11428E] dark:group-hover:text-sky-300 transition-colors">
+                                    {userName}
+                                </span>
+                                <span className="text-[10px] font-semibold text-[var(--text-muted)] truncate">
+                                    Grade {selectedGrade} Student
+                                </span>
+                            </div>
+                        </button>
+
+                        {onOpenSettings && (
+                            <button
+                                type="button"
+                                onClick={onOpenSettings}
+                                className="size-8 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] border border-transparent hover:border-[var(--border-color)] transition-all cursor-pointer shrink-0"
+                                title="Open Settings"
+                                aria-label="Open Settings"
+                            >
+                                <Settings className="size-4" />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </aside>
 
@@ -185,6 +220,34 @@ export const StudentShell: React.FC<StudentShellProps> = ({
                             <LogOut className="size-4" />
                             Log Out
                         </button>
+
+                        {/* Mobile Account & Settings */}
+                        <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[var(--bg-main)]/50 border border-[var(--border-color)] mt-1">
+                            <button
+                                type="button"
+                                onClick={() => { setMobileNavOpen(false); onOpenSettings?.(); }}
+                                className="flex items-center gap-2.5 flex-1 min-w-0 text-left cursor-pointer"
+                            >
+                                <div className="size-7 rounded-full bg-gradient-to-tr from-[#11428E] to-[#A01322] flex items-center justify-center text-white text-xs font-black shrink-0">
+                                    {userName ? userName.charAt(0).toUpperCase() : 'S'}
+                                </div>
+                                <div className="flex flex-col min-w-0 leading-tight">
+                                    <span className="text-xs font-bold text-[var(--text-main)] truncate">{userName}</span>
+                                    <span className="text-[10px] text-[var(--text-muted)]">Grade {selectedGrade} Student</span>
+                                </div>
+                            </button>
+                            {onOpenSettings && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setMobileNavOpen(false); onOpenSettings(); }}
+                                    className="p-1.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                                    title="Open Settings"
+                                    aria-label="Open Settings"
+                                >
+                                    <Settings className="size-3.5" />
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
 
