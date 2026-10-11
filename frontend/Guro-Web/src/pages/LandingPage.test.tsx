@@ -168,4 +168,30 @@ describe('LandingPage Portal (Web)', () => {
       expect(mockLoginSuccess).toHaveBeenCalledWith(expect.objectContaining({ role: 'developer' }));
     });
   });
+
+  test('can select a test account from dropdown to autofill email and password', () => {
+    const mockSelectRole = jest.fn();
+    const mockLoginSuccess = jest.fn();
+    render(<LandingPage onSelectRole={mockSelectRole} onLoginSuccess={mockLoginSuccess} />);
+
+    const select = screen.getByLabelText(/Test Account \(Testing Only\)/i) as HTMLSelectElement;
+    expect(select).toBeInTheDocument();
+
+    // Select Teacher Claro
+    fireEvent.change(select, { target: { value: 'teacher_claro' } });
+
+    const emailInput = screen.getByLabelText(/Email address/i) as HTMLInputElement;
+    const passwordInput = screen.getByPlaceholderText('••••••••') as HTMLInputElement;
+
+    expect(emailInput.value).toBe('nealjeanclaro05@gmail.com');
+    expect(passwordInput.value).toBe('Password123');
+
+    // Clear test account selection
+    const clearBtn = screen.getByRole('button', { name: /Clear/i });
+    fireEvent.click(clearBtn);
+
+    expect(emailInput.value).toBe('');
+    expect(passwordInput.value).toBe('');
+  });
 });
+

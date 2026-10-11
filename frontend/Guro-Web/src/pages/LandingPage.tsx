@@ -38,10 +38,56 @@ type ViewType = 'login' | 'register' | 'guest-roles';
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
+export const CLARO_TEST_ACCOUNTS = [
+    {
+        id: 'teacher_claro',
+        label: '👨‍🏫 Teacher: Neal Claro (nealjeanclaro05@gmail.com)',
+        email: 'nealjeanclaro05@gmail.com',
+        password: 'Password123',
+        isAdmin: false,
+    },
+    {
+        id: 'student_neal',
+        label: '🎒 Student: Neal Jean Claro (nealjeanclaro@gmail.com)',
+        email: 'nealjeanclaro@gmail.com',
+        password: 'Password123',
+        isAdmin: false,
+    },
+    {
+        id: 'student_allen',
+        label: '🎒 Student: Allen James Claro (allenjames99@gmail.com)',
+        email: 'allenjames99@gmail.com',
+        password: 'Password123',
+        isAdmin: false,
+    },
+    {
+        id: 'parent_allan',
+        label: '👪 Parent: Allan Claro (claroallan05@gmail.com)',
+        email: 'claroallan05@gmail.com',
+        password: 'Password123',
+        isAdmin: false,
+    },
+    {
+        id: 'parent_enecita',
+        label: '👪 Parent: Enecita Claro (enecitaclaro67@gmail.com)',
+        email: 'enecitaclaro67@gmail.com',
+        password: 'Password123',
+        isAdmin: false,
+    },
+    {
+        id: 'dev_claro',
+        label: '⚙️ Staff / Admin: Neal Claro (nealjeanclaro@guro.dev)',
+        email: 'nealjeanclaro@guro.dev',
+        password: 'JinBilog0v0',
+        isAdmin: true,
+    },
+];
+
 export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginSuccess, isDarkMode = false, onToggleTheme }) => {
     const [view, setView] = useState<ViewType>('login');
     const [isAdminMode, setIsAdminMode] = useState(false);
     const [adminSecretKey, setAdminSecretKey] = useState('');
+    const [selectedTestAccount, setSelectedTestAccount] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -451,6 +497,56 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                                     </button>
                                 </div>
                             )}
+
+                            {/* Quick Test Account Dropdown (Testing Only) */}
+                            <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-[#11428E]/10 dark:bg-sky-500/10 border border-[#11428E]/20 dark:border-sky-500/20">
+                                <div className="flex items-center justify-between">
+                                    <label htmlFor="test-account-select" className="text-[11px] font-extrabold text-[#11428E] dark:text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        <Sparkles className="size-3.5" /> Test Account (Testing Only)
+                                    </label>
+                                    {selectedTestAccount ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedTestAccount('');
+                                                setEmail('');
+                                                setPassword('');
+                                                setIsAdminMode(false);
+                                                setFieldErrors({});
+                                            }}
+                                            className="text-[10px] text-[var(--text-muted)] hover:text-[#A01322] font-bold cursor-pointer transition-colors"
+                                        >
+                                            Clear
+                                        </button>
+                                    ) : (
+                                        <span className="text-[10px] text-[var(--text-muted)] font-semibold">Testing Only</span>
+                                    )}
+                                </div>
+                                <select
+                                    id="test-account-select"
+                                    value={selectedTestAccount}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setSelectedTestAccount(val);
+                                        const found = CLARO_TEST_ACCOUNTS.find(a => a.id === val);
+                                        if (found) {
+                                            setEmail(found.email);
+                                            setPassword(found.password);
+                                            setIsAdminMode(found.isAdmin);
+                                            setFieldErrors({});
+                                            setAuthError('');
+                                        }
+                                    }}
+                                    className="w-full py-2 px-3 bg-[var(--bg-main)]/80 border border-[var(--border-color)] rounded-xl text-xs text-[var(--text-main)] font-semibold focus:outline-none focus:ring-2 focus:ring-[#11428E]/30 cursor-pointer"
+                                >
+                                    <option value="">-- Select Test Account to Autofill --</option>
+                                    {CLARO_TEST_ACCOUNTS.map(acc => (
+                                        <option key={acc.id} value={acc.id}>
+                                            {acc.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
 
                             <div className="flex flex-col gap-1.5">
                                 <label className={labelCls} htmlFor="login-email">Email address</label>

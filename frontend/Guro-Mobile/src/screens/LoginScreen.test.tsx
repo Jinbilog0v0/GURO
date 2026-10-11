@@ -85,6 +85,7 @@ describe('LoginScreen', () => {
     const rootJSON = root.toJSON();
     expect(findTextInJSON(rootJSON, 'GURO')).toBe(true);
     expect(findTextInJSON(rootJSON, 'GUIDED UNIFIED RESOURCE OPTIMIZATION')).toBe(true);
+    expect(findTextInJSON(rootJSON, 'Quick Test Account')).toBe(true);
 
     act(() => {
       root.unmount();
