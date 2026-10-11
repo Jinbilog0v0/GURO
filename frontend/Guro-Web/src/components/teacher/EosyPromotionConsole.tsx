@@ -930,8 +930,8 @@ SIGNATORIES:
               </div>
             </div>
 
-            {/* Print, Download & Close Actions */}
-            <div className="flex flex-wrap sm:flex-nowrap gap-3 mt-6 sf9-no-print">
+            {/* Print, Download & Close Actions (Sticky Footer) */}
+            <div className="flex flex-wrap sm:flex-nowrap gap-3 mt-6 pt-3.5 pb-1 sticky bottom-0 bg-white/95 backdrop-blur-xs border-t border-slate-200 -mx-6 sm:-mx-8 px-6 sm:px-8 z-20 sf9-no-print">
               <button
                 type="button"
                 onClick={() => setSf9Student(null)}

@@ -4,7 +4,9 @@ import {
   Search, 
   User, 
   X,
-  ChevronRight
+  ChevronRight,
+  LayoutList,
+  LayoutGrid
 } from 'lucide-react';
 
 export interface SyncedEvent {
@@ -28,6 +30,7 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
   const [searchQuery, setSearchQuery] = useState('');
   const [gradeFilter, setGradeFilter] = useState<'All' | 4 | 5 | 6>('All');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Mastery' | 'Review' | 'Remediation'>('All');
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
 
   // Group unique students
@@ -77,7 +80,7 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
         <div>
           <h2 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2 m-0">
             <Users className="size-6 text-[#11428E]" />
-            <span>Student Roster & Profiles Directory</span>
+            <span>Student Roster &amp; Profiles Directory</span>
           </h2>
           <p className="text-xs text-[var(--text-muted)] mt-1">
             Search, inspect individual telemetry curves, and review learner performance records across all classrooms.
@@ -85,7 +88,7 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
         </div>
 
         {/* Quick KPI Badges */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="px-3.5 py-1.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs flex items-center gap-2">
             <span className="text-[var(--text-muted)]">Total Learners:</span>
             <strong className="text-[var(--text-main)] font-mono">{studentProfiles.length}</strong>
@@ -114,7 +117,7 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
           <select
             value={gradeFilter}
             onChange={(e) => setGradeFilter(e.target.value === 'All' ? 'All' : Number(e.target.value) as any)}
@@ -136,15 +139,146 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
             <option value="Review">Review Needed (50–79%)</option>
             <option value="Remediation">Remediation (&lt; 50%)</option>
           </select>
+
+          {/* Dual View Mode Switcher */}
+          <div className="flex items-center gap-1 bg-[var(--bg-main)] p-1 rounded-xl border border-[var(--border-color)] shrink-0">
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-[#11428E] text-white shadow-xs'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+              }`}
+              title="Table View (Default)"
+              aria-label="Table View"
+            >
+              <LayoutList size={14} />
+              <span>Table</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('card')}
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === 'card'
+                  ? 'bg-[#11428E] text-white shadow-xs'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+              }`}
+              title="Card View"
+              aria-label="Card View"
+            >
+              <LayoutGrid size={14} />
+              <span>Cards</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Student Cards Grid */}
+      {/* Student List View / Cards Grid */}
       {filteredProfiles.length === 0 ? (
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-12 text-center text-[var(--text-muted)] text-sm">
           No students found matching your search or filters.
         </div>
+      ) : viewMode === 'table' ? (
+        /* Table View (Default) */
+        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] text-[11px] font-bold uppercase tracking-wider">
+                  <th className="py-3.5 px-4">Learner / LRN</th>
+                  <th className="py-3.5 px-4">Grade Level</th>
+                  <th className="py-3.5 px-4 text-center">Cohort Status</th>
+                  <th className="py-3.5 px-4 text-center">Avg. Accuracy</th>
+                  <th className="py-3.5 px-4 text-center">Quiz Records</th>
+                  <th className="py-3.5 px-4">Last Activity</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-color)]">
+                {filteredProfiles.map((profile) => {
+                  const statusClass = 
+                    profile.status === 'Mastery' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' :
+                    profile.status === 'Review' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' :
+                    'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20';
+
+                  const accuracyColor = 
+                    profile.averageScore >= 80 ? 'text-emerald-600 dark:text-emerald-400' :
+                    profile.averageScore >= 50 ? 'text-amber-600 dark:text-amber-400' :
+                    'text-rose-600 dark:text-rose-400';
+
+                  return (
+                    <tr 
+                      key={profile.studentId}
+                      onClick={() => setSelectedStudent(profile.studentId)}
+                      className="hover:bg-[var(--bg-main)]/70 cursor-pointer transition-colors group"
+                    >
+                      {/* Learner ID */}
+                      <td className="py-3.5 px-4 font-mono font-bold text-sm text-[var(--text-main)]">
+                        <div className="flex items-center gap-2.5">
+                          <div className="size-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-xs font-bold shrink-0">
+                            <User size={15} />
+                          </div>
+                          <span className="group-hover:text-indigo-500 transition-colors">
+                            {profile.studentId}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Grade Level */}
+                      <td className="py-3.5 px-4 font-semibold text-[var(--text-main)]">
+                        <span className="px-2.5 py-0.5 rounded-md bg-[var(--bg-main)] border border-[var(--border-color)] text-[11px] font-bold">
+                          Grade {profile.gradeLevel}
+                        </span>
+                      </td>
+
+                      {/* Cohort Status */}
+                      <td className="py-3.5 px-4 text-center">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border ${statusClass}`}>
+                          {profile.status}
+                        </span>
+                      </td>
+
+                      {/* Avg Accuracy */}
+                      <td className="py-3.5 px-4 text-center">
+                        <span className={`font-mono font-extrabold text-sm ${accuracyColor}`}>
+                          {profile.averageScore}%
+                        </span>
+                      </td>
+
+                      {/* Quiz Records */}
+                      <td className="py-3.5 px-4 text-center font-mono font-semibold text-[var(--text-main)]">
+                        {profile.totalQuizzes}
+                      </td>
+
+                      {/* Last Activity */}
+                      <td className="py-3.5 px-4 text-[var(--text-muted)] text-[11px]">
+                        {profile.lastActive ? new Date(profile.lastActive).toLocaleDateString() : 'N/A'}
+                      </td>
+
+                      {/* Action */}
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedStudent(profile.studentId);
+                          }}
+                          className="btn btn-secondary text-xs py-1.5 px-3 rounded-lg flex items-center gap-1 inline-flex hover:border-indigo-500/40"
+                        >
+                          <span>Inspect</span>
+                          <ChevronRight size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
+        /* Card View */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProfiles.map((profile) => {
             const statusClass = 
@@ -231,7 +365,8 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
               <button
                 type="button"
                 onClick={() => setSelectedStudent(null)}
-                className="size-8 rounded-lg border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                className="size-8 rounded-lg border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                aria-label="Close modal"
               >
                 <X size={16} />
               </button>
