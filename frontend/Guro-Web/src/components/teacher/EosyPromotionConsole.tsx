@@ -655,11 +655,6 @@ SIGNATORIES:
                 animation: none !important;
               }
 
-              .sf9-sticky-header {
-                position: static !important;
-                padding-top: 0 !important;
-              }
-
               /* Hide non-printable interactive elements */
               .sf9-no-print {
                 display: none !important;
@@ -689,7 +684,7 @@ SIGNATORIES:
             className="bg-white text-slate-800 rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl my-auto max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200 border border-slate-200 relative"
           >
             {/* DepEd SF9 Header */}
-            <div className="sf9-sticky-header flex justify-between items-start border-b-2 border-slate-900/80 pb-5 mb-5 sticky top-0 bg-white pt-1 z-10">
+            <div className="flex justify-between items-start border-b-2 border-slate-900/80 pb-5 mb-5">
               <div className="flex items-center gap-3.5">
                 <div className="w-14 h-14 rounded-2xl bg-[#11428E] flex flex-col items-center justify-center text-white shadow-md print:border print:border-slate-800 shrink-0">
                   <span className="font-black text-xs tracking-wider">DEPED</span>
