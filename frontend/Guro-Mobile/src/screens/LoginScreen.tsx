@@ -24,71 +24,8 @@ import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
 import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { toast } from '../components';
 import { styles } from '../styles/LoginScreen.styles';
-import { School, Users, GraduationCap, Cloud, WifiOff, Shield, MoreVertical, Terminal, KeyRound, Sparkles, ChevronDown, Check, X } from 'lucide-react-native';
+import { School, Users, GraduationCap, Cloud, WifiOff, Shield, MoreVertical, Terminal, KeyRound, Sparkles } from 'lucide-react-native';
 import * as Network from 'expo-network';
-
-export const CLARO_TEST_ACCOUNTS = [
-  {
-    id: 'teacher_claro',
-    title: 'Teacher: Neal Claro',
-    subtitle: 'nealjeanclaro05@gmail.com',
-    roleLabel: 'Teacher',
-    email: 'nealjeanclaro05@gmail.com',
-    password: 'Password123',
-    icon: School,
-    isAdmin: false,
-  },
-  {
-    id: 'student_neal',
-    title: 'Student: Neal Jean Claro',
-    subtitle: 'nealjeanclaro@gmail.com',
-    roleLabel: 'Grade 6 Student',
-    email: 'nealjeanclaro@gmail.com',
-    password: 'Password123',
-    icon: GraduationCap,
-    isAdmin: false,
-  },
-  {
-    id: 'student_allen',
-    title: 'Student: Allen James Claro',
-    subtitle: 'allenjames99@gmail.com',
-    roleLabel: 'Grade 5 Student',
-    email: 'allenjames99@gmail.com',
-    password: 'Password123',
-    icon: GraduationCap,
-    isAdmin: false,
-  },
-  {
-    id: 'parent_allan',
-    title: 'Parent: Allan Claro',
-    subtitle: 'claroallan05@gmail.com',
-    roleLabel: 'Parent',
-    email: 'claroallan05@gmail.com',
-    password: 'Password123',
-    icon: Users,
-    isAdmin: false,
-  },
-  {
-    id: 'parent_enecita',
-    title: 'Parent: Enecita Claro',
-    subtitle: 'enecitaclaro67@gmail.com',
-    roleLabel: 'Parent',
-    email: 'enecitaclaro67@gmail.com',
-    password: 'Password123',
-    icon: Users,
-    isAdmin: false,
-  },
-  {
-    id: 'dev_claro',
-    title: 'Staff / Admin: Neal Claro',
-    subtitle: 'nealjeanclaro@guro.dev',
-    roleLabel: 'Developer / Admin',
-    email: 'nealjeanclaro@guro.dev',
-    password: 'JinBilog0v0',
-    icon: Shield,
-    isAdmin: true,
-  },
-];
 
 const GuroLogoGraphic = () => (
   <View style={{
@@ -128,8 +65,6 @@ export function LoginScreen({ navigation }: Props) {
   const { loginToCloud, currentUser, appMode, guestName, setAppMode, setGuestName, setStudentId, serverUrl, setServerUrl, setPreferredGrade } = useAppStore();
 
   const [isAdminMode, setIsAdminMode] = useState(false);
-  const [showTestAccountModal, setShowTestAccountModal] = useState(false);
-  const [selectedTestAccount, setSelectedTestAccount] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [offlineFirstName, setOfflineFirstName] = useState('');
@@ -537,74 +472,80 @@ export function LoginScreen({ navigation }: Props) {
               </View>
             )}
 
-            {/* Quick Test Account Dropdown Selector (Testing Only) */}
-            <View style={{
-              backgroundColor: '#EFF6FF',
-              borderWidth: 1,
-              borderColor: '#BFDBFE',
-              borderRadius: 16,
-              padding: 12,
-              marginBottom: Spacing.md,
-            }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Sparkles size={14} color="#1D4ED8" />
-                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: '#1E40AF', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Quick Test Account
+            {/* ── Test Accounts Quick Autofill ── */}
+            <View style={{ marginBottom: Spacing.md }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Sparkles size={11} color="#F59E0B" />
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Test Accounts
                   </Text>
                 </View>
-                {selectedTestAccount ? (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setSelectedTestAccount(null);
-                      setEmail('');
-                      setPassword('');
-                      setIsAdminMode(false);
-                      setEmailError('');
-                      setPasswordError('');
-                    }}
-                  >
-                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: '#DC2626' }}>
-                      Clear
-                    </Text>
-                  </TouchableOpacity>
-                ) : (
-                  <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: '#6B7280' }}>
-                    Testing Only
-                  </Text>
-                )}
+                <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: '#94A3B8' }}>
+                  1-tap autofill
+                </Text>
               </View>
 
-              <TouchableOpacity
-                onPress={() => setShowTestAccountModal(true)}
-                activeOpacity={0.7}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: '#DBEAFE',
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: Fonts.bodySemiBold,
-                    fontSize: FontSizes.xs,
-                    color: selectedTestAccount ? '#1E293B' : '#94A3B8',
-                    flex: 1,
-                  }}
-                  numberOfLines={1}
-                >
-                  {selectedTestAccount
-                    ? CLARO_TEST_ACCOUNTS.find((a) => a.id === selectedTestAccount)?.title
-                    : 'Choose a Claro test account…'}
-                </Text>
-                <ChevronDown size={14} color="#64748B" />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                {(isAdminMode
+                  ? [
+                      { role: 'developer', label: 'Developer', email: 'nealjeanclaro@guro.dev', password: 'JinBilog0v0', icon: Terminal, color: '#CE1126' },
+                      { role: 'teacher', label: 'Teacher', email: 'teacher@guro.dev', password: 'Password123', icon: School, color: '#11428E' },
+                      { role: 'student', label: 'Student', email: 'student@guro.dev', password: 'Password123', icon: GraduationCap, color: '#10B981' },
+                      { role: 'parent', label: 'Parent', email: 'parent@guro.dev', password: 'Password123', icon: Users, color: '#F59E0B' },
+                    ]
+                  : [
+                      { role: 'student', label: 'Student', email: 'student@guro.dev', password: 'Password123', icon: GraduationCap, color: '#10B981' },
+                      { role: 'teacher', label: 'Teacher', email: 'teacher@guro.dev', password: 'Password123', icon: School, color: '#11428E' },
+                      { role: 'parent', label: 'Parent', email: 'parent@guro.dev', password: 'Password123', icon: Users, color: '#F59E0B' },
+                    ]
+                ).map((acc) => {
+                  const Icon = acc.icon;
+                  const isSelected = email === acc.email;
+                  return (
+                    <TouchableOpacity
+                      key={acc.role}
+                      onPress={() => {
+                        setEmail(acc.email);
+                        setPassword(acc.password);
+                        setEmailError('');
+                        setPasswordError('');
+                        if (acc.role === 'developer') {
+                          setIsAdminMode(true);
+                        }
+                        toast.success(`${acc.label} credentials filled!`);
+                      }}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Test account ${acc.label}`}
+                      style={{
+                        flex: 1,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 4,
+                        paddingVertical: 8,
+                        paddingHorizontal: 2,
+                        borderRadius: 10,
+                        backgroundColor: isSelected ? `${acc.color}15` : '#F8FAFC',
+                        borderWidth: 1.2,
+                        borderColor: isSelected ? acc.color : '#E2E8F0',
+                      }}
+                    >
+                      <Icon size={13} color={isSelected ? acc.color : '#64748B'} />
+                      <Text
+                        style={{
+                          fontFamily: isSelected ? Fonts.bodyBold : Fonts.bodySemiBold,
+                          fontSize: 11,
+                          color: isSelected ? acc.color : '#475569',
+                        }}
+                      >
+                        {acc.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
 
             <View style={styles.formGroup}>
@@ -926,117 +867,6 @@ export function LoginScreen({ navigation }: Props) {
             </ScrollView>
           </GlassCard>
         </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ── Test Account Picker Modal ── */}
-      <Modal
-        visible={showTestAccountModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowTestAccountModal(false)}
-      >
-        <View style={{
-          flex: 1,
-          backgroundColor: 'rgba(15, 23, 42, 0.65)',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: Spacing.xl,
-        }}>
-          <View style={{
-            width: '100%',
-            maxWidth: 400,
-            backgroundColor: '#FFFFFF',
-            borderRadius: 24,
-            padding: Spacing.xl,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.25,
-            shadowRadius: 20,
-            elevation: 10,
-          }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Sparkles size={18} color="#1D4ED8" />
-                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: '#0F172A', fontWeight: 'bold' }}>
-                  Select Test Account
-                </Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowTestAccountModal(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <X size={18} color="#64748B" />
-              </TouchableOpacity>
-            </View>
-            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: '#64748B', marginBottom: Spacing.md }}>
-              Tap any pre-configured Claro account to auto-fill your credentials instantly.
-            </Text>
-
-            <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
-              {CLARO_TEST_ACCOUNTS.map((acc) => {
-                const IconComponent = acc.icon;
-                const isSelected = selectedTestAccount === acc.id;
-                return (
-                  <TouchableOpacity
-                    key={acc.id}
-                    onPress={() => {
-                      setSelectedTestAccount(acc.id);
-                      setEmail(acc.email);
-                      setPassword(acc.password);
-                      setIsAdminMode(acc.isAdmin);
-                      setEmailError('');
-                      setPasswordError('');
-                      setShowTestAccountModal(false);
-                      toast.info(`Filled credentials for ${acc.title}`);
-                    }}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      padding: 12,
-                      borderRadius: 14,
-                      marginBottom: 8,
-                      backgroundColor: isSelected ? '#EFF6FF' : '#F8FAFC',
-                      borderWidth: 1,
-                      borderColor: isSelected ? '#3B82F6' : '#E2E8F0',
-                    }}
-                  >
-                    <View style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 10,
-                      backgroundColor: isSelected ? '#DBEAFE' : '#FFFFFF',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: 10,
-                      borderWidth: 1,
-                      borderColor: isSelected ? '#BFDBFE' : '#E2E8F0',
-                    }}>
-                      <IconComponent size={18} color={isSelected ? '#1D4ED8' : '#64748B'} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#0F172A' }}>
-                          {acc.title}
-                        </Text>
-                        <View style={{
-                          paddingHorizontal: 6,
-                          paddingVertical: 1,
-                          borderRadius: 6,
-                          backgroundColor: '#E0E7FF',
-                        }}>
-                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 9, color: '#4338CA' }}>
-                            {acc.roleLabel}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: '#64748B', marginTop: 2 }}>
-                        {acc.subtitle}
-                      </Text>
-                    </View>
-                    {isSelected && <Check size={16} color="#2563EB" />}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </View>
       </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>

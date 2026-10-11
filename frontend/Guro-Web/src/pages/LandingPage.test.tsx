@@ -169,29 +169,26 @@ describe('LandingPage Portal (Web)', () => {
     });
   });
 
-  test('can select a test account from dropdown to autofill email and password', () => {
+  test('can auto-fill credentials using test account buttons', () => {
     const mockSelectRole = jest.fn();
     const mockLoginSuccess = jest.fn();
     render(<LandingPage onSelectRole={mockSelectRole} onLoginSuccess={mockLoginSuccess} />);
 
-    const select = screen.getByLabelText(/Test Account \(Testing Only\)/i) as HTMLSelectElement;
-    expect(select).toBeInTheDocument();
+    expect(screen.getByText(/Test Accounts/i)).toBeInTheDocument();
 
-    // Select Teacher Claro
-    fireEvent.change(select, { target: { value: 'teacher_claro' } });
+    const studentBtn = screen.getByRole('button', { name: /student/i });
+    fireEvent.click(studentBtn);
 
-    const emailInput = screen.getByLabelText(/Email address/i) as HTMLInputElement;
+    const emailInput = screen.getByPlaceholderText('you@school.edu') as HTMLInputElement;
     const passwordInput = screen.getByPlaceholderText('••••••••') as HTMLInputElement;
 
-    expect(emailInput.value).toBe('nealjeanclaro05@gmail.com');
+    expect(emailInput.value).toBe('student@guro.dev');
     expect(passwordInput.value).toBe('Password123');
 
-    // Clear test account selection
-    const clearBtn = screen.getByRole('button', { name: /Clear/i });
-    fireEvent.click(clearBtn);
+    const teacherBtn = screen.getByRole('button', { name: /teacher/i });
+    fireEvent.click(teacherBtn);
 
-    expect(emailInput.value).toBe('');
-    expect(passwordInput.value).toBe('');
+    expect(emailInput.value).toBe('teacher@guro.dev');
+    expect(passwordInput.value).toBe('Password123');
   });
 });
-

@@ -85,7 +85,6 @@ describe('LoginScreen', () => {
     const rootJSON = root.toJSON();
     expect(findTextInJSON(rootJSON, 'GURO')).toBe(true);
     expect(findTextInJSON(rootJSON, 'GUIDED UNIFIED RESOURCE OPTIMIZATION')).toBe(true);
-    expect(findTextInJSON(rootJSON, 'Quick Test Account')).toBe(true);
 
     act(() => {
       root.unmount();
@@ -150,6 +149,39 @@ describe('LoginScreen', () => {
 
     expect(mockSetAppMode).not.toHaveBeenCalled();
     expect(mockNavigation.replace).not.toHaveBeenCalled();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test('should auto-fill credentials when tapping test account buttons', async () => {
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<LoginScreen navigation={mockNavigation as any} route={{} as any} />);
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    const studentBtn = root.root.findByProps({ accessibilityLabel: 'Test account Student' });
+    act(() => {
+      studentBtn.props.onPress();
+    });
+
+    const emailInput = root.root.findByProps({ placeholder: 'your@email.com' });
+    const passwordInput = root.root.findByProps({ placeholder: '••••••••' });
+
+    expect(emailInput.props.value).toBe('student@guro.dev');
+    expect(passwordInput.props.value).toBe('Password123');
+
+    const teacherBtn = root.root.findByProps({ accessibilityLabel: 'Test account Teacher' });
+    act(() => {
+      teacherBtn.props.onPress();
+    });
+
+    expect(emailInput.props.value).toBe('teacher@guro.dev');
+    expect(passwordInput.props.value).toBe('Password123');
 
     act(() => {
       root.unmount();
