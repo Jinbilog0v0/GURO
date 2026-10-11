@@ -48,3 +48,6 @@ pgdata/
 docs/
 scripts/
 
+# Local build artifacts and manuscript generators
+build_clean_lxml/
+build_manuscript_abstract/
