@@ -578,6 +578,16 @@ function App() {
           {isTeacher && (
             isSidebarOpen ? (
               <div className="flex flex-col gap-1 my-1">
+                {/* 0. Overview / Dashboard */}
+                <button 
+                  onClick={() => setActiveTab('dashboard')} 
+                  className={navBtn(activeTab === 'dashboard')} 
+                  aria-current={activeTab === 'dashboard' ? 'page' : undefined}
+                >
+                  <LayoutDashboard size={18} className="shrink-0 text-indigo-400" />
+                  <span>Overview</span>
+                </button>
+
                 {/* 1. My Classrooms */}
                 <button 
                   onClick={() => { setActiveTab('teacher'); setActiveSubTab('classrooms'); }} 
@@ -726,6 +736,7 @@ function App() {
               </div>
             ) : (
               <div className="flex flex-col gap-1">
+                <button onClick={() => setActiveTab('dashboard')} className={navBtnIcon(activeTab === 'dashboard')} title="Overview" aria-label="Overview"><LayoutDashboard size={18} /></button>
                 <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('classrooms'); }} className={navBtnIcon(activeTab === 'teacher' && (activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing'))} title="My Classrooms" aria-label="My Classrooms"><School size={18} /></button>
                 <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('lessons'); }} className={navBtnIcon(activeTab === 'teacher' && (activeSubTab.startsWith('lesson') || activeSubTab === 'manual-lesson'))} title="Lesson Management" aria-label="Lesson Management"><BookOpen size={18} /></button>
                 <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} className={navBtnIcon(activeTab === 'teacher' && (activeSubTab.startsWith('analytics') || activeSubTab === 'pre-post-test' || activeSubTab === 'eosy-promotion'))} title="Classroom Analytics" aria-label="Classroom Analytics"><TrendingUp size={18} /></button>
