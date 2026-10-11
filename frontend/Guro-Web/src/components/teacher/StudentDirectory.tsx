@@ -363,37 +363,37 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
       {/* Student Detailed Telemetry Modal */}
       {activeStudentProfile && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+          className="teacher-portal fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
           onClick={(e) => {
             if (e.target === e.currentTarget) setSelectedStudent(null);
           }}
         >
           <div 
-            className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
           >
             {/* Modal Header */}
-            <div className="p-5 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-sidebar)] shrink-0">
+            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/90 shrink-0">
               <div className="flex items-center gap-3.5">
                 <div className="size-11 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold shrink-0">
                   <User size={22} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <h3 className="text-base font-bold text-[var(--text-main)] m-0 font-mono">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white m-0 font-mono">
                       {activeStudentProfile.studentId}
                     </h3>
                     <span className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border ${
-                      activeStudentProfile.status === 'Mastery' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' :
-                      activeStudentProfile.status === 'Review' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' :
-                      'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                      activeStudentProfile.status === 'Mastery' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700' :
+                      activeStudentProfile.status === 'Review' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300 dark:border-amber-700' :
+                      'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-700'
                     }`}>
                       {activeStudentProfile.status}
                     </span>
                   </div>
-                  <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Grade {activeStudentProfile.gradeLevel} • {activeStudentProfile.totalQuizzes} Assessment Record{activeStudentProfile.totalQuizzes === 1 ? '' : 's'}
                   </p>
                 </div>
@@ -401,7 +401,7 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
               <button
                 type="button"
                 onClick={() => setSelectedStudent(null)}
-                className="size-8 rounded-lg border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                className="size-8 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 aria-label="Close modal"
               >
                 <X size={16} />
@@ -409,21 +409,21 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 flex-1 overflow-y-auto flex flex-col gap-5">
+            <div className="p-5 flex-1 overflow-y-auto flex flex-col gap-5 bg-white dark:bg-slate-900">
               {/* Quick Summary KPI Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center gap-3">
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/80 flex items-center gap-3 shadow-2xs">
                   <div 
                     className="size-10 rounded-lg flex items-center justify-center shrink-0" 
                     style={{
-                      backgroundColor: activeStudentProfile.averageScore >= 80 ? 'rgba(16, 185, 129, 0.12)' : activeStudentProfile.averageScore >= 50 ? 'rgba(245, 158, 11, 0.12)' : 'rgba(225, 29, 72, 0.12)',
+                      backgroundColor: activeStudentProfile.averageScore >= 80 ? 'rgba(16, 185, 129, 0.15)' : activeStudentProfile.averageScore >= 50 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(225, 29, 72, 0.15)',
                       color: activeStudentProfile.averageScore >= 80 ? '#10B981' : activeStudentProfile.averageScore >= 50 ? '#F59E0B' : '#E11D48'
                     }}
                   >
                     <Target size={20} />
                   </div>
                   <div>
-                    <span className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Overall Accuracy</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Overall Accuracy</span>
                     <div 
                       className="text-xl font-extrabold font-mono mt-0.5" 
                       style={{
@@ -435,30 +435,30 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center gap-3">
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/80 flex items-center gap-3 shadow-2xs">
                   <div className="size-10 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
                     <CheckCircle2 size={20} />
                   </div>
                   <div>
-                    <span className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Completed Tests</span>
-                    <div className="text-xl font-extrabold font-mono text-[var(--text-main)] mt-0.5">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Completed Tests</span>
+                    <div className="text-xl font-extrabold font-mono text-slate-900 dark:text-white mt-0.5">
                       {activeStudentProfile.totalQuizzes}
                     </div>
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center gap-3">
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/80 flex items-center gap-3 shadow-2xs">
                   <div 
                     className="size-10 rounded-lg flex items-center justify-center shrink-0" 
                     style={{
-                      backgroundColor: activeStudentProfile.status === 'Mastery' ? 'rgba(16, 185, 129, 0.12)' : activeStudentProfile.status === 'Review' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(225, 29, 72, 0.12)',
+                      backgroundColor: activeStudentProfile.status === 'Mastery' ? 'rgba(16, 185, 129, 0.15)' : activeStudentProfile.status === 'Review' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(225, 29, 72, 0.15)',
                       color: activeStudentProfile.status === 'Mastery' ? '#10B981' : activeStudentProfile.status === 'Review' ? '#F59E0B' : '#E11D48'
                     }}
                   >
                     <TrendingUp size={20} />
                   </div>
                   <div>
-                    <span className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Mastery Status</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Mastery Status</span>
                     <div 
                       className="text-base font-bold mt-0.5" 
                       style={{
@@ -474,66 +474,87 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
               {/* Attempt History Table */}
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider m-0">
+                  <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider m-0">
                     Topic Assessments History
                   </h4>
-                  <span className="text-[11px] text-[var(--text-muted)] font-medium">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                     {activeStudentProfile.logs.length} record{activeStudentProfile.logs.length === 1 ? '' : 's'}
                   </span>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-[var(--border-color)]">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead className="bg-[var(--bg-sidebar)] text-[var(--text-muted)]">
-                      <tr className="border-b border-[var(--border-color)] text-[11px] uppercase tracking-wider font-bold">
-                        <th className="py-2.5 px-3.5 font-bold">Topic</th>
-                        <th className="py-2.5 px-3.5 font-bold">Subject</th>
-                        <th className="py-2.5 px-3.5 font-bold text-center">Score</th>
-                        <th className="py-2.5 px-3.5 font-bold text-center">Accuracy</th>
-                        <th className="py-2.5 px-3.5 font-bold text-right">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--border-color)]">
-                      {activeStudentProfile.logs.map((lg) => {
-                        const pct = Math.round((lg.score / lg.totalQuestions) * 100);
-                        const accColor = pct >= 80 ? 'text-emerald-500' : pct >= 50 ? 'text-amber-500' : 'text-rose-500';
-                        const subjectBadge = 
-                          lg.subject === 'Science' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20' :
-                          lg.subject === 'Mathematics' ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' :
-                          'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20';
+                <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 shadow-xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-slate-200/90 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-b border-slate-300/80 dark:border-slate-700">
+                        <tr className="text-[11px] uppercase tracking-wider font-extrabold">
+                          <th className="py-3 px-4">Topic Assessment</th>
+                          <th className="py-3 px-4">Subject</th>
+                          <th className="py-3 px-4 text-center">Score</th>
+                          <th className="py-3 px-4 text-center">Accuracy</th>
+                          <th className="py-3 px-4 text-right">Date Taken</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200/80 dark:divide-slate-800">
+                        {activeStudentProfile.logs.map((lg, idx) => {
+                          const pct = Math.round((lg.score / lg.totalQuestions) * 100);
+                          const accBadgeClass = 
+                            pct >= 80 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700' :
+                            pct >= 50 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border-amber-300 dark:border-amber-700' :
+                            'bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border-rose-300 dark:border-rose-700';
 
-                        return (
-                          <tr key={lg.eventId} className="hover:bg-[var(--bg-main)]/60 transition-colors">
-                            <td className="py-3 px-3.5 font-semibold text-[var(--text-main)]">{lg.topic}</td>
-                            <td className="py-3 px-3.5">
-                              <span className={`inline-block px-2 py-0.5 rounded-md text-[10.5px] font-semibold border ${subjectBadge}`}>
-                                {lg.subject}
-                              </span>
-                            </td>
-                            <td className="py-3 px-3.5 text-center font-mono font-medium text-[var(--text-main)]">
-                              {lg.score} / {lg.totalQuestions}
-                            </td>
-                            <td className="py-3 px-3.5 text-center font-mono font-bold">
-                              <span className={accColor}>{pct}%</span>
-                            </td>
-                            <td className="py-3 px-3.5 text-right text-[var(--text-muted)] text-[11px]">
-                              {new Date(lg.timestamp).toLocaleDateString()}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                          const subjectBadge = 
+                            lg.subject === 'Science' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950/70 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700' :
+                            lg.subject === 'Mathematics' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700' :
+                            lg.subject === 'English' ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300 border-purple-300 dark:border-purple-700' :
+                            'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700';
+
+                          const isEven = idx % 2 === 0;
+
+                          return (
+                            <tr 
+                              key={lg.eventId} 
+                              className={`${isEven ? 'bg-white dark:bg-slate-900/80' : 'bg-slate-50/70 dark:bg-slate-800/30'} hover:bg-indigo-50/70 dark:hover:bg-indigo-950/30 transition-colors`}
+                            >
+                              <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">
+                                <div className="flex items-center gap-2">
+                                  <span className="size-1.5 rounded-full bg-[#11428E] dark:bg-indigo-400 shrink-0"></span>
+                                  <span>{lg.topic}</span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className={`inline-block px-2.5 py-1 rounded-md text-[10.5px] font-bold border ${subjectBadge}`}>
+                                  {lg.subject}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className="inline-block px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 font-mono font-bold text-slate-800 dark:text-slate-200 text-xs shadow-2xs">
+                                  {lg.score} / {lg.totalQuestions}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className={`inline-block px-2.5 py-0.5 rounded-full font-mono text-[11px] font-extrabold border ${accBadgeClass}`}>
+                                  {pct}%
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-right text-slate-500 dark:text-slate-400 font-medium text-[11px]">
+                                {new Date(lg.timestamp).toLocaleDateString()}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t border-[var(--border-color)] flex justify-end bg-[var(--bg-sidebar)] shrink-0">
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end bg-slate-50/90 dark:bg-slate-900/90 shrink-0">
               <button
                 type="button"
                 onClick={() => setSelectedStudent(null)}
-                className="btn btn-secondary text-xs px-4 py-2 rounded-lg cursor-pointer font-bold"
+                className="btn btn-secondary text-xs px-4 py-2 rounded-lg cursor-pointer font-bold hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
               >
                 Close Profile
               </button>
