@@ -17,18 +17,18 @@ export const QuizOption: React.FC<QuizOptionProps> = ({
     onSelect,
 }) => {
     // Determine interactive style configurations dynamically
-    let cardStyle = 'bg-zinc-50/40 border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300';
+    let cardStyle = 'bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--bg-card)] hover:border-[var(--accent-primary)]';
 
     if (isSubmitted) {
         if (isCorrectAnswer) {
-            cardStyle = 'bg-emerald-50/30 border-emerald-500 text-emerald-700';
+            cardStyle = 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400';
         } else if (isSelected) {
-            cardStyle = 'bg-[#A01322]/10 border-[#A01322] text-[#A01322]';
+            cardStyle = 'bg-[#A01322]/15 border-[#A01322] text-[#A01322] dark:text-rose-400';
         } else {
-            cardStyle = 'bg-zinc-50/10 border-zinc-200 text-zinc-400 opacity-60';
+            cardStyle = 'bg-[var(--bg-main)]/50 border-[var(--border-color)] text-[var(--text-muted)] opacity-50';
         }
     } else if (isSelected) {
-        cardStyle = 'bg-[#11428E]/10 border-[#11428E] text-[#11428E] ring-2 ring-[#11428E]/10';
+        cardStyle = 'bg-[#11428E]/15 border-[#11428E] dark:border-blue-400 text-[#11428E] dark:text-blue-300 ring-2 ring-[#11428E]/20';
     }
 
     return (

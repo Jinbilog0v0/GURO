@@ -35,31 +35,31 @@ const ImageUploadInput: React.FC<{
   };
 
   return (
-    <div className="flex flex-col gap-2 p-3 bg-zinc-50 border border-dashed border-zinc-200 rounded-xl mt-2">
-      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{label}</span>
+    <div className="flex flex-col gap-2 p-3 bg-[var(--bg-main)] border border-dashed border-[var(--border-color)] rounded-xl mt-2">
+      <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{label}</span>
       <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
         <input 
           type="file" 
           accept="image/*" 
           onChange={handleFileChange} 
-          className="text-xs text-zinc-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 cursor-pointer" 
+          className="text-xs text-[var(--text-muted)] file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#11428E]/10 file:text-[#11428E] dark:file:text-sky-300 hover:file:bg-[#11428E]/20 cursor-pointer" 
         />
-        <span className="text-xs text-zinc-400 text-center sm:text-left">or</span>
+        <span className="text-xs text-[var(--text-muted)] text-center sm:text-left">or</span>
         <input 
           type="text" 
           placeholder="Paste HTTPS image link..." 
           value={value.startsWith('data:') ? '' : value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 py-1.5 px-3 border border-zinc-200 rounded-lg text-xs bg-white text-zinc-800 focus:outline-none" 
+          className="flex-1 py-1.5 px-3 border border-[var(--border-color)] rounded-lg text-xs bg-[var(--bg-card)] text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#11428E]" 
         />
       </div>
       {value && (
         <div className="mt-2 relative group w-fit">
-          <img src={value} alt="Preview" className="max-h-24 object-contain rounded-lg border border-zinc-200" />
+          <img src={value} alt="Preview" className="max-h-24 object-contain rounded-lg border border-[var(--border-color)]" />
           <button 
             type="button" 
             onClick={() => onChange('')} 
-            className="absolute -top-1.5 -right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full size-4 flex items-center justify-center cursor-pointer"
+            className="absolute -top-1.5 -right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full size-4 flex items-center justify-center cursor-pointer shadow-xs"
             aria-label="Remove image"
           >
             <X size={10} strokeWidth={3} />

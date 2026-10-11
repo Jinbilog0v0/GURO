@@ -270,8 +270,8 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                             type="button"
                             onClick={toggleSpeech}
                             className={`px-3 py-1 text-xs font-bold rounded-full border transition-all cursor-pointer flex items-center gap-1.5 ${isSpeaking 
-                                ? 'bg-purple-100 border-purple-300 text-purple-700 font-bold scale-105' 
-                                : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-zinc-100'}`}
+                                ? 'bg-purple-500/20 border-purple-400 text-purple-700 dark:text-purple-300 font-bold scale-105' 
+                                : 'bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`}
                         >
                             {isSpeaking ? <Square className="size-3 fill-current" /> : <Volume2 className="size-3" />}
                             <span>{isSpeaking ? 'Stop' : 'Listen'}</span>
@@ -292,7 +292,7 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                                     {currentSlide.data}
                                 </p>
                                 {currentSlide.imageUrl && (
-                                    <div className="w-full max-h-[220px] rounded-2xl overflow-hidden bg-zinc-50 border border-zinc-200/50 flex items-center justify-center p-3 mt-4">
+                                    <div className="w-full max-h-[220px] rounded-2xl overflow-hidden bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-center p-3 mt-4">
                                         <img 
                                             src={currentSlide.imageUrl} 
                                             alt="Visualization" 
@@ -319,7 +319,7 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                                     </p>
                                 </div>
                                 {currentSlide.imageUrl && (
-                                    <div className="w-full max-h-[220px] rounded-2xl overflow-hidden bg-zinc-50 border border-zinc-200/50 flex items-center justify-center p-3 mt-2">
+                                    <div className="w-full max-h-[220px] rounded-2xl overflow-hidden bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-center p-3 mt-2">
                                         <img 
                                             src={currentSlide.imageUrl} 
                                             alt="Concept Visualization" 
@@ -330,10 +330,10 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                                 )}
                                 {currentSlide.data.examples && currentSlide.data.examples.length > 0 && (
                                     <div className="flex flex-col gap-2 mt-2">
-                                        <span className="text-[10px] font-extrabold text-[var(--text-dark)] uppercase tracking-widest">Examples</span>
+                                        <span className="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-widest">Examples</span>
                                         <div className="flex flex-col gap-1.5">
                                             {currentSlide.data.examples.map((ex: string, eIdx: number) => (
-                                                <div key={eIdx} className="flex items-start gap-2 bg-white/40 border border-zinc-200/50 p-2 rounded-xl">
+                                                <div key={eIdx} className="flex items-start gap-2 bg-[var(--bg-main)]/60 border border-[var(--border-color)] p-2 rounded-xl">
                                                     <ChevronRight className={`size-4 mt-0.5 shrink-0 ${accentText}`} />
                                                     <span className="text-xs sm:text-sm text-[var(--text-muted)] font-bold">{ex}</span>
                                                 </div>
@@ -363,17 +363,17 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                                         const hasChecked = refresherChecked[rIdx];
                                         const isOptSelected = selected === opt;
                                         
-                                        let optClass = "border-zinc-200 text-zinc-700 bg-white hover:bg-zinc-50 hover:scale-[1.01] hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-0";
+                                        let optClass = "border-[var(--border-color)] text-[var(--text-main)] bg-[var(--bg-card)] hover:bg-[var(--bg-main)] hover:scale-[1.01] hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-0";
                                         if (hasChecked) {
                                             if (opt === currentSlide.data.correctAnswer) {
-                                                optClass = "bg-emerald-50 border-emerald-400 text-emerald-800 font-extrabold";
+                                                optClass = "bg-emerald-500/15 border-emerald-400 text-emerald-700 dark:text-emerald-300 font-extrabold";
                                             } else if (isOptSelected) {
-                                                optClass = "bg-rose-50 border-rose-400 text-rose-800 font-bold";
+                                                optClass = "bg-rose-500/15 border-rose-400 text-rose-700 dark:text-rose-300 font-bold";
                                             } else {
-                                                optClass = "border-zinc-100 text-zinc-400 bg-zinc-50/50 opacity-60";
+                                                optClass = "border-[var(--border-color)] text-[var(--text-muted)] bg-[var(--bg-card)]/40 opacity-50";
                                             }
                                         } else if (isOptSelected) {
-                                            optClass = "bg-amber-50 border-amber-400 text-amber-800 font-bold";
+                                            optClass = "bg-amber-500/15 border-amber-400 text-amber-700 dark:text-amber-300 font-bold";
                                         }
 
                                         return (
@@ -424,7 +424,7 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                                 </div>
                                 <ul className="flex flex-col gap-3.5 mt-3">
                                     {currentSlide.data.map((point: string, idx: number) => (
-                                        <li key={idx} className="flex items-start gap-3 bg-white/30 border border-zinc-200/40 p-3 rounded-2xl">
+                                        <li key={idx} className="flex items-start gap-3 bg-[var(--bg-main)]/50 border border-[var(--border-color)] p-3 rounded-2xl">
                                             <div className={`mt-1.5 size-2 rounded-full shrink-0 ${accentClass}`} />
                                             <span className="text-sm text-[var(--text-muted)] font-semibold leading-relaxed">{point}</span>
                                         </li>
@@ -435,7 +435,7 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
 
                         {currentSlide.type === 'completed' && (
                             <div className="flex flex-col items-center text-center justify-center gap-5 mt-6 py-4">
-                                <div className="size-16 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-500 animate-bounce">
+                                <div className="size-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 animate-bounce">
                                     <CheckCircle2 className="size-10" />
                                 </div>
                                 <div className="flex flex-col gap-2">
@@ -451,7 +451,7 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                     </div>
 
                     {/* Step Navigation Controls */}
-                    <div className="flex justify-between items-center gap-4 border-t border-zinc-200/50 pt-5 mt-5">
+                    <div className="flex justify-between items-center gap-4 border-t border-[var(--border-color)] pt-5 mt-5">
                         <button
                             type="button"
                             onClick={() => {
@@ -461,7 +461,7 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                                     onBack();
                                 }
                             }}
-                            className="px-4 py-3 text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] glass-panel hover:bg-zinc-50 border border-zinc-200 rounded-xl transition-all cursor-pointer flex items-center gap-1 active:scale-[0.98]"
+                            className="px-4 py-3 text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] glass-panel hover:bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl transition-all cursor-pointer flex items-center gap-1 active:scale-[0.98]"
                         >
                             <ChevronLeft className="size-4" />
                             Back
@@ -573,8 +573,8 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
 
             {/* Right/Sidebar Column: Buddy Mascot */}
             {avatarEmoji && (
-                <div className="w-full lg:w-56 shrink-0 flex flex-row lg:flex-col items-center lg:items-stretch gap-4 bg-white/70 border border-slate-200/50 p-5 rounded-3xl backdrop-blur-md shadow-md lg:self-center">
-                    <div className="relative size-16 lg:size-20 flex items-center justify-center bg-slate-50 border border-slate-100 rounded-2xl shadow-sm shrink-0 self-center">
+                <div className="w-full lg:w-56 shrink-0 flex flex-row lg:flex-col items-center lg:items-stretch gap-4 bg-[var(--bg-card)]/80 border border-[var(--border-color)] p-5 rounded-3xl backdrop-blur-md shadow-md lg:self-center">
+                    <div className="relative size-16 lg:size-20 flex items-center justify-center bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl shadow-sm shrink-0 self-center">
                         <span className="text-4xl lg:text-5xl">{avatarEmoji}</span>
                         {outfitEmoji && (
                             <span className="absolute -top-2 -right-2 text-xl lg:text-2xl drop-shadow-md">
@@ -583,16 +583,16 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                         )}
                     </div>
                     <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center lg:text-left">Study Buddy</span>
+                        <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest text-center lg:text-left">Study Buddy</span>
                         <div className={`relative border p-3.5 rounded-2xl text-[12px] font-bold leading-relaxed shadow-sm ${
                             isMath 
-                                ? 'bg-sky-50/50 border-sky-100 text-sky-900' 
-                                : 'bg-purple-50/50 border-purple-100 text-purple-900'
+                                ? 'bg-sky-500/10 border-sky-500/20 text-sky-700 dark:text-sky-300' 
+                                : 'bg-purple-500/10 border-purple-500/20 text-purple-700 dark:text-purple-300'
                         }`}>
                             <div className={`hidden lg:block absolute -left-1.5 top-7 w-3 h-3 border-l border-b rotate-45 transform ${
                                 isMath 
-                                    ? 'bg-sky-50 border-sky-100' 
-                                    : 'bg-purple-50 border-purple-100'
+                                    ? 'bg-sky-50 dark:bg-sky-950 border-sky-200 dark:border-sky-800' 
+                                    : 'bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800'
                             }`} />
                             <p className="text-center lg:text-left">{getBuddyComment()}</p>
                         </div>

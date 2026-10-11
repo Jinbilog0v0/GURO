@@ -681,30 +681,30 @@ SIGNATORIES:
 
           <div 
             id="sf9-printable-card"
-            className="bg-white text-slate-800 rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl my-auto max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200 border border-slate-200 relative"
+            className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl my-auto max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200 border border-slate-200 dark:border-slate-800 relative"
           >
             {/* DepEd SF9 Header */}
-            <div className="flex justify-between items-start border-b-2 border-slate-900/80 pb-5 mb-5">
+            <div className="flex justify-between items-start border-b-2 border-slate-900/80 dark:border-slate-700 pb-5 mb-5">
               <div className="flex items-center gap-3.5">
                 <div className="w-14 h-14 rounded-2xl bg-[#11428E] flex flex-col items-center justify-center text-white shadow-md print:border print:border-slate-800 shrink-0">
                   <span className="font-black text-xs tracking-wider">DEPED</span>
                   <span className="text-[8px] font-bold tracking-widest uppercase opacity-80">SF9</span>
                 </div>
                 <div>
-                  <div className="text-[10px] font-extrabold tracking-widest uppercase text-slate-500">
+                  <div className="text-[10px] font-extrabold tracking-widest uppercase text-slate-500 dark:text-slate-400">
                     Republic of the Philippines • Department of Education
                   </div>
-                  <h3 className="text-xl font-black text-slate-900 leading-tight">
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight">
                     School Form 9 (SF9) / Learner Progress Report
                   </h3>
-                  <div className="text-xs font-bold text-[#11428E] mt-0.5">
+                  <div className="text-xs font-bold text-[#11428E] dark:text-sky-400 mt-0.5">
                     Official Form 138 • School Year {reportData?.schoolYear || '2026-2027'}
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => setSf9Student(null)}
-                className="text-slate-500 hover:text-slate-800 p-2 rounded-full hover:bg-slate-100 transition-colors sf9-no-print cursor-pointer bg-slate-100/80 border border-slate-200 shadow-sm shrink-0"
+                className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors sf9-no-print cursor-pointer bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-sm shrink-0"
                 aria-label="Close SF9 Modal"
               >
                 <X size={20} />
@@ -712,35 +712,35 @@ SIGNATORIES:
             </div>
 
             {/* Learner & Institutional Info Card */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-5 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 mb-5 text-xs">
               <div>
-                <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Learner Name:</span>
-                <div className="font-extrabold text-slate-900 text-sm mt-0.5 truncate" title={sf9Student.studentName || sf9Student.studentId}>
+                <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Learner Name:</span>
+                <div className="font-extrabold text-slate-900 dark:text-white text-sm mt-0.5 truncate" title={sf9Student.studentName || sf9Student.studentId}>
                   {sf9Student.studentName || sf9Student.studentId}
                 </div>
               </div>
               <div>
-                <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Learner ID / LRN:</span>
-                <div className="font-mono font-bold text-slate-800 mt-0.5">{sf9Student.studentId}</div>
+                <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Learner ID / LRN:</span>
+                <div className="font-mono font-bold text-slate-800 dark:text-slate-200 mt-0.5">{sf9Student.studentId}</div>
               </div>
               <div>
-                <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Grade & Section:</span>
-                <div className="font-bold text-slate-800 mt-0.5">
+                <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Grade & Section:</span>
+                <div className="font-bold text-slate-800 dark:text-slate-200 mt-0.5">
                   Grade {sf9Student.currentGrade}{reportData?.sectionName ? ` - ${reportData.sectionName}` : ''}
                 </div>
               </div>
               <div>
-                <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Learning Area / Code:</span>
-                <div className="font-bold text-[#11428E] mt-0.5">
-                  {reportData?.subject || 'Mathematics'} <span className="font-mono font-semibold text-slate-500">({classroomCode})</span>
+                <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Learning Area / Code:</span>
+                <div className="font-bold text-[#11428E] dark:text-sky-400 mt-0.5">
+                  {reportData?.subject || 'Mathematics'} <span className="font-mono font-semibold text-slate-500 dark:text-slate-400">({classroomCode})</span>
                 </div>
               </div>
             </div>
 
             {/* Quarterly Breakdown Table (Form 138 Standard) */}
-            <div className="border border-slate-300 rounded-2xl overflow-hidden mb-5">
+            <div className="border border-slate-300 dark:border-slate-700 rounded-2xl overflow-hidden mb-5">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-100 border-b border-slate-300 text-slate-700 font-extrabold uppercase text-[10.5px]">
+                <thead className="bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-extrabold uppercase text-[10.5px]">
                   <tr>
                     <th className="px-4 py-3">Quarter / Evaluation Period</th>
                     <th className="px-4 py-3 text-center">Periodic Rating</th>
@@ -748,11 +748,11 @@ SIGNATORIES:
                     <th className="px-4 py-3 text-center">Remarks</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800 dark:text-slate-200">
                   <tr>
-                    <td className="px-4 py-3 font-semibold text-slate-800">Quarter 1 (Term 1)</td>
+                    <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">Quarter 1 (Term 1)</td>
                     <td className="px-4 py-3 text-center font-mono font-bold">{sf9Student.termAverages.Q1 !== null ? `${sf9Student.termAverages.Q1}%` : '—'}</td>
-                    <td className="px-4 py-3 text-center font-medium text-slate-600">
+                    <td className="px-4 py-3 text-center font-medium text-slate-600 dark:text-slate-400">
                       {sf9Student.termAverages.Q1 !== null ? (
                         sf9Student.termAverages.Q1 >= 90 ? 'Outstanding (O)' :
                         sf9Student.termAverages.Q1 >= 85 ? 'Very Satisfactory (VS)' :
@@ -763,19 +763,19 @@ SIGNATORIES:
                     <td className="px-4 py-3 text-center font-bold text-xs">
                       {sf9Student.termAverages.Q1 !== null ? (
                         sf9Student.termAverages.Q1 >= 75 ? (
-                          <span className="text-emerald-700">Passed</span>
+                          <span className="text-emerald-700 dark:text-emerald-400">Passed</span>
                         ) : (
-                          <span className="text-red-600">Failed</span>
+                          <span className="text-red-600 dark:text-red-400">Failed</span>
                         )
                       ) : (
-                        <span className="text-slate-400">Pending</span>
+                        <span className="text-slate-400 dark:text-slate-500">Pending</span>
                       )}
                     </td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 font-semibold text-slate-800">Quarter 2 (Term 2)</td>
+                    <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">Quarter 2 (Term 2)</td>
                     <td className="px-4 py-3 text-center font-mono font-bold">{sf9Student.termAverages.Q2 !== null ? `${sf9Student.termAverages.Q2}%` : '—'}</td>
-                    <td className="px-4 py-3 text-center font-medium text-slate-600">
+                    <td className="px-4 py-3 text-center font-medium text-slate-600 dark:text-slate-400">
                       {sf9Student.termAverages.Q2 !== null ? (
                         sf9Student.termAverages.Q2 >= 90 ? 'Outstanding (O)' :
                         sf9Student.termAverages.Q2 >= 85 ? 'Very Satisfactory (VS)' :
@@ -786,19 +786,19 @@ SIGNATORIES:
                     <td className="px-4 py-3 text-center font-bold text-xs">
                       {sf9Student.termAverages.Q2 !== null ? (
                         sf9Student.termAverages.Q2 >= 75 ? (
-                          <span className="text-emerald-700">Passed</span>
+                          <span className="text-emerald-700 dark:text-emerald-400">Passed</span>
                         ) : (
-                          <span className="text-red-600">Failed</span>
+                          <span className="text-red-600 dark:text-red-400">Failed</span>
                         )
                       ) : (
-                        <span className="text-slate-400">Pending</span>
+                        <span className="text-slate-400 dark:text-slate-500">Pending</span>
                       )}
                     </td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 font-semibold text-slate-800">Quarter 3 (Term 3)</td>
+                    <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">Quarter 3 (Term 3)</td>
                     <td className="px-4 py-3 text-center font-mono font-bold">{sf9Student.termAverages.Q3 !== null ? `${sf9Student.termAverages.Q3}%` : '—'}</td>
-                    <td className="px-4 py-3 text-center font-medium text-slate-600">
+                    <td className="px-4 py-3 text-center font-medium text-slate-600 dark:text-slate-400">
                       {sf9Student.termAverages.Q3 !== null ? (
                         sf9Student.termAverages.Q3 >= 90 ? 'Outstanding (O)' :
                         sf9Student.termAverages.Q3 >= 85 ? 'Very Satisfactory (VS)' :
@@ -809,19 +809,19 @@ SIGNATORIES:
                     <td className="px-4 py-3 text-center font-bold text-xs">
                       {sf9Student.termAverages.Q3 !== null ? (
                         sf9Student.termAverages.Q3 >= 75 ? (
-                          <span className="text-emerald-700">Passed</span>
+                          <span className="text-emerald-700 dark:text-emerald-400">Passed</span>
                         ) : (
-                          <span className="text-red-600">Failed</span>
+                          <span className="text-red-600 dark:text-red-400">Failed</span>
                         )
                       ) : (
-                        <span className="text-slate-400">Pending</span>
+                        <span className="text-slate-400 dark:text-slate-500">Pending</span>
                       )}
                     </td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 font-semibold text-slate-800">Quarter 4 (Term 4)</td>
+                    <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">Quarter 4 (Term 4)</td>
                     <td className="px-4 py-3 text-center font-mono font-bold">{sf9Student.termAverages.Q4 !== null ? `${sf9Student.termAverages.Q4}%` : '—'}</td>
-                    <td className="px-4 py-3 text-center font-medium text-slate-600">
+                    <td className="px-4 py-3 text-center font-medium text-slate-600 dark:text-slate-400">
                       {sf9Student.termAverages.Q4 !== null ? (
                         sf9Student.termAverages.Q4 >= 90 ? 'Outstanding (O)' :
                         sf9Student.termAverages.Q4 >= 85 ? 'Very Satisfactory (VS)' :
@@ -832,18 +832,18 @@ SIGNATORIES:
                     <td className="px-4 py-3 text-center font-bold text-xs">
                       {sf9Student.termAverages.Q4 !== null ? (
                         sf9Student.termAverages.Q4 >= 75 ? (
-                          <span className="text-emerald-700">Passed</span>
+                          <span className="text-emerald-700 dark:text-emerald-400">Passed</span>
                         ) : (
-                          <span className="text-red-600">Failed</span>
+                          <span className="text-red-600 dark:text-red-400">Failed</span>
                         )
                       ) : (
-                        <span className="text-slate-400">Pending</span>
+                        <span className="text-slate-400 dark:text-slate-500">Pending</span>
                       )}
                     </td>
                   </tr>
-                  <tr className="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300">
+                  <tr className="bg-slate-100 dark:bg-slate-800/80 font-black text-slate-900 dark:text-white border-t-2 border-slate-300 dark:border-slate-700">
                     <td className="px-4 py-3.5 uppercase tracking-wide">General Final Average</td>
-                    <td className="px-4 py-3.5 text-center font-mono text-base text-[#11428E]">{sf9Student.generalAverage}%</td>
+                    <td className="px-4 py-3.5 text-center font-mono text-base text-[#11428E] dark:text-sky-400">{sf9Student.generalAverage}%</td>
                     <td className="px-4 py-3.5 text-center font-bold">
                       {sf9Student.generalAverage >= 90 ? 'Outstanding (O)' :
                        sf9Student.generalAverage >= 85 ? 'Very Satisfactory (VS)' :
@@ -851,7 +851,7 @@ SIGNATORIES:
                        sf9Student.generalAverage >= 75 ? 'Fairly Satisfactory (FS)' : 'Did Not Meet Expectations'}
                     </td>
                     <td className="px-4 py-3.5 text-center text-sm">
-                      <span className={sf9Student.generalAverage >= 75 ? 'text-emerald-700 font-black' : 'text-red-600 font-black'}>
+                      <span className={sf9Student.generalAverage >= 75 ? 'text-emerald-700 dark:text-emerald-400 font-black' : 'text-red-600 dark:text-red-400 font-black'}>
                         {sf9Student.generalAverage >= 75 ? 'PASSED' : 'REMEDIAL'}
                       </span>
                     </td>
@@ -861,7 +861,7 @@ SIGNATORIES:
             </div>
 
             {/* DepEd Grading Scale Legend */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2.5 mb-5 text-[10px] text-center text-slate-600">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 mb-5 text-[10px] text-center text-slate-600 dark:text-slate-400">
               <div><strong>90–100:</strong> Outstanding (O)</div>
               <div><strong>85–89:</strong> Very Satisfactory (VS)</div>
               <div><strong>80–84:</strong> Satisfactory (S)</div>
@@ -870,27 +870,27 @@ SIGNATORIES:
             </div>
 
             {/* Diagnostic Pre/Post Growth Summary */}
-            <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-4 mb-5 flex justify-between items-center text-xs">
+            <div className="bg-blue-50/70 dark:bg-sky-950/40 border border-blue-200 dark:border-sky-800 rounded-2xl p-4 mb-5 flex justify-between items-center text-xs">
               <div>
-                <div className="font-extrabold text-blue-950">Diagnostic Baseline vs Summative Mastery</div>
-                <div className="text-[11px] text-blue-800 mt-0.5">
+                <div className="font-extrabold text-blue-950 dark:text-sky-100">Diagnostic Baseline vs Summative Mastery</div>
+                <div className="text-[11px] text-blue-800 dark:text-sky-300 mt-0.5">
                   Pre-Test Baseline: <strong>{sf9Student.preTestAvg !== null ? `${sf9Student.preTestAvg}%` : '—'}</strong> • Post-Test Summative: <strong>{sf9Student.postTestAvg !== null ? `${sf9Student.postTestAvg}%` : '—'}</strong>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-[10px] font-extrabold text-blue-900 uppercase">Normalized Gain</div>
-                <div className="font-mono text-sm font-black text-[#11428E]">
+                <div className="text-[10px] font-extrabold text-blue-900 dark:text-sky-300 uppercase">Normalized Gain</div>
+                <div className="font-mono text-sm font-black text-[#11428E] dark:text-sky-400">
                   {sf9Student.learningGain !== null ? `g = ${sf9Student.learningGain}%` : '—'}
                 </div>
               </div>
             </div>
 
             {/* Certificate of Promotion (Official DepEd Action) */}
-            <div className="border border-slate-200 bg-slate-50/60 rounded-2xl p-4 text-center mb-5">
-              <div className="text-[10.5px] font-black uppercase tracking-wider text-slate-500">
+            <div className="border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 rounded-2xl p-4 text-center mb-5">
+              <div className="text-[10.5px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Official Action on Promotion
               </div>
-              <div className="text-sm font-black text-slate-900 mt-1">
+              <div className="text-sm font-black text-slate-900 dark:text-white mt-1">
                 {sf9Student.status.toLowerCase() === 'promoted' 
                   ? `Promoted and Eligible for admission to Grade ${sf9Student.promotedToGrade || nextGrade}`
                   : sf9Student.generalAverage >= 75
@@ -898,24 +898,24 @@ SIGNATORIES:
                     : `Retained / Needs remedial coursework in Grade ${sf9Student.currentGrade}`}
               </div>
               {sf9Student.promotedAt && (
-                <div className="text-[10px] text-slate-500 mt-1 font-medium">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
                   Promoted on: {new Date(sf9Student.promotedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </div>
               )}
             </div>
 
             {/* Signatures Block with Editable Inputs */}
-            <div className="grid grid-cols-2 gap-8 pt-4 pb-2 border-t border-slate-200 text-center text-xs">
+            <div className="grid grid-cols-2 gap-8 pt-4 pb-2 border-t border-slate-200 dark:border-slate-700 text-center text-xs">
               <div>
                 <input
                   type="text"
                   value={adviserName}
                   onChange={(e) => handleAdviserChange(e.target.value)}
                   placeholder="Class Adviser / Teacher Name"
-                  className="w-48 max-w-full text-center font-bold text-slate-800 border-b border-slate-400 pb-1 mb-1 bg-transparent focus:outline-none focus:border-[#11428E] transition-colors placeholder:text-slate-400 text-xs"
+                  className="w-48 max-w-full text-center font-bold text-slate-800 dark:text-slate-100 border-b border-slate-400 dark:border-slate-600 pb-1 mb-1 bg-transparent focus:outline-none focus:border-[#11428E] dark:focus:border-sky-400 transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs"
                   aria-label="Class Adviser Name"
                 />
-                <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Teacher / Class Adviser</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Teacher / Class Adviser</div>
               </div>
               <div>
                 <input
@@ -923,26 +923,26 @@ SIGNATORIES:
                   value={principalName}
                   onChange={(e) => handlePrincipalChange(e.target.value)}
                   placeholder="Principal / School Head Name"
-                  className="w-48 max-w-full text-center font-bold text-slate-800 border-b border-slate-400 pb-1 mb-1 bg-transparent focus:outline-none focus:border-[#11428E] transition-colors placeholder:text-slate-400 text-xs"
+                  className="w-48 max-w-full text-center font-bold text-slate-800 dark:text-slate-100 border-b border-slate-400 dark:border-slate-600 pb-1 mb-1 bg-transparent focus:outline-none focus:border-[#11428E] dark:focus:border-sky-400 transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs"
                   aria-label="Principal / School Head Name"
                 />
-                <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Principal / Administrator</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Principal / Administrator</div>
               </div>
             </div>
 
             {/* Print, Download & Close Actions (Sticky Footer) */}
-            <div className="flex flex-wrap sm:flex-nowrap gap-3 mt-6 pt-3.5 pb-1 sticky bottom-0 bg-white/95 backdrop-blur-xs border-t border-slate-200 -mx-6 sm:-mx-8 px-6 sm:px-8 z-20 sf9-no-print">
+            <div className="flex flex-wrap sm:flex-nowrap gap-3 mt-6 pt-3.5 pb-1 sticky bottom-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs border-t border-slate-200 dark:border-slate-800 -mx-6 sm:-mx-8 px-6 sm:px-8 z-20 sf9-no-print">
               <button
                 type="button"
                 onClick={() => setSf9Student(null)}
-                className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs transition-colors cursor-pointer"
               >
                 Close
               </button>
               <button
                 type="button"
                 onClick={() => handleDownloadSf9Txt(sf9Student)}
-                className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-slate-900/10"
+                className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-slate-900/10"
               >
                 <Download size={15} />
                 <span>Download SF9 (.txt)</span>

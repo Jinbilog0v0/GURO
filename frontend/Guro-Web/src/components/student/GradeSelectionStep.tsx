@@ -38,17 +38,17 @@ export const GradeSelectionStep: React.FC<GradeSelectionStepProps> = ({
     ];
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 md:p-12 bg-zinc-50 relative overflow-hidden select-none">
+        <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 md:p-12 bg-[var(--bg-main)] relative overflow-hidden select-none">
             {/* Background ambient blurs for design consistency */}
-            <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 bg-purple-100 rounded-full blur-[160px]" />
-            <div className="absolute -bottom-48 left-1/4 -translate-x-1/2 size-96 bg-blue-100 rounded-full blur-[160px]" />
+            <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 bg-[var(--accent-primary-glow)] rounded-full blur-[160px]" />
+            <div className="absolute -bottom-48 left-1/4 -translate-x-1/2 size-96 bg-purple-500/10 rounded-full blur-[160px]" />
 
             {/* Back Button */}
             <button
                 onClick={onBack}
-                className="absolute top-6 left-6 md:top-10 md:left-10 flex items-center gap-2 px-5 py-2.5 bg-white border border-zinc-200/60 rounded-full shadow-md text-zinc-700 hover:bg-zinc-50 transition-all hover:scale-[1.02] active:scale-[0.98] font-medium text-sm z-20 cursor-pointer"
+                className="absolute top-6 left-6 md:top-10 md:left-10 flex items-center gap-2 px-5 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full shadow-md text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all hover:scale-[1.02] active:scale-[0.98] font-medium text-sm z-20 cursor-pointer"
             >
-                <ArrowLeft className="size-4 text-zinc-600" strokeWidth={2.5} />
+                <ArrowLeft className="size-4 text-[var(--text-muted)]" strokeWidth={2.5} />
                 Back
             </button>
 
@@ -64,13 +64,13 @@ export const GradeSelectionStep: React.FC<GradeSelectionStepProps> = ({
 
                 {/* Step Header */}
                 <div className="flex flex-col items-center text-center gap-2">
-                    <h1 className="text-3xl md:text-4xl font-extrabold text-zinc-800 flex items-center gap-2.5 tracking-tight">
+                    <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--text-main)] flex items-center gap-2.5 tracking-tight">
                         <Star className="size-8 text-amber-400 fill-amber-400 shrink-0" />
                         <span>Hello, {userName}!</span>
                         <Star className="size-8 text-amber-400 fill-amber-400 shrink-0" />
                     </h1>
                     <div className="mt-2 flex flex-col gap-0.5">
-                        <p className="text-lg font-medium text-zinc-600">Select your grade level to begin</p>
+                        <p className="text-lg font-medium text-[var(--text-muted)]">Select your grade level to begin</p>
                     </div>
                 </div>
 
@@ -82,8 +82,8 @@ export const GradeSelectionStep: React.FC<GradeSelectionStepProps> = ({
                 </div>
 
                 {/* Informational Bottom Callout Banner */}
-                <div className="w-full max-w-3xl bg-white rounded-[24px] p-6 shadow-xl shadow-zinc-200/60 border border-zinc-100 flex flex-col items-center text-center gap-1.5 transition-all">
-                    <p className="text-sm md:text-base font-semibold text-zinc-700 leading-relaxed flex items-center justify-center gap-1.5">
+                <div className="w-full max-w-3xl bg-[var(--bg-card)] rounded-[24px] p-6 shadow-xl border border-[var(--border-color)] flex flex-col items-center text-center gap-1.5 transition-all">
+                    <p className="text-sm md:text-base font-semibold text-[var(--text-main)] leading-relaxed flex items-center justify-center gap-1.5">
                         <Target className="size-5 text-[#A01322] shrink-0" />
                         <span>Choose your current grade level. Don't worry, GURO will adapt to your learning pace!</span>
                     </p>

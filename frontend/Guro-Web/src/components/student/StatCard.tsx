@@ -15,18 +15,18 @@ export const StatCard: React.FC<StatCardProps> = ({
     iconColor,
 }) => {
     return (
-        <div className="flex flex-col items-center bg-white rounded-[24px] p-6 text-center shadow-lg shadow-zinc-200/60 border border-zinc-100/50 transition-shadow hover:shadow-xl w-full">
+        <div className="flex flex-col items-center bg-[var(--bg-card)] rounded-[24px] p-6 text-center shadow-lg border border-[var(--border-color)] transition-shadow hover:shadow-xl w-full">
             {/* Miniature Icon Capsule */}
             <Icon className={`size-7 ${iconColor}`} strokeWidth={2} />
 
             {/* Numerical Data Metrics Representation */}
-            <span className="mt-3 text-3xl font-extrabold text-zinc-800 tracking-tight">
+            <span className="mt-3 text-3xl font-extrabold text-[var(--text-main)] tracking-tight">
                 {value}
             </span>
 
             {/* Regionalized Explanatory Label Pack */}
             <div className="mt-1 flex flex-col">
-                <span className="text-xs font-bold text-zinc-500">{labelEn}</span>
+                <span className="text-xs font-bold text-[var(--text-muted)]">{labelEn}</span>
             </div>
         </div>
     );

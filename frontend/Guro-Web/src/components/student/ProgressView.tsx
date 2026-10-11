@@ -47,7 +47,7 @@ function deriveWebBadges(progress: ProgressEvent[], streak: number): string[] {
 
 function ScoreBar({ pct, color }: { pct: number; color: string }) {
     return (
-        <div className="w-full bg-zinc-100 rounded-full h-2 overflow-hidden">
+        <div className="w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-full h-2 overflow-hidden">
             <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{ width: `${pct}%`, backgroundColor: color }}
@@ -110,7 +110,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
         avg >= 80 ? '#16A34A' : avg >= 60 ? '#2563EB' : '#E8890C';
 
     return (
-        <div className="min-h-[calc(100vh-56px)] w-full bg-zinc-50 p-6 md:p-10">
+        <div className="min-h-[calc(100vh-56px)] w-full bg-[var(--bg-main)] p-6 md:p-10">
             <div className="max-w-4xl mx-auto flex flex-col gap-6">
 
                 {/* Page header */}
@@ -135,24 +135,24 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                         { icon: <Flame className="size-5 text-orange-500" />, value: streakCount, label: 'Day Streak' },
                         { icon: <Zap className="size-5 text-amber-400" />, value: xpPoints, label: 'Total XP' },
                     ].map(({ icon, value, label }) => (
-                        <div key={label} className="bg-white rounded-3xl p-5 shadow-md border border-zinc-100 flex flex-col gap-2 transition-transform hover:scale-105 duration-200 cursor-default">
-                            <div className="size-9 bg-zinc-50 rounded-xl flex items-center justify-center border border-zinc-100 w-fit p-2">{icon}</div>
-                            <span className="text-3xl font-black text-zinc-800 mt-1">{value}</span>
-                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{label}</span>
+                        <div key={label} className="bg-[var(--bg-card)] rounded-3xl p-5 shadow-md border border-[var(--border-color)] flex flex-col gap-2 transition-transform hover:scale-105 duration-200 cursor-default">
+                            <div className="size-9 bg-[var(--bg-main)] rounded-xl flex items-center justify-center border border-[var(--border-color)] w-fit p-2">{icon}</div>
+                            <span className="text-3xl font-black text-[var(--text-main)] mt-1">{value}</span>
+                            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{label}</span>
                         </div>
                     ))}
                 </div>
 
                 {/* XP level bar */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-zinc-100 flex flex-col gap-3">
+                <div className="bg-[var(--bg-card)] rounded-2xl p-5 shadow-sm border border-[var(--border-color)] flex flex-col gap-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Star className="size-5 text-amber-400 fill-amber-400" />
-                            <span className="font-extrabold text-zinc-800">Level {level} Explorer</span>
+                            <span className="font-extrabold text-[var(--text-main)]">Level {level} Explorer</span>
                         </div>
-                        <span className="text-xs font-bold text-zinc-400">{xpInLevel} / 100 XP</span>
+                        <span className="text-xs font-bold text-[var(--text-muted)]">{xpInLevel} / 100 XP</span>
                     </div>
-                    <div className="w-full bg-zinc-100 rounded-full h-3 overflow-hidden">
+                    <div className="w-full bg-[var(--bg-main)] rounded-full h-3 overflow-hidden border border-[var(--border-color)]">
                         <div
                             className="h-full rounded-full bg-gradient-to-r from-[#11428E] to-[#A01322] transition-all duration-700"
                             style={{ width: `${xpInLevel}%` }}
@@ -161,11 +161,11 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 </div>
 
                 {/* 7-day activity */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-zinc-100 flex flex-col gap-4">
+                <div className="bg-[var(--bg-card)] rounded-2xl p-5 shadow-sm border border-[var(--border-color)] flex flex-col gap-4">
                     <div className="flex items-center gap-2">
                         <Activity className="size-4 text-[#11428E]" />
-                        <h2 className="font-extrabold text-zinc-800 text-sm">This Week</h2>
-                        <span className="text-xs text-zinc-400 ml-1">Days you studied</span>
+                        <h2 className="font-extrabold text-[var(--text-main)] text-sm">This Week</h2>
+                        <span className="text-xs text-[var(--text-muted)] ml-1">Days you studied</span>
                     </div>
                     <div className="grid grid-cols-7 gap-2">
                         {weekActivity.map((day, i) => (
@@ -175,12 +175,12 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                                         ? 'bg-[#11428E] border-[#11428E]'
                                         : day.isToday
                                         ? 'border-[#11428E]/40 bg-[#11428E]/5'
-                                        : 'bg-zinc-50 border-zinc-200'
+                                        : 'bg-[var(--bg-main)] border-[var(--border-color)]'
                                 }`}>
                                     {day.active && <Flame className="size-4 text-white" />}
                                     {!day.active && day.isToday && <Clock className="size-3.5 text-[#11428E]/60" />}
                                 </div>
-                                <span className={`text-[10px] font-bold ${day.active ? 'text-[#11428E]' : 'text-zinc-400'}`}>
+                                <span className={`text-[10px] font-bold ${day.active ? 'text-[#11428E]' : 'text-[var(--text-muted)]'}`}>
                                     {day.label}
                                 </span>
                             </div>
@@ -189,16 +189,16 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 </div>
 
                 {/* Subject breakdown */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-zinc-100 flex flex-col gap-4">
+                <div className="bg-[var(--bg-card)] rounded-2xl p-5 shadow-sm border border-[var(--border-color)] flex flex-col gap-4">
                     <div className="flex items-center gap-2">
                         <TrendingUp className="size-4 text-[#11428E]" />
-                        <h2 className="font-extrabold text-zinc-800 text-sm">Subject Progress</h2>
-                        <span className="text-xs text-zinc-400 ml-1">Avg score per subject & grade</span>
+                        <h2 className="font-extrabold text-[var(--text-main)] text-sm">Subject Progress</h2>
+                        <span className="text-xs text-[var(--text-muted)] ml-1">Avg score per subject & grade</span>
                     </div>
                     {subjectBreakdown.length === 0 ? (
                         <div className="flex flex-col items-center gap-2 py-6 text-center">
-                            <Trophy className="size-8 text-zinc-300" />
-                            <p className="text-sm text-zinc-400">Complete lessons to see your scores here!</p>
+                            <Trophy className="size-8 text-[var(--text-muted)] opacity-50" />
+                            <p className="text-sm text-[var(--text-muted)]">Complete lessons to see your scores here!</p>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-4">
@@ -210,8 +210,8 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                                                 ? <Calculator className="size-4 text-[#11428E]" />
                                                 : <BookOpen className="size-4 text-purple-500" />
                                             }
-                                            <span className="text-sm font-semibold text-zinc-700">{subject} · Grade {grade}</span>
-                                            <span className="text-[11px] text-zinc-400">{attempts} attempt{attempts !== 1 ? 's' : ''}</span>
+                                            <span className="text-sm font-semibold text-[var(--text-main)]">{subject} · Grade {grade}</span>
+                                            <span className="text-[11px] text-[var(--text-muted)]">{attempts} attempt{attempts !== 1 ? 's' : ''}</span>
                                         </div>
                                         <span className="text-sm font-extrabold" style={{ color: scoreColor(avg) }}>
                                             {avg}%
@@ -226,12 +226,12 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
 
                 {/* Recent activity */}
                 {recentActivity.length > 0 && (
-                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-zinc-100 flex flex-col gap-4">
+                    <div className="bg-[var(--bg-card)] rounded-2xl p-5 shadow-sm border border-[var(--border-color)] flex flex-col gap-4">
                         <div className="flex items-center gap-2">
                             <Clock className="size-4 text-[#11428E]" />
-                            <h2 className="font-extrabold text-zinc-800 text-sm">Recent Activity</h2>
+                            <h2 className="font-extrabold text-[var(--text-main)] text-sm">Recent Activity</h2>
                         </div>
-                        <div className="flex flex-col divide-y divide-zinc-100">
+                        <div className="flex flex-col divide-y divide-[var(--border-color)]">
                             {recentActivity.map((p, i) => {
                                 const pct = Math.round((p.score / p.totalQuestions) * 100);
                                 const passed = pct >= 75;
@@ -244,15 +244,15 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                                                 : <AlertCircle className="size-4 text-amber-500 shrink-0" />
                                             }
                                             <div>
-                                                <p className="text-sm font-semibold text-zinc-700 leading-tight">{p.topic}</p>
-                                                <p className="text-[11px] text-zinc-400">{p.subject} · G{p.gradeLevel} · {dateStr}</p>
+                                                <p className="text-sm font-semibold text-[var(--text-main)] leading-tight">{p.topic}</p>
+                                                <p className="text-[11px] text-[var(--text-muted)]">{p.subject} · G{p.gradeLevel} · {dateStr}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className={`text-sm font-extrabold ${passed ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                            <span className={`text-sm font-extrabold ${passed ? 'text-emerald-500' : 'text-amber-500'}`}>
                                                 {pct}%
                                             </span>
-                                            <span className="text-xs text-zinc-400">{p.score}/{p.totalQuestions}</span>
+                                            <span className="text-xs text-[var(--text-muted)]">{p.score}/{p.totalQuestions}</span>
                                         </div>
                                     </div>
                                 );
@@ -262,11 +262,11 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 )}
 
                 {/* Badge showcase */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-zinc-100 flex flex-col gap-4">
+                <div className="bg-[var(--bg-card)] rounded-2xl p-5 shadow-sm border border-[var(--border-color)] flex flex-col gap-4">
                     <div className="flex items-center gap-2">
                         <Trophy className="size-4 text-amber-500" />
-                        <h2 className="font-extrabold text-zinc-800 text-sm">Badges</h2>
-                        <span className="text-xs text-zinc-400 ml-1">Complete goals to earn them</span>
+                        <h2 className="font-extrabold text-[var(--text-main)] text-sm">Badges</h2>
+                        <span className="text-xs text-[var(--text-muted)] ml-1">Complete goals to earn them</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {Object.entries(BADGE_INFO).map(([key, info]) => {
@@ -276,17 +276,17 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                                     key={key}
                                     className={`flex flex-col items-center gap-1.5 p-4 rounded-2xl border transition-all ${
                                         unlocked
-                                            ? 'bg-amber-50 border-amber-100'
-                                            : 'bg-zinc-50 border-zinc-100 opacity-45'
+                                            ? 'bg-amber-500/10 border-amber-500/20'
+                                            : 'bg-[var(--bg-main)] border-[var(--border-color)] opacity-45'
                                     }`}
                                 >
                                     <div className="size-10 flex items-center justify-center mb-1">
                                         <info.icon className="size-8" style={{ color: unlocked ? info.color : '#A1A1AA' }} />
                                     </div>
-                                    <span className="text-xs font-extrabold text-zinc-700 text-center">{info.label}</span>
-                                    <span className="text-[10px] text-zinc-400 text-center leading-snug">{info.desc}</span>
+                                    <span className="text-xs font-extrabold text-[var(--text-main)] text-center">{info.label}</span>
+                                    <span className="text-[10px] text-[var(--text-muted)] text-center leading-snug">{info.desc}</span>
                                     {!unlocked && (
-                                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mt-0.5">Locked</span>
+                                        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-0.5">Locked</span>
                                     )}
                                 </div>
                             );

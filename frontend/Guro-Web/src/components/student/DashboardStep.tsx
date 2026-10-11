@@ -173,9 +173,9 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                     <div className="flex items-center gap-3">
                         <button
                             onClick={onBack}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-zinc-200/60 rounded-full shadow-md text-zinc-700 hover:bg-zinc-50 transition-all hover:scale-[1.02] active:scale-[0.98] font-semibold text-sm cursor-pointer"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full shadow-md text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all hover:scale-[1.02] active:scale-[0.98] font-semibold text-sm cursor-pointer"
                         >
-                            <ArrowLeft className="size-4 text-zinc-600" strokeWidth={2.5} />
+                            <ArrowLeft className="size-4 text-[var(--text-muted)]" strokeWidth={2.5} />
                             Back
                         </button>
                     </div>
@@ -185,10 +185,10 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                             <span>S.Y. {schoolYear} • {term}</span>
                         </div>
                         <div className={`px-5 py-2.5 rounded-full shadow-md font-bold text-sm tracking-tight border ${
-                            selectedGrade === 4 ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' :
-                            selectedGrade === 5 ? 'bg-blue-50 text-blue-700 border-blue-200/60' :
-                            selectedGrade === 6 ? 'bg-purple-50 text-purple-700 border-purple-200/60' :
-                            'bg-white text-zinc-700 border-zinc-200/60'
+                            selectedGrade === 4 ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-800/60' :
+                            selectedGrade === 5 ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200/60 dark:border-blue-800/60' :
+                            selectedGrade === 6 ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200/60 dark:border-purple-800/60' :
+                            'bg-[var(--bg-card)] text-[var(--text-main)] border-[var(--border-color)]'
                         }`}>
                             Grade {selectedGrade}
                         </div>
@@ -412,10 +412,10 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                 {/* English lock banner */}
                 {isEnglishLocked && (
                     <div className="w-full flex items-start gap-3 px-5 py-4 bg-amber-500/15 border border-amber-500/25 rounded-2xl text-sm">
-                        <Lock className="size-4 text-amber-600 mt-0.5 shrink-0" />
+                        <Lock className="size-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
                         <div>
-                            <p className="font-extrabold text-amber-800">English is locked</p>
-                            <p className="text-amber-700 text-xs font-semibold mt-0.5">{englishLockReason}</p>
+                            <p className="font-extrabold text-amber-800 dark:text-amber-200">English is locked</p>
+                            <p className="text-amber-700 dark:text-amber-300 text-xs font-semibold mt-0.5">{englishLockReason}</p>
                         </div>
                     </div>
                 )}
@@ -439,9 +439,9 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                             {activeSubjects.includes('English') && (
                                 <div className="relative h-full flex flex-col justify-stretch">
                                     {isEnglishLocked && (
-                                        <div className="absolute inset-0 z-10 rounded-[32px] bg-zinc-50/70 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 cursor-not-allowed border border-dashed border-zinc-200">
-                                            <Lock className="size-8 text-zinc-400" />
-                                            <span className="text-sm font-black text-zinc-500">English Locked</span>
+                                        <div className="absolute inset-0 z-10 rounded-[32px] bg-zinc-50/70 dark:bg-zinc-950/80 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 cursor-not-allowed border border-dashed border-zinc-200 dark:border-zinc-800">
+                                            <Lock className="size-8 text-zinc-400 dark:text-zinc-500" />
+                                            <span className="text-sm font-black text-zinc-500 dark:text-zinc-400">English Locked</span>
                                         </div>
                                     )}
                                     <SubjectCard
@@ -506,9 +506,9 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                             {activeSubjects.includes('English') && (
                                 <div className="relative">
                                     {isEnglishLocked && (
-                                        <div className="absolute inset-0 z-10 rounded-[32px] bg-zinc-50/70 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 cursor-not-allowed border border-dashed border-zinc-200">
-                                            <Lock className="size-8 text-zinc-400" />
-                                            <span className="text-sm font-black text-zinc-500">English Locked</span>
+                                        <div className="absolute inset-0 z-10 rounded-[32px] bg-zinc-50/70 dark:bg-zinc-950/80 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 cursor-not-allowed border border-dashed border-zinc-200 dark:border-zinc-800">
+                                            <Lock className="size-8 text-zinc-400 dark:text-zinc-500" />
+                                            <span className="text-sm font-black text-zinc-500 dark:text-zinc-400">English Locked</span>
                                         </div>
                                     )}
                                     <SubjectCard
@@ -523,10 +523,10 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                                 </div>
                             )}
                             {activeSubjects.length === 0 && (
-                                <div className="col-span-full w-full text-center py-10 bg-zinc-50 border border-dashed border-zinc-200 rounded-3xl">
-                                    <Inbox className="size-10 text-zinc-400 mx-auto mb-3" />
-                                    <p className="font-extrabold text-zinc-600">No Active Subjects</p>
-                                    <p className="text-zinc-500 text-xs mt-1">Your teacher has not activated any subjects for your grade level yet.</p>
+                                <div className="col-span-full w-full text-center py-10 bg-[var(--bg-card)] border border-dashed border-[var(--border-color)] rounded-3xl">
+                                    <Inbox className="size-10 text-[var(--text-muted)] mx-auto mb-3" />
+                                    <p className="font-extrabold text-[var(--text-main)]">No Active Subjects</p>
+                                    <p className="text-[var(--text-muted)] text-xs mt-1">Your teacher has not activated any subjects for your grade level yet.</p>
                                 </div>
                             )}
                         </div>

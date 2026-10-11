@@ -159,19 +159,19 @@ export const QuizResultsStep: React.FC<QuizResultsStepProps> = ({
     }, []);
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 md:p-8 bg-zinc-50 relative overflow-hidden select-none">
+        <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 md:p-8 bg-[var(--bg-main)] relative overflow-hidden select-none">
             {/* Ambient blurs */}
-            <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 bg-purple-100 rounded-full blur-[160px]" />
-            <div className="absolute -top-32 right-1/4 size-72 bg-blue-100 rounded-full blur-[140px]" />
+            <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 bg-purple-500/5 rounded-full blur-[160px]" />
+            <div className="absolute -top-32 right-1/4 size-72 bg-blue-500/5 rounded-full blur-[140px]" />
 
             <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 items-start">
                 {/* LEFT COLUMN: Main Score & Action Card (5 columns on desktop) */}
-                <div className="lg:col-span-5 bg-white rounded-[32px] p-6 sm:p-8 shadow-2xl shadow-zinc-200/80 border border-zinc-100/50 flex flex-col items-center gap-5 lg:sticky lg:top-8">
+                <div className="lg:col-span-5 bg-[var(--bg-card)] rounded-[32px] p-6 sm:p-8 shadow-2xl border border-[var(--border-color)] flex flex-col items-center gap-5 lg:sticky lg:top-8">
                     {/* XP earned badge */}
                     {earnedXP !== undefined && earnedXP > 0 && (
-                        <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-50 border border-amber-200/60 rounded-full animate-in fade-in slide-in-from-top-2 duration-500">
+                        <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full animate-in fade-in slide-in-from-top-2 duration-500">
                             <Zap className="size-3.5 text-amber-500 fill-amber-400" />
-                            <span className="text-xs font-extrabold text-amber-600">+{earnedXP} XP Earned</span>
+                            <span className="text-xs font-extrabold text-amber-600 dark:text-amber-400">+{earnedXP} XP Earned</span>
                         </div>
                     )}
 
@@ -185,19 +185,19 @@ export const QuizResultsStep: React.FC<QuizResultsStepProps> = ({
                         <StarRow stars={tier.stars} />
                         <div className="text-center">
                             <h1 className={`text-2xl font-black tracking-tight ${tier.color}`}>{tier.label}</h1>
-                            <p className="text-sm font-medium text-zinc-400">{tier.labelFil}</p>
+                            <p className="text-sm font-medium text-[var(--text-muted)]">{tier.labelFil}</p>
                         </div>
                     </div>
 
                     {/* Score fraction */}
-                    <div className="flex flex-col items-center gap-1 w-full bg-zinc-50 border border-zinc-100 rounded-2xl py-4">
-                        <span className="text-4xl font-black text-zinc-800">
+                    <div className="flex flex-col items-center gap-1 w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4">
+                        <span className="text-4xl font-black text-[var(--text-main)]">
                             {correctAnswersCount}
-                            <span className="text-2xl text-zinc-400 font-bold">/{totalQuestionsCount}</span>
+                            <span className="text-2xl text-[var(--text-muted)] font-bold">/{totalQuestionsCount}</span>
                         </span>
-                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Correct Answers</span>
+                        <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Correct Answers</span>
                         {topicName && (
-                            <span className="text-xs font-semibold text-zinc-500 mt-0.5">{topicName}</span>
+                            <span className="text-xs font-semibold text-[var(--text-muted)] mt-0.5">{topicName}</span>
                         )}
                     </div>
 
@@ -208,21 +208,21 @@ export const QuizResultsStep: React.FC<QuizResultsStepProps> = ({
                         const isScaffold = remediation.instruction === 'scaffold_review';
 
                         const cardBg = isPassed
-                            ? 'bg-emerald-50 border-emerald-200'
+                            ? 'bg-emerald-500/10 border-emerald-500/30'
                             : isPrereq
-                            ? 'bg-red-50 border-red-200'
-                            : 'bg-amber-50 border-amber-200';
+                            ? 'bg-red-500/10 border-red-500/30'
+                            : 'bg-amber-500/10 border-amber-500/30';
 
                         const titleColor = isPassed
-                            ? 'text-emerald-700'
+                            ? 'text-emerald-700 dark:text-emerald-300'
                             : isPrereq
-                            ? 'text-red-700'
-                            : 'text-amber-700';
+                            ? 'text-red-700 dark:text-red-300'
+                            : 'text-amber-700 dark:text-amber-300';
 
                         return (
                             <div className={`w-full p-4 rounded-2xl border ${cardBg} flex flex-col gap-2 text-left`}>
                                 <span className={`text-xs font-extrabold ${titleColor}`}>{remediation.title}</span>
-                                <p className="text-xs text-zinc-600 leading-relaxed font-medium">
+                                <p className="text-xs text-[var(--text-main)] leading-relaxed font-medium">
                                     {remediation.message}
                                 </p>
                                 {isPrereq && remediation.targetLesson && onSelectPrerequisite && (
@@ -260,7 +260,7 @@ export const QuizResultsStep: React.FC<QuizResultsStepProps> = ({
                                 </button>
                                 <button
                                     onClick={onTryAgain}
-                                    className="w-full py-3.5 text-sm font-bold text-zinc-600 bg-white border border-zinc-200 hover:bg-zinc-50 rounded-2xl transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+                                    className="w-full py-3.5 text-sm font-bold text-[var(--text-main)] bg-[var(--bg-main)] border border-[var(--border-color)] hover:bg-[var(--bg-card)] rounded-2xl transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
                                 >
                                     <RefreshCw className="size-4" />
                                     Try Again
@@ -277,7 +277,7 @@ export const QuizResultsStep: React.FC<QuizResultsStepProps> = ({
                                 </button>
                                 <button
                                     onClick={onBackToSubjects}
-                                    className="w-full py-3.5 text-sm font-bold text-zinc-600 bg-white border border-zinc-200 hover:bg-zinc-50 rounded-2xl transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+                                    className="w-full py-3.5 text-sm font-bold text-[var(--text-main)] bg-[var(--bg-main)] border border-[var(--border-color)] hover:bg-[var(--bg-card)] rounded-2xl transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
                                 >
                                     <LayoutDashboard className="size-4" />
                                     Back to Dashboard
@@ -290,19 +290,19 @@ export const QuizResultsStep: React.FC<QuizResultsStepProps> = ({
                 {/* RIGHT COLUMN: Detailed Answer Breakdown (7 columns on desktop) */}
                 <div className="lg:col-span-7 flex flex-col gap-4">
                     {answeredQuestions.length > 0 && (
-                        <div className="bg-white rounded-[32px] border border-zinc-200/80 shadow-xl overflow-hidden">
+                        <div className="bg-[var(--bg-card)] rounded-[32px] border border-[var(--border-color)] shadow-xl overflow-hidden">
                             {/* Header bar */}
-                            <div className="w-full flex items-center justify-between px-6 py-5 bg-gradient-to-r from-zinc-50 to-white border-b border-zinc-100">
+                            <div className="w-full flex items-center justify-between px-6 py-5 bg-[var(--bg-main)] border-b border-[var(--border-color)]">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-amber-100/80 text-amber-600 rounded-2xl">
+                                    <div className="p-2.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl">
                                         <Trophy className="size-5" />
                                     </div>
                                     <div className="flex flex-col">
-                                        <h2 className="text-base font-extrabold text-zinc-800">Answer Breakdown &amp; Analysis</h2>
-                                        <p className="text-xs text-zinc-400 font-medium">Review your answers and learn key concepts</p>
+                                        <h2 className="text-base font-extrabold text-[var(--text-main)]">Answer Breakdown &amp; Analysis</h2>
+                                        <p className="text-xs text-[var(--text-muted)] font-medium">Review your answers and learn key concepts</p>
                                     </div>
                                 </div>
-                                <span className="px-3 py-1 text-xs font-black bg-zinc-100 text-zinc-700 rounded-full border border-zinc-200/50">
+                                <span className="px-3 py-1 text-xs font-black bg-[var(--bg-card)] text-[var(--text-main)] rounded-full border border-[var(--border-color)]">
                                     {answeredQuestions.length} Questions
                                 </span>
                             </div>
@@ -329,15 +329,15 @@ function ReviewBreakdownList({ answeredQuestions }: { answeredQuestions: Answere
     });
 
     return (
-        <div className="flex flex-col gap-4 p-5 bg-zinc-50/70 border-t border-zinc-100">
+        <div className="flex flex-col gap-4 p-5 bg-[var(--bg-card)]/50 border-t border-[var(--border-color)]">
             {/* Filter Tabs */}
             <div className="flex items-center gap-2">
                 <button
                     onClick={() => setFilter('all')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         filter === 'all'
-                            ? 'bg-zinc-800 text-white shadow-sm'
-                            : 'bg-white text-zinc-600 border border-zinc-200 hover:bg-zinc-100'
+                            ? 'bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 shadow-sm'
+                            : 'bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] hover:bg-[var(--bg-main)]'
                     }`}
                 >
                     All ({answeredQuestions.length})
@@ -348,7 +348,7 @@ function ReviewBreakdownList({ answeredQuestions }: { answeredQuestions: Answere
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                             filter === 'incorrect'
                                 ? 'bg-red-600 text-white shadow-sm'
-                                : 'bg-red-50 text-red-700 border border-red-200/60 hover:bg-red-100'
+                                : 'bg-red-500/10 text-red-700 dark:text-red-300 border border-red-500/30 hover:bg-red-500/20'
                         }`}
                     >
                         Needs Review ({incorrectCount})
@@ -359,7 +359,7 @@ function ReviewBreakdownList({ answeredQuestions }: { answeredQuestions: Answere
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         filter === 'correct'
                             ? 'bg-emerald-600 text-white shadow-sm'
-                            : 'bg-emerald-50 text-emerald-700 border border-emerald-200/60 hover:bg-emerald-100'
+                            : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20'
                     }`}
                 >
                     Correct ({correctCount})
@@ -371,24 +371,24 @@ function ReviewBreakdownList({ answeredQuestions }: { answeredQuestions: Answere
                 {filtered.map((item, idx) => (
                     <div
                         key={idx}
-                        className={`p-4 rounded-2xl border bg-white shadow-sm flex flex-col gap-3 text-left transition-all ${
-                            item.isCorrect ? 'border-zinc-200/80' : 'border-red-200/80 bg-red-50/20'
+                        className={`p-4 rounded-2xl border shadow-sm flex flex-col gap-3 text-left transition-all ${
+                            item.isCorrect ? 'bg-[var(--bg-card)] border-[var(--border-color)]' : 'bg-red-500/5 border-red-500/30'
                         }`}
                     >
                         {/* Card Header */}
                         <div className="flex items-start justify-between gap-3">
                             <div className="flex items-start gap-2.5">
-                                <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-zinc-100 text-zinc-700 shrink-0 mt-0.5">
+                                <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-lg bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)] shrink-0 mt-0.5">
                                     Q{idx + 1}
                                 </span>
-                                <p className="text-xs font-bold text-zinc-800 leading-snug">{item.questionText}</p>
+                                <p className="text-xs font-bold text-[var(--text-main)] leading-snug">{item.questionText}</p>
                             </div>
                             {item.isCorrect ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0">
                                     <CheckCircle2 className="size-3" /> Correct
                                 </span>
                             ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-red-50 text-red-700 border border-red-200 shrink-0">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-red-500/10 text-red-700 dark:text-red-300 border border-red-500/30 shrink-0">
                                     <XCircle className="size-3" /> Needs Review
                                 </span>
                             )}
@@ -397,25 +397,25 @@ function ReviewBreakdownList({ answeredQuestions }: { answeredQuestions: Answere
                         {/* Answer Choices Comparison */}
                         <div className="flex flex-col gap-2 pt-1">
                             {!item.isCorrect && (
-                                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-red-50/80 border border-red-200/60 text-xs font-medium text-red-900">
-                                    <span className="font-extrabold text-red-600 shrink-0">Your Choice:</span>
-                                    <span className="line-through font-semibold text-red-800">{item.selectedOption}</span>
+                                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs font-medium text-red-700 dark:text-red-300">
+                                    <span className="font-extrabold text-red-600 dark:text-red-400 shrink-0">Your Choice:</span>
+                                    <span className="line-through font-semibold text-red-800 dark:text-red-200">{item.selectedOption}</span>
                                 </div>
                             )}
-                            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200/60 text-xs font-medium text-emerald-900">
-                                <span className="font-extrabold text-emerald-700 shrink-0">Correct Answer:</span>
-                                <span className="font-bold text-emerald-900">{item.correctOption}</span>
+                            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                                <span className="font-extrabold text-emerald-700 dark:text-emerald-400 shrink-0">Correct Answer:</span>
+                                <span className="font-bold text-emerald-800 dark:text-emerald-200">{item.correctOption}</span>
                             </div>
                         </div>
 
                         {/* Explanation Box */}
                         {item.explanationEn && (
-                            <div className="p-3 rounded-xl bg-amber-50/60 border-l-4 border-amber-400 text-xs text-zinc-700 flex flex-col gap-1">
-                                <div className="flex items-center gap-1.5 text-amber-800 font-extrabold text-[11px]">
+                            <div className="p-3 rounded-xl bg-amber-500/10 border-l-4 border-amber-400 text-xs flex flex-col gap-1">
+                                <div className="flex items-center gap-1.5 text-amber-700 dark:text-amber-300 font-extrabold text-[11px]">
                                     <Zap className="size-3.5 fill-amber-400 text-amber-500" />
                                     <span>Explanation & Key Concept</span>
                                 </div>
-                                <p className="leading-relaxed font-medium text-zinc-600 pl-0.5">{item.explanationEn}</p>
+                                <p className="leading-relaxed font-medium text-[var(--text-main)] pl-0.5">{item.explanationEn}</p>
                             </div>
                         )}
                     </div>

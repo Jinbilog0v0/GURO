@@ -36,34 +36,34 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
             {/* Profile trigger capsule */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-zinc-200/60 rounded-full shadow-md text-zinc-700 hover:bg-zinc-50 transition-all hover:scale-[1.02] active:scale-[0.98] font-bold text-sm cursor-pointer z-30"
+                className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full shadow-md text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all hover:scale-[1.02] active:scale-[0.98] font-bold text-sm cursor-pointer z-30"
             >
                 <div className="size-6 bg-gradient-to-tr from-[#11428E] to-[#A01322] rounded-full flex items-center justify-center text-white text-xs font-black shadow-inner">
                     {userName ? userName.charAt(0).toUpperCase() : 'S'}
                 </div>
                 <span className="max-w-[100px] truncate">{userName}</span>
-                <ChevronDown className={`size-4 text-zinc-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`size-4 text-[var(--text-muted)] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Dropdown Card */}
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white/95 backdrop-blur-md rounded-[24px] shadow-2xl border border-zinc-100 p-5 flex flex-col gap-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute right-0 mt-2 w-64 bg-[var(--bg-card)]/95 backdrop-blur-md rounded-[24px] shadow-2xl border border-[var(--border-color)] p-5 flex flex-col gap-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="flex items-center gap-3">
                         <div className="size-12 bg-gradient-to-tr from-[#11428E] to-[#A01322] rounded-[18px] flex items-center justify-center text-white shadow-md shrink-0">
                             <User className="size-6" />
                         </div>
                         <div className="flex flex-col min-w-0">
-                            <h4 className="text-sm font-extrabold text-zinc-800 truncate">
+                            <h4 className="text-sm font-extrabold text-[var(--text-main)] truncate">
                                 {userName}
                             </h4>
-                            <p className="text-xs text-zinc-400 font-semibold truncate flex items-center gap-1 mt-0.5">
-                                <Mail className="size-3 text-zinc-300" />
+                            <p className="text-xs text-[var(--text-muted)] font-semibold truncate flex items-center gap-1 mt-0.5">
+                                <Mail className="size-3 text-[var(--text-muted)]" />
                                 <span className="truncate">{displayEmail}</span>
                             </p>
                         </div>
                     </div>
 
-                    <div className="h-px bg-zinc-100" />
+                    <div className="h-px bg-[var(--border-color)]" />
 
                     {onOpenSettings && (
                         <button
@@ -72,17 +72,17 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
                                 setIsOpen(false);
                                 onOpenSettings();
                             }}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-zinc-700 hover:bg-zinc-100 transition-colors w-full cursor-pointer"
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors w-full cursor-pointer"
                         >
-                            <Settings className="size-3.5 text-zinc-500" />
+                            <Settings className="size-3.5 text-[var(--text-muted)]" />
                             <span>Learning & Settings</span>
                         </button>
                     )}
 
                     {parentAccessCode && (
-                        <div className="flex flex-col gap-1.5 bg-amber-50 border border-amber-100 rounded-2xl p-3">
+                        <div className="flex flex-col gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3">
                             <div className="flex items-center justify-between">
-                                <p className="text-xs font-bold text-amber-700 flex items-center gap-1.5 m-0">
+                                <p className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5 m-0">
                                     <Key className="size-3.5 text-amber-500 shrink-0" />
                                     Share with Parent
                                 </p>
@@ -94,16 +94,16 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
                                         toast.success('Parent Access Code copied to clipboard!');
                                         setTimeout(() => setCopied(false), 2000);
                                     }}
-                                    className="p-1 rounded-md hover:bg-amber-100 text-amber-700 transition-colors cursor-pointer"
+                                    className="p-1 rounded-md hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 transition-colors cursor-pointer"
                                     title="Copy Access Code"
                                 >
-                                    {copied ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5 text-amber-600" />}
+                                    {copied ? <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="size-3.5 text-amber-600 dark:text-amber-400" />}
                                 </button>
                             </div>
-                            <p className="text-[11px] text-zinc-500 leading-relaxed m-0">
+                            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed m-0">
                                 Show this code to your parent or guardian to let them track your progress.
                             </p>
-                            <p className="text-center font-black text-base text-[#11428E] tracking-widest mt-0.5 select-all bg-white border border-amber-200 rounded-xl px-3 py-2 m-0">
+                            <p className="text-center font-black text-base text-[#11428E] dark:text-sky-300 tracking-widest mt-0.5 select-all bg-[var(--bg-main)] border border-amber-500/30 rounded-xl px-3 py-2 m-0">
                                 {parentAccessCode}
                             </p>
                         </div>

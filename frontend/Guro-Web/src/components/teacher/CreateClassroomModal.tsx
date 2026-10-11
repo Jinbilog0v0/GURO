@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, School, Lock, AlertCircle, ShieldAlert, Sparkles, Calculator, BookOpen } from 'lucide-react';
 import { toast } from '../../utils/toast';
 
@@ -89,8 +90,8 @@ export const CreateClassroomModal: React.FC<CreateClassroomModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+  const modalContent = (
+    <div className="teacher-portal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
         className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
@@ -299,4 +300,6 @@ export const CreateClassroomModal: React.FC<CreateClassroomModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

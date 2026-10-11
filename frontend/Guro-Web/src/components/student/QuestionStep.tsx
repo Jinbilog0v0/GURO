@@ -384,7 +384,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
     };
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 md:p-8 bg-zinc-50 relative overflow-hidden select-none">
+        <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 md:p-8 bg-[var(--bg-main)] relative overflow-hidden select-none">
             {/* Visual Confetti Particle Layer */}
             {confettiParticles.length > 0 && (
                 <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
@@ -424,17 +424,17 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
             )}
 
             {/* Background ambient blurs */}
-            <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 bg-purple-100 rounded-full blur-[160px]" />
-            <div className="absolute -bottom-48 left-1/4 -translate-x-1/2 size-96 bg-blue-100 rounded-full blur-[160px]" />
+            <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 bg-purple-500/5 rounded-full blur-[160px]" />
+            <div className="absolute -bottom-48 left-1/4 -translate-x-1/2 size-96 bg-blue-500/5 rounded-full blur-[160px]" />
 
             {/* Header Panel Navigation */}
             <div className="absolute top-0 left-0 w-full pt-6 px-6 flex flex-col gap-4 z-20">
                 <div className="w-full flex items-center justify-between max-w-7xl mx-auto">
                     <button
                         onClick={onBack}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-white border border-zinc-200/60 rounded-full shadow-md text-zinc-700 hover:bg-zinc-50 transition-all hover:scale-[1.02] active:scale-[0.98] font-semibold text-sm cursor-pointer"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full shadow-md text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all hover:scale-[1.02] active:scale-[0.98] font-semibold text-sm cursor-pointer"
                     >
-                        <ArrowLeft className="size-4 text-zinc-600" strokeWidth={2.5} />
+                        <ArrowLeft className="size-4 text-[var(--text-muted)]" strokeWidth={2.5} />
                         Back
                     </button>
 
@@ -445,10 +445,10 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                 <span>{comboStreak}x Combo!</span>
                             </span>
                         )}
-                        <span className="px-4 py-2 bg-white border border-zinc-200/60 rounded-full shadow-sm text-zinc-700 font-bold text-sm">
+                        <span className="px-4 py-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] font-bold text-sm">
                             {currentQuestionIndex}/{totalQuestions}
                         </span>
-                        <span className="px-4 py-2 bg-white border border-emerald-200 rounded-full shadow-sm text-emerald-600 font-bold text-sm bg-emerald-50/20">
+                        <span className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full shadow-sm text-emerald-600 dark:text-emerald-400 font-bold text-sm">
                             Score: {score}
                         </span>
                     </div>
@@ -460,7 +460,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                         const isPast = idx < currentQuestionIndex - 1;
                         const isCurrent = idx === currentQuestionIndex - 1;
                         
-                        let dotColor = 'bg-zinc-200';
+                        let dotColor = 'bg-zinc-200 dark:bg-zinc-700';
                         if (isCurrent) {
                             if (isSubmitted) {
                                 dotColor = isCorrect ? 'bg-emerald-400' : 'bg-rose-500';
@@ -484,7 +484,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                 </div>
 
                 {/* Global Progress Track Line */}
-                <div className="w-full max-w-7xl mx-auto bg-zinc-100 h-2 rounded-full overflow-hidden shadow-inner">
+                <div className="w-full max-w-7xl mx-auto bg-[var(--border-color)] h-2 rounded-full overflow-hidden shadow-inner">
                     <div
                         className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out"
                         style={{ width: `${progressPercentage}%` }}
@@ -497,10 +497,10 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                 {/* Left/Main Column: Quiz Card */}
                 <form
                     onSubmit={handleActionClick}
-                    className="flex-1 w-full max-w-3xl bg-white rounded-[32px] p-6 md:p-10 shadow-2xl shadow-zinc-200/80 border border-zinc-100/50 flex flex-col items-center gap-6 relative"
+                    className="flex-1 w-full max-w-3xl bg-[var(--bg-card)] rounded-[32px] p-6 md:p-10 shadow-2xl border border-[var(--border-color)] flex flex-col items-center gap-6 relative"
                 >
                     <div className="flex items-center gap-3">
-                        <div className="relative size-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-xl shadow-sm hover:scale-110 transition-transform cursor-pointer" title="Your Buddy">
+                        <div className="relative size-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-xl shadow-sm hover:scale-110 transition-transform cursor-pointer" title="Your Buddy">
                             <span>{avatarEmoji}</span>
                             {outfitEmoji && (
                                 <span className="absolute -top-1.5 -right-1.5 text-xs drop-shadow-sm">
@@ -508,7 +508,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                 </span>
                             )}
                         </div>
-                    <div className="px-5 py-1.5 bg-purple-50 rounded-full text-xs font-bold text-purple-600 tracking-wide border border-purple-100/40">
+                    <div className="px-5 py-1.5 bg-purple-500/10 rounded-full text-xs font-bold text-purple-600 dark:text-purple-300 tracking-wide border border-purple-500/20">
                         {type === 'fill-in-the-blank' 
                             ? 'Fill-in-the-Blank' 
                             : type === 'drag-drop-matching' 
@@ -521,15 +521,15 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                         type="button"
                         onClick={toggleSpeech}
                         className={`px-3 py-1 text-xs font-semibold rounded-full border transition-all cursor-pointer flex items-center gap-1.5 ${isSpeaking 
-                            ? 'bg-purple-100 border-purple-300 text-purple-700 font-bold' 
-                            : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-zinc-100'}`}
+                            ? 'bg-purple-500/20 border-purple-400 text-purple-700 dark:text-purple-300 font-bold' 
+                            : 'bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)] hover:bg-[var(--bg-card)]'}`}
                     >
                         {isSpeaking ? <Square className="size-3 fill-current" /> : <Volume2 className="size-3" />}
                         <span>{isSpeaking ? 'Stop' : 'Listen'}</span>
                     </button>
                 </div>
 
-                <h2 className="text-2xl md:text-3xl font-extrabold text-zinc-800 text-center tracking-tight leading-snug px-2">
+                <h2 className="text-2xl md:text-3xl font-extrabold text-[var(--text-main)] text-center tracking-tight leading-snug px-2">
                     {type === 'fill-in-the-blank' && (questionText.includes('[[blank]]') || questionText.includes('______') || questionText.includes('____')) ? (
                         (() => {
                             const delimiter = questionText.includes('[[blank]]')
@@ -586,8 +586,8 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                                     onClick={() => handleLeftSelect(item)}
                                                     className={`w-full py-4 px-4 font-bold rounded-2xl border-2 border-b-4 transition-all duration-150 cursor-pointer active:translate-y-[2px] active:border-b-2 flex items-center justify-between gap-2 ${
                                                         isSelected
-                                                            ? "bg-blue-50 border-blue-400 text-blue-800 border-b-blue-600 shadow-md shadow-blue-100/50"
-                                                            : "bg-white border-zinc-200 text-zinc-700 border-b-zinc-300 hover:bg-zinc-50/80"
+                                                            ? "bg-blue-500/15 border-blue-400 text-blue-700 dark:text-blue-300 border-b-blue-600 shadow-md"
+                                                            : "bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-main)] border-b-[var(--border-color)] hover:bg-[var(--bg-main)]"
                                                     }`}
                                                 >
                                                     <span className="flex-1 text-center">{item}</span>
@@ -602,11 +602,11 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                     {rightOptionsShuffled
                                         .filter((item) => !Object.values(currentMatches).includes(item))
                                         .map((item, idx) => {
-                                            let cardStyle = "bg-white border-zinc-200 text-zinc-700 border-b-zinc-300";
+                                            let cardStyle = "bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-main)] border-b-[var(--border-color)]";
                                             if (!selectedLeft) {
-                                                cardStyle = "bg-white border-zinc-200 text-zinc-400 border-b-zinc-200 opacity-60 hover:bg-zinc-50/50 cursor-not-allowed";
+                                                cardStyle = "bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] border-b-[var(--border-color)] opacity-60 hover:bg-[var(--bg-main)] cursor-not-allowed";
                                             } else {
-                                                cardStyle = "bg-white border-zinc-200 text-zinc-700 border-b-zinc-300 hover:bg-zinc-50/80";
+                                                cardStyle = "bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-main)] border-b-[var(--border-color)] hover:bg-[var(--bg-main)]";
                                             }
 
                                             return (
@@ -626,8 +626,8 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
 
                             {/* Current Matches Display */}
                             {Object.keys(currentMatches).length > 0 && (
-                                <div className="mt-4 p-4 bg-zinc-50 rounded-2xl border border-zinc-100 max-w-xl w-full mx-auto">
-                                    <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 text-center">Your Matches</h4>
+                                <div className="mt-4 p-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] max-w-xl w-full mx-auto">
+                                    <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3 text-center">Your Matches</h4>
                                     <div className="flex flex-wrap gap-3 justify-center">
                                         {Object.entries(currentMatches).map(([k, v], idx) => {
                                             const colorConfig = matchColorClasses[idx % matchColorClasses.length];
@@ -668,19 +668,19 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                 const isCorrect = option === correctOption;
                                 const isWrong = isSelected && selectedOption !== correctOption;
                                 
-                                let cardStyle = "bg-white border-zinc-200 text-zinc-700 border-b-zinc-300 hover:bg-zinc-50/80";
+                                let cardStyle = "bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-main)] border-b-[var(--border-color)] hover:bg-[var(--bg-main)]";
                                 if (isSubmitted) {
                                     if (isCorrect) {
-                                        cardStyle = "bg-emerald-50 border-emerald-400 text-emerald-800 border-b-emerald-600";
+                                        cardStyle = "bg-emerald-500/15 border-emerald-400 text-emerald-700 dark:text-emerald-300 border-b-emerald-600";
                                     } else if (isWrong) {
-                                        cardStyle = "bg-rose-50 border-rose-400 text-rose-800 border-b-rose-600";
+                                        cardStyle = "bg-rose-500/15 border-rose-400 text-rose-700 dark:text-rose-300 border-b-rose-600";
                                     } else {
-                                        cardStyle = "bg-white border-zinc-150 text-zinc-400 border-b-zinc-200 opacity-60";
+                                        cardStyle = "bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-muted)] border-b-[var(--border-color)] opacity-50";
                                     }
                                 } else if (isSelected) {
                                     cardStyle = option === 'True' 
-                                        ? "bg-emerald-50/80 border-emerald-400 text-emerald-800 border-b-emerald-600 shadow-md shadow-emerald-100/50"
-                                        : "bg-rose-50/80 border-rose-400 text-rose-800 border-b-rose-600 shadow-md shadow-rose-100/50";
+                                        ? "bg-emerald-500/15 border-emerald-400 text-emerald-700 dark:text-emerald-300 border-b-emerald-600 shadow-md"
+                                        : "bg-rose-500/15 border-rose-400 text-rose-700 dark:text-rose-300 border-b-rose-600 shadow-md";
                                 }
 
                                 return (
@@ -708,16 +708,16 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                             <div className="flex justify-between w-full mb-6 px-4">
                                 <div className={`flex flex-col items-center gap-1 p-3 rounded-2xl border-2 transition-all ${
                                     swipeX < -40 
-                                        ? "bg-rose-50 border-rose-400 text-rose-700 scale-105" 
-                                        : "bg-zinc-50 border-zinc-200 text-zinc-500"
+                                        ? "bg-rose-500/15 border-rose-400 text-rose-700 dark:text-rose-300 scale-105" 
+                                        : "bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)]"
                                 }`}>
                                     <span className="text-xs font-bold uppercase tracking-wider">Swipe Left ◀</span>
                                     <span className="text-lg font-extrabold">{options[0] || 'Left'}</span>
                                 </div>
                                 <div className={`flex flex-col items-center gap-1 p-3 rounded-2xl border-2 transition-all ${
                                     swipeX > 40 
-                                        ? "bg-emerald-50 border-emerald-400 text-emerald-700 scale-105" 
-                                        : "bg-zinc-50 border-zinc-200 text-zinc-500"
+                                        ? "bg-emerald-500/15 border-emerald-400 text-emerald-700 dark:text-emerald-300 scale-105" 
+                                        : "bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)]"
                                 }`}>
                                     <span className="text-xs font-bold uppercase tracking-wider">▶ Swipe Right</span>
                                     <span className="text-lg font-extrabold">{options[1] || 'Right'}</span>
@@ -741,9 +741,9 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                     className={`absolute w-[240px] h-[240px] rounded-[32px] border-4 p-6 flex flex-col items-center justify-center text-center shadow-lg transition-colors select-none ${
                                         isSubmitted 
                                             ? selectedOption === correctOption 
-                                                ? "bg-emerald-50 border-emerald-400 text-emerald-800"
-                                                : "bg-rose-50 border-rose-400 text-rose-800"
-                                            : "bg-white border-zinc-200 text-zinc-800 hover:border-zinc-300"
+                                                ? "bg-emerald-500/15 border-emerald-400 text-emerald-700 dark:text-emerald-300"
+                                                : "bg-rose-500/15 border-rose-400 text-rose-700 dark:text-rose-300"
+                                            : "bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-main)] hover:border-[var(--accent-primary)]"
                                     }`}
                                 >
                                     {swipeX < -45 && (
@@ -806,7 +806,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                     ) : type === 'fraction-builder' ? (
                         <div className="flex flex-col items-center w-full max-w-md mx-auto mt-4 gap-6">
                             {/* Interactive fraction visualization */}
-                            <div className="flex items-center justify-center p-6 bg-white rounded-3xl border border-zinc-200/80 shadow-sm relative overflow-visible">
+                            <div className="flex items-center justify-center p-6 bg-[var(--bg-main)] rounded-3xl border border-[var(--border-color)] shadow-sm relative overflow-visible">
                                 <svg width="220" height="220" viewBox="0 0 200 200" className="drop-shadow-md">
                                     {Array.from({ length: parseInt(options[1] || '4') }).map((_, idx) => {
                                         const denominator = parseInt(options[1] || '4');
@@ -814,22 +814,22 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                         const path = getSlicePath(idx, denominator);
                                         
                                         // Colors: correct green, wrong red, active orange, default white/gray
-                                        let fillColor = "fill-white";
-                                        let strokeColor = "stroke-zinc-300";
+                                        let fillColor = "fill-white dark:fill-zinc-800";
+                                        let strokeColor = "stroke-zinc-300 dark:stroke-zinc-700";
                                         
                                         if (isSubmitted) {
                                             const correctNum = parseInt(options[0] || '0');
                                             const selectedNum = shadedSlices.length;
                                             if (selectedNum === correctNum) {
-                                                fillColor = isShaded ? "fill-emerald-500" : "fill-emerald-50/50";
-                                                strokeColor = "stroke-emerald-600";
+                                                fillColor = isShaded ? "fill-emerald-500" : "fill-emerald-50/50 dark:fill-emerald-950/50";
+                                                strokeColor = "stroke-emerald-600 dark:stroke-emerald-400";
                                             } else {
-                                                fillColor = isShaded ? "fill-rose-500" : "fill-rose-50/50";
-                                                strokeColor = "stroke-rose-600";
+                                                fillColor = isShaded ? "fill-rose-500" : "fill-rose-50/50 dark:fill-rose-950/50";
+                                                strokeColor = "stroke-rose-600 dark:stroke-rose-400";
                                             }
                                         } else if (isShaded) {
                                             fillColor = "fill-amber-500";
-                                            strokeColor = "stroke-amber-600";
+                                            strokeColor = "stroke-amber-600 dark:stroke-amber-400";
                                         }
 
                                         return (
@@ -926,8 +926,8 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
 
                 {/* Right/Sidebar Column: Buddy Mascot */}
                 {avatarEmoji && (
-                    <div className="w-full lg:w-56 shrink-0 flex flex-row lg:flex-col items-center lg:items-stretch gap-4 bg-white/70 border border-slate-200/50 p-5 rounded-3xl backdrop-blur-md shadow-md lg:self-center">
-                        <div className="relative size-16 lg:size-20 flex items-center justify-center bg-slate-50 border border-slate-100 rounded-2xl shadow-sm shrink-0 self-center">
+                    <div className="w-full lg:w-56 shrink-0 flex flex-row lg:flex-col items-center lg:items-stretch gap-4 bg-[var(--bg-card)]/80 border border-[var(--border-color)] p-5 rounded-3xl backdrop-blur-md shadow-md lg:self-center">
+                        <div className="relative size-16 lg:size-20 flex items-center justify-center bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl shadow-sm shrink-0 self-center">
                             <span className="text-4xl lg:text-5xl">{avatarEmoji}</span>
                             {outfitEmoji && (
                                 <span className="absolute -top-2 -right-2 text-xl lg:text-2xl drop-shadow-md">
@@ -935,7 +935,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                 </span>
                             )}
                             {isSubmitted && (
-                                <span className="absolute -bottom-2 -left-2 bg-white border border-slate-150 p-1.5 rounded-full shadow-sm">
+                                <span className="absolute -bottom-2 -left-2 bg-[var(--bg-card)] border border-[var(--border-color)] p-1.5 rounded-full shadow-sm">
                                     {isCorrect ? (
                                         <Star className="size-4 text-amber-500 fill-amber-400" />
                                     ) : (
@@ -945,16 +945,16 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                             )}
                         </div>
                         <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center lg:text-left">Quiz Buddy</span>
+                            <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest text-center lg:text-left">Quiz Buddy</span>
                             <div className={`relative border p-3.5 rounded-2xl text-[12px] font-bold leading-relaxed shadow-sm ${
                                 isMath 
-                                    ? 'bg-sky-50/50 border-sky-100 text-sky-900' 
-                                    : 'bg-purple-50/50 border-purple-100 text-purple-900'
+                                    ? 'bg-sky-500/10 border-sky-500/20 text-sky-700 dark:text-sky-300' 
+                                    : 'bg-purple-500/10 border-purple-500/20 text-purple-700 dark:text-purple-300'
                             }`}>
                                 <div className={`hidden lg:block absolute -left-1.5 top-7 w-3 h-3 border-l border-b rotate-45 transform ${
                                     isMath 
-                                        ? 'bg-sky-50 border-sky-100' 
-                                        : 'bg-purple-50 border-purple-100'
+                                        ? 'bg-sky-50 dark:bg-sky-950 border-sky-200 dark:border-sky-800' 
+                                        : 'bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800'
                                 }`} />
                                 <p className="text-center lg:text-left">{getBuddyComment()}</p>
                             </div>
