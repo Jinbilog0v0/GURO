@@ -78,9 +78,9 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
   };
 
   return (
-    <div className="glass-panel p-6 flex flex-col gap-5 w-full overflow-hidden">
+    <div className="glass-panel p-4 sm:p-6 flex flex-col gap-4 sm:gap-5 w-full overflow-hidden">
       <div className="flex items-center gap-3">
-        <BarChart3 className="size-6 text-blue-500" aria-hidden="true" />
+        <BarChart3 className="size-6 text-blue-500 shrink-0" aria-hidden="true" />
         <div>
           <h3 className="text-base font-bold text-[var(--text-main)]">Classroom Mastery Matrix</h3>
           <p className="text-xs text-[var(--text-muted)] mt-0.5">Overview of topic mastery grades across all synced student profiles.</p>
@@ -88,7 +88,7 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
       </div>
 
       {allStudents.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-center p-10 gap-4 border border-dashed border-[var(--border-color)] rounded-xl bg-[var(--bg-main)]">
+        <div className="flex flex-col items-center justify-center text-center p-8 sm:p-10 gap-4 border border-dashed border-[var(--border-color)] rounded-xl bg-[var(--bg-main)]">
           <Inbox className="size-10 text-[var(--text-dark)]" aria-hidden="true" />
           <div>
             <p className="text-sm font-bold text-[var(--text-main)]">No student progress telemetry synced yet.</p>
@@ -106,8 +106,8 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
       ) : (
         <>
           {/* Filters row */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 min-w-[180px]">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 flex-wrap">
+            <div className="relative w-full sm:flex-1 sm:min-w-[180px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-[var(--text-muted)]" aria-hidden="true" />
               <input
                 type="text"
@@ -118,49 +118,51 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
                 className="w-full pl-8 pr-3 py-2 text-xs rounded-lg bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] placeholder-[var(--text-dark)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary-glow)]"
               />
             </div>
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-[var(--text-muted)]" aria-hidden="true" />
-              <select
-                value={topicFilter}
-                onChange={(e) => setTopicFilter(e.target.value)}
-                aria-label="Filter by topic"
-                className="pl-8 pr-3 py-2 text-xs rounded-lg bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
-              >
-                <option value="All">All Topics</option>
-                {allTopics.map((t) => <option key={t} value={t}>Topic: {t}</option>)}
-              </select>
-            </div>
-            <div className="relative">
-              <select
-                value={termFilter}
-                onChange={(e) => setTermFilter(e.target.value)}
-                aria-label="Filter by term / quarter"
-                className="px-3 py-2 text-xs rounded-lg bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
-              >
-                <option value="All">All Quarters</option>
-                <option value="Quarter 1">Quarter 1</option>
-                <option value="Quarter 2">Quarter 2</option>
-                <option value="Quarter 3">Quarter 3</option>
-                <option value="Quarter 4">Quarter 4</option>
-              </select>
-            </div>
-            <div className="relative">
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                aria-label="Filter by assessment type"
-                className="px-3 py-2 text-xs rounded-lg bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
-              >
-                <option value="All">All Test Types</option>
-                <option value="pre-test">Pre-Test (Diagnostic)</option>
-                <option value="post-test">Post-Test (Summative)</option>
-                <option value="practice">Practice Quiz</option>
-              </select>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="relative flex-1 sm:flex-none">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-[var(--text-muted)]" aria-hidden="true" />
+                <select
+                  value={topicFilter}
+                  onChange={(e) => setTopicFilter(e.target.value)}
+                  aria-label="Filter by topic"
+                  className="w-full sm:w-auto pl-8 pr-3 py-2 text-xs rounded-lg bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
+                >
+                  <option value="All">All Topics</option>
+                  {allTopics.map((t) => <option key={t} value={t}>Topic: {t}</option>)}
+                </select>
+              </div>
+              <div className="relative flex-1 sm:flex-none">
+                <select
+                  value={termFilter}
+                  onChange={(e) => setTermFilter(e.target.value)}
+                  aria-label="Filter by term / quarter"
+                  className="w-full sm:w-auto px-3 py-2 text-xs rounded-lg bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
+                >
+                  <option value="All">All Quarters</option>
+                  <option value="Quarter 1">Quarter 1</option>
+                  <option value="Quarter 2">Quarter 2</option>
+                  <option value="Quarter 3">Quarter 3</option>
+                  <option value="Quarter 4">Quarter 4</option>
+                </select>
+              </div>
+              <div className="relative flex-1 sm:flex-none">
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  aria-label="Filter by assessment type"
+                  className="w-full sm:w-auto px-3 py-2 text-xs rounded-lg bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] appearance-none cursor-pointer"
+                >
+                  <option value="All">All Test Types</option>
+                  <option value="pre-test">Pre-Test (Diagnostic)</option>
+                  <option value="post-test">Post-Test (Summative)</option>
+                  <option value="practice">Practice Quiz</option>
+                </select>
+              </div>
             </div>
             {(studentSearch || topicFilter !== 'All' || termFilter !== 'All' || typeFilter !== 'All') && (
               <button
                 onClick={() => { setStudentSearch(''); setTopicFilter('All'); setTermFilter('All'); setTypeFilter('All'); }}
-                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold transition-colors"
+                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold transition-colors cursor-pointer self-start sm:self-auto"
               >
                 Clear filters
               </button>

@@ -201,11 +201,11 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                 </div>
             )}
 
-            <div className={`flex w-full max-w-5xl flex-col gap-8 relative z-10 ${inShell ? 'mt-0' : 'mt-24 md:mt-16'}`}>
+            <div className={`flex w-full max-w-5xl flex-col gap-6 sm:gap-8 relative z-10 ${inShell ? 'mt-0' : 'mt-4 sm:mt-16'}`}>
                 
                 {/* Time Limit Exceeded Warning */}
                 {isTimeLimitExceeded && (
-                    <div className="w-full flex flex-col gap-1.5 p-5 bg-red-500/10 border border-red-500/20 rounded-3xl animate-bounce">
+                    <div className="w-full flex flex-col gap-1.5 p-4 sm:p-5 bg-red-500/10 border border-red-500/20 rounded-2xl sm:rounded-3xl animate-bounce">
                         <div className="flex items-center gap-2 text-red-600 font-extrabold text-sm">
                             <Clock className="size-4 shrink-0" />
                             <span>DAILY SCREEN TIME LIMIT REACHED</span>
@@ -217,7 +217,7 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                 )}
 
                 {/* Integrated Mascot Hero & XP Card */}
-                <div className="w-full bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-600 rounded-[32px] p-6 md:p-8 text-white relative shadow-xl shadow-blue-500/10 flex flex-col md:flex-row items-center gap-6 overflow-hidden">
+                <div className="w-full bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-600 rounded-2xl sm:rounded-[32px] p-4 sm:p-6 md:p-8 text-white relative shadow-xl shadow-blue-500/10 flex flex-col md:flex-row items-center gap-5 sm:gap-6 overflow-hidden">
                     <div className="absolute right-0 top-0 bottom-0 opacity-10 pointer-events-none select-none">
                         <GraduationCap className="size-60 -mr-10 -mt-10" />
                     </div>
@@ -225,7 +225,7 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                     {/* Clickable mascot avatar capsule */}
                     <button
                         onClick={() => setIsEmojiPickerOpen(true)}
-                        className="relative size-24 md:size-28 flex items-center justify-center bg-white/20 backdrop-blur-md rounded-[24px] border-2 border-white/30 shadow-lg shrink-0 hover:scale-105 transition-all duration-300 cursor-pointer group/avatar"
+                        className="relative size-20 sm:size-24 md:size-28 flex items-center justify-center bg-white/20 backdrop-blur-md rounded-2xl sm:rounded-[24px] border-2 border-white/30 shadow-lg shrink-0 hover:scale-105 transition-all duration-300 cursor-pointer group/avatar"
                         title="Change Avatar Emoji"
                     >
                         <span className="text-6xl select-none animate-bounce">{avatarEmoji}</span>
@@ -291,9 +291,9 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                 </div>
 
                 {/* Classroom Pairing Card */}
-                <div className="w-full glass-panel rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between border border-[var(--border-color)] shadow-sm gap-4">
+                <div className="w-full glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col md:flex-row items-stretch md:items-center justify-between border border-[var(--border-color)] shadow-sm gap-4">
                     <div className="flex flex-col gap-1.5 flex-1">
-                        <h3 className="text-lg font-black text-[var(--text-main)] flex items-center gap-2">
+                        <h3 className="text-base sm:text-lg font-black text-[var(--text-main)] flex items-center gap-2">
                             <GraduationCap className="size-5 text-[#11428E] shrink-0" />
                             <span>My Classroom Connection</span>
                         </h3>
@@ -332,12 +332,12 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                         {classroomCode ? (
                             <button
                                 onClick={onLeaveClassroom}
-                                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs rounded-2xl shadow-md transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                                className="w-full sm:w-auto px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs rounded-2xl shadow-md transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
                             >
                                 Leave Class
                             </button>
                         ) : (
-                            <form onSubmit={handleJoinSubmit} className="flex gap-2.5 w-full md:w-auto">
+                            <form onSubmit={handleJoinSubmit} className="flex flex-col sm:flex-row gap-2 sm:gap-2.5 w-full md:w-auto">
                                 <input
                                     type="text"
                                     placeholder="Enter Classroom Code"
@@ -349,7 +349,7 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                                 <button
                                     type="submit"
                                     disabled={isJoining}
-                                    className="px-5 py-2.5 bg-[#11428E] hover:bg-[#0c316b] text-white font-extrabold text-xs rounded-2xl shadow-md transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] shrink-0 disabled:opacity-50"
+                                    className="px-5 py-2.5 bg-[#11428E] hover:bg-[#0c316b] text-white font-extrabold text-xs rounded-2xl shadow-md transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] shrink-0 disabled:opacity-50 text-center"
                                 >
                                     {isJoining ? 'Joining...' : 'Join Class'}
                                 </button>
@@ -568,16 +568,16 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
 
             {/* Avatar Emoji Picker Modal */}
             {isEmojiPickerOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="glass-panel w-full max-w-sm rounded-3xl p-6 flex flex-col gap-5 border border-[var(--border-color)] shadow-2xl relative fade-in">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+                    <div className="glass-panel w-full max-w-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col gap-4 sm:gap-5 border border-[var(--border-color)] shadow-2xl relative fade-in">
                         <button 
                             onClick={() => setIsEmojiPickerOpen(false)}
-                            className="absolute top-4 right-4 p-1 hover:bg-[var(--bg-input)] rounded-full transition-all cursor-pointer"
+                            className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 p-1 hover:bg-[var(--bg-input)] rounded-full transition-all cursor-pointer"
                         >
                             <X className="size-5 text-[var(--text-muted)]" />
                         </button>
-                        <h3 className="text-lg font-black text-[var(--text-main)]">Choose Avatar Emoji</h3>
-                        <div className="grid grid-cols-3 gap-4">
+                        <h3 className="text-base sm:text-lg font-black text-[var(--text-main)]">Choose Avatar Emoji</h3>
+                        <div className="grid grid-cols-4 gap-2 sm:gap-3 max-h-[60vh] overflow-y-auto p-1">
                             {EMOJI_AVATARS.map(emoji => (
                                 <button
                                     key={emoji}
@@ -585,7 +585,7 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                                         onSelectAvatarEmoji(emoji);
                                         setIsEmojiPickerOpen(false);
                                     }}
-                                    className={`p-4 text-4xl rounded-2xl bg-[var(--bg-input)] hover:scale-105 border transition-all cursor-pointer ${
+                                    className={`p-2.5 sm:p-3 text-3xl sm:text-4xl rounded-xl sm:rounded-2xl bg-[var(--bg-input)] hover:scale-105 border transition-all cursor-pointer flex items-center justify-center ${
                                         avatarEmoji === emoji ? 'border-[#11428E] bg-[#11428E]/5' : 'border-[var(--border-color)]'
                                     }`}
                                 >
@@ -599,26 +599,26 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
 
             {/* Shop Modal */}
             {isShopOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="glass-panel w-full max-w-md rounded-3xl p-6 flex flex-col gap-6 border border-[var(--border-color)] shadow-2xl relative fade-in">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+                    <div className="glass-panel w-full max-w-md rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col gap-4 sm:gap-6 border border-[var(--border-color)] shadow-2xl relative fade-in max-h-[90vh]">
                         <button 
                             onClick={() => setIsShopOpen(false)}
-                            className="absolute top-4 right-4 p-1 hover:bg-[var(--bg-input)] rounded-full transition-all cursor-pointer"
+                            className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 p-1 hover:bg-[var(--bg-input)] rounded-full transition-all cursor-pointer"
                         >
                             <X className="size-5 text-[var(--text-muted)]" />
                         </button>
                         
-                        <div className="flex flex-col gap-1">
-                            <h3 className="text-xl font-black text-[var(--text-main)] flex items-center gap-2">
-                                <ShoppingBag className="size-5 text-amber-500" />
+                        <div className="flex flex-col gap-1 pr-6">
+                            <h3 className="text-lg sm:text-xl font-black text-[var(--text-main)] flex items-center gap-2">
+                                <ShoppingBag className="size-5 text-amber-500 shrink-0" />
                                 <span>Mascot Outfit Shop</span>
                             </h3>
-                            <p className="text-xs font-bold text-[var(--text-muted)]">Dress up your spacecraft. Purchase gear using Stars.</p>
+                            <p className="text-xs font-bold text-[var(--text-muted)]">Dress up your companion. Purchase gear using Stars.</p>
                         </div>
 
-                        <div className="flex items-center justify-between px-4 py-3 bg-[var(--bg-input)] rounded-2xl border border-[var(--border-color)]">
-                            <span className="text-sm font-extrabold text-[var(--text-muted)]">Your Balance</span>
-                            <span className="text-base font-black text-amber-600 flex items-center gap-1.5">
+                        <div className="flex items-center justify-between px-3.5 py-2.5 sm:px-4 sm:py-3 bg-[var(--bg-input)] rounded-2xl border border-[var(--border-color)]">
+                            <span className="text-xs sm:text-sm font-extrabold text-[var(--text-muted)]">Your Balance</span>
+                            <span className="text-sm sm:text-base font-black text-amber-600 flex items-center gap-1.5">
                                 <Star className="size-4 text-amber-500 fill-amber-500 shrink-0" /> {stars}
                             </span>
                         </div>

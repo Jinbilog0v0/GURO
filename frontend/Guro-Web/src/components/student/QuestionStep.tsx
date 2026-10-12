@@ -384,10 +384,10 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
     };
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 md:p-8 bg-[var(--bg-main)] relative overflow-hidden select-none">
+        <div className="min-h-screen w-full flex flex-col items-center p-3 sm:p-6 md:p-8 bg-[var(--bg-main)] relative overflow-y-auto select-none pb-16">
             {/* Visual Confetti Particle Layer */}
             {confettiParticles.length > 0 && (
-                <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+                <div className="fixed inset-0 pointer-events-none z-30 overflow-hidden">
                     <style>{`
                         @keyframes confetti-fall {
                             0% {
@@ -424,31 +424,31 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
             )}
 
             {/* Background ambient blurs */}
-            <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 bg-purple-500/5 rounded-full blur-[160px]" />
-            <div className="absolute -bottom-48 left-1/4 -translate-x-1/2 size-96 bg-blue-500/5 rounded-full blur-[160px]" />
+            <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 bg-purple-500/5 rounded-full blur-[160px] pointer-events-none" />
+            <div className="absolute -bottom-48 left-1/4 -translate-x-1/2 size-96 bg-blue-500/5 rounded-full blur-[160px] pointer-events-none" />
 
             {/* Header Panel Navigation */}
-            <div className="absolute top-0 left-0 w-full pt-6 px-6 flex flex-col gap-4 z-20">
+            <div className="sticky top-0 w-full pt-3 pb-3 px-2 sm:pt-4 sm:px-4 flex flex-col gap-3 sm:gap-4 z-20 bg-[var(--bg-main)]/90 backdrop-blur-md">
                 <div className="w-full flex items-center justify-between max-w-7xl mx-auto">
                     <button
                         onClick={onBack}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full shadow-md text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all hover:scale-[1.02] active:scale-[0.98] font-semibold text-sm cursor-pointer"
+                        className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full shadow-md text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all hover:scale-[1.02] active:scale-[0.98] font-semibold text-xs sm:text-sm cursor-pointer"
                     >
-                        <ArrowLeft className="size-4 text-[var(--text-muted)]" strokeWidth={2.5} />
+                        <ArrowLeft className="size-3.5 sm:size-4 text-[var(--text-muted)]" strokeWidth={2.5} />
                         Back
                     </button>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                         {comboStreak >= 2 && (
-                            <span className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-xs rounded-full shadow-md animate-bounce flex items-center gap-1.5">
-                                <Flame className="size-3.5 fill-white text-white" />
-                                <span>{comboStreak}x Combo!</span>
+                            <span className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-[11px] sm:text-xs rounded-full shadow-md animate-bounce flex items-center gap-1">
+                                <Flame className="size-3 sm:size-3.5 fill-white text-white" />
+                                <span>{comboStreak}x!</span>
                             </span>
                         )}
-                        <span className="px-4 py-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] font-bold text-sm">
+                        <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] font-bold text-xs sm:text-sm">
                             {currentQuestionIndex}/{totalQuestions}
                         </span>
-                        <span className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full shadow-sm text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                        <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full shadow-sm text-emerald-600 dark:text-emerald-400 font-bold text-xs sm:text-sm">
                             Score: {score}
                         </span>
                     </div>
@@ -493,11 +493,11 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
             </div>
 
             {/* Two-column layout on desktop: Quiz Card + Buddy Mascot */}
-            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-8 w-full max-w-4xl relative z-10 flex-1 justify-center mt-24">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-6 sm:gap-8 w-full max-w-4xl relative z-10 flex-1 justify-center mt-4 sm:mt-6">
                 {/* Left/Main Column: Quiz Card */}
                 <form
                     onSubmit={handleActionClick}
-                    className="flex-1 w-full max-w-3xl bg-[var(--bg-card)] rounded-[32px] p-6 md:p-10 shadow-2xl border border-[var(--border-color)] flex flex-col items-center gap-6 relative"
+                    className="flex-1 w-full max-w-3xl bg-[var(--bg-card)] rounded-2xl sm:rounded-[32px] p-4 sm:p-6 md:p-10 shadow-2xl border border-[var(--border-color)] flex flex-col items-center gap-5 sm:gap-6 relative"
                 >
                     <div className="flex items-center gap-3">
                         <div className="relative size-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-xl shadow-sm hover:scale-110 transition-transform cursor-pointer" title="Your Buddy">
@@ -529,7 +529,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                     </button>
                 </div>
 
-                <h2 className="text-2xl md:text-3xl font-extrabold text-[var(--text-main)] text-center tracking-tight leading-snug px-2">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[var(--text-main)] text-center tracking-tight leading-snug px-2">
                     {type === 'fill-in-the-blank' && (questionText.includes('[[blank]]') || questionText.includes('______') || questionText.includes('____')) ? (
                         (() => {
                             const delimiter = questionText.includes('[[blank]]')
@@ -570,7 +570,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                 Tap a word on the left, then tap its match on the right! (Tap a matched word to undo)
                             </p>
                             
-                            <div className="grid grid-cols-2 gap-8 w-full max-w-2xl mx-auto">
+                            <div className="grid grid-cols-2 gap-3 sm:gap-8 w-full max-w-2xl mx-auto">
                                 {/* Left Column */}
                                 <div className="flex flex-col gap-3">
                                     <h3 className="text-sm font-extrabold text-blue-500 text-center tracking-wider uppercase">Term</h3>
@@ -662,7 +662,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                             )}
                         </div>
                     ) : type === 'true-false' ? (
-                        <div className="grid grid-cols-2 gap-6 w-full max-w-xl mx-auto mt-4">
+                        <div className="grid grid-cols-2 gap-3 sm:gap-6 w-full max-w-xl mx-auto mt-4">
                             {['True', 'False'].map((option) => {
                                 const isSelected = selectedOption === option;
                                 const isCorrect = option === correctOption;

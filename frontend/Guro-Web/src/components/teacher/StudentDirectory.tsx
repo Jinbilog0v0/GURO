@@ -34,7 +34,12 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
   const [searchQuery, setSearchQuery] = useState('');
   const [gradeFilter, setGradeFilter] = useState<'All' | 4 | 5 | 6>('All');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Mastery' | 'Review' | 'Remediation'>('All');
-  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'card'>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      return 'card';
+    }
+    return 'table';
+  });
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
 
   // Close modal on Escape key press
@@ -200,10 +205,10 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
         /* Table View (Default) */
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-xs border-collapse min-w-[640px]">
               <thead>
                 <tr className="border-b border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] text-[11px] font-bold uppercase tracking-wider">
-                  <th className="py-3.5 px-4">Learner / LRN</th>
+                  <th className="py-3.5 px-4 sticky left-0 bg-[var(--bg-main)] z-10 shadow-xs">Learner / LRN</th>
                   <th className="py-3.5 px-4">Grade Level</th>
                   <th className="py-3.5 px-4 text-center">Cohort Status</th>
                   <th className="py-3.5 px-4 text-center">Avg. Accuracy</th>
@@ -231,7 +236,7 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
                       className="hover:bg-[var(--bg-main)]/70 cursor-pointer transition-colors group"
                     >
                       {/* Learner ID */}
-                      <td className="py-3.5 px-4 font-mono font-bold text-sm text-[var(--text-main)]">
+                      <td className="py-3.5 px-4 font-mono font-bold text-sm text-[var(--text-main)] sticky left-0 bg-[var(--bg-card)] group-hover:bg-[var(--bg-main)] z-10 shadow-xs">
                         <div className="flex items-center gap-2.5">
                           <div className="size-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-xs font-bold shrink-0">
                             <User size={15} />
@@ -363,29 +368,29 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
       {/* Student Detailed Telemetry Modal */}
       {activeStudentProfile && typeof document !== 'undefined' && createPortal(
         <div 
-          className="teacher-portal fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+          className="teacher-portal fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-6 animate-in fade-in duration-200"
           onClick={(e) => {
             if (e.target === e.currentTarget) setSelectedStudent(null);
           }}
         >
           <div 
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
           >
             {/* Modal Header */}
-            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/90 shrink-0">
-              <div className="flex items-center gap-3.5">
-                <div className="size-11 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold shrink-0">
-                  <User size={22} />
+            <div className="p-3.5 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/90 dark:bg-slate-900/90 shrink-0">
+              <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                <div className="size-9 sm:size-11 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold shrink-0">
+                  <User size={18} className="sm:size-5" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white m-0 font-mono">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white m-0 font-mono truncate">
                       {activeStudentProfile.studentId}
                     </h3>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border ${
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[10.5px] font-bold border ${
                       activeStudentProfile.status === 'Mastery' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700' :
                       activeStudentProfile.status === 'Review' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300 dark:border-amber-700' :
                       'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-700'
@@ -393,7 +398,7 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
                       {activeStudentProfile.status}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Grade {activeStudentProfile.gradeLevel} • {activeStudentProfile.totalQuizzes} Assessment Record{activeStudentProfile.totalQuizzes === 1 ? '' : 's'}
                   </p>
                 </div>
@@ -401,7 +406,7 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
               <button
                 type="button"
                 onClick={() => setSelectedStudent(null)}
-                className="size-8 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="size-8 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 ml-2"
                 aria-label="Close modal"
               >
                 <X size={16} />
@@ -409,7 +414,7 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 flex-1 overflow-y-auto flex flex-col gap-5 bg-white dark:bg-slate-900">
+            <div className="p-3.5 sm:p-5 flex-1 overflow-y-auto flex flex-col gap-4 sm:gap-5 bg-white dark:bg-slate-900">
               {/* Quick Summary KPI Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/80 flex items-center gap-3 shadow-2xs">

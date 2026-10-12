@@ -353,78 +353,89 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     return (
         <div
-            className="min-h-screen w-full flex flex-col items-center justify-center p-8 relative overflow-hidden select-none"
+            className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-8 sm:p-8 relative select-none"
             style={pageStyle}
         >
-            {/* ── Theme Toggle floating button ── */}
-            {onToggleTheme && (
-                <div className="absolute top-6 right-6 md:top-8 md:right-8 z-30">
-                    <button
-                        type="button"
-                        onClick={onToggleTheme}
-                        aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                        className="p-2.5 rounded-2xl glass-panel border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all shadow-md cursor-pointer hover:scale-105 active:scale-95"
-                        title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                    >
-                        {isDarkMode ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-[#11428E]" />}
-                    </button>
-                </div>
-            )}
-
-            {/* ── Top-left: Back to System Overview / Mobile Showcase ── */}
-            {view !== 'guest-roles' && (onBackToOverview || onOpenMobileShowcase) && (
-                <div className="absolute top-6 left-6 md:top-8 md:left-8 z-30 flex items-center gap-2">
-                    {onBackToOverview && (
-                        <button
-                            type="button"
-                            onClick={onBackToOverview}
-                            className="flex items-center gap-1.5 px-3.5 py-2 glass-panel border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all font-semibold text-xs cursor-pointer"
-                        >
-                            <ArrowLeft className="size-3 text-[var(--text-muted)]" strokeWidth={2.5} />
-                            <span>System Overview</span>
-                        </button>
-                    )}
-                    {onOpenMobileShowcase && (
-                        <button
-                            type="button"
-                            onClick={onOpenMobileShowcase}
-                            className="flex items-center gap-1.5 px-3.5 py-2 glass-panel border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-[var(--bg-main)] rounded-full shadow-sm transition-all font-semibold text-xs cursor-pointer"
-                        >
-                            <Smartphone className="size-3 text-emerald-500" />
-                            <span className="hidden sm:inline">Mobile Showcase</span>
-                        </button>
-                    )}
-                </div>
-            )}
-
-            {/* ── Guest role top nav ── */}
-            {view === 'guest-roles' && (
-                <div className="absolute top-6 left-6 right-6 md:top-10 md:left-10 md:right-10 flex items-center justify-between z-20">
+            {/* ── Top Bar Controls ── */}
+            {view === 'guest-roles' ? (
+                <div className="w-full max-w-5xl flex items-center justify-between z-30 pb-4 sm:pb-0 sm:absolute sm:top-6 sm:left-6 sm:right-6 md:top-10 md:left-10 md:right-10">
                     <button
                         onClick={() => setView('login')}
-                        className="flex items-center gap-2 px-4 py-2 glass-panel border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all font-semibold text-xs cursor-pointer"
+                        className="flex items-center gap-2 px-3.5 sm:px-4 py-2 glass-panel border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all font-semibold text-xs cursor-pointer"
                     >
                         <ArrowLeft className="size-3 text-[var(--text-muted)]" strokeWidth={2.5} />
                         Back to sign in
                     </button>
-                    <div className="px-3 py-1.5 bg-[#11428E]/10 border border-[#11428E]/20 rounded-full text-[#3b82f6] font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
-                        <Sparkles className="size-3" /> Guest session
+                    <div className="flex items-center gap-2">
+                        <div className="px-2.5 sm:px-3 py-1.5 bg-[#11428E]/10 border border-[#11428E]/20 rounded-full text-[#3b82f6] font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                            <Sparkles className="size-3" /> Guest session
+                        </div>
+                        {onToggleTheme && (
+                            <button
+                                type="button"
+                                onClick={onToggleTheme}
+                                aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                                className="p-2 sm:p-2.5 rounded-2xl glass-panel border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all shadow-md cursor-pointer hover:scale-105 active:scale-95"
+                                title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                            >
+                                {isDarkMode ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} className="text-[#11428E]" />}
+                            </button>
+                        )}
                     </div>
+                </div>
+            ) : (
+                <div className="w-full max-w-5xl flex items-center justify-between gap-2 z-30 pb-4 sm:pb-0 sm:absolute sm:top-6 sm:left-6 sm:right-6 md:top-8 md:left-8 md:right-8 sm:pointer-events-none">
+                    <div className="flex items-center gap-1.5 sm:gap-2 sm:pointer-events-auto">
+                        {onBackToOverview && (
+                            <button
+                                type="button"
+                                onClick={onBackToOverview}
+                                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 glass-panel border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all font-semibold text-xs cursor-pointer"
+                            >
+                                <ArrowLeft className="size-3 text-[var(--text-muted)]" strokeWidth={2.5} />
+                                <span>Overview</span>
+                            </button>
+                        )}
+                        {onOpenMobileShowcase && (
+                            <button
+                                type="button"
+                                onClick={onOpenMobileShowcase}
+                                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 glass-panel border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-[var(--bg-main)] rounded-full shadow-sm transition-all font-semibold text-xs cursor-pointer"
+                            >
+                                <Smartphone className="size-3 text-emerald-500" />
+                                <span className="hidden xs:inline sm:inline">Showcase</span>
+                            </button>
+                        )}
+                    </div>
+
+                    {onToggleTheme && (
+                        <div className="sm:pointer-events-auto">
+                            <button
+                                type="button"
+                                onClick={onToggleTheme}
+                                aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                                className="p-2 sm:p-2.5 rounded-2xl glass-panel border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all shadow-md cursor-pointer hover:scale-105 active:scale-95"
+                                title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                            >
+                                {isDarkMode ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} className="text-[#11428E]" />}
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
-            <div className="flex w-full max-w-5xl flex-col items-center gap-10 relative z-10">
+            <div className="flex w-full max-w-5xl flex-col items-center gap-6 sm:gap-10 relative z-10">
 
                 <div className="flex flex-col items-center gap-1 text-center">
                     <GuroLogoGraphic onClick={handleLogoClick} />
-                    <h1 className="text-5xl font-extrabold tracking-tight text-[#11428E] mt-1">GURO</h1>
-                    <p className="text-base font-semibold text-[#A01322]">GUIDED UNIFIED RESOURCE OPTIMIZATION</p>
-                    <p className="text-sm text-[var(--text-muted)] mt-0.5">Your Learning Companion for Math &amp; English</p>
+                    <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#11428E] mt-1">GURO</h1>
+                    <p className="text-xs sm:text-base font-semibold text-[#A01322]">GUIDED UNIFIED RESOURCE OPTIMIZATION</p>
+                    <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-0.5">Your Learning Companion for Math &amp; English</p>
                 </div>
 
                 {/* ── Login ── */}
                 {view === 'login' && (
-                    <div className={`w-full max-w-md glass-panel rounded-3xl p-8 shadow-2xl flex flex-col gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/40 ring-2 ring-[#CE1126]/20' : 'border-[var(--border-color)]'}`}>
+                    <div className={`w-full max-w-md glass-panel rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl flex flex-col gap-5 sm:gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/40 ring-2 ring-[#CE1126]/20' : 'border-[var(--border-color)]'}`}>
                         <div className="flex flex-col items-center justify-center text-center w-full">
                             <div className="w-full text-center">
                                 {isAdminMode ? (
@@ -496,7 +507,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                     </label>
                                     <span className="text-[10px] text-[var(--text-dark)] font-medium">1-click autofill</span>
                                 </div>
-                                <div className={`grid ${isAdminMode ? 'grid-cols-4' : 'grid-cols-3'} gap-2`}>
+                                <div className={`grid ${isAdminMode ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-2`}>
                                     {(isAdminMode
                                         ? [
                                             { role: 'developer', label: 'Developer', email: 'nealjeanclaro@guro.dev', password: 'JinBilog0v0', icon: Terminal, activeBorder: 'border-[#CE1126] text-[#CE1126] bg-[#CE1126]/10' },
@@ -625,7 +636,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                 {/* ── Register ── */}
                 {view === 'register' && (
-                    <div className={`w-full max-w-md glass-panel rounded-3xl p-8 shadow-2xl flex flex-col gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/40 ring-2 ring-[#CE1126]/20' : 'border-[var(--border-color)]'}`}>
+                    <div className={`w-full max-w-md glass-panel rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl flex flex-col gap-5 sm:gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/40 ring-2 ring-[#CE1126]/20' : 'border-[var(--border-color)]'}`}>
                         <div className="flex flex-col items-center justify-center text-center w-full">
                             <div className="w-full text-center">
                                 {isAdminMode ? (
@@ -653,7 +664,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         )}
 
                         <form onSubmit={handleRegister} className="flex flex-col gap-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                 <div className="flex flex-col gap-1.5">
                                     <label className={labelCls} htmlFor="reg-first-name">First name</label>
                                     <div className="relative">

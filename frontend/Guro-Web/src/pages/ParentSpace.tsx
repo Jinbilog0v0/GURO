@@ -185,8 +185,8 @@ export function ParentSpace({
       </div>
 
       {/* Top Credentials & Child Switcher Bar */}
-      <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 flex flex-col gap-4 shadow-xs">
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-end gap-3 w-full">
+      <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 sm:p-5 flex flex-col gap-4 shadow-xs">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 w-full">
           <div className="flex-1 min-w-[200px] w-full flex flex-col gap-1.5">
             <label className="text-xs font-bold text-[var(--text-muted)] flex items-center gap-1.5">
               <User size={13} className="text-pink-500" />

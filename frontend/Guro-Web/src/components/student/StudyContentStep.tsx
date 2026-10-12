@@ -222,15 +222,15 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
 
     return (
         <div
-            className="min-h-screen w-full flex flex-col items-center p-6 md:p-12 relative overflow-hidden select-none fade-in"
+            className="min-h-screen w-full flex flex-col items-center p-3 sm:p-6 md:p-12 relative overflow-y-auto select-none fade-in pb-16"
             style={{ background: 'var(--bg-main)' }}
         >
             {/* Ambient blurs */}
-            <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 rounded-full blur-[160px]" style={{ background: 'rgba(17,66,142,0.10)' }} />
-            <div className="absolute -top-48 right-1/4 size-80 rounded-full blur-[160px]" style={{ background: 'rgba(160,19,34,0.07)' }} />
+            <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 rounded-full blur-[160px] pointer-events-none" style={{ background: 'rgba(17,66,142,0.10)' }} />
+            <div className="absolute -top-48 right-1/4 size-80 rounded-full blur-[160px] pointer-events-none" style={{ background: 'rgba(160,19,34,0.07)' }} />
 
             {/* Header controls */}
-            <div className="w-full max-w-4xl flex items-center justify-between mb-6 mt-12 relative z-10">
+            <div className="w-full max-w-4xl flex items-center justify-between mb-4 sm:mb-6 mt-2 sm:mt-8 relative z-10">
                 <button
                     onClick={onBack}
                     className="flex items-center gap-1.5 px-3 py-1.5 glass-panel rounded-full text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all font-semibold text-xs cursor-pointer"
@@ -245,13 +245,13 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
             </div>
 
             {/* Two-column layout on desktop: Slide Viewer + Buddy Mascot */}
-            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-8 w-full max-w-4xl relative z-10 flex-1 justify-center">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-6 sm:gap-8 w-full max-w-4xl relative z-10 flex-1 justify-center">
                 {/* Left/Main Column: Slide Viewer */}
-                <div className="flex-1 w-full flex flex-col gap-6 max-w-2xl justify-center">
+                <div className="flex-1 w-full flex flex-col gap-4 sm:gap-6 max-w-2xl justify-center">
                 {/* Step indicator progress bar */}
                 <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-center text-xs font-bold text-[var(--text-muted)]">
-                        <span className="uppercase tracking-widest text-[10px]">{topic}</span>
+                        <span className="uppercase tracking-widest text-[10px] truncate max-w-[200px]">{topic}</span>
                         <span>Slide {currentSlideIndex + 1} of {slides.length}</span>
                     </div>
                     <div className="h-3 w-full bg-zinc-200/60 rounded-full overflow-hidden p-0.5 border border-zinc-300/10">
@@ -263,9 +263,9 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                 </div>
 
                 {/* Card Container with slide animations */}
-                <div className="glass-panel rounded-[32px] p-7 md:p-9 border border-[var(--border-color)] flex flex-col gap-5 min-h-[380px] justify-between relative shadow-lg">
+                <div className="glass-panel rounded-2xl sm:rounded-[32px] p-4 sm:p-7 md:p-9 border border-[var(--border-color)] flex flex-col gap-5 min-h-[380px] justify-between relative shadow-lg">
                     {/* Read Aloud Button */}
-                    <div className="absolute top-6 right-6">
+                    <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
                         <button
                             type="button"
                             onClick={toggleSpeech}
@@ -279,7 +279,7 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                     </div>
 
                     {/* Slide Content Dispatcher */}
-                    <div className="flex-1 pr-16">
+                    <div className="flex-1 pr-14 sm:pr-16">
                         {currentSlide.type === 'intro' && (
                             <div className="flex flex-col gap-4">
                                 <div className="flex items-center gap-2.5">

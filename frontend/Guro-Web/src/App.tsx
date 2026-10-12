@@ -18,6 +18,7 @@ const LessonSpace = lazy(() => import('./pages/LessonSpace').then(m => ({ defaul
 const DashboardSpace = lazy(() => import('./pages/DashboardSpace').then(m => ({ default: m.DashboardSpace })));
 import { SettingsModal } from './components/settings/SettingsModal';
 import {
+  Menu,
   LayoutDashboard,
   TrendingUp,
   User,
@@ -107,6 +108,8 @@ function App() {
     return localStorage.getItem('guro_sidebar') !== 'collapsed';
   });
 
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
+
   // Persistent states for teacher dropdowns (each stays open until clicked again)
   const [isLessonsMenuOpen, setIsLessonsMenuOpen] = useState<boolean>(() => {
     const saved = localStorage.getItem('guro_menu_lessons_open');
@@ -154,10 +157,12 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem('guro_active_tab', activeTab);
+    setIsMobileDrawerOpen(false);
   }, [activeTab]);
 
   useEffect(() => {
     localStorage.setItem('guro_active_sub_tab', activeSubTab);
+    setIsMobileDrawerOpen(false);
   }, [activeSubTab]);
 
   useEffect(() => {
@@ -528,10 +533,25 @@ function App() {
 
   return (
     <div className={`flex h-screen w-screen bg-[var(--bg-main)] overflow-hidden${isTeacherView ? ' teacher-portal' : ''}`}>
+      {/* Mobile Backdrop Overlay */}
+      {isMobileDrawerOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 md:hidden animate-in fade-in duration-200"
+          onClick={() => setIsMobileDrawerOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Sidebar Navigation */}
       <aside
-        className={`shrink-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col py-5 transition-all duration-300 ${
-          isSidebarOpen ? 'w-72 px-4' : 'w-[64px] px-2'
+        className={`bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col py-5 transition-all duration-300 z-50 shrink-0 ${
+          isMobileDrawerOpen
+            ? 'fixed inset-y-0 left-0 w-72 max-w-[85vw] px-4 shadow-2xl translate-x-0'
+            : '-translate-x-full md:translate-x-0 fixed md:relative inset-y-0 left-0'
+        } ${
+          isSidebarOpen
+            ? 'md:w-72 md:px-4'
+            : 'md:w-[64px] md:px-2'
         }`}
         aria-label="Main navigation"
       >
@@ -552,26 +572,35 @@ function App() {
             >
               GU
             </button>
-            {isSidebarOpen && (
-              <div className="leading-tight overflow-hidden">
-                <div className="text-[18px] font-extrabold text-[var(--text-main)]">GURO</div>
-                <div className={`text-[12px] font-semibold ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--text-muted)]'}`}>
-                  {isAdmin ? 'Admin Console' 
-                    : currentUser?.role === 'parent' ? 'Parent Portal' 
-                    : 'Teacher Portal'}
-                </div>
+            <div className={`leading-tight overflow-hidden ${!isSidebarOpen ? 'md:hidden' : ''}`}>
+              <div className="text-[18px] font-extrabold text-[var(--text-main)]">GURO</div>
+              <div className={`text-[12px] font-semibold ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--text-muted)]'}`}>
+                {isAdmin ? 'Admin Console' 
+                  : currentUser?.role === 'parent' ? 'Parent Portal' 
+                  : 'Teacher Portal'}
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Close (X) icon inside the menuBar - only visible when open */}
+          {/* Close button on mobile */}
+          <button
+            type="button"
+            onClick={() => setIsMobileDrawerOpen(false)}
+            aria-label="Close menu"
+            title="Close menu"
+            className="md:hidden bg-transparent border border-[var(--border-color)] rounded-lg w-7 h-7 flex items-center justify-center cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all duration-200 active:scale-[0.93] shrink-0 ml-2"
+          >
+            <X size={15} />
+          </button>
+
+          {/* Close (X) icon inside the menuBar on desktop - only visible when open */}
           {isSidebarOpen && (
             <button
               type="button"
               onClick={toggleSidebar}
               aria-label="Collapse menu"
               title="Collapse menu"
-              className="bg-transparent border border-[var(--border-color)] rounded-lg w-7 h-7 flex items-center justify-center cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all duration-200 active:scale-[0.93] shrink-0 ml-2"
+              className="hidden md:flex bg-transparent border border-[var(--border-color)] rounded-lg w-7 h-7 items-center justify-center cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all duration-200 active:scale-[0.93] shrink-0 ml-2"
             >
               <X size={15} />
             </button>
@@ -969,52 +998,65 @@ function App() {
       {/* Main Panel Content Area */}
       <main className="flex-1 flex flex-col h-full min-w-0">
         {/* Top Header */}
-        <header className="h-[62px] border-b border-[var(--border-color)] flex justify-between items-center px-[30px] bg-[var(--bg-sidebar)]">
-          <div className="flex items-center gap-1.5 text-xs font-medium">
-            {activeTab === 'teacher' ? (
-              <>
-                <span className="text-[var(--text-muted)]">Teacher Console</span>
-                <span className="text-[var(--border-color)]">/</span>
-                <span className="text-[var(--text-main)] font-bold">
-                  {(activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing') && 'My Classrooms'}
-                  {activeSubTab === 'lessons' && 'Lesson Management'}
-                  {activeSubTab === 'lessons-system' && 'Lesson Management / Official DepEd Lessons'}
-                  {activeSubTab === 'lessons-custom' && 'Lesson Management / My Custom Lessons'}
-                  {activeSubTab === 'manual-lesson' && 'Lesson Management / Manual Builder'}
-                  {activeSubTab === 'analytics' && 'Classroom Analytics'}
-                  {activeSubTab === 'analytics-mastery' && 'Classroom Analytics / Mastery & Telemetry'}
-                  {activeSubTab === 'analytics-directory' && 'Classroom Analytics / Student Directory'}
-                  {(activeSubTab === 'analytics-growth' || activeSubTab === 'pre-post-test') && 'Classroom Analytics / Pre & Post Growth'}
-                  {activeSubTab === 'eosy-promotion' && 'EOSY & Promotion'}
+        <header className="h-[62px] border-b border-[var(--border-color)] flex justify-between items-center px-3.5 sm:px-6 md:px-[30px] bg-[var(--bg-sidebar)] shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {/* Mobile Hamburger Drawer Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsMobileDrawerOpen(true)}
+              aria-label="Open navigation menu"
+              title="Open menu"
+              className="md:hidden p-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all cursor-pointer shrink-0"
+            >
+              <Menu size={18} />
+            </button>
+
+            <div className="flex items-center gap-1.5 text-xs font-medium min-w-0 truncate">
+              {activeTab === 'teacher' ? (
+                <>
+                  <span className="text-[var(--text-muted)] hidden sm:inline">Teacher Console</span>
+                  <span className="text-[var(--border-color)] hidden sm:inline">/</span>
+                  <span className="text-[var(--text-main)] font-bold truncate">
+                    {(activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing') && 'My Classrooms'}
+                    {activeSubTab === 'lessons' && 'Lesson Management'}
+                    {activeSubTab === 'lessons-system' && 'Official DepEd Lessons'}
+                    {activeSubTab === 'lessons-custom' && 'My Custom Lessons'}
+                    {activeSubTab === 'manual-lesson' && 'Manual Lesson Builder'}
+                    {activeSubTab === 'analytics' && 'Classroom Analytics'}
+                    {activeSubTab === 'analytics-mastery' && 'Mastery & Telemetry'}
+                    {activeSubTab === 'analytics-directory' && 'Student Directory'}
+                    {(activeSubTab === 'analytics-growth' || activeSubTab === 'pre-post-test') && 'Pre & Post Growth'}
+                    {activeSubTab === 'eosy-promotion' && 'EOSY & Promotion'}
+                  </span>
+                </>
+              ) : activeTab === 'parent' ? (
+                <>
+                  <span className="text-[var(--text-muted)] hidden sm:inline">Parent Portal</span>
+                  <span className="text-[var(--border-color)] hidden sm:inline">/</span>
+                  <span className="text-[var(--text-main)] font-bold truncate">
+                    {(activeSubTab === 'parent-overview' || activeSubTab === 'parent-explorer') && 'Overview & AI Report'}
+                    {activeSubTab === 'parent-badges' && 'Activity & Badges'}
+                    {activeSubTab === 'parent-timeline' && 'Practice Timeline'}
+                    {(activeSubTab === 'create-student' || activeSubTab === 'parent-create-student' || activeSubTab === 'parent-students') && 'Register Student'}
+                  </span>
+                </>
+              ) : (
+                <span className="text-[var(--text-main)] font-bold truncate">
+                  {activeTab === 'dashboard' ? (isAdmin ? 'Main Dashboard' : 'System Dashboard')
+                    : 'Lesson Ingestor'}
                 </span>
-              </>
-            ) : activeTab === 'parent' ? (
-              <>
-                <span className="text-[var(--text-muted)]">Parent Portal</span>
-                <span className="text-[var(--border-color)]">/</span>
-                <span className="text-[var(--text-main)] font-bold">
-                  {(activeSubTab === 'parent-overview' || activeSubTab === 'parent-explorer') && 'Child Explorer / Overview & AI Report'}
-                  {activeSubTab === 'parent-badges' && 'Child Explorer / Activity & Badges'}
-                  {activeSubTab === 'parent-timeline' && 'Child Explorer / Practice Timeline'}
-                  {(activeSubTab === 'create-student' || activeSubTab === 'parent-create-student' || activeSubTab === 'parent-students') && 'Student Account Management / Register Student'}
-                </span>
-              </>
-            ) : (
-              <span className="text-[var(--text-main)] font-bold">
-                {activeTab === 'dashboard' ? (isAdmin ? 'Main Dashboard' : 'System Dashboard')
-                  : 'Lesson Ingestor'}
-              </span>
-            )}
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {activeTab === 'teacher' && activeSubTab === 'analytics' && (
               <button
                 onClick={() => fetchLogs(false)}
                 aria-label="Refresh sync logs"
-                className="bg-white/4 border border-[var(--border-color)] text-[var(--text-main)] px-3 py-1.5 rounded-md cursor-pointer text-xs font-semibold transition-all duration-200 hover:bg-white/10 flex items-center gap-1.5"
+                className="bg-white/4 border border-[var(--border-color)] text-[var(--text-main)] px-2.5 sm:px-3 py-1.5 rounded-md cursor-pointer text-xs font-semibold transition-all duration-200 hover:bg-white/10 flex items-center gap-1.5"
               >
-                <RotateCw size={13} /><span>Refresh Logs</span>
+                <RotateCw size={13} /><span className="hidden sm:inline">Refresh Logs</span>
               </button>
             )}
 
@@ -1032,7 +1074,7 @@ function App() {
         </header>
 
         {/* View Component Wrapper */}
-        <div key={activeTab} className="flex-1 overflow-y-auto p-[28px_30px_40px] fade-in">
+        <div key={activeTab} className="flex-1 overflow-y-auto p-3.5 sm:p-6 md:p-[28px_30px_40px] fade-in">
           <ErrorBoundary>
             <Suspense fallback={
               <div className="flex flex-col gap-5">
