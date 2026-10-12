@@ -32,13 +32,22 @@ interface LandingPageProps {
     onLoginSuccess: (user: { userId: string; email: string; name: string; role: string; classroomId?: string | null }) => void;
     isDarkMode?: boolean;
     onToggleTheme?: () => void;
+    onBackToOverview?: () => void;
+    onOpenMobileShowcase?: () => void;
 }
 
 type ViewType = 'login' | 'register' | 'guest-roles';
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginSuccess, isDarkMode = false, onToggleTheme }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ 
+    onSelectRole, 
+    onLoginSuccess, 
+    isDarkMode = false, 
+    onToggleTheme,
+    onBackToOverview,
+    onOpenMobileShowcase
+}) => {
     const [view, setView] = useState<ViewType>('login');
     const [isAdminMode, setIsAdminMode] = useState(false);
     const [adminSecretKey, setAdminSecretKey] = useState('');
@@ -359,6 +368,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectRole, onLoginS
                     >
                         {isDarkMode ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-[#11428E]" />}
                     </button>
+                </div>
+            )}
+
+            {/* ── Top-left: Back to System Overview / Mobile Showcase ── */}
+            {view !== 'guest-roles' && (onBackToOverview || onOpenMobileShowcase) && (
+                <div className="absolute top-6 left-6 md:top-8 md:left-8 z-30 flex items-center gap-2">
+                    {onBackToOverview && (
+                        <button
+                            type="button"
+                            onClick={onBackToOverview}
+                            className="flex items-center gap-1.5 px-3.5 py-2 glass-panel border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all font-semibold text-xs cursor-pointer"
+                        >
+                            <ArrowLeft className="size-3 text-[var(--text-muted)]" strokeWidth={2.5} />
+                            <span>System Overview</span>
+                        </button>
+                    )}
+                    {onOpenMobileShowcase && (
+                        <button
+                            type="button"
+                            onClick={onOpenMobileShowcase}
+                            className="flex items-center gap-1.5 px-3.5 py-2 glass-panel border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-[var(--bg-main)] rounded-full shadow-sm transition-all font-semibold text-xs cursor-pointer"
+                        >
+                            <Smartphone className="size-3 text-emerald-500" />
+                            <span className="hidden sm:inline">Mobile Showcase</span>
+                        </button>
+                    )}
                 </div>
             )}
 

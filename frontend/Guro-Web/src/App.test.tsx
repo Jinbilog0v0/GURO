@@ -36,11 +36,30 @@ describe('App Portal and Navigation Layout (Web)', () => {
     );
   });
 
-  test('renders Landing Page initially if no user is cached', () => {
+  test('renders System Overview Page initially if no user is cached', () => {
     render(<App />);
-    expect(screen.getByText(/Welcome back/i)).toBeInTheDocument();
+    expect(screen.getByText(/Philippine Classrooms/i)).toBeInTheDocument();
+    expect(screen.getByText(/Mobile Showcase/i)).toBeInTheDocument();
     expect(screen.queryByText('Admin Console')).not.toBeInTheDocument();
     expect(screen.queryByText('Teacher Portal')).not.toBeInTheDocument();
+  });
+
+  test('can navigate to login portal from overview', () => {
+    render(<App />);
+    const signInBtn = screen.getByRole('button', { name: /Sign In \/ Portal/i });
+    fireEvent.click(signInBtn);
+    expect(screen.getByText(/Welcome back/i)).toBeInTheDocument();
+  });
+
+  test('can navigate to mobile app showcase from overview and back', () => {
+    render(<App />);
+    const showcaseBtn = screen.getByRole('button', { name: /Mobile Showcase/i });
+    fireEvent.click(showcaseBtn);
+    expect(screen.getByText(/Mobile Simulator/i)).toBeInTheDocument();
+
+    const overviewBtn = screen.getByRole('button', { name: /Overview/i });
+    fireEvent.click(overviewBtn);
+    expect(screen.getByText(/Philippine Classrooms/i)).toBeInTheDocument();
   });
 
   test('renders Teacher Portal layout for teacher role', async () => {

@@ -3,6 +3,8 @@ import { apiFetch, clearAuthToken } from './utils/api';
 import { Toaster } from 'react-hot-toast';
 import { toast } from './utils/toast';
 import { LandingPage } from './pages/LandingPage';
+import { SystemOverviewPage } from './pages/SystemOverviewPage';
+import { MobileAppShowcase } from './pages/MobileAppShowcase';
 import { LogoutConfirmModal } from './components/shared/LogoutConfirmModal';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { SkeletonCard, SkeletonTable, SkeletonStatCards, PageLoadingSpinner } from './components/shared/SkeletonLoader';
@@ -53,7 +55,7 @@ interface SyncedEvent {
   timestamp: string;
 }
 
-type TabType = 'landing' | 'student' | 'teacher' | 'parent' | 'lesson-builder' | 'dashboard' | 'settings';
+type TabType = 'overview' | 'mobile-showcase' | 'landing' | 'student' | 'teacher' | 'parent' | 'lesson-builder' | 'dashboard' | 'settings';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<{
@@ -75,10 +77,16 @@ function App() {
 
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     const cachedUser = localStorage.getItem('guro_user_session');
-    if (!cachedUser) return 'landing';
+    if (!cachedUser) {
+      const stored = localStorage.getItem('guro_active_tab');
+      if (stored === 'landing' || stored === 'mobile-showcase' || stored === 'overview') {
+        return stored as TabType;
+      }
+      return 'overview';
+    }
     const stored = localStorage.getItem('guro_active_tab');
     if (stored) return stored as TabType;
-    return 'landing';
+    return 'overview';
   });
   const [activeSubTab, setActiveSubTab] = useState<string>(() => {
     const stored = localStorage.getItem('guro_active_sub_tab');
@@ -153,7 +161,7 @@ function App() {
   }, [activeSubTab]);
 
   useEffect(() => {
-    if (currentUser && activeTab === 'landing') {
+    if (currentUser && (activeTab === 'landing' || activeTab === 'overview' || activeTab === 'mobile-showcase')) {
       if (currentUser.role === 'teacher') setActiveTab('dashboard');
       else if (currentUser.role === 'parent') {
         setActiveTab('parent');
@@ -270,7 +278,7 @@ function App() {
 
   // Handle exiting out of specialized sub-spaces back to the landing gate
   const handleExitToLanding = () => {
-    setActiveTab('landing');
+    setActiveTab('overview');
   };
 
   const handleOpenProfileModal = () => {
@@ -335,11 +343,35 @@ function App() {
   };
 
   // Render full screen spaces vs workspace layouts with sidebars
+  if (activeTab === 'overview') {
+    return (
+      <SystemOverviewPage
+        onOpenMobileShowcase={() => setActiveTab('mobile-showcase')}
+        onOpenAuth={() => setActiveTab('landing')}
+        isDarkMode={isDarkMode}
+        onToggleTheme={toggleTheme}
+      />
+    );
+  }
+
+  if (activeTab === 'mobile-showcase') {
+    return (
+      <MobileAppShowcase
+        onBackToOverview={() => setActiveTab('overview')}
+        onLaunchPortal={() => setActiveTab('landing')}
+        isDarkMode={isDarkMode}
+        onToggleTheme={toggleTheme}
+      />
+    );
+  }
+
   if (activeTab === 'landing') {
     return (
       <LandingPage 
         isDarkMode={isDarkMode}
         onToggleTheme={toggleTheme}
+        onBackToOverview={() => setActiveTab('overview')}
+        onOpenMobileShowcase={() => setActiveTab('mobile-showcase')}
         onSelectRole={(role, grade) => {
           setCurrentUser(null);
           if (grade) {
