@@ -1013,12 +1013,12 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                           }}
                           className={`flex-1 h-full flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-colors duration-200 relative z-10 ${
                             isActive
-                              ? 'text-[#11428E] dark:text-sky-400 font-extrabold'
+                              ? 'text-[#11428E] dark:text-sky-400'
                               : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                           }`}
                         >
                           <Icon size={18} className="transition-transform duration-200 active:scale-90" />
-                          <span className="text-[9px] font-semibold">{tabItem.label}</span>
+                          <span className="text-[9px] font-bold">{tabItem.label}</span>
                         </button>
                       );
                     })}
@@ -1062,12 +1062,12 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                           onClick={() => setTeacherTab(tabItem.id as TeacherTab)}
                           className={`flex-1 h-full flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-colors duration-200 relative z-10 ${
                             isActive
-                              ? 'text-blue-600 dark:text-blue-400 font-extrabold'
+                              ? 'text-blue-600 dark:text-blue-400'
                               : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                           }`}
                         >
                           <Icon size={18} className="transition-transform duration-200 active:scale-90" />
-                          <span className="text-[9px] font-semibold">{tabItem.label}</span>
+                          <span className="text-[9px] font-bold">{tabItem.label}</span>
                         </button>
                       );
                     })}
@@ -1106,12 +1106,12 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                           onClick={() => setParentTab(tabItem.id as ParentTab)}
                           className={`flex-1 h-full flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-colors duration-200 relative z-10 ${
                             isActive
-                              ? 'text-amber-600 dark:text-amber-400 font-extrabold'
+                              ? 'text-amber-600 dark:text-amber-400'
                               : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                           }`}
                         >
                           <Icon size={18} className="transition-transform duration-200 active:scale-90" />
-                          <span className="text-[9px] font-semibold">{tabItem.label}</span>
+                          <span className="text-[9px] font-bold">{tabItem.label}</span>
                         </button>
                       );
                     })}

@@ -48,6 +48,9 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
   const itemRefs = useRef<Record<string, HTMLElement | null>>({});
   const [indicatorStyle, setIndicatorStyle] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
 
+  const isClickScrollingRef = useRef(false);
+  const clickScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const updateIndicator = useCallback(() => {
     const currentItem = itemRefs.current[activeNavSection];
     const navContainer = navRef.current;
@@ -73,6 +76,9 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
 
   useEffect(() => {
     const handleScroll = () => {
+      // Do not update active section during smooth scrolling triggered by a click
+      if (isClickScrollingRef.current) return;
+
       const scrollPosition = window.scrollY + 140; // 140px offset for sticky header
 
       for (let i = NAV_SECTIONS.length - 1; i >= 0; i--) {
@@ -89,11 +95,22 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (clickScrollTimeoutRef.current) clearTimeout(clickScrollTimeoutRef.current);
+    };
   }, []);
 
   const handleNavClick = (sectionId: NavSectionId) => {
     setActiveNavSection(sectionId);
+    isClickScrollingRef.current = true;
+    if (clickScrollTimeoutRef.current) {
+      clearTimeout(clickScrollTimeoutRef.current);
+    }
+    clickScrollTimeoutRef.current = setTimeout(() => {
+      isClickScrollingRef.current = false;
+    }, 850);
+
     const el = document.getElementById(sectionId);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -123,7 +140,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
         <nav
           ref={navRef}
           aria-label="Overview navigation"
-          className="hidden md:flex items-center gap-1 text-xs font-semibold relative py-1"
+          className="hidden md:flex items-center gap-1 text-xs relative py-1"
         >
           {NAV_SECTIONS.map((sec) => {
             const isActive = activeNavSection === sec.id;
@@ -138,9 +155,9 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                   e.preventDefault();
                   handleNavClick(sec.id);
                 }}
-                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer relative z-10 ${
+                className={`px-3 py-1.5 rounded-lg font-bold transition-colors duration-200 cursor-pointer relative z-10 whitespace-nowrap select-none ${
                   isActive
-                    ? 'text-[#11428E] dark:text-sky-400 font-extrabold'
+                    ? 'text-[#11428E] dark:text-sky-400'
                     : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                 }`}
               >
