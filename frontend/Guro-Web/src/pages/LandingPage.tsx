@@ -68,7 +68,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     // Secret 5-tap gesture on logo to toggle Admin Mode
     const clickCountRef = useRef(0);
-    const logoTimerRef = useRef<any>(null);
+    const logoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Prevent progressive scroll drift on page reload
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                if (typeof window.scrollTo === 'function') {
+                    window.scrollTo(0, 0);
+                }
+                if ('scrollRestoration' in window.history) {
+                    window.history.scrollRestoration = 'manual';
+                }
+            } catch {
+                // Ignore environment-specific scroll errors
+            }
+        }
+    }, []);
 
     const handleLogoClick = () => {
         if (logoTimerRef.current) clearTimeout(logoTimerRef.current);
@@ -358,7 +374,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         >
             {/* ── Top Bar Controls (Full-width edge-to-edge alignment) ── */}
             {view === 'guest-roles' ? (
-                <div className="w-full flex items-center justify-between z-30 pb-4 sm:pb-0 sm:absolute sm:top-6 sm:left-0 sm:right-0 px-4 sm:px-8 md:px-10">
+                <div className="w-full flex items-center justify-between z-30 absolute top-4 sm:top-6 left-0 right-0 px-4 sm:px-8 md:px-10">
                     <button
                         onClick={() => setView('login')}
                         className="flex items-center gap-2 px-3.5 sm:px-4 py-2 glass-panel border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all font-semibold text-xs cursor-pointer"
@@ -384,7 +400,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </div>
                 </div>
             ) : (
-                <div className="w-full flex items-center justify-between gap-2 z-30 pb-4 sm:pb-0 sm:absolute sm:top-6 sm:left-0 sm:right-0 px-4 sm:px-8 md:px-10 sm:pointer-events-none">
+                <div className="w-full flex items-center justify-between gap-2 z-30 absolute top-4 sm:top-6 left-0 right-0 px-4 sm:px-8 md:px-10 sm:pointer-events-none">
                     <div className="flex items-center gap-1.5 sm:gap-2.5 sm:pointer-events-auto">
                         {onBackToOverview && (
                             <button
@@ -442,7 +458,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <GuroLogoGraphic onClick={handleLogoClick} />
                     <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#11428E] mt-1">GURO</h1>
                     <p className="text-xs sm:text-base font-semibold text-[#A01322]">GUIDED UNIFIED RESOURCE OPTIMIZATION</p>
-                    <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-0.5">Your Learning Companion for Math &amp; English</p>
                 </div>
 
                 {/* ── Login ── */}
@@ -642,18 +657,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             >
                                  <Rocket className="size-4 text-[#3b82f6]" /> Continue as guest / try demo
                             </button>
-                            <a
-                                href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download="GURO-preview.apk"
-                                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#11428E]/10 via-[#2563EB]/10 to-[#A01322]/10 hover:from-[#11428E]/20 hover:to-[#A01322]/20 border border-[#11428E]/30 text-[var(--text-main)] font-bold py-2.5 rounded-xl transition-all text-xs cursor-pointer shadow-xs group"
-                                title="Download Standalone Android APK (v1.0.1)"
-                            >
-                                <Smartphone className="size-4 text-[#11428E] dark:text-[#3b82f6]" />
-                                <span>Download Learner App (Android APK)</span>
-                                <Download className="size-3.5 text-[var(--text-muted)] group-hover:translate-y-0.5 transition-transform" />
-                            </a>
                         </div>
                     </div>
                 )}

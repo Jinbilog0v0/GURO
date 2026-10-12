@@ -144,14 +144,9 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           <div className="size-9 rounded-2xl bg-gradient-to-tr from-[#11428E] via-[#2563EB] to-[#A01322] flex items-center justify-center text-white shadow-md shadow-[#11428E]/20">
             <GraduationCap className="size-5" />
           </div>
-          <div className="flex flex-col">
-            <span className="text-base font-black text-[#11428E] dark:text-sky-400 tracking-tight leading-none">
-              GURO
-            </span>
-            <span className="text-[10px] font-bold text-[#A01322] dark:text-rose-400 tracking-wider">
-              RESOURCE OPTIMIZATION
-            </span>
-          </div>
+          <span className="text-base font-black text-[#11428E] dark:text-sky-400 tracking-tight leading-none">
+            GURO
+          </span>
         </div>
 
         {/* Center Quick Jump Links (Desktop) with Animated Sliding Underline */}
@@ -267,29 +262,10 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           <div className="mt-7 sm:mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4 w-full">
             <button
               onClick={onOpenMobileShowcase}
-              className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/20 transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
+              className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/20 transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
             >
               <Smartphone className="size-4" />
               <span>Explore Mobile Showcase</span>
-            </button>
-
-            <a
-              href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
-              target="_blank"
-              rel="noopener noreferrer"
-              download="GURO-preview.apk"
-              className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
-            >
-              <Download className="size-4 text-sky-500" />
-              <span>Download App APK</span>
-            </a>
-
-            <button
-              onClick={onOpenAuth}
-              className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-main)] text-[var(--text-main)] font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
-            >
-              <span>Open Web Portal</span>
-              <ArrowRight className="size-4 text-[var(--text-muted)]" />
             </button>
           </div>
 

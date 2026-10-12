@@ -12,6 +12,7 @@ describe('LandingPage Portal (Web)', () => {
   beforeEach(() => {
     jest.setTimeout(30000);
     jest.clearAllMocks();
+    window.scrollTo = jest.fn();
     (global.fetch as jest.Mock).mockImplementation(() =>
       Promise.resolve({
         ok: true,
@@ -192,13 +193,17 @@ describe('LandingPage Portal (Web)', () => {
     expect(passwordInput.value).toBe('Password123');
   });
 
-  test('renders Download App APK buttons pointing to the standalone APK artifact', () => {
+  test('renders Download App APK in header and does not render redundant card download or tagline', () => {
     const mockSelectRole = jest.fn();
     const mockLoginSuccess = jest.fn();
     render(<LandingPage onSelectRole={mockSelectRole} onLoginSuccess={mockLoginSuccess} />);
 
+    // Header APK button exists
     const apkLinks = screen.getAllByRole('link', { name: /Download.*APK/i });
-    expect(apkLinks.length).toBeGreaterThanOrEqual(1);
+    expect(apkLinks.length).toBe(1);
     expect(apkLinks[0]).toHaveAttribute('href', 'https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk');
+
+    // Tagline is removed
+    expect(screen.queryByText(/Your Learning Companion for Math & English/i)).not.toBeInTheDocument();
   });
 });

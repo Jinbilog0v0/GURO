@@ -58,11 +58,11 @@ describe('SystemOverviewPage Component', () => {
     );
 
     const signInBtns = screen.getAllByRole('button', { name: /Sign In \/ Portal/i });
+    expect(signInBtns.length).toBe(2);
     fireEvent.click(signInBtns[0]);
     expect(mockOpenAuth).toHaveBeenCalledTimes(1);
 
-    const heroWorkspaceBtn = screen.getByRole('button', { name: /Open Web Portal/i });
-    fireEvent.click(heroWorkspaceBtn);
+    fireEvent.click(signInBtns[1]);
     expect(mockOpenAuth).toHaveBeenCalledTimes(2);
   });
 
