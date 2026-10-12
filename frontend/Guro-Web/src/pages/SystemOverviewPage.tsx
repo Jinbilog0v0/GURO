@@ -111,9 +111,26 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
       isClickScrollingRef.current = false;
     }, 850);
 
+    if (sectionId === 'overview') {
+      if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+
     const el = document.getElementById(sectionId);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+      const headerOffset = 64; // height of sticky header
+      const elementPosition = el.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + (window.scrollY ?? window.pageYOffset ?? 0) - headerOffset;
+      if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth',
+        });
+      } else if (el.scrollIntoView) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 
@@ -267,7 +284,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
         </section>
 
         {/* ── Section 2: Platform Pillars (Dynamic Screen Fitting) ── */}
-        <section id="pillars" className="px-4 sm:px-8 py-12 sm:py-16 min-h-[calc(100vh-3.5rem)] flex flex-col justify-center bg-[var(--bg-card)]/50 border-y border-[var(--border-color)]">
+        <section id="pillars" className="scroll-mt-16 px-4 sm:px-8 py-12 sm:py-16 min-h-[calc(100vh-3.5rem)] flex flex-col justify-center bg-[var(--bg-card)]/50 border-y border-[var(--border-color)]">
           <div className="max-w-6xl mx-auto w-full flex flex-col gap-8 sm:gap-10 my-auto">
             <div className="text-center flex flex-col items-center gap-1.5 sm:gap-2">
               <span className="text-xs font-black text-[#A01322] dark:text-rose-400 uppercase tracking-widest">
@@ -321,7 +338,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
         </section>
 
         {/* ── Section 3: Audience Role Comparison (Dynamic Screen Fitting) ── */}
-        <section id="roles" className="px-4 sm:px-8 py-12 sm:py-16 min-h-[calc(100vh-3.5rem)] max-w-6xl mx-auto w-full flex flex-col justify-center gap-8 sm:gap-10">
+        <section id="roles" className="scroll-mt-16 px-4 sm:px-8 py-12 sm:py-16 min-h-[calc(100vh-3.5rem)] max-w-6xl mx-auto w-full flex flex-col justify-center gap-8 sm:gap-10">
           <div className="text-center flex flex-col items-center gap-1.5 sm:gap-2">
             <span className="text-xs font-black text-[#11428E] dark:text-sky-400 uppercase tracking-widest">
               Unified Ecosystem
@@ -448,7 +465,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
         </section>
 
         {/* ── Section 4: Mobile App Simulator Showcase Callout (Dynamic Screen Fitting) ── */}
-        <section id="mobile-preview" className="px-4 sm:px-8 py-12 sm:py-16 min-h-[calc(100vh-3.5rem)] flex flex-col justify-center bg-gradient-to-br from-[#11428E]/10 via-[var(--bg-main)] to-[#A01322]/10 border-t border-[var(--border-color)]">
+        <section id="mobile-preview" className="scroll-mt-16 px-4 sm:px-8 py-12 sm:py-16 min-h-[calc(100vh-3.5rem)] flex flex-col justify-center bg-gradient-to-br from-[#11428E]/10 via-[var(--bg-main)] to-[#A01322]/10 border-t border-[var(--border-color)]">
           <div className="max-w-4xl mx-auto rounded-3xl p-6 sm:p-12 border border-[#11428E]/20 bg-[var(--bg-card)] shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-8 w-full my-auto">
             <div className="flex flex-col gap-2.5 sm:gap-3 max-w-lg text-center sm:text-left items-center sm:items-start">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold w-fit">

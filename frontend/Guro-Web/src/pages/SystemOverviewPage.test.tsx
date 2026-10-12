@@ -9,6 +9,7 @@ describe('SystemOverviewPage Component', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    window.scrollTo = jest.fn();
   });
 
   test('renders hero title and core platform value propositions', () => {
@@ -125,5 +126,6 @@ describe('SystemOverviewPage Component', () => {
     const overviewLink = screen.getByRole('link', { name: /^Overview$/i });
     fireEvent.click(overviewLink);
     expect(underline).toHaveStyle({ left: '0px' });
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
   });
 });
