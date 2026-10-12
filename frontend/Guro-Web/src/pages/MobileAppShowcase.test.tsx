@@ -206,4 +206,23 @@ describe('MobileAppShowcase Component', () => {
     fireEvent.click(profileTabs[profileTabs.length - 1]);
     expect(studentUnderline).toHaveStyle({ transform: 'translateX(300%)' });
   });
+
+  test('renders phone wrapper as responsive full-width card on mobile with hidden Dynamic Island', () => {
+    render(
+      <MobileAppShowcase
+        onBackToOverview={mockBackToOverview}
+        onLaunchPortal={mockLaunchPortal}
+        isDarkMode={false}
+        onToggleTheme={mockToggleTheme}
+      />
+    );
+
+    const wrapper = screen.getByTestId('phone-device-wrapper');
+    expect(wrapper).toBeInTheDocument();
+    expect(wrapper).toHaveClass('w-full', 'max-w-md', 'md:w-[375px]');
+
+    const dynamicIsland = screen.getByTestId('dynamic-island');
+    expect(dynamicIsland).toBeInTheDocument();
+    expect(dynamicIsland).toHaveClass('hidden', 'md:flex');
+  });
 });

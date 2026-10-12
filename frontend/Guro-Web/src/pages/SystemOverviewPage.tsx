@@ -211,30 +211,30 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
       {/* ── Main Content Container ── */}
       <main className="flex-1 flex flex-col">
 
-        {/* ── Section 1: Hero Banner ── */}
-        <section id="overview" className="relative px-4 sm:px-8 pt-16 pb-20 max-w-6xl mx-auto w-full flex flex-col items-center text-center">
+        {/* ── Section 1: Hero Banner (Dynamic Screen Fitting) ── */}
+        <section id="overview" className="relative px-4 sm:px-8 py-10 sm:py-16 min-h-[calc(100vh-3.5rem)] max-w-6xl mx-auto w-full flex flex-col items-center justify-center text-center">
           
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300 text-xs font-extrabold mb-6 shadow-xs animate-in fade-in duration-300">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300 text-xs font-extrabold mb-5 shadow-xs animate-in fade-in duration-300">
             <Sparkles className="size-3.5 text-sky-500" />
             <span>DepEd MELC Aligned • Grades 4 to 6 Mathematics &amp; English</span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl font-black text-[var(--text-main)] tracking-tight max-w-4xl leading-[1.12]">
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-[var(--text-main)] tracking-tight max-w-4xl leading-[1.12]">
             Adaptive, Offline-First Learning for{' '}
             <span className="bg-gradient-to-r from-[#11428E] via-[#2563EB] to-[#A01322] bg-clip-text text-transparent">
               Philippine Classrooms
             </span>
           </h1>
 
-          <p className="mt-5 text-base sm:text-lg text-[var(--text-muted)] max-w-2xl leading-relaxed font-medium">
+          <p className="mt-4 sm:mt-5 text-sm sm:text-base lg:text-lg text-[var(--text-muted)] max-w-2xl leading-relaxed font-medium">
             GURO (Guided Unified Resource Optimization) bridges the digital divide with rich interactive slides, diagnostic quizzes, automated DepEd SF9 reports, and 100% offline capability.
           </p>
 
           {/* Dual Action Buttons */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <div className="mt-7 sm:mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4 w-full">
             <button
               onClick={onOpenMobileShowcase}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/20 transition-all cursor-pointer hover:scale-102 active:scale-98"
+              className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/20 transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
             >
               <Smartphone className="size-4" />
               <span>Explore Mobile App Showcase</span>
@@ -242,7 +242,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
 
             <button
               onClick={onOpenAuth}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-main)] text-[var(--text-main)] font-extrabold text-sm shadow-md transition-all cursor-pointer hover:scale-102 active:scale-98"
+              className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-main)] text-[var(--text-main)] font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
             >
               <span>Launch Web Workspace</span>
               <ArrowRight className="size-4 text-[var(--text-muted)]" />
@@ -250,35 +250,35 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           </div>
 
           {/* Quick Metrics Bar */}
-          <div className="mt-14 w-full grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-4xl text-left">
+          <div className="mt-10 sm:mt-14 w-full grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 max-w-4xl text-left">
             {[
               { label: 'Offline Ready', value: '100% Zero-Data', desc: 'Quizzes & slides run without internet' },
               { label: 'DepEd Standards', value: 'Grades 4, 5, 6', desc: 'Official MELC curriculum alignment' },
               { label: 'Teacher Telemetry', value: 'Form SF9 Ready', desc: 'Automated quarterly reports & analytics' },
               { label: 'Parent Connection', value: '6-Digit Codes', desc: 'Secure guardian sync & screen time' },
             ].map((m, idx) => (
-              <div key={idx} className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs flex flex-col gap-1">
-                <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{m.label}</span>
-                <span className="text-lg font-black text-[#11428E] dark:text-sky-400">{m.value}</span>
-                <span className="text-xs text-[var(--text-muted)]">{m.desc}</span>
+              <div key={idx} className="p-3 sm:p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs flex flex-col gap-0.5 sm:gap-1">
+                <span className="text-[10px] sm:text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{m.label}</span>
+                <span className="text-base sm:text-lg font-black text-[#11428E] dark:text-sky-400">{m.value}</span>
+                <span className="text-[11px] sm:text-xs text-[var(--text-muted)] line-clamp-2">{m.desc}</span>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── Section 2: Platform Pillars ── */}
-        <section id="pillars" className="px-4 sm:px-8 py-16 bg-[var(--bg-card)]/50 border-y border-[var(--border-color)]">
-          <div className="max-w-6xl mx-auto flex flex-col gap-10">
-            <div className="text-center flex flex-col items-center gap-2">
+        {/* ── Section 2: Platform Pillars (Dynamic Screen Fitting) ── */}
+        <section id="pillars" className="px-4 sm:px-8 py-12 sm:py-16 min-h-[calc(100vh-3.5rem)] flex flex-col justify-center bg-[var(--bg-card)]/50 border-y border-[var(--border-color)]">
+          <div className="max-w-6xl mx-auto w-full flex flex-col gap-8 sm:gap-10 my-auto">
+            <div className="text-center flex flex-col items-center gap-1.5 sm:gap-2">
               <span className="text-xs font-black text-[#A01322] dark:text-rose-400 uppercase tracking-widest">
                 Core Capabilities
               </span>
-              <h2 className="text-3xl font-black text-[var(--text-main)] tracking-tight">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--text-main)] tracking-tight">
                 Designed for Reliability &amp; Academic Growth
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {[
                 {
                   icon: WifiOff,
@@ -307,11 +307,11 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
               ].map((p, idx) => {
                 const Icon = p.icon;
                 return (
-                  <div key={idx} className="p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs flex flex-col gap-3">
-                    <div className={`size-12 rounded-2xl border flex items-center justify-center ${p.color}`}>
-                      <Icon className="size-6" />
+                  <div key={idx} className="p-5 sm:p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs flex flex-col gap-2.5 sm:gap-3 transition-transform hover:-translate-y-0.5">
+                    <div className={`size-11 sm:size-12 rounded-2xl border flex items-center justify-center ${p.color}`}>
+                      <Icon className="size-5 sm:size-6" />
                     </div>
-                    <h3 className="text-base font-extrabold text-[var(--text-main)] mt-1">{p.title}</h3>
+                    <h3 className="text-sm sm:text-base font-extrabold text-[var(--text-main)] mt-1">{p.title}</h3>
                     <p className="text-xs text-[var(--text-muted)] leading-relaxed">{p.description}</p>
                   </div>
                 );
@@ -320,20 +320,20 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           </div>
         </section>
 
-        {/* ── Section 3: Audience Role Comparison ── */}
-        <section id="roles" className="px-4 sm:px-8 py-16 max-w-6xl mx-auto w-full flex flex-col gap-10">
-          <div className="text-center flex flex-col items-center gap-2">
+        {/* ── Section 3: Audience Role Comparison (Dynamic Screen Fitting) ── */}
+        <section id="roles" className="px-4 sm:px-8 py-12 sm:py-16 min-h-[calc(100vh-3.5rem)] max-w-6xl mx-auto w-full flex flex-col justify-center gap-8 sm:gap-10">
+          <div className="text-center flex flex-col items-center gap-1.5 sm:gap-2">
             <span className="text-xs font-black text-[#11428E] dark:text-sky-400 uppercase tracking-widest">
               Unified Ecosystem
             </span>
-            <h2 className="text-3xl font-black text-[var(--text-main)] tracking-tight">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--text-main)] tracking-tight">
               A Tailored Experience for Every Role
             </h2>
           </div>
 
           {/* Role Tabs */}
           <div className="flex justify-center">
-            <div className="flex p-1 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs">
+            <div className="flex p-1 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs w-full sm:w-auto">
               {[
                 { id: 'student', label: 'For Students', icon: GraduationCap },
                 { id: 'teacher', label: 'For Teachers', icon: School },
@@ -345,14 +345,14 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                   <button
                     key={tab.id}
                     onClick={() => setActiveAudienceTab(tab.id as any)}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
                       isActive
                         ? 'bg-[#11428E] text-white shadow-md'
                         : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                     }`}
                   >
-                    <Icon className="size-4" />
-                    <span>{tab.label}</span>
+                    <Icon className="size-3.5 sm:size-4" />
+                    <span className="truncate">{tab.label}</span>
                   </button>
                 );
               })}
@@ -360,30 +360,30 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           </div>
 
           {/* Role Tab Card Content */}
-          <div className="p-8 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm">
+          <div className="p-5 sm:p-8 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm">
             {activeAudienceTab === 'student' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 items-center">
+                <div className="flex flex-col gap-3 sm:gap-4">
                   <span className="text-xs font-bold text-emerald-500 uppercase tracking-wider">Student Experience</span>
-                  <h3 className="text-2xl font-black text-[var(--text-main)] leading-tight">
+                  <h3 className="text-xl sm:text-2xl font-black text-[var(--text-main)] leading-tight">
                     Engaging, Self-Paced Learning with Zero Barriers
                   </h3>
-                  <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
                     Students can learn anywhere—at school or at home—without worrying about Wi-Fi or data allowances.
                   </p>
-                  <ul className="flex flex-col gap-2.5 text-xs text-[var(--text-main)] font-semibold mt-2">
-                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-emerald-500" /> Interactive study slides with collapsible checkpoint questions</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-emerald-500" /> Gamified star rewards, level progression, and mascot closet</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-emerald-500" /> Immediate positive feedback and detailed answer explanations</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-emerald-500" /> 1-tap offline guest mode with zero registration required</li>
+                  <ul className="flex flex-col gap-2 sm:gap-2.5 text-xs text-[var(--text-main)] font-semibold mt-1">
+                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-emerald-500 shrink-0" /> Interactive study slides with collapsible checkpoint questions</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-emerald-500 shrink-0" /> Gamified star rewards, level progression, and mascot closet</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-emerald-500 shrink-0" /> Immediate positive feedback and detailed answer explanations</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-emerald-500 shrink-0" /> 1-tap offline guest mode with zero registration required</li>
                   </ul>
                 </div>
-                <div className="p-6 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col gap-3">
+                <div className="p-5 sm:p-6 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[var(--text-muted)]">Active Module</span>
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">Grade 4 Math</span>
                   </div>
-                  <h4 className="text-base font-extrabold text-[var(--text-main)]">Fractions &amp; Decimals Mastery</h4>
+                  <h4 className="text-sm sm:text-base font-extrabold text-[var(--text-main)]">Fractions &amp; Decimals Mastery</h4>
                   <div className="w-full bg-[var(--border-color)] h-2 rounded-full overflow-hidden">
                     <div className="bg-emerald-500 h-full w-4/5" />
                   </div>
@@ -393,53 +393,53 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             )}
 
             {activeAudienceTab === 'teacher' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 items-center">
+                <div className="flex flex-col gap-3 sm:gap-4">
                   <span className="text-xs font-bold text-blue-500 uppercase tracking-wider">Teacher Experience</span>
-                  <h3 className="text-2xl font-black text-[var(--text-main)] leading-tight">
+                  <h3 className="text-xl sm:text-2xl font-black text-[var(--text-main)] leading-tight">
                     Comprehensive Classroom Analytics &amp; SF9 Reporting
                   </h3>
-                  <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
                     Save hours of manual grading with automated telemetry and standardized DepEd report outputs.
                   </p>
-                  <ul className="flex flex-col gap-2.5 text-xs text-[var(--text-main)] font-semibold mt-2">
-                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-blue-500" /> Real-time mastery matrix displaying student competency status</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-blue-500" /> One-click official DepEd SF9 report card export</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-blue-500" /> Manual and AI-assisted custom lesson builder with checkpoints</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-blue-500" /> Classroom PIN generation for seamless pairing</li>
+                  <ul className="flex flex-col gap-2 sm:gap-2.5 text-xs text-[var(--text-main)] font-semibold mt-1">
+                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-blue-500 shrink-0" /> Real-time mastery matrix displaying student competency status</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-blue-500 shrink-0" /> One-click official DepEd SF9 report card export</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-blue-500 shrink-0" /> Manual and AI-assisted custom lesson builder with checkpoints</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-blue-500 shrink-0" /> Classroom PIN generation for seamless pairing</li>
                   </ul>
                 </div>
-                <div className="p-6 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col gap-3">
+                <div className="p-5 sm:p-6 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[var(--text-muted)]">Section 4-Rizal</span>
                     <span className="text-xs font-bold text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-full">32 Students</span>
                   </div>
-                  <h4 className="text-base font-extrabold text-[var(--text-main)]">Classroom Mastery Rate: 88.4%</h4>
+                  <h4 className="text-sm sm:text-base font-extrabold text-[var(--text-main)]">Classroom Mastery Rate: 88.4%</h4>
                   <p className="text-xs text-[var(--text-muted)]">Pre/Post test growth: +24.6% improvement across all MELC competencies.</p>
                 </div>
               </div>
             )}
 
             {activeAudienceTab === 'parent' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 items-center">
+                <div className="flex flex-col gap-3 sm:gap-4">
                   <span className="text-xs font-bold text-amber-500 uppercase tracking-wider">Parent Experience</span>
-                  <h3 className="text-2xl font-black text-[var(--text-main)] leading-tight">
+                  <h3 className="text-xl sm:text-2xl font-black text-[var(--text-main)] leading-tight">
                     Stay Connected to Your Child's Academic Journey
                   </h3>
-                  <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
                     No complicated setups. A simple 6-digit access code pairs parent devices with their child's tablet or phone.
                   </p>
-                  <ul className="flex flex-col gap-2.5 text-xs text-[var(--text-main)] font-semibold mt-2">
-                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-amber-500" /> Daily study activity timeline and quiz accuracy breakdown</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-amber-500" /> Screen-time limit guard to foster balanced study habits</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-amber-500" /> Subject-level strengths and growth areas summary</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-amber-500" /> Instant badge showcase to celebrate milestones</li>
+                  <ul className="flex flex-col gap-2 sm:gap-2.5 text-xs text-[var(--text-main)] font-semibold mt-1">
+                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-amber-500 shrink-0" /> Daily study activity timeline and quiz accuracy breakdown</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-amber-500 shrink-0" /> Screen-time limit guard to foster balanced study habits</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-amber-500 shrink-0" /> Subject-level strengths and growth areas summary</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-amber-500 shrink-0" /> Instant badge showcase to celebrate milestones</li>
                   </ul>
                 </div>
-                <div className="p-6 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col gap-3">
+                <div className="p-5 sm:p-6 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col gap-3">
                   <span className="text-xs font-bold text-[var(--text-muted)]">Screen Time Guard</span>
-                  <h4 className="text-base font-extrabold text-[var(--text-main)]">38 / 60 Minutes Used Today</h4>
+                  <h4 className="text-sm sm:text-base font-extrabold text-[var(--text-main)]">38 / 60 Minutes Used Today</h4>
                   <p className="text-xs text-amber-700 dark:text-amber-300">Healthy learning balance active.</p>
                 </div>
               </div>
@@ -447,25 +447,25 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           </div>
         </section>
 
-        {/* ── Section 4: Mobile App Simulator Showcase Callout ── */}
-        <section id="mobile-preview" className="px-4 sm:px-8 py-16 bg-gradient-to-br from-[#11428E]/10 via-[var(--bg-main)] to-[#A01322]/10 border-t border-[var(--border-color)]">
-          <div className="max-w-4xl mx-auto rounded-3xl p-8 sm:p-12 border border-[#11428E]/20 bg-[var(--bg-card)] shadow-xl flex flex-col sm:flex-row items-center justify-between gap-8">
-            <div className="flex flex-col gap-3 max-w-lg">
+        {/* ── Section 4: Mobile App Simulator Showcase Callout (Dynamic Screen Fitting) ── */}
+        <section id="mobile-preview" className="px-4 sm:px-8 py-12 sm:py-16 min-h-[calc(100vh-3.5rem)] flex flex-col justify-center bg-gradient-to-br from-[#11428E]/10 via-[var(--bg-main)] to-[#A01322]/10 border-t border-[var(--border-color)]">
+          <div className="max-w-4xl mx-auto rounded-3xl p-6 sm:p-12 border border-[#11428E]/20 bg-[var(--bg-card)] shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-8 w-full my-auto">
+            <div className="flex flex-col gap-2.5 sm:gap-3 max-w-lg text-center sm:text-left items-center sm:items-start">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold w-fit">
                 <Smartphone className="size-3.5" />
                 <span>Interactive In-Browser Simulator</span>
               </div>
-              <h3 className="text-2xl sm:text-3xl font-black text-[var(--text-main)] tracking-tight">
+              <h3 className="text-xl sm:text-3xl font-black text-[var(--text-main)] tracking-tight">
                 Experience the Mobile App Live
               </h3>
-              <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+              <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
                 Test the smartphone interface directly in your browser. Experiment with live study slide checkpoints, answer a sample quiz question, and test the offline mode toggle.
               </p>
             </div>
 
             <button
               onClick={onOpenMobileShowcase}
-              className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/25 transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+              className="flex items-center justify-center gap-2 px-6 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/25 transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0 w-full sm:w-auto"
             >
               <Smartphone className="size-4" />
               <span>Launch Mobile Simulator →</span>

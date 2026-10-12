@@ -76,6 +76,9 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
   // Screen time limit state (Parent)
   const [screenTimeLimit, setScreenTimeLimit] = useState(60);
 
+  // Mobile console collapse toggle
+  const [isMobileConsoleOpen, setIsMobileConsoleOpen] = useState(true);
+
   // Reset simulator
   const handleResetSimulator = () => {
     setSelectedRole('student');
@@ -202,215 +205,231 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
       </header>
 
       {/* ── Main Showcase Workspace ── */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8 flex flex-col lg:flex-row gap-8 items-start justify-center">
+      <div className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 flex flex-col lg:flex-row gap-6 lg:gap-8 items-start justify-center">
         
         {/* ── Left Column: Simulator Controls Dashboard ── */}
-        <div className="w-full lg:w-[380px] flex flex-col gap-5">
-          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 shadow-sm flex flex-col gap-5">
+        <div className="w-full lg:w-[380px] flex flex-col gap-4">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-4 sm:p-6 shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
               <div>
-                <h3 className="text-base font-extrabold text-[var(--text-main)]">Simulator Console</h3>
-                <p className="text-xs text-[var(--text-muted)]">Control the mini mobile app live</p>
+                <h3 className="text-sm sm:text-base font-extrabold text-[var(--text-main)]">Simulator Console</h3>
+                <p className="text-[11px] sm:text-xs text-[var(--text-muted)]">Control the mini mobile app live</p>
               </div>
-              <button
-                onClick={handleResetSimulator}
-                className="p-2 rounded-xl border border-[var(--border-color)] hover:bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
-                title="Reset Simulator"
-              >
-                <RotateCcw className="size-4" />
-              </button>
-            </div>
-
-            {/* Role Selection */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">
-                1. Select Audience Role
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: 'student', label: 'Student', icon: GraduationCap, color: 'text-emerald-500' },
-                  { id: 'teacher', label: 'Teacher', icon: School, color: 'text-blue-500' },
-                  { id: 'parent', label: 'Parent', icon: Users, color: 'text-amber-500' },
-                ].map((r) => {
-                  const Icon = r.icon;
-                  const isActive = selectedRole === r.id;
-                  return (
-                    <button
-                      key={r.id}
-                      onClick={() => {
-                        setSelectedRole(r.id as SimulatedRole);
-                        if (r.id === 'student') setStudentTab('home');
-                        if (r.id === 'teacher') setTeacherTab('console');
-                        if (r.id === 'parent') setParentTab('home');
-                      }}
-                      className={`flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
-                        isActive
-                          ? 'border-[#11428E] bg-[#11428E]/10 text-[#11428E] dark:text-sky-300 shadow-xs'
-                          : 'border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] hover:bg-[var(--bg-card)] hover:text-[var(--text-main)]'
-                      }`}
-                    >
-                      <Icon className={`size-4 ${r.color}`} />
-                      <span>{r.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Simulated Mobile Tabs List */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">
-                  2. Active Mobile Tab
-                </label>
-                <span className="text-[10px] text-[var(--text-muted)] font-medium">Click on phone or here</span>
-              </div>
-
-              {selectedRole === 'student' && (
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'home', label: 'Dashboard (Home)' },
-                    { id: 'lessons', label: 'Lessons Library' },
-                    { id: 'progress', label: 'My Progress' },
-                    { id: 'me', label: 'Profile & Mascot' },
-                  ].map((tb) => (
-                    <button
-                      key={tb.id}
-                      onClick={() => setStudentTab(tb.id as StudentTab)}
-                      className={`px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer truncate ${
-                        studentTab === tb.id
-                          ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold'
-                          : 'border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                      }`}
-                    >
-                      {tb.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {selectedRole === 'teacher' && (
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'console', label: 'Console (Overview)' },
-                    { id: 'ingest', label: 'AI Lesson Ingest' },
-                    { id: 'builder', label: 'Lesson Builder' },
-                    { id: 'settings', label: 'Classroom Pairing' },
-                  ].map((tb) => (
-                    <button
-                      key={tb.id}
-                      onClick={() => setTeacherTab(tb.id as TeacherTab)}
-                      className={`px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer truncate ${
-                        teacherTab === tb.id
-                          ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold'
-                          : 'border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                      }`}
-                    >
-                      {tb.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {selectedRole === 'parent' && (
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'home', label: 'Child Growth & Codes' },
-                    { id: 'limits', label: 'Screen Time Guard' },
-                  ].map((tb) => (
-                    <button
-                      key={tb.id}
-                      onClick={() => setParentTab(tb.id as ParentTab)}
-                      className={`px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer truncate ${
-                        parentTab === tb.id
-                          ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold'
-                          : 'border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                      }`}
-                    >
-                      {tb.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Offline Simulation Toggle */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">
-                3. Network Mode (Offline Resilience)
-              </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsSimulatedOnline(true)}
-                  className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                    isSimulatedOnline
-                      ? 'border-emerald-500 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-xs'
-                      : 'border-[var(--border-color)] bg-[var(--bg-main)]/40 text-[var(--text-muted)]'
-                  }`}
+                  onClick={() => setIsMobileConsoleOpen(!isMobileConsoleOpen)}
+                  className="lg:hidden px-2.5 py-1 text-xs font-bold rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
                 >
-                  <Wifi className="size-3.5 text-emerald-500" />
-                  <span>Online</span>
+                  {isMobileConsoleOpen ? 'Hide' : 'Controls'}
                 </button>
                 <button
-                  type="button"
-                  onClick={() => setIsSimulatedOnline(false)}
-                  className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                    !isSimulatedOnline
-                      ? 'border-amber-500 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-xs'
-                      : 'border-[var(--border-color)] bg-[var(--bg-main)]/40 text-[var(--text-muted)]'
-                  }`}
+                  onClick={handleResetSimulator}
+                  className="p-2 rounded-xl border border-[var(--border-color)] hover:bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
+                  title="Reset Simulator"
                 >
-                  <WifiOff className="size-3.5 text-amber-500" />
-                  <span>Offline (0 Data)</span>
+                  <RotateCcw className="size-4" />
                 </button>
               </div>
-              <p className="text-[11px] text-[var(--text-muted)] leading-relaxed mt-1">
-                Toggle between online and zero-data offline to observe local caching and quiz execution inside the phone.
-              </p>
             </div>
 
-            {/* Grade Switcher (Only visible for Student role) */}
-            {selectedRole === 'student' && (
+            <div className={`flex flex-col gap-4 sm:gap-5 ${isMobileConsoleOpen ? 'flex' : 'hidden lg:flex'}`}>
+              {/* Role Selection */}
               <div className="flex flex-col gap-2">
                 <label className="text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">
-                  4. Simulated Grade Curriculum
+                  1. Select Audience Role
                 </label>
-                <div className="flex gap-2">
-                  {[4, 5, 6].map((g) => (
-                    <button
-                      key={g}
-                      onClick={() => setSimulatedGrade(g)}
-                      className={`flex-1 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                        simulatedGrade === g
-                          ? 'border-[#11428E] bg-[#11428E] text-white shadow-xs'
-                          : 'border-[var(--border-color)] bg-[var(--bg-main)]/40 text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                      }`}
-                    >
-                      Grade {g}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'student', label: 'Student', icon: GraduationCap, color: 'text-emerald-500' },
+                    { id: 'teacher', label: 'Teacher', icon: School, color: 'text-blue-500' },
+                    { id: 'parent', label: 'Parent', icon: Users, color: 'text-amber-500' },
+                  ].map((r) => {
+                    const Icon = r.icon;
+                    const isActive = selectedRole === r.id;
+                    return (
+                      <button
+                        key={r.id}
+                        onClick={() => {
+                          setSelectedRole(r.id as SimulatedRole);
+                          if (r.id === 'student') setStudentTab('home');
+                          if (r.id === 'teacher') setTeacherTab('console');
+                          if (r.id === 'parent') setParentTab('home');
+                        }}
+                        className={`flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
+                          isActive
+                            ? 'border-[#11428E] bg-[#11428E]/10 text-[#11428E] dark:text-sky-300 shadow-xs'
+                            : 'border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] hover:bg-[var(--bg-card)] hover:text-[var(--text-main)]'
+                        }`}
+                      >
+                        <Icon className={`size-4 ${r.color}`} />
+                        <span>{r.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            )}
+
+              {/* Simulated Mobile Tabs List */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">
+                    2. Active Mobile Tab
+                  </label>
+                  <span className="text-[10px] text-[var(--text-muted)] font-medium">Click on phone or here</span>
+                </div>
+
+                {selectedRole === 'student' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'home', label: 'Dashboard (Home)' },
+                      { id: 'lessons', label: 'Lessons Library' },
+                      { id: 'progress', label: 'My Progress' },
+                      { id: 'me', label: 'Profile & Mascot' },
+                    ].map((tb) => (
+                      <button
+                        key={tb.id}
+                        onClick={() => setStudentTab(tb.id as StudentTab)}
+                        className={`px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer truncate ${
+                          studentTab === tb.id
+                            ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold'
+                            : 'border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                        }`}
+                      >
+                        {tb.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {selectedRole === 'teacher' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'console', label: 'Console (Overview)' },
+                      { id: 'ingest', label: 'AI Lesson Ingest' },
+                      { id: 'builder', label: 'Lesson Builder' },
+                      { id: 'settings', label: 'Classroom Pairing' },
+                    ].map((tb) => (
+                      <button
+                        key={tb.id}
+                        onClick={() => setTeacherTab(tb.id as TeacherTab)}
+                        className={`px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer truncate ${
+                          teacherTab === tb.id
+                            ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold'
+                            : 'border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                        }`}
+                      >
+                        {tb.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {selectedRole === 'parent' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'home', label: 'Child Growth & Codes' },
+                      { id: 'limits', label: 'Screen Time Guard' },
+                    ].map((tb) => (
+                      <button
+                        key={tb.id}
+                        onClick={() => setParentTab(tb.id as ParentTab)}
+                        className={`px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer truncate ${
+                          parentTab === tb.id
+                            ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold'
+                            : 'border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                        }`}
+                      >
+                        {tb.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Offline Simulation Toggle */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">
+                  3. Network Mode (Offline Resilience)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsSimulatedOnline(true)}
+                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      isSimulatedOnline
+                        ? 'border-emerald-500 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                        : 'border-[var(--border-color)] bg-[var(--bg-main)]/40 text-[var(--text-muted)]'
+                    }`}
+                  >
+                    <Wifi className="size-3.5 text-emerald-500" />
+                    <span>Online</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsSimulatedOnline(false)}
+                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      !isSimulatedOnline
+                        ? 'border-amber-500 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-xs'
+                        : 'border-[var(--border-color)] bg-[var(--bg-main)]/40 text-[var(--text-muted)]'
+                    }`}
+                  >
+                    <WifiOff className="size-3.5 text-amber-500" />
+                    <span>Offline (0 Data)</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed mt-1">
+                  Toggle between online and zero-data offline to observe local caching and quiz execution inside the phone.
+                </p>
+              </div>
+
+              {/* Grade Switcher (Only visible for Student role) */}
+              {selectedRole === 'student' && (
+                <div className="flex flex-col gap-2">
+                  <label className="text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">
+                    4. Simulated Grade Curriculum
+                  </label>
+                  <div className="flex gap-2">
+                    {[4, 5, 6].map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => setSimulatedGrade(g)}
+                        className={`flex-1 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                          simulatedGrade === g
+                            ? 'border-[#11428E] bg-[#11428E] text-white shadow-xs'
+                            : 'border-[var(--border-color)] bg-[var(--bg-main)]/40 text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                        }`}
+                      >
+                        Grade {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ── Right Column: Smartphone Device Chassis Frame ── */}
-        <div className="flex-1 flex flex-col items-center justify-center">
-          <div className="relative w-[340px] sm:w-[375px] h-[740px] rounded-[50px] bg-slate-950 p-3.5 shadow-2xl shadow-slate-950/40 ring-1 ring-slate-800/80 border-4 border-slate-700/60 select-none">
-            
-            {/* Dynamic Island / Speaker */}
-            <div className="absolute top-5 left-1/2 -translate-x-1/2 w-28 h-5 bg-black rounded-full z-50 flex items-center justify-between px-2.5">
+        {/* ── Right Column: Smartphone Device Chassis Frame (Native Card on Mobile, Phone Bezel on Desktop) ── */}
+        <div className="flex-1 w-full flex flex-col items-center justify-center">
+          <div
+            data-testid="phone-device-wrapper"
+            className="w-full max-w-md mx-auto h-[640px] sm:h-[700px] md:h-[740px] md:w-[375px] md:rounded-[50px] md:bg-slate-950 md:p-3.5 md:shadow-2xl md:shadow-slate-950/40 md:ring-1 md:ring-slate-800/80 md:border-4 md:border-slate-700/60 select-none relative"
+          >
+            {/* Dynamic Island / Speaker (Hidden on mobile devices, shown on desktop simulator) */}
+            <div
+              data-testid="dynamic-island"
+              className="hidden md:flex absolute top-5 left-1/2 -translate-x-1/2 w-28 h-5 bg-black rounded-full z-50 items-center justify-between px-2.5"
+            >
               <div className="size-2 rounded-full bg-slate-900 ring-1 ring-slate-800" />
               <div className="size-1.5 rounded-full bg-blue-900/40" />
             </div>
 
-            {/* Inner Phone Screen */}
-            <div className="w-full h-full rounded-[40px] bg-[var(--bg-main)] overflow-hidden flex flex-col relative border border-[var(--border-color)]">
+            {/* Inner Phone Screen / Native-feeling Full-Width Card with Rounded Corners on Mobile */}
+            <div className="w-full h-full rounded-3xl md:rounded-[40px] bg-[var(--bg-main)] overflow-hidden flex flex-col relative border border-[var(--border-color)] shadow-xl shadow-black/5 md:shadow-none">
               
               {/* Phone Status Bar */}
-              <div className="h-10 px-6 pt-2 flex items-center justify-between text-[11px] font-bold text-[var(--text-main)] z-40 bg-[var(--bg-main)]/90 backdrop-blur-sm border-b border-[var(--border-color)]/40">
+              <div className="h-10 px-4 sm:px-6 pt-1 flex items-center justify-between text-[11px] font-bold text-[var(--text-main)] z-40 bg-[var(--bg-main)]/90 backdrop-blur-sm border-b border-[var(--border-color)]/40">
                 <span>9:41</span>
                 <div className="flex items-center gap-1.5">
                   {isSimulatedOnline ? (
