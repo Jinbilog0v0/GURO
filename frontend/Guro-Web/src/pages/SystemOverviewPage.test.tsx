@@ -88,4 +88,42 @@ describe('SystemOverviewPage Component', () => {
     fireEvent.click(parentTab);
     expect(screen.getByText(/Stay Connected to Your Child's Academic Journey/i)).toBeInTheDocument();
   });
+
+  test('renders top navigation links with animated sliding underline for current section', () => {
+    window.HTMLElement.prototype.scrollIntoView = jest.fn();
+
+    render(
+      <SystemOverviewPage
+        onOpenMobileShowcase={mockOpenMobileShowcase}
+        onOpenAuth={mockOpenAuth}
+        isDarkMode={false}
+        onToggleTheme={mockToggleTheme}
+      />
+    );
+
+    // Initial underline is present
+    const underline = screen.getByTestId('top-nav-sliding-underline');
+    expect(underline).toBeInTheDocument();
+    expect(underline).toHaveStyle({ left: '0px' });
+
+    // Click Platform Pillars nav link
+    const pillarsLink = screen.getByRole('link', { name: /Platform Pillars/i });
+    fireEvent.click(pillarsLink);
+    expect(underline).toHaveStyle({ left: '95px' });
+
+    // Click Who It's For nav link
+    const rolesLink = screen.getByRole('link', { name: /Who It's For/i });
+    fireEvent.click(rolesLink);
+    expect(underline).toHaveStyle({ left: '190px' });
+
+    // Click Mobile App nav link
+    const mobileLink = screen.getByRole('link', { name: /Mobile App/i });
+    fireEvent.click(mobileLink);
+    expect(underline).toHaveStyle({ left: '285px' });
+
+    // Click Overview link back
+    const overviewLink = screen.getByRole('link', { name: /^Overview$/i });
+    fireEvent.click(overviewLink);
+    expect(underline).toHaveStyle({ left: '0px' });
+  });
 });

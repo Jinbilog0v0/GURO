@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   GraduationCap,
   School,
@@ -22,6 +22,20 @@ interface SystemOverviewPageProps {
   onToggleTheme?: () => void;
 }
 
+type NavSectionId = 'overview' | 'pillars' | 'roles' | 'mobile-preview';
+
+interface NavSection {
+  id: NavSectionId;
+  label: string;
+}
+
+const NAV_SECTIONS: NavSection[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'pillars', label: 'Platform Pillars' },
+  { id: 'roles', label: "Who It's For" },
+  { id: 'mobile-preview', label: 'Mobile App' },
+];
+
 export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
   onOpenMobileShowcase,
   onOpenAuth,
@@ -29,6 +43,62 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
   onToggleTheme,
 }) => {
   const [activeAudienceTab, setActiveAudienceTab] = useState<'student' | 'teacher' | 'parent'>('student');
+  const [activeNavSection, setActiveNavSection] = useState<NavSectionId>('overview');
+  const navRef = useRef<HTMLElement>(null);
+  const itemRefs = useRef<Record<string, HTMLElement | null>>({});
+  const [indicatorStyle, setIndicatorStyle] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
+
+  const updateIndicator = useCallback(() => {
+    const currentItem = itemRefs.current[activeNavSection];
+    const navContainer = navRef.current;
+    if (currentItem && navContainer) {
+      const itemRect = currentItem.getBoundingClientRect();
+      const containerRect = navContainer.getBoundingClientRect();
+      const left = itemRect.left - containerRect.left;
+      const width = itemRect.width;
+      if (width > 0) {
+        setIndicatorStyle({ left, width });
+        return;
+      }
+    }
+    const idx = NAV_SECTIONS.findIndex((s) => s.id === activeNavSection);
+    setIndicatorStyle({ left: idx * 95, width: 80 });
+  }, [activeNavSection]);
+
+  useEffect(() => {
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [updateIndicator]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 140; // 140px offset for sticky header
+
+      for (let i = NAV_SECTIONS.length - 1; i >= 0; i--) {
+        const sectionId = NAV_SECTIONS[i].id;
+        const el = document.getElementById(sectionId);
+        if (el) {
+          const top = el.offsetTop;
+          if (scrollPosition >= top) {
+            setActiveNavSection((prev) => (prev !== sectionId ? sectionId : prev));
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleNavClick = (sectionId: NavSectionId) => {
+    setActiveNavSection(sectionId);
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-[var(--bg-main)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
@@ -49,12 +119,45 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           </div>
         </div>
 
-        {/* Center Quick Jump Links (Desktop) */}
-        <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-[var(--text-muted)]">
-          <a href="#overview" className="hover:text-[var(--text-main)] transition-colors">Overview</a>
-          <a href="#pillars" className="hover:text-[var(--text-main)] transition-colors">Platform Pillars</a>
-          <a href="#roles" className="hover:text-[var(--text-main)] transition-colors">Who It's For</a>
-          <a href="#mobile-preview" className="hover:text-[var(--text-main)] transition-colors">Mobile App</a>
+        {/* Center Quick Jump Links (Desktop) with Animated Sliding Underline */}
+        <nav
+          ref={navRef}
+          aria-label="Overview navigation"
+          className="hidden md:flex items-center gap-1 text-xs font-semibold relative py-1"
+        >
+          {NAV_SECTIONS.map((sec) => {
+            const isActive = activeNavSection === sec.id;
+            return (
+              <a
+                key={sec.id}
+                href={`#${sec.id}`}
+                ref={(el) => {
+                  itemRefs.current[sec.id] = el;
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavClick(sec.id);
+                }}
+                className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer relative z-10 ${
+                  isActive
+                    ? 'text-[#11428E] dark:text-sky-400 font-extrabold'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                }`}
+              >
+                {sec.label}
+              </a>
+            );
+          })}
+
+          {/* Animated Sliding Underline for Current Screen / Section */}
+          <span
+            data-testid="top-nav-sliding-underline"
+            className="absolute bottom-0 h-[2.5px] bg-[#11428E] dark:bg-sky-400 rounded-full transition-all duration-300 ease-out pointer-events-none z-20 shadow-[0_0_8px_rgba(17,66,142,0.35)]"
+            style={{
+              left: `${indicatorStyle.left}px`,
+              width: `${indicatorStyle.width}px`,
+            }}
+          />
         </nav>
 
         {/* Right Action Buttons */}
