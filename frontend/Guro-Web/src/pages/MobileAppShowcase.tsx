@@ -988,89 +988,148 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
               {/* ── Working Mobile Bottom Navigation Bar (Exact Replica of Mobile Tab Navigator) ── */}
               
               {/* STUDENT BOTTOM TABS: Home, Lessons, Progress, Profile */}
-              {selectedRole === 'student' && (
-                <div className="h-14 px-3 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-around z-40">
-                  {[
-                    { id: 'home', label: 'Dashboard', icon: Home },
-                    { id: 'lessons', label: 'Lessons', icon: BookOpen },
-                    { id: 'progress', label: 'My Progress', icon: BarChart2 },
-                    { id: 'me', label: 'Profile', icon: UserIcon },
-                  ].map((tabItem) => {
-                    const Icon = tabItem.icon;
-                    const isActive = studentTab === tabItem.id;
-                    return (
-                      <button
-                        key={tabItem.id}
-                        onClick={() => setStudentTab(tabItem.id as StudentTab)}
-                        className={`flex flex-col items-center gap-0.5 cursor-pointer transition-all ${
-                          isActive
-                            ? 'text-[#11428E] dark:text-sky-400 font-extrabold'
-                            : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                        }`}
-                      >
-                        <Icon size={18} />
-                        <span className="text-[9px] font-semibold">{tabItem.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              {selectedRole === 'student' && (() => {
+                const studentTabs = [
+                  { id: 'home', label: 'Dashboard', icon: Home },
+                  { id: 'lessons', label: 'Lessons', icon: BookOpen },
+                  { id: 'progress', label: 'My Progress', icon: BarChart2 },
+                  { id: 'me', label: 'Profile', icon: UserIcon },
+                ];
+                const activeIndex = 
+                  studentTab === 'home' ? 0 :
+                  (studentTab === 'lessons' || studentTab === 'study' || studentTab === 'quiz') ? 1 :
+                  studentTab === 'progress' ? 2 : 3;
+
+                return (
+                  <div className="relative h-14 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex items-center z-40 select-none">
+                    {studentTabs.map((tabItem, idx) => {
+                      const Icon = tabItem.icon;
+                      const isActive = activeIndex === idx;
+                      return (
+                        <button
+                          key={tabItem.id}
+                          onClick={() => {
+                            setStudentTab(tabItem.id as StudentTab);
+                          }}
+                          className={`flex-1 h-full flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-colors duration-200 relative z-10 ${
+                            isActive
+                              ? 'text-[#11428E] dark:text-sky-400 font-extrabold'
+                              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                          }`}
+                        >
+                          <Icon size={18} className="transition-transform duration-200 active:scale-90" />
+                          <span className="text-[9px] font-semibold">{tabItem.label}</span>
+                        </button>
+                      );
+                    })}
+
+                    {/* Animated Sliding Underline for Current Screen */}
+                    <div
+                      data-testid="student-sliding-underline"
+                      className="absolute bottom-0 left-0 h-[2.5px] transition-transform duration-300 ease-out flex items-center justify-center pointer-events-none z-20"
+                      style={{
+                        width: '25%',
+                        transform: `translateX(${activeIndex * 100}%)`,
+                      }}
+                    >
+                      <div className="h-[2.5px] w-9 rounded-full bg-[#11428E] dark:bg-sky-400 shadow-[0_0_8px_rgba(17,66,142,0.4)]" />
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* TEACHER BOTTOM TABS: Console, AI Ingest, Builder, Settings */}
-              {selectedRole === 'teacher' && (
-                <div className="h-14 px-3 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-around z-40">
-                  {[
-                    { id: 'console', label: 'Console', icon: BarChart2 },
-                    { id: 'ingest', label: 'AI Ingest', icon: Zap },
-                    { id: 'builder', label: 'Builder', icon: PenLine },
-                    { id: 'settings', label: 'Settings', icon: Settings },
-                  ].map((tabItem) => {
-                    const Icon = tabItem.icon;
-                    const isActive = teacherTab === tabItem.id;
-                    return (
-                      <button
-                        key={tabItem.id}
-                        onClick={() => setTeacherTab(tabItem.id as TeacherTab)}
-                        className={`flex flex-col items-center gap-0.5 cursor-pointer transition-all ${
-                          isActive
-                            ? 'text-blue-600 dark:text-blue-400 font-extrabold'
-                            : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                        }`}
-                      >
-                        <Icon size={18} />
-                        <span className="text-[9px] font-semibold">{tabItem.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              {selectedRole === 'teacher' && (() => {
+                const teacherTabs = [
+                  { id: 'console', label: 'Console', icon: BarChart2 },
+                  { id: 'ingest', label: 'AI Ingest', icon: Zap },
+                  { id: 'builder', label: 'Builder', icon: PenLine },
+                  { id: 'settings', label: 'Settings', icon: Settings },
+                ];
+                const activeIndex =
+                  teacherTab === 'console' ? 0 :
+                  teacherTab === 'ingest' ? 1 :
+                  teacherTab === 'builder' ? 2 : 3;
+
+                return (
+                  <div className="relative h-14 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex items-center z-40 select-none">
+                    {teacherTabs.map((tabItem, idx) => {
+                      const Icon = tabItem.icon;
+                      const isActive = activeIndex === idx;
+                      return (
+                        <button
+                          key={tabItem.id}
+                          onClick={() => setTeacherTab(tabItem.id as TeacherTab)}
+                          className={`flex-1 h-full flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-colors duration-200 relative z-10 ${
+                            isActive
+                              ? 'text-blue-600 dark:text-blue-400 font-extrabold'
+                              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                          }`}
+                        >
+                          <Icon size={18} className="transition-transform duration-200 active:scale-90" />
+                          <span className="text-[9px] font-semibold">{tabItem.label}</span>
+                        </button>
+                      );
+                    })}
+
+                    {/* Animated Sliding Underline for Current Screen */}
+                    <div
+                      data-testid="teacher-sliding-underline"
+                      className="absolute bottom-0 left-0 h-[2.5px] transition-transform duration-300 ease-out flex items-center justify-center pointer-events-none z-20"
+                      style={{
+                        width: '25%',
+                        transform: `translateX(${activeIndex * 100}%)`,
+                      }}
+                    >
+                      <div className="h-[2.5px] w-9 rounded-full bg-blue-600 dark:bg-blue-400 shadow-[0_0_8px_rgba(37,99,235,0.4)]" />
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* PARENT BOTTOM TABS: Growth, Screen Time */}
-              {selectedRole === 'parent' && (
-                <div className="h-14 px-3 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-around z-40">
-                  {[
-                    { id: 'home', label: 'Child Growth', icon: Users },
-                    { id: 'limits', label: 'Time Guard', icon: Clock },
-                  ].map((tabItem) => {
-                    const Icon = tabItem.icon;
-                    const isActive = parentTab === tabItem.id;
-                    return (
-                      <button
-                        key={tabItem.id}
-                        onClick={() => setParentTab(tabItem.id as ParentTab)}
-                        className={`flex flex-col items-center gap-0.5 cursor-pointer transition-all ${
-                          isActive
-                            ? 'text-amber-600 dark:text-amber-400 font-extrabold'
-                            : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                        }`}
-                      >
-                        <Icon size={18} />
-                        <span className="text-[9px] font-semibold">{tabItem.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              {selectedRole === 'parent' && (() => {
+                const parentTabs = [
+                  { id: 'home', label: 'Child Growth', icon: Users },
+                  { id: 'limits', label: 'Time Guard', icon: Clock },
+                ];
+                const activeIndex = parentTab === 'home' ? 0 : 1;
+
+                return (
+                  <div className="relative h-14 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex items-center z-40 select-none">
+                    {parentTabs.map((tabItem, idx) => {
+                      const Icon = tabItem.icon;
+                      const isActive = activeIndex === idx;
+                      return (
+                        <button
+                          key={tabItem.id}
+                          onClick={() => setParentTab(tabItem.id as ParentTab)}
+                          className={`flex-1 h-full flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-colors duration-200 relative z-10 ${
+                            isActive
+                              ? 'text-amber-600 dark:text-amber-400 font-extrabold'
+                              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                          }`}
+                        >
+                          <Icon size={18} className="transition-transform duration-200 active:scale-90" />
+                          <span className="text-[9px] font-semibold">{tabItem.label}</span>
+                        </button>
+                      );
+                    })}
+
+                    {/* Animated Sliding Underline for Current Screen */}
+                    <div
+                      data-testid="parent-sliding-underline"
+                      className="absolute bottom-0 left-0 h-[2.5px] transition-transform duration-300 ease-out flex items-center justify-center pointer-events-none z-20"
+                      style={{
+                        width: '50%',
+                        transform: `translateX(${activeIndex * 100}%)`,
+                      }}
+                    >
+                      <div className="h-[2.5px] w-14 rounded-full bg-amber-600 dark:bg-amber-400 shadow-[0_0_8px_rgba(217,119,6,0.4)]" />
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Bottom Phone Home Indicator Bar */}
               <div className="h-4 flex items-center justify-center bg-[var(--bg-card)]">

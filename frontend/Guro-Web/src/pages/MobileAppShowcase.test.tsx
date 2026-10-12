@@ -175,4 +175,35 @@ describe('MobileAppShowcase Component', () => {
     fireEvent.click(studentRoleBtn);
     expect(screen.getByText(/4\. Simulated Grade Curriculum/i)).toBeInTheDocument();
   });
+
+  test('renders animated sliding underline on the bottom navigation bar for the active screen', () => {
+    render(
+      <MobileAppShowcase
+        onBackToOverview={mockBackToOverview}
+        onLaunchPortal={mockLaunchPortal}
+        isDarkMode={false}
+        onToggleTheme={mockToggleTheme}
+      />
+    );
+
+    // Initial student tab is Home (Dashboard, index 0)
+    const studentUnderline = screen.getByTestId('student-sliding-underline');
+    expect(studentUnderline).toBeInTheDocument();
+    expect(studentUnderline).toHaveStyle({ transform: 'translateX(0%)' });
+
+    // Click Lessons tab (index 1)
+    const lessonsTabs = screen.getAllByRole('button', { name: /Lessons/i });
+    fireEvent.click(lessonsTabs[lessonsTabs.length - 1]);
+    expect(studentUnderline).toHaveStyle({ transform: 'translateX(100%)' });
+
+    // Click My Progress tab (index 2)
+    const progressTabs = screen.getAllByRole('button', { name: /My Progress/i });
+    fireEvent.click(progressTabs[progressTabs.length - 1]);
+    expect(studentUnderline).toHaveStyle({ transform: 'translateX(200%)' });
+
+    // Click Profile tab (index 3)
+    const profileTabs = screen.getAllByRole('button', { name: /Profile/i });
+    fireEvent.click(profileTabs[profileTabs.length - 1]);
+    expect(studentUnderline).toHaveStyle({ transform: 'translateX(300%)' });
+  });
 });
