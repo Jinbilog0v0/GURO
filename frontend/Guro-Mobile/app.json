@@ -48,7 +48,8 @@
       "expo-sqlite",
       "expo-document-picker",
       "expo-status-bar",
-      "expo-updates"
+      "expo-updates",
+      "./plugins/withBuildArchitectures"
     ],
     "extra": {
       "eas": {
