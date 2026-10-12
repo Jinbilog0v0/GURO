@@ -265,5 +265,20 @@ describe('MobileAppShowcase Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Show Simulator Console/i }));
     expect(screen.getByRole('button', { name: /Focus Phone Mode/i })).toBeInTheDocument();
   });
+
+  test('calls onLaunchPortal when Sign In button is clicked', () => {
+    render(
+      <MobileAppShowcase
+        onBackToOverview={mockBackToOverview}
+        onLaunchPortal={mockLaunchPortal}
+        isDarkMode={false}
+        onToggleTheme={mockToggleTheme}
+      />
+    );
+
+    const signInBtn = screen.getByRole('button', { name: /^Sign In$/i });
+    fireEvent.click(signInBtn);
+    expect(mockLaunchPortal).toHaveBeenCalledTimes(1);
+  });
 });
 

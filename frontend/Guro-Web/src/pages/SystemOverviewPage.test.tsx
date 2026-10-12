@@ -28,7 +28,7 @@ describe('SystemOverviewPage Component', () => {
     expect(screen.getByText(/Form SF9 Ready/i)).toBeInTheDocument();
   });
 
-  test('calls onOpenMobileShowcase when Mobile Showcase buttons are clicked', () => {
+  test('calls onOpenMobileShowcase when Explore Mobile Showcase is clicked', () => {
     render(
       <SystemOverviewPage
         onOpenMobileShowcase={mockOpenMobileShowcase}
@@ -41,13 +41,9 @@ describe('SystemOverviewPage Component', () => {
     const heroShowcaseBtn = screen.getByRole('button', { name: /Explore Mobile Showcase/i });
     fireEvent.click(heroShowcaseBtn);
     expect(mockOpenMobileShowcase).toHaveBeenCalledTimes(1);
-
-    const calloutShowcaseBtn = screen.getByRole('button', { name: /Launch Mobile Showcase/i });
-    fireEvent.click(calloutShowcaseBtn);
-    expect(mockOpenMobileShowcase).toHaveBeenCalledTimes(2);
   });
 
-  test('calls onOpenAuth when Sign In / Portal buttons are clicked', () => {
+  test('calls onOpenAuth when Sign In buttons are clicked', () => {
     render(
       <SystemOverviewPage
         onOpenMobileShowcase={mockOpenMobileShowcase}
@@ -57,13 +53,17 @@ describe('SystemOverviewPage Component', () => {
       />
     );
 
-    const signInBtns = screen.getAllByRole('button', { name: /Sign In \/ Portal/i });
+    const signInBtns = screen.getAllByRole('button', { name: /^Sign In$/i });
     expect(signInBtns.length).toBe(2);
     fireEvent.click(signInBtns[0]);
     expect(mockOpenAuth).toHaveBeenCalledTimes(1);
 
     fireEvent.click(signInBtns[1]);
     expect(mockOpenAuth).toHaveBeenCalledTimes(2);
+
+    const aboutAccessBtn = screen.getByRole('button', { name: /Sign In to Platform/i });
+    fireEvent.click(aboutAccessBtn);
+    expect(mockOpenAuth).toHaveBeenCalledTimes(3);
   });
 
   test('can switch between audience tabs (Student, Teacher, Parent)', () => {
@@ -117,9 +117,9 @@ describe('SystemOverviewPage Component', () => {
     fireEvent.click(rolesLink);
     expect(underline).toHaveStyle({ left: '190px' });
 
-    // Click Mobile Showcase nav link
-    const mobileLink = screen.getByRole('link', { name: /Mobile Showcase/i });
-    fireEvent.click(mobileLink);
+    // Click About nav link
+    const aboutLink = screen.getByRole('link', { name: /About/i });
+    fireEvent.click(aboutLink);
     expect(underline).toHaveStyle({ left: '285px' });
 
     // Click Overview link back
@@ -143,5 +143,23 @@ describe('SystemOverviewPage Component', () => {
     expect(apkLinks.length).toBe(2);
     expect(apkLinks[0]).toHaveAttribute('href', 'https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk');
     expect(apkLinks[1]).toHaveAttribute('href', 'https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk');
+  });
+
+  test('renders About section with GURO acronym pillars', () => {
+    render(
+      <SystemOverviewPage
+        onOpenMobileShowcase={mockOpenMobileShowcase}
+        onOpenAuth={mockOpenAuth}
+        isDarkMode={false}
+        onToggleTheme={mockToggleTheme}
+      />
+    );
+
+    expect(screen.getByText(/About the GURO Platform/i)).toBeInTheDocument();
+    expect(screen.getByText(/Pillar G/i)).toBeInTheDocument();
+    expect(screen.getByText(/Pillar U/i)).toBeInTheDocument();
+    expect(screen.getByText(/Pillar R/i)).toBeInTheDocument();
+    expect(screen.getByText(/Pillar O/i)).toBeInTheDocument();
+    expect(screen.getByText(/Anchored to DepEd K–12 Most Essential Learning Competencies/i)).toBeInTheDocument();
   });
 });

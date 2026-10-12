@@ -23,7 +23,7 @@ interface SystemOverviewPageProps {
   onToggleTheme?: () => void;
 }
 
-type NavSectionId = 'overview' | 'pillars' | 'roles' | 'mobile-preview';
+type NavSectionId = 'overview' | 'pillars' | 'roles' | 'about';
 
 interface NavSection {
   id: NavSectionId;
@@ -34,7 +34,7 @@ const NAV_SECTIONS: NavSection[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'pillars', label: 'Why GURO' },
   { id: 'roles', label: "Who It's For" },
-  { id: 'mobile-preview', label: 'Mobile Showcase' },
+  { id: 'about', label: 'About' },
 ];
 
 export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
@@ -149,46 +149,49 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           </span>
         </div>
 
-        {/* Center Quick Jump Links (Desktop) with Animated Sliding Underline */}
-        <nav
-          ref={navRef}
-          aria-label="Overview navigation"
-          className="hidden md:flex items-center gap-1 text-xs relative py-1"
-        >
-          {NAV_SECTIONS.map((sec) => {
-            const isActive = activeNavSection === sec.id;
-            return (
-              <a
-                key={sec.id}
-                href={`#${sec.id}`}
-                ref={(el) => {
-                  itemRefs.current[sec.id] = el;
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleNavClick(sec.id);
-                }}
-                className={`px-3 py-1.5 rounded-lg font-bold transition-colors duration-200 cursor-pointer relative z-10 whitespace-nowrap select-none ${
-                  isActive
-                    ? 'text-[#11428E] dark:text-sky-400'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                }`}
-              >
-                {sec.label}
-              </a>
-            );
-          })}
+        {/* Center / Nav Container with Overview Anchored at its Starting Position */}
+        <div className="hidden md:flex flex-1 items-center">
+          <nav
+            ref={navRef}
+            aria-label="Overview navigation"
+            style={{ marginLeft: 'max(1rem, calc(50% - 165px))' }}
+            className="flex items-center gap-6 lg:gap-8 text-xs relative py-1"
+          >
+            {NAV_SECTIONS.map((sec) => {
+              const isActive = activeNavSection === sec.id;
+              return (
+                <a
+                  key={sec.id}
+                  href={`#${sec.id}`}
+                  ref={(el) => {
+                    itemRefs.current[sec.id] = el;
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNavClick(sec.id);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-colors duration-200 cursor-pointer relative z-10 whitespace-nowrap select-none ${
+                    isActive
+                      ? 'text-[#11428E] dark:text-sky-400'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                  }`}
+                >
+                  {sec.label}
+                </a>
+              );
+            })}
 
-          {/* Animated Sliding Underline for Current Screen / Section */}
-          <span
-            data-testid="top-nav-sliding-underline"
-            className="absolute bottom-0 h-[2.5px] bg-[#11428E] dark:bg-sky-400 rounded-full transition-all duration-300 ease-out pointer-events-none z-20 shadow-[0_0_8px_rgba(17,66,142,0.35)]"
-            style={{
-              left: `${indicatorStyle.left}px`,
-              width: `${indicatorStyle.width}px`,
-            }}
-          />
-        </nav>
+            {/* Animated Sliding Underline for Current Screen / Section */}
+            <span
+              data-testid="top-nav-sliding-underline"
+              className="absolute bottom-0 h-[2.5px] bg-[#11428E] dark:bg-sky-400 rounded-full transition-all duration-300 ease-out pointer-events-none z-20 shadow-[0_0_8px_rgba(17,66,142,0.35)]"
+              style={{
+                left: `${indicatorStyle.left}px`,
+                width: `${indicatorStyle.width}px`,
+              }}
+            />
+          </nav>
+        </div>
 
         {/* Right Action Buttons */}
         <div className="flex items-center gap-2 sm:gap-2.5">
@@ -220,7 +223,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             onClick={onOpenAuth}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-95 text-white text-xs font-bold shadow-md shadow-[#11428E]/25 transition-all cursor-pointer hover:scale-102 active:scale-98"
           >
-            <span>Sign In / Portal</span>
+            <span>Sign In</span>
             <ArrowRight className="size-3.5" />
           </button>
         </div>
@@ -471,29 +474,103 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           </div>
         </section>
 
-        {/* ── Section 4: Mobile App Simulator Showcase Callout (Dynamic Screen Fitting) ── */}
-        <section id="mobile-preview" className="scroll-mt-16 px-4 sm:px-8 py-12 sm:py-16 min-h-[calc(100vh-3.5rem)] flex flex-col justify-center bg-gradient-to-br from-[#11428E]/10 via-[var(--bg-main)] to-[#A01322]/10 border-t border-[var(--border-color)]">
-          <div className="max-w-4xl mx-auto rounded-3xl p-6 sm:p-12 border border-[#11428E]/20 bg-[var(--bg-card)] shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-8 w-full my-auto">
-            <div className="flex flex-col gap-2.5 sm:gap-3 max-w-lg text-center sm:text-left items-center sm:items-start">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold w-fit">
-                <Smartphone className="size-3.5" />
-                <span>Interactive Mobile Showcase</span>
+        {/* ── Section 4: About GURO (Mission, Acronym Breakdown & Vision) ── */}
+        <section id="about" className="scroll-mt-16 px-4 sm:px-8 py-12 sm:py-16 min-h-[calc(100vh-3.5rem)] flex flex-col justify-center bg-gradient-to-br from-[#11428E]/10 via-[var(--bg-main)] to-[#A01322]/10 border-t border-[var(--border-color)]">
+          <div className="max-w-5xl mx-auto w-full flex flex-col gap-8 sm:gap-10 my-auto">
+            {/* Header */}
+            <div className="flex flex-col items-center text-center gap-2.5 sm:gap-3">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#11428E]/10 text-[#11428E] dark:text-sky-300 border border-[#11428E]/20 text-xs font-bold">
+                <GraduationCap className="size-3.5" />
+                <span>Our Purpose &amp; DepEd Mission</span>
               </div>
-              <h3 className="text-xl sm:text-3xl font-black text-[var(--text-main)] tracking-tight">
-                Experience the Mobile App Live
-              </h3>
-              <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
-                Test the smartphone interface directly in your browser. Experiment with live study slide checkpoints, answer a sample quiz question, and test the offline mode toggle.
+              <h2 className="text-2xl sm:text-4xl font-black text-[var(--text-main)] tracking-tight">
+                About the GURO Platform
+              </h2>
+              <p className="text-xs sm:text-sm text-[var(--text-muted)] max-w-2xl leading-relaxed">
+                Bridging the digital divide in Philippine public elementary education by delivering curriculum-aligned, high-engagement learning tools that operate seamlessly with or without internet connectivity.
               </p>
             </div>
 
-            <button
-              onClick={onOpenMobileShowcase}
-              className="flex items-center justify-center gap-2 px-6 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/25 transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0 w-full sm:w-auto"
-            >
-              <Smartphone className="size-4" />
-              <span>Launch Mobile Showcase →</span>
-            </button>
+            {/* Acronym Breakdown Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+              {[
+                {
+                  letter: 'G',
+                  title: 'Guided',
+                  desc: 'Structured competency pathways, step-by-step interactive slides, and targeted diagnostic quizzes.',
+                  color: 'from-[#11428E] to-blue-600',
+                  badge: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                },
+                {
+                  letter: 'U',
+                  title: 'Unified',
+                  desc: 'A cohesive ecosystem linking teachers, students, and guardians into a single synchronized educational workflow.',
+                  color: 'from-blue-600 to-indigo-600',
+                  badge: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+                },
+                {
+                  letter: 'R',
+                  title: 'Resource',
+                  desc: 'Official DepEd MELC-aligned curriculum decks, diagnostic quizzes, and ready-to-ingest custom modules.',
+                  color: 'from-amber-600 to-rose-600',
+                  badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                },
+                {
+                  letter: 'O',
+                  title: 'Optimization',
+                  desc: 'Zero-data offline caching architecture engineered for low-spec Android devices, conserving battery and storage.',
+                  color: 'from-[#A01322] to-rose-700',
+                  badge: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                },
+              ].map((item) => (
+                <div
+                  key={item.letter}
+                  className="p-5 sm:p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:shadow-md transition-all flex flex-col gap-3 group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={`size-11 rounded-2xl bg-gradient-to-br ${item.color} text-white font-black text-xl flex items-center justify-center shadow-md shadow-[#11428E]/15`}>
+                      {item.letter}
+                    </span>
+                    <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${item.badge}`}>
+                      Pillar {item.letter}
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="text-base font-extrabold text-[var(--text-main)] group-hover:text-[#11428E] dark:group-hover:text-sky-400 transition-colors">
+                      {item.title}
+                    </h4>
+                    <p className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed">
+                      {item.desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Core Mission Banner Card */}
+            <div className="p-5 sm:p-8 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex flex-col gap-2 max-w-xl text-center md:text-left">
+                <span className="text-xs font-bold text-[#11428E] dark:text-sky-400 uppercase tracking-wider">
+                  National Curriculum Anchor
+                </span>
+                <h4 className="text-base sm:text-lg font-bold text-[var(--text-main)]">
+                  Anchored to DepEd K–12 Most Essential Learning Competencies (MELC)
+                </h4>
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                  Engineered specifically for public school divisions across Luzon, Visayas, and Mindanao. GURO automatically generates DepEd School Form 9 (SF9) quarterly mastery analytics without demanding ongoing internet connectivity.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  onClick={onOpenAuth}
+                  className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-95 text-white text-xs font-bold shadow-md shadow-[#11428E]/25 transition-all cursor-pointer hover:scale-102 active:scale-98"
+                >
+                  <span>Sign In to Platform</span>
+                  <ArrowRight className="size-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -513,7 +590,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             <span>100% Offline Ready</span>
             <span>•</span>
             <button onClick={onOpenAuth} className="text-[#11428E] dark:text-sky-400 hover:underline cursor-pointer">
-              Sign In / Portal
+              Sign In
             </button>
           </div>
         </div>

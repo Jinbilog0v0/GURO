@@ -11,7 +11,7 @@ import {
   Sparkles,
   BookOpen,
   CheckCircle2,
-  ExternalLink,
+  ArrowRight,
   Sun,
   Moon,
   Clock,
@@ -224,11 +224,10 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
 
           <button
             onClick={onLaunchPortal}
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-95 text-white text-xs font-bold shadow-md shadow-[#11428E]/20 transition-all cursor-pointer hover:scale-102 active:scale-98"
+            className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-95 text-white text-xs font-bold shadow-md shadow-[#11428E]/20 transition-all cursor-pointer hover:scale-102 active:scale-98"
           >
-            <span className="hidden sm:inline">Launch Web Portal</span>
-            <span className="sm:hidden">Portal</span>
-            <ExternalLink className="size-3.5" />
+            <span>Sign In</span>
+            <ArrowRight className="size-3.5" />
           </button>
         </div>
       </header>
