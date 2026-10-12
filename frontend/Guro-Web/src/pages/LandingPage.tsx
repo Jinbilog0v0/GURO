@@ -368,12 +368,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     return (
         <div
-            className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-8 sm:p-8 relative select-none"
+            className="min-h-[100vh] min-h-[100svh] w-full flex flex-col items-center justify-start sm:justify-center px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-[max(4.25rem,calc(env(safe-area-inset-top)+3.5rem))] pb-[max(2rem,env(safe-area-inset-bottom))] relative select-none overflow-y-auto"
             style={pageStyle}
         >
-            {/* ── Top Bar Controls (Full-width edge-to-edge alignment) ── */}
+            {/* ── Top Bar Controls (Full-width edge-to-edge alignment with Safe-Area clearance) ── */}
             {view === 'guest-roles' ? (
-                <div className="w-full flex items-center justify-between z-30 absolute top-4 sm:top-6 left-0 right-0 px-4 sm:px-8 md:px-10">
+                <div className="w-full flex items-center justify-between z-30 absolute top-[max(0.75rem,env(safe-area-inset-top))] left-0 right-0 px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
                     <button
                         onClick={() => setView('login')}
                         className="flex items-center gap-2 px-3.5 sm:px-4 py-2 glass-panel border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all font-semibold text-xs cursor-pointer"
@@ -399,7 +399,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </div>
                 </div>
             ) : (
-                <div className="w-full flex items-center justify-between gap-2 z-30 absolute top-4 sm:top-6 left-0 right-0 px-4 sm:px-8 md:px-10 sm:pointer-events-none">
+                <div className="w-full flex items-center justify-between gap-2 z-30 absolute top-[max(0.75rem,env(safe-area-inset-top))] left-0 right-0 px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:pointer-events-none">
                     <div className="flex items-center gap-1.5 sm:gap-2.5 sm:pointer-events-auto">
                         {onBackToOverview && (
                             <button
@@ -442,17 +442,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
             )}
 
-            <div className="flex w-full max-w-5xl flex-col items-center gap-6 sm:gap-10 relative z-10 pt-12 sm:pt-4">
+            <div className="flex w-full max-w-5xl flex-col items-center gap-4 sm:gap-8 relative z-10 my-auto">
 
                 <div className="flex flex-col items-center gap-1 text-center">
                     <GuroLogoGraphic onClick={handleLogoClick} />
-                    <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#11428E] mt-1">GURO</h1>
-                    <p className="text-xs sm:text-base font-semibold text-[#A01322]">GUIDED UNIFIED RESOURCE OPTIMIZATION</p>
+                    <h1 className="text-[clamp(1.75rem,5.5vw,3rem)] font-extrabold tracking-tight text-[#11428E] mt-1">GURO</h1>
+                    <p className="text-[clamp(0.7rem,2vw,0.95rem)] font-semibold text-[#A01322] tracking-wide">GUIDED UNIFIED RESOURCE OPTIMIZATION</p>
                 </div>
 
                 {/* ── Login ── */}
                 {view === 'login' && (
-                    <div className={`w-full max-w-md glass-panel rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl flex flex-col gap-5 sm:gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/40 ring-2 ring-[#CE1126]/20' : 'border-[var(--border-color)]'}`}>
+                    <div className={`w-[min(100%,28rem)] glass-panel rounded-2xl sm:rounded-3xl p-[clamp(1.125rem,4vw,2rem)] shadow-2xl flex flex-col gap-5 sm:gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/40 ring-2 ring-[#CE1126]/20' : 'border-[var(--border-color)]'}`}>
                         <div className="flex flex-col items-center justify-center text-center w-full">
                             <div className="w-full text-center">
                                 {isAdminMode ? (
@@ -524,7 +524,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                     </label>
                                     <span className="text-[10px] text-[var(--text-dark)] font-medium">1-click autofill</span>
                                 </div>
-                                <div className={`grid ${isAdminMode ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-2`}>
+                                <div className={`grid ${isAdminMode ? 'grid-cols-[repeat(auto-fit,minmax(min(100%,75px),1fr))]' : 'grid-cols-[repeat(auto-fit,minmax(min(100%,88px),1fr))]'} gap-2`}>
                                     {(isAdminMode
                                         ? [
                                             { role: 'developer', label: 'Developer', email: 'nealjeanclaro@guro.dev', password: 'JinBilog0v0', icon: Terminal, activeBorder: 'border-[#CE1126] text-[#CE1126] bg-[#CE1126]/10' },
@@ -653,7 +653,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                 {/* ── Register ── */}
                 {view === 'register' && (
-                    <div className={`w-full max-w-md glass-panel rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl flex flex-col gap-5 sm:gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/40 ring-2 ring-[#CE1126]/20' : 'border-[var(--border-color)]'}`}>
+                    <div className={`w-[min(100%,28rem)] glass-panel rounded-2xl sm:rounded-3xl p-[clamp(1.125rem,4vw,2rem)] shadow-2xl flex flex-col gap-5 sm:gap-6 border transition-all duration-300 ${isAdminMode ? 'border-[#CE1126]/40 ring-2 ring-[#CE1126]/20' : 'border-[var(--border-color)]'}`}>
                         <div className="flex flex-col items-center justify-center text-center w-full">
                             <div className="w-full text-center">
                                 {isAdminMode ? (

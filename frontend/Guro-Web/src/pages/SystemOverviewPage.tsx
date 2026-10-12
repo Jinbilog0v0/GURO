@@ -158,10 +158,10 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen w-full bg-[var(--bg-main)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
+    <div className="min-h-screen min-h-[100svh] w-full bg-[var(--bg-main)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
       
       {/* ── Top Navigation Bar — iOS: Frosted Glass | Android: M3 Solid Elevation ── */}
-      <header className={`sticky top-0 z-40 px-4 sm:px-8 py-3.5 flex items-center justify-between transition-all duration-200 ${
+      <header className={`sticky top-0 z-40 px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 sm:px-8 flex items-center justify-between transition-all duration-200 ${
         isIOS
           ? 'bg-[var(--bg-card)]/70 backdrop-blur-xl border-b border-[var(--border-color)]/60 shadow-[0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/5'
           : 'bg-[var(--bg-card)] border-b border-[var(--border-color)] shadow-sm'
@@ -286,7 +286,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           {/* Floating Dropdown Menu (40-50% screen width, right-aligned) */}
           <div
             data-testid="mobile-top-action-menu"
-            className={`fixed top-14 right-3 w-[50%] min-w-[170px] max-w-[210px] z-[60] p-2 rounded-2xl border shadow-2xl md:hidden animate-in fade-in slide-in-from-top-2 duration-150 ${
+            className={`fixed top-[calc(3.5rem+env(safe-area-inset-top,0px))] right-[max(0.75rem,env(safe-area-inset-right))] w-[50%] min-w-[170px] max-w-[210px] z-[60] p-2 rounded-2xl border shadow-2xl md:hidden animate-in fade-in slide-in-from-top-2 duration-150 ${
               isIOS
                 ? 'bg-[var(--bg-card)]/85 backdrop-blur-2xl border-[var(--border-color)]/70 ring-1 ring-white/10 shadow-black/25'
                 : 'bg-white dark:bg-[#0d1322] border-[var(--border-color)] shadow-[0_12px_32px_rgba(0,0,0,0.35)]'
@@ -342,23 +342,23 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
       <main className="flex-1 flex flex-col">
 
         {/* ── Section 1: Hero Banner — Fully responsive, dynamic viewport fitting with zero overlap ── */}
-        <section id="overview" className="relative px-4 sm:px-8 pt-2 pb-28 md:py-16 min-h-[calc(100dvh-3.5rem)] md:min-h-[calc(100vh-3.5rem)] max-w-6xl mx-auto w-full flex flex-col items-center justify-between md:justify-center text-center overflow-x-clip">
+        <section id="overview" className="relative px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:px-8 pt-2 pb-28 md:py-16 min-h-[calc(100vh-3.5rem)] min-h-[calc(100svh-3.5rem)] md:min-h-[calc(100vh-3.5rem)] max-w-6xl mx-auto w-full flex flex-col items-center justify-between md:justify-center text-center overflow-x-clip">
 
           {/* Ambient Background Glow Effect */}
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 size-72 sm:size-96 bg-[#11428E]/15 rounded-full blur-3xl pointer-events-none -z-10" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-80 sm:size-[460px] bg-gradient-to-tr from-[#11428E]/10 to-[#A01322]/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
-          {/* ── Hero Content: vertically centered, proportional mobile spacing ── */}
-          <div className="flex-1 w-full min-h-0 flex flex-col items-center justify-center gap-3 sm:gap-6 py-2 sm:py-0">
+          {/* ── Hero Content: dynamic viewport fitting & proportional mobile spacing ── */}
+          <div className="flex-1 w-full min-h-0 flex flex-col items-center justify-evenly sm:justify-center gap-[clamp(0.75rem,2.2vh,1.75rem)] sm:gap-6 py-3 sm:py-0">
 
             {/* DepEd MELC Badge */}
-            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full border border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300 text-[11px] sm:text-xs font-extrabold shadow-xs animate-in fade-in duration-300">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 py-1.5 rounded-full border border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300 text-[11px] sm:text-xs font-extrabold shadow-xs animate-in fade-in duration-300">
               <Sparkles className="size-3 sm:size-3.5 text-sky-500" />
               <span>DepEd MELC Aligned • Grades 4 to 6 Mathematics &amp; English</span>
             </div>
 
             {/* Main Title */}
-            <h1 className="text-[1.55rem] sm:text-5xl lg:text-6xl font-black text-[var(--text-main)] tracking-tight max-w-xs sm:max-w-4xl leading-[1.18] sm:leading-[1.12]">
+            <h1 className="text-[clamp(1.75rem,5.6vw,2.75rem)] sm:text-5xl lg:text-6xl font-black text-[var(--text-main)] tracking-tight w-full max-w-sm sm:max-w-4xl leading-[1.14] sm:leading-[1.12]">
               Adaptive, Offline-First Learning for{' '}
               <span className="bg-gradient-to-r from-[#11428E] via-[#2563EB] to-[#A01322] bg-clip-text text-transparent">
                 Philippine Classrooms
@@ -366,7 +366,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             </h1>
 
             {/* Curriculum Scope Chips — 2 rows */}
-            <div className="flex flex-col items-center gap-1.5 sm:gap-2 w-full mt-1.5 mb-1.5 sm:mt-2 sm:mb-2">
+            <div className="flex flex-col items-center gap-1.5 sm:gap-2 w-full">
               {/* Row 1: Subject chips */}
               <div className="flex items-center justify-center gap-2">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-bold shadow-2xs">
@@ -385,15 +385,15 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             </div>
 
             {/* Subtitle */}
-            <p className="text-[11.5px] sm:text-base lg:text-lg text-[var(--text-muted)] max-w-[17.5rem] sm:max-w-2xl leading-[1.55] font-medium">
+            <p className="text-[clamp(0.8rem,2.4vw,0.95rem)] sm:text-base lg:text-lg text-[var(--text-muted)] w-full max-w-[21.5rem] sm:max-w-2xl leading-[1.55] font-medium">
               GURO (Guided Unified Resource Optimization) bridges the digital divide with rich interactive slides, diagnostic quizzes, automated DepEd SF9 reports, and 100% offline capability.
             </p>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 w-full max-w-[17.5rem] sm:max-w-none">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-4 w-full max-w-[20rem] sm:max-w-none">
               <button
                 onClick={onOpenMobileShowcase}
-                className="flex items-center justify-center gap-2 px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/20 transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
+                className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/20 transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
               >
                 <Smartphone className="size-4" />
                 <span>Explore Mobile Showcase</span>
@@ -403,7 +403,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 download="GURO-preview.apk"
-                className="flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
+                className="flex items-center justify-center gap-2 px-6 sm:px-6 py-3 sm:py-3.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
               >
                 <Download className="size-4 text-sky-500" />
                 <span>Download App APK</span>
@@ -770,7 +770,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
       <nav
         aria-label="Mobile bottom navigation"
         data-testid="mobile-bottom-navigation"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-center"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-center px-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]"
         style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}
       >
         <div

@@ -28,6 +28,12 @@
 
   --font-body: "Quicksand", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-display: "Quicksand", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Safe Area Inset Tokens (Fallback to 0px if unsupported) */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
 }
 
 @layer base {
@@ -37,6 +43,7 @@
     font-family: var(--font-body);
     overflow-x: hidden;
     min-height: 100vh;
+    min-height: 100svh;
   }
 }
 
@@ -62,6 +69,7 @@
 @layer base {
   #root {
     min-height: 100vh;
+    min-height: 100svh;
     display: flex;
   }
 }
