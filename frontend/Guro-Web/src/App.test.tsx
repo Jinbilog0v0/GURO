@@ -39,21 +39,21 @@ describe('App Portal and Navigation Layout (Web)', () => {
   test('renders System Overview Page initially if no user is cached', () => {
     render(<App />);
     expect(screen.getByText(/Philippine Classrooms/i)).toBeInTheDocument();
-    expect(screen.getByText(/Mobile Showcase/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Mobile Showcase/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText('Admin Console')).not.toBeInTheDocument();
     expect(screen.queryByText('Teacher Portal')).not.toBeInTheDocument();
   });
 
   test('can navigate to login portal from overview', () => {
     render(<App />);
-    const signInBtn = screen.getByRole('button', { name: /Sign In \/ Portal/i });
+    const signInBtn = screen.getAllByRole('button', { name: /Sign In \/ Portal/i })[0];
     fireEvent.click(signInBtn);
     expect(screen.getByText(/Welcome back/i)).toBeInTheDocument();
   });
 
   test('can navigate to mobile app showcase from overview and back', () => {
     render(<App />);
-    const showcaseBtn = screen.getByRole('button', { name: /Mobile Showcase/i });
+    const showcaseBtn = screen.getByRole('button', { name: /^Mobile Showcase$/i });
     fireEvent.click(showcaseBtn);
     expect(screen.getByText(/Mobile (App )?Simulator/i)).toBeInTheDocument();
 

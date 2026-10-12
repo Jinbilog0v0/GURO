@@ -38,11 +38,11 @@ describe('SystemOverviewPage Component', () => {
       />
     );
 
-    const heroShowcaseBtn = screen.getByRole('button', { name: /Explore Mobile App Showcase/i });
+    const heroShowcaseBtn = screen.getByRole('button', { name: /Explore Mobile Showcase/i });
     fireEvent.click(heroShowcaseBtn);
     expect(mockOpenMobileShowcase).toHaveBeenCalledTimes(1);
 
-    const calloutShowcaseBtn = screen.getByRole('button', { name: /Launch Mobile Simulator/i });
+    const calloutShowcaseBtn = screen.getByRole('button', { name: /Launch Mobile Showcase/i });
     fireEvent.click(calloutShowcaseBtn);
     expect(mockOpenMobileShowcase).toHaveBeenCalledTimes(2);
   });
@@ -57,11 +57,11 @@ describe('SystemOverviewPage Component', () => {
       />
     );
 
-    const navSignInBtn = screen.getByRole('button', { name: /Sign In \/ Portal/i });
-    fireEvent.click(navSignInBtn);
+    const signInBtns = screen.getAllByRole('button', { name: /Sign In \/ Portal/i });
+    fireEvent.click(signInBtns[0]);
     expect(mockOpenAuth).toHaveBeenCalledTimes(1);
 
-    const heroWorkspaceBtn = screen.getByRole('button', { name: /Launch Web Workspace/i });
+    const heroWorkspaceBtn = screen.getByRole('button', { name: /Open Web Portal/i });
     fireEvent.click(heroWorkspaceBtn);
     expect(mockOpenAuth).toHaveBeenCalledTimes(2);
   });
@@ -107,8 +107,8 @@ describe('SystemOverviewPage Component', () => {
     expect(underline).toBeInTheDocument();
     expect(underline).toHaveStyle({ left: '0px' });
 
-    // Click Platform Pillars nav link
-    const pillarsLink = screen.getByRole('link', { name: /Platform Pillars/i });
+    // Click Why GURO nav link
+    const pillarsLink = screen.getByRole('link', { name: /Why GURO/i });
     fireEvent.click(pillarsLink);
     expect(underline).toHaveStyle({ left: '95px' });
 
@@ -117,8 +117,8 @@ describe('SystemOverviewPage Component', () => {
     fireEvent.click(rolesLink);
     expect(underline).toHaveStyle({ left: '190px' });
 
-    // Click Mobile App nav link
-    const mobileLink = screen.getByRole('link', { name: /Mobile App/i });
+    // Click Mobile Showcase nav link
+    const mobileLink = screen.getByRole('link', { name: /Mobile Showcase/i });
     fireEvent.click(mobileLink);
     expect(underline).toHaveStyle({ left: '285px' });
 

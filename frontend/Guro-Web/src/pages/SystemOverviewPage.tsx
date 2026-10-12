@@ -31,9 +31,9 @@ interface NavSection {
 
 const NAV_SECTIONS: NavSection[] = [
   { id: 'overview', label: 'Overview' },
-  { id: 'pillars', label: 'Platform Pillars' },
+  { id: 'pillars', label: 'Why GURO' },
   { id: 'roles', label: "Who It's For" },
-  { id: 'mobile-preview', label: 'Mobile App' },
+  { id: 'mobile-preview', label: 'Mobile Showcase' },
 ];
 
 export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
@@ -208,11 +208,12 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
 
           <button
             onClick={onOpenMobileShowcase}
+            aria-label="Mobile Showcase"
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-all cursor-pointer shadow-xs"
           >
             <Smartphone className="size-3.5 text-emerald-500" />
             <span className="hidden sm:inline">Mobile Showcase</span>
-            <span className="sm:hidden">Mobile</span>
+            <span className="sm:hidden">Showcase</span>
           </button>
 
           <button
@@ -254,14 +255,14 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
               className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/20 transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
             >
               <Smartphone className="size-4" />
-              <span>Explore Mobile App Showcase</span>
+              <span>Explore Mobile Showcase</span>
             </button>
 
             <button
               onClick={onOpenAuth}
               className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-main)] text-[var(--text-main)] font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
             >
-              <span>Launch Web Workspace</span>
+              <span>Open Web Portal</span>
               <ArrowRight className="size-4 text-[var(--text-muted)]" />
             </button>
           </div>
@@ -271,8 +272,8 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             {[
               { label: 'Offline Ready', value: '100% Zero-Data', desc: 'Quizzes & slides run without internet' },
               { label: 'DepEd Standards', value: 'Grades 4, 5, 6', desc: 'Official MELC curriculum alignment' },
-              { label: 'Teacher Telemetry', value: 'Form SF9 Ready', desc: 'Automated quarterly reports & analytics' },
-              { label: 'Parent Connection', value: '6-Digit Codes', desc: 'Secure guardian sync & screen time' },
+              { label: 'Teacher Analytics', value: 'Form SF9 Ready', desc: 'Automated quarterly reports & analytics' },
+              { label: 'Guardian Sync', value: '6-Digit Codes', desc: 'Secure guardian sync & screen time' },
             ].map((m, idx) => (
               <div key={idx} className="p-3 sm:p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs flex flex-col gap-0.5 sm:gap-1">
                 <span className="text-[10px] sm:text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{m.label}</span>
@@ -283,12 +284,12 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           </div>
         </section>
 
-        {/* ── Section 2: Platform Pillars (Dynamic Screen Fitting) ── */}
+        {/* ── Section 2: Why GURO (Dynamic Screen Fitting) ── */}
         <section id="pillars" className="scroll-mt-16 px-4 sm:px-8 py-12 sm:py-16 min-h-[calc(100vh-3.5rem)] flex flex-col justify-center bg-[var(--bg-card)]/50 border-y border-[var(--border-color)]">
           <div className="max-w-6xl mx-auto w-full flex flex-col gap-8 sm:gap-10 my-auto">
             <div className="text-center flex flex-col items-center gap-1.5 sm:gap-2">
               <span className="text-xs font-black text-[#A01322] dark:text-rose-400 uppercase tracking-widest">
-                Core Capabilities
+                Why GURO
               </span>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--text-main)] tracking-tight">
                 Designed for Reliability &amp; Academic Growth
@@ -300,25 +301,25 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                 {
                   icon: WifiOff,
                   color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
-                  title: '100% Offline Architecture',
+                  title: '100% Offline Learning',
                   description: 'All lesson materials, interactive study slides, and quizzes run locally on the client with zero network dependency. Syncs automatically when back online.',
                 },
                 {
                   icon: BookOpen,
                   color: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
-                  title: 'DepEd MELC Aligned',
+                  title: 'DepEd MELC Alignment',
                   description: 'Covers Philippine elementary Grade 4 to 6 competencies in Mathematics (fractions, decimals, geometry) and English (grammar, reading comprehension, vocabulary).',
                 },
                 {
                   icon: BarChart3,
                   color: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20',
-                  title: 'Automated SF9 Reports',
+                  title: 'Automated SF9 Reporting',
                   description: 'Calculates mastery matrix, pre-test vs. post-test growth, and item analyses. Directly generates printable DepEd Form SF9 progress reports for teachers.',
                 },
                 {
                   icon: Shield,
                   color: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
-                  title: 'Parental Transparency',
+                  title: 'Guardian Transparency',
                   description: 'Guardians receive a 6-digit access code to review real-time subject mastery, practice attempts, and enforce healthy daily screen-time limits.',
                 },
               ].map((p, idx) => {
@@ -341,7 +342,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
         <section id="roles" className="scroll-mt-16 px-4 sm:px-8 py-12 sm:py-16 min-h-[calc(100vh-3.5rem)] max-w-6xl mx-auto w-full flex flex-col justify-center gap-8 sm:gap-10">
           <div className="text-center flex flex-col items-center gap-1.5 sm:gap-2">
             <span className="text-xs font-black text-[#11428E] dark:text-sky-400 uppercase tracking-widest">
-              Unified Ecosystem
+              Who It's For
             </span>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[var(--text-main)] tracking-tight">
               A Tailored Experience for Every Role
@@ -455,8 +456,11 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                   </ul>
                 </div>
                 <div className="p-5 sm:p-6 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col gap-3">
-                  <span className="text-xs font-bold text-[var(--text-muted)]">Screen Time Guard</span>
-                  <h4 className="text-sm sm:text-base font-extrabold text-[var(--text-main)]">38 / 60 Minutes Used Today</h4>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[var(--text-muted)]">Linked Student</span>
+                    <span className="text-xs font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full">Grade 4</span>
+                  </div>
+                  <h4 className="text-sm sm:text-base font-extrabold text-[var(--text-main)]">Screen Time Guard: 38 / 60 Mins</h4>
                   <p className="text-xs text-amber-700 dark:text-amber-300">Healthy learning balance active.</p>
                 </div>
               </div>
@@ -470,7 +474,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             <div className="flex flex-col gap-2.5 sm:gap-3 max-w-lg text-center sm:text-left items-center sm:items-start">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold w-fit">
                 <Smartphone className="size-3.5" />
-                <span>Interactive In-Browser Simulator</span>
+                <span>Interactive Mobile Showcase</span>
               </div>
               <h3 className="text-xl sm:text-3xl font-black text-[var(--text-main)] tracking-tight">
                 Experience the Mobile App Live
@@ -485,7 +489,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
               className="flex items-center justify-center gap-2 px-6 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/25 transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0 w-full sm:w-auto"
             >
               <Smartphone className="size-4" />
-              <span>Launch Mobile Simulator →</span>
+              <span>Launch Mobile Showcase →</span>
             </button>
           </div>
         </section>
@@ -501,12 +505,12 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             <span>• Guided Unified Resource Optimization</span>
           </div>
           <div className="flex items-center gap-4 font-semibold">
-            <span>DepEd MELC Compliant</span>
+            <span>DepEd MELC Aligned</span>
             <span>•</span>
-            <span>100% Offline Capable</span>
+            <span>100% Offline Ready</span>
             <span>•</span>
             <button onClick={onOpenAuth} className="text-[#11428E] dark:text-sky-400 hover:underline cursor-pointer">
-              Sign In
+              Sign In / Portal
             </button>
           </div>
         </div>
