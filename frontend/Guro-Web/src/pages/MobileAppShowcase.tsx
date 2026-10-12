@@ -14,9 +14,18 @@ import {
   ExternalLink,
   Sun,
   Moon,
-  ChevronRight,
   Clock,
-  Award
+  Award,
+  Home,
+  BarChart2,
+  User as UserIcon,
+  Zap,
+  PenLine,
+  Settings,
+  Flame,
+  Copy,
+  Check,
+  Play
 } from 'lucide-react';
 
 interface MobileAppShowcaseProps {
@@ -27,9 +36,11 @@ interface MobileAppShowcaseProps {
 }
 
 type SimulatedRole = 'student' | 'teacher' | 'parent';
-type StudentScreen = 'auth' | 'study' | 'quiz' | 'profile';
-type TeacherScreen = 'overview' | 'ingestion';
-type ParentScreen = 'tracking' | 'limits';
+
+// Navigation types matching Mobile Navigators
+type StudentTab = 'home' | 'lessons' | 'progress' | 'me' | 'study' | 'quiz';
+type TeacherTab = 'console' | 'ingest' | 'builder' | 'settings';
+type ParentTab = 'home' | 'limits';
 
 export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
   onBackToOverview,
@@ -39,26 +50,38 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
 }) => {
   // Simulator Controls State
   const [selectedRole, setSelectedRole] = useState<SimulatedRole>('student');
-  const [studentScreen, setStudentScreen] = useState<StudentScreen>('study');
-  const [teacherScreen, setTeacherScreen] = useState<TeacherScreen>('overview');
-  const [parentScreen, setParentScreen] = useState<ParentScreen>('tracking');
+  const [studentTab, setStudentTab] = useState<StudentTab>('home');
+  const [teacherTab, setTeacherTab] = useState<TeacherTab>('console');
+  const [parentTab, setParentTab] = useState<ParentTab>('home');
   const [isSimulatedOnline, setIsSimulatedOnline] = useState(true);
   const [simulatedGrade, setSimulatedGrade] = useState<number>(4);
 
-  // Interactive In-Phone Quiz State
+  // Student Experience State
+  const [earnedStars, setEarnedStars] = useState(12);
+  const [xpPoints, setXpPoints] = useState(65);
+  const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<'All' | 'Mathematics' | 'English'>('All');
+  
+  // Interactive Quiz State
   const [selectedQuizAnswer, setSelectedQuizAnswer] = useState<string | null>(null);
   const [quizSubmitted, setQuizSubmitted] = useState(false);
-  const [earnedStars, setEarnedStars] = useState(12);
 
-  // Interactive In-Phone Study Slide State
+  // Interactive Study Slide State
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isRefresherOpen, setIsRefresherOpen] = useState(false);
   const [refresherAnswer, setRefresherAnswer] = useState<string | null>(null);
 
+  // Copy code feedback
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  // Screen time limit state (Parent)
+  const [screenTimeLimit, setScreenTimeLimit] = useState(60);
+
   // Reset simulator
   const handleResetSimulator = () => {
     setSelectedRole('student');
-    setStudentScreen('study');
+    setStudentTab('home');
+    setTeacherTab('console');
+    setParentTab('home');
     setIsSimulatedOnline(true);
     setSimulatedGrade(4);
     setSelectedQuizAnswer(null);
@@ -66,6 +89,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
     setCurrentSlideIndex(0);
     setIsRefresherOpen(false);
     setRefresherAnswer(null);
+    setCodeCopied(false);
   };
 
   const sampleSlides = [
@@ -103,8 +127,40 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
     },
   ];
 
+  const sampleTopics = [
+    {
+      id: 'math-1',
+      title: 'Equivalent Fractions',
+      subject: 'Mathematics',
+      badge: 'DepEd MELC G4',
+      status: 'Completed (90%)',
+      stars: 3,
+    },
+    {
+      id: 'math-2',
+      title: 'Decimals & Place Value',
+      subject: 'Mathematics',
+      badge: 'DepEd MELC G4',
+      status: 'In Progress (60%)',
+      stars: 2,
+    },
+    {
+      id: 'eng-1',
+      title: 'Figurative Language (Similes & Metaphors)',
+      subject: 'English',
+      badge: 'DepEd MELC G4',
+      status: 'Up Next',
+      stars: 0,
+    },
+  ];
+
+  const filteredTopics = sampleTopics.filter(t => 
+    selectedSubjectFilter === 'All' ? true : t.subject === selectedSubjectFilter
+  );
+
   return (
     <div className="min-h-screen w-full bg-[var(--bg-main)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
+      
       {/* ── Top Header Bar ── */}
       <header className="sticky top-0 z-40 bg-[var(--bg-card)]/90 backdrop-blur-md border-b border-[var(--border-color)] px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3">
@@ -119,7 +175,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-sm font-extrabold text-[#11428E] dark:text-sky-400 tracking-tight">GURO</span>
             <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
-              Mobile Simulator
+              Mobile App Simulator
             </span>
           </div>
         </div>
@@ -181,7 +237,12 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                   return (
                     <button
                       key={r.id}
-                      onClick={() => setSelectedRole(r.id as SimulatedRole)}
+                      onClick={() => {
+                        setSelectedRole(r.id as SimulatedRole);
+                        if (r.id === 'student') setStudentTab('home');
+                        if (r.id === 'teacher') setTeacherTab('console');
+                        if (r.id === 'parent') setParentTab('home');
+                      }}
                       className={`flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
                         isActive
                           ? 'border-[#11428E] bg-[#11428E]/10 text-[#11428E] dark:text-sky-300 shadow-xs'
@@ -196,29 +257,33 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
               </div>
             </div>
 
-            {/* Screen Selection by Role */}
+            {/* Simulated Mobile Tabs List */}
             <div className="flex flex-col gap-2">
-              <label className="text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">
-                2. Preview Screen
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">
+                  2. Active Mobile Tab
+                </label>
+                <span className="text-[10px] text-[var(--text-muted)] font-medium">Click on phone or here</span>
+              </div>
+
               {selectedRole === 'student' && (
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { id: 'study', label: 'Study Slides & Checkpoint' },
-                    { id: 'quiz', label: 'Gamified Quiz' },
-                    { id: 'auth', label: 'Login & Offline Start' },
-                    { id: 'profile', label: 'Mascot & Rewards' },
-                  ].map((sc) => (
+                    { id: 'home', label: 'Dashboard (Home)' },
+                    { id: 'lessons', label: 'Lessons Library' },
+                    { id: 'progress', label: 'My Progress' },
+                    { id: 'me', label: 'Profile & Mascot' },
+                  ].map((tb) => (
                     <button
-                      key={sc.id}
-                      onClick={() => setStudentScreen(sc.id as StudentScreen)}
+                      key={tb.id}
+                      onClick={() => setStudentTab(tb.id as StudentTab)}
                       className={`px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer truncate ${
-                        studentScreen === sc.id
+                        studentTab === tb.id
                           ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold'
                           : 'border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] hover:text-[var(--text-main)]'
                       }`}
                     >
-                      {sc.label}
+                      {tb.label}
                     </button>
                   ))}
                 </div>
@@ -227,19 +292,21 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
               {selectedRole === 'teacher' && (
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { id: 'overview', label: 'Class Analytics & Sync' },
-                    { id: 'ingestion', label: 'Mobile Lesson Manager' },
-                  ].map((sc) => (
+                    { id: 'console', label: 'Console (Overview)' },
+                    { id: 'ingest', label: 'AI Lesson Ingest' },
+                    { id: 'builder', label: 'Lesson Builder' },
+                    { id: 'settings', label: 'Classroom Pairing' },
+                  ].map((tb) => (
                     <button
-                      key={sc.id}
-                      onClick={() => setTeacherScreen(sc.id as TeacherScreen)}
+                      key={tb.id}
+                      onClick={() => setTeacherTab(tb.id as TeacherTab)}
                       className={`px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer truncate ${
-                        teacherScreen === sc.id
+                        teacherTab === tb.id
                           ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold'
                           : 'border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] hover:text-[var(--text-main)]'
                       }`}
                     >
-                      {sc.label}
+                      {tb.label}
                     </button>
                   ))}
                 </div>
@@ -248,19 +315,19 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
               {selectedRole === 'parent' && (
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { id: 'tracking', label: 'Child Growth & Codes' },
+                    { id: 'home', label: 'Child Growth & Codes' },
                     { id: 'limits', label: 'Screen Time Guard' },
-                  ].map((sc) => (
+                  ].map((tb) => (
                     <button
-                      key={sc.id}
-                      onClick={() => setParentScreen(sc.id as ParentScreen)}
+                      key={tb.id}
+                      onClick={() => setParentTab(tb.id as ParentTab)}
                       className={`px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer truncate ${
-                        parentScreen === sc.id
+                        parentTab === tb.id
                           ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold'
                           : 'border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] hover:text-[var(--text-main)]'
                       }`}
                     >
-                      {sc.label}
+                      {tb.label}
                     </button>
                   ))}
                 </div>
@@ -270,7 +337,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
             {/* Offline Simulation Toggle */}
             <div className="flex flex-col gap-2">
               <label className="text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">
-                3. Simulate Network Condition
+                3. Network Mode (Offline Resilience)
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -299,7 +366,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                 </button>
               </div>
               <p className="text-[11px] text-[var(--text-muted)] leading-relaxed mt-1">
-                Toggle offline mode to see how the app caches lesson materials, runs quizzes locally, and preserves student telemetry without internet.
+                Toggle between online and zero-data offline to observe local caching and quiz execution inside the phone.
               </p>
             </div>
 
@@ -325,31 +392,23 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Quick Info Box */}
-          <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-800 dark:text-sky-200 text-xs flex items-start gap-3">
-            <Sparkles className="size-4 shrink-0 text-sky-500 mt-0.5" />
-            <p className="leading-relaxed">
-              <strong>Native Mobile App:</strong> Built with React Native &amp; Expo for Android and iOS. Teachers and students can pair devices via peer-to-peer sync or cloud classroom IDs.
-            </p>
-          </div>
         </div>
 
         {/* ── Right Column: Smartphone Device Chassis Frame ── */}
         <div className="flex-1 flex flex-col items-center justify-center">
-          <div className="relative w-[340px] sm:w-[370px] h-[720px] rounded-[48px] bg-slate-950 p-3.5 shadow-2xl shadow-slate-950/40 ring-1 ring-slate-800/80 border-4 border-slate-700/60 select-none">
+          <div className="relative w-[340px] sm:w-[375px] h-[740px] rounded-[50px] bg-slate-950 p-3.5 shadow-2xl shadow-slate-950/40 ring-1 ring-slate-800/80 border-4 border-slate-700/60 select-none">
             
-            {/* Camera Cutout / Dynamic Island */}
+            {/* Dynamic Island / Speaker */}
             <div className="absolute top-5 left-1/2 -translate-x-1/2 w-28 h-5 bg-black rounded-full z-50 flex items-center justify-between px-2.5">
-              <div className="size-2.5 rounded-full bg-slate-900 ring-1 ring-slate-800" />
-              <div className="size-2 rounded-full bg-blue-900/40" />
+              <div className="size-2 rounded-full bg-slate-900 ring-1 ring-slate-800" />
+              <div className="size-1.5 rounded-full bg-blue-900/40" />
             </div>
 
             {/* Inner Phone Screen */}
-            <div className="w-full h-full rounded-[38px] bg-[var(--bg-main)] overflow-hidden flex flex-col relative border border-[var(--border-color)]">
+            <div className="w-full h-full rounded-[40px] bg-[var(--bg-main)] overflow-hidden flex flex-col relative border border-[var(--border-color)]">
               
               {/* Phone Status Bar */}
-              <div className="h-10 px-6 pt-2 flex items-center justify-between text-[11px] font-bold text-[var(--text-main)] z-40 bg-[var(--bg-main)]/80 backdrop-blur-sm">
+              <div className="h-10 px-6 pt-2 flex items-center justify-between text-[11px] font-bold text-[var(--text-main)] z-40 bg-[var(--bg-main)]/90 backdrop-blur-sm border-b border-[var(--border-color)]/40">
                 <span>9:41</span>
                 <div className="flex items-center gap-1.5">
                   {isSimulatedOnline ? (
@@ -367,28 +426,286 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                 </div>
               </div>
 
-              {/* ── Screen Body Content based on active state ── */}
+              {/* ── Phone Screen Content Body ── */}
               <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3.5 scrollbar-none">
                 
-                {/* ────────────────── STUDENT: STUDY SLIDES ────────────────── */}
-                {selectedRole === 'student' && studentScreen === 'study' && (
-                  <div className="flex flex-col gap-3">
-                    {/* Header Banner */}
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] font-extrabold text-[#11428E] dark:text-sky-400 uppercase tracking-wider">
-                          Grade {simulatedGrade} {sampleSlides[currentSlideIndex].subject}
+                {/* ════════════════════════ STUDENT TABS ════════════════════════ */}
+                
+                {/* 1. STUDENT HOME / DASHBOARD */}
+                {selectedRole === 'student' && studentTab === 'home' && (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
+                    {/* Welcome Banner Card */}
+                    <div className="p-4 rounded-3xl bg-gradient-to-br from-[#11428E] via-[#1C5BC0] to-[#A01322] text-white shadow-md flex flex-col gap-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded-full bg-white/20 text-[9px] font-black uppercase tracking-wider">
+                          Student Space
                         </span>
-                        <h4 className="text-sm font-extrabold text-[var(--text-main)] leading-tight">
-                          {sampleSlides[currentSlideIndex].title}
-                        </h4>
+                        <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1">
+                          <Flame size={12} /> Level 3 Explorer
+                        </span>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                      <h4 className="text-base font-extrabold tracking-tight">Welcome back, Juan!</h4>
+                      
+                      {/* Companion Message */}
+                      <div className="p-2 rounded-xl bg-white/10 border border-white/20 text-[11px] flex items-center gap-2">
+                        <Sparkles size={13} className="text-amber-300 shrink-0" />
+                        <span className="leading-tight text-white/95">"Ready to master Equivalent Fractions today?"</span>
+                      </div>
+
+                      {/* XP Progress Bar */}
+                      <div className="flex flex-col gap-1 mt-0.5">
+                        <div className="flex items-center justify-between text-[10px] font-bold text-white/90">
+                          <span>Progress XP</span>
+                          <span>{xpPoints} / 100 XP</span>
+                        </div>
+                        <div className="w-full bg-white/20 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-amber-400 h-full rounded-full" style={{ width: `${xpPoints}%` }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Classroom Connection Card */}
+                    <div className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="size-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                          <School size={16} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-[var(--text-main)]">Grade 4 - Rizal</span>
+                          <span className="text-[10px] text-[var(--text-muted)]">Teacher: Ms. Maria</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                        Connected
+                      </span>
+                    </div>
+
+                    {/* Quick Stats Grid */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center text-center">
+                        <span className="text-sm font-black text-amber-500">⭐ {earnedStars}</span>
+                        <span className="text-[9px] font-semibold text-[var(--text-muted)]">Total Stars</span>
+                      </div>
+                      <div className="p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center text-center">
+                        <span className="text-sm font-black text-[#11428E] dark:text-sky-400">8</span>
+                        <span className="text-[9px] font-semibold text-[var(--text-muted)]">Completed</span>
+                      </div>
+                      <div className="p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center text-center">
+                        <span className="text-sm font-black text-emerald-500">92%</span>
+                        <span className="text-[9px] font-semibold text-[var(--text-muted)]">Accuracy</span>
+                      </div>
+                    </div>
+
+                    {/* Today's Recommended Lesson Card */}
+                    <div className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[#11428E]/30 shadow-xs flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase text-[#11428E] dark:text-sky-400">
+                          Today's Pick
+                        </span>
+                        <span className="text-[10px] font-bold text-amber-500">Grade {simulatedGrade} Math</span>
+                      </div>
+                      <h5 className="text-xs font-black text-[var(--text-main)]">Equivalent Fractions</h5>
+                      <p className="text-[11px] text-[var(--text-muted)] leading-tight">
+                        Learn how fractions with different numbers can represent the same amount.
+                      </p>
+                      
+                      <div className="flex gap-2 mt-1">
+                        <button
+                          onClick={() => setStudentTab('study')}
+                          className="flex-1 py-1.5 rounded-xl bg-[#11428E] text-white text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <BookOpen size={12} />
+                          <span>Study Slide</span>
+                        </button>
+                        <button
+                          onClick={() => setStudentTab('quiz')}
+                          className="flex-1 py-1.5 rounded-xl border border-amber-500/40 text-amber-600 dark:text-amber-300 bg-amber-500/10 text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <Award size={12} />
+                          <span>Take Quiz</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. STUDENT LESSONS LIBRARY */}
+                {selectedRole === 'student' && studentTab === 'lessons' && (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-[var(--text-main)]">Lesson Catalog</span>
+                      <span className="text-[10px] font-bold text-[#11428E] dark:text-sky-400">Grade {simulatedGrade} MELC</span>
+                    </div>
+
+                    {/* Subject Filter Chips */}
+                    <div className="flex gap-1.5">
+                      {(['All', 'Mathematics', 'English'] as const).map((sub) => (
+                        <button
+                          key={sub}
+                          onClick={() => setSelectedSubjectFilter(sub)}
+                          className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
+                            selectedSubjectFilter === sub
+                              ? 'bg-[#11428E] text-white'
+                              : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)]'
+                          }`}
+                        >
+                          {sub}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Topic Cards List */}
+                    <div className="flex flex-col gap-2.5">
+                      {filteredTopics.map((topic) => (
+                        <div key={topic.id} className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600">
+                              {topic.subject}
+                            </span>
+                            <span className="text-[10px] font-semibold text-emerald-600">
+                              {topic.status}
+                            </span>
+                          </div>
+                          <h5 className="text-xs font-bold text-[var(--text-main)]">{topic.title}</h5>
+
+                          <div className="flex gap-2 pt-1 border-t border-[var(--border-color)]/60">
+                            <button
+                              onClick={() => setStudentTab('study')}
+                              className="flex-1 py-1 rounded-lg border border-[var(--border-color)] hover:bg-[var(--bg-main)] text-[10px] font-bold text-[var(--text-main)] flex items-center justify-center gap-1 cursor-pointer"
+                            >
+                              <BookOpen size={11} /> Study
+                            </button>
+                            <button
+                              onClick={() => setStudentTab('quiz')}
+                              className="flex-1 py-1 rounded-lg bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer"
+                            >
+                              <Play size={11} /> Quiz
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. STUDENT MY PROGRESS */}
+                {selectedRole === 'student' && studentTab === 'progress' && (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-[var(--text-main)]">My Learning Progress</span>
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                        +24.6% Growth
+                      </span>
+                    </div>
+
+                    {/* Competency Mastery List */}
+                    <div className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-3">
+                      <span className="text-[10px] font-extrabold uppercase text-[var(--text-muted)]">MELC Competency Mastery</span>
+                      
+                      {[
+                        { name: 'Fractions & Decimals', mastery: 92, color: 'bg-emerald-500' },
+                        { name: 'Multiplication & Division', mastery: 85, color: 'bg-blue-500' },
+                        { name: 'Reading Comprehension', mastery: 88, color: 'bg-indigo-500' },
+                        { name: 'Grammar & Vocabulary', mastery: 78, color: 'bg-amber-500' },
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex flex-col gap-1">
+                          <div className="flex justify-between text-[11px] font-semibold text-[var(--text-main)]">
+                            <span className="truncate">{item.name}</span>
+                            <span className="font-bold">{item.mastery}%</span>
+                          </div>
+                          <div className="w-full bg-[var(--bg-main)] h-1.5 rounded-full overflow-hidden">
+                            <div className={`${item.color} h-full rounded-full`} style={{ width: `${item.mastery}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Telemetry Status Box */}
+                    <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-200 text-xs flex items-center gap-2.5">
+                      <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                      <span className="text-[11px] leading-tight">
+                        All progress logs are stored locally. Ready for automatic sync when connected!
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. STUDENT PROFILE & ME */}
+                {selectedRole === 'student' && studentTab === 'me' && (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
+                    {/* Mascot Profile Header */}
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-[#11428E]/15 to-[#A01322]/15 border border-[#11428E]/20 flex items-center gap-3">
+                      <div className="size-12 rounded-2xl bg-[#11428E] text-white flex items-center justify-center text-xl shadow-xs">
+                        🦉
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-black text-[var(--text-main)]">Juan Dela Cruz</h4>
+                        <p className="text-[11px] text-[var(--text-muted)] font-semibold">Grade {simulatedGrade} Explorer • {xpPoints} XP</p>
+                      </div>
+                    </div>
+
+                    {/* 6-Digit Parent Access Code */}
+                    <div className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-[var(--text-main)]">
+                        <span>Parent Access Code</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCodeCopied(true);
+                            setTimeout(() => setCodeCopied(false), 2000);
+                          }}
+                          className="flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 cursor-pointer"
+                        >
+                          {codeCopied ? <Check size={12} /> : <Copy size={12} />}
+                          <span>{codeCopied ? 'Copied!' : 'Copy Code'}</span>
+                        </button>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-[var(--bg-main)] text-center font-mono font-black text-base text-[#11428E] dark:text-sky-300 tracking-widest border border-amber-500/30">
+                        582-910
+                      </div>
+                      <p className="text-[10px] text-[var(--text-muted)] text-center">
+                        Give this 6-digit code to parents to let them track your learning journey.
+                      </p>
+                    </div>
+
+                    {/* Badges Collection */}
+                    <div className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-2">
+                      <span className="text-[10px] font-extrabold text-[var(--text-muted)] uppercase">My Badges</span>
+                      <div className="grid grid-cols-4 gap-2 text-center">
+                        {[
+                          { emoji: '⭐', label: 'First Quiz' },
+                          { emoji: '📐', label: 'Math Star' },
+                          { emoji: '📖', label: 'Reader' },
+                          { emoji: '🔥', label: 'Streak' },
+                        ].map((b, idx) => (
+                          <div key={idx} className="p-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col items-center">
+                            <span className="text-base">{b.emoji}</span>
+                            <span className="text-[8px] font-bold text-[var(--text-muted)] mt-0.5">{b.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. STUDENT STUDY SLIDES (Interactive Screen) */}
+                {selectedRole === 'student' && studentTab === 'study' && (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
+                    {/* Header with Back button */}
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => setStudentTab('home')}
+                        className="flex items-center gap-1 text-[11px] font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                      >
+                        <ArrowLeft size={13} />
+                        <span>Back</span>
+                      </button>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
                         Slide {currentSlideIndex + 1}/{sampleSlides.length}
                       </span>
                     </div>
 
-                    {/* Interactive Slide Card */}
+                    {/* Slide Card */}
                     <div className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs flex flex-col gap-2.5">
                       <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-main)]">
                         <BookOpen className="size-4 text-[#11428E]" />
@@ -426,7 +743,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                       </div>
                     </div>
 
-                    {/* In-Slide Checkpoint Accordion */}
+                    {/* Refresher Checkpoint Accordion */}
                     <div className="border border-[var(--border-color)] rounded-2xl bg-[var(--bg-card)] overflow-hidden">
                       <button
                         type="button"
@@ -436,16 +753,16 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                         <div className="flex items-center gap-2">
                           <Sparkles className="size-3.5 text-amber-500" />
                           <span className="text-xs font-bold text-[var(--text-main)]">
-                            Refresher Checkpoint
+                            Refresher Quick Check
                           </span>
                         </div>
                         <span className="text-[10px] font-bold text-[#11428E] dark:text-sky-400">
-                          {isRefresherOpen ? 'Collapse ▲' : 'Quick Check ▼'}
+                          {isRefresherOpen ? 'Collapse ▲' : 'Open ▼'}
                         </span>
                       </button>
 
                       {isRefresherOpen && (
-                        <div className="p-3 pt-0 border-t border-[var(--border-color)]/60 flex flex-col gap-2.5 mt-2">
+                        <div className="p-3 pt-0 border-t border-[var(--border-color)]/60 flex flex-col gap-2 mt-2">
                           <p className="text-xs font-semibold text-[var(--text-main)]">
                             {sampleSlides[currentSlideIndex].checkpoint.question}
                           </p>
@@ -471,23 +788,23 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                               );
                             })}
                           </div>
-
-                          {refresherAnswer && (
-                            <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-[11px] text-[var(--text-muted)]">
-                              💡 {sampleSlides[currentSlideIndex].checkpoint.explanation}
-                            </div>
-                          )}
                         </div>
                       )}
                     </div>
                   </div>
                 )}
 
-                {/* ────────────────── STUDENT: GAMIFIED QUIZ ────────────────── */}
-                {selectedRole === 'student' && studentScreen === 'quiz' && (
-                  <div className="flex flex-col gap-3">
+                {/* 6. STUDENT QUIZ (Interactive Screen) */}
+                {selectedRole === 'student' && studentTab === 'quiz' && (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-[var(--text-main)]">Quiz Challenge #1</span>
+                      <button
+                        onClick={() => setStudentTab('home')}
+                        className="flex items-center gap-1 text-[11px] font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                      >
+                        <ArrowLeft size={13} />
+                        <span>Exit Quiz</span>
+                      </button>
                       <div className="flex items-center gap-1 text-amber-500 text-xs font-extrabold">
                         <span>⭐</span>
                         <span>{earnedStars} Stars</span>
@@ -517,7 +834,10 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                               onClick={() => {
                                 setSelectedQuizAnswer(opt.key);
                                 setQuizSubmitted(true);
-                                if (opt.correct) setEarnedStars(prev => prev + 1);
+                                if (opt.correct) {
+                                  setEarnedStars(prev => prev + 1);
+                                  setXpPoints(prev => Math.min(100, prev + 15));
+                                }
                               }}
                               className={`p-2.5 rounded-xl border text-xs font-semibold text-left flex items-center justify-between transition-all cursor-pointer ${
                                 isSelected
@@ -538,123 +858,82 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
 
                       {quizSubmitted && (
                         <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-200 text-[11px] leading-relaxed">
-                          🎉 <strong>Great job!</strong> 3/4 × 2 = 6/4 = 1 2/4 = 1 1/2 cups. You earned 1 Star!
+                          🎉 <strong>Correct!</strong> 3/4 × 2 = 6/4 = 1 1/2 cups. You earned 1 Star &amp; +15 XP!
                         </div>
                       )}
                     </div>
                   </div>
                 )}
 
-                {/* ────────────────── STUDENT: AUTH & OFFLINE ────────────────── */}
-                {selectedRole === 'student' && studentScreen === 'auth' && (
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-col items-center text-center gap-1 my-1">
-                      <div className="size-10 rounded-2xl bg-gradient-to-tr from-[#11428E] to-[#A01322] text-white flex items-center justify-center font-black text-sm">
-                        G
-                      </div>
-                      <h4 className="text-sm font-extrabold text-[var(--text-main)]">Sign In with Account</h4>
-                      <p className="text-[10px] text-[var(--text-muted)]">Or start offline with zero internet</p>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-2.5">
-                      <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Test Accounts Autofill</div>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        <button className="py-1 px-1.5 rounded-lg border border-emerald-500 text-emerald-600 bg-emerald-500/10 text-[10px] font-bold">
-                          Student
-                        </button>
-                        <button className="py-1 px-1.5 rounded-lg border border-blue-500 text-blue-600 bg-blue-500/10 text-[10px] font-bold">
-                          Teacher
-                        </button>
-                        <button className="py-1 px-1.5 rounded-lg border border-amber-500 text-amber-600 bg-amber-500/10 text-[10px] font-bold">
-                          Parent
-                        </button>
-                      </div>
-
-                      <div className="flex flex-col gap-1 mt-1">
-                        <span className="text-[10px] font-bold text-[var(--text-muted)]">Full Name</span>
-                        <input
-                          type="text"
-                          readOnly
-                          value="Juan Dela Cruz"
-                          className="w-full text-xs p-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]"
-                        />
-                      </div>
-
-                      <button className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#11428E] to-[#2563EB] text-white text-xs font-bold shadow-xs cursor-pointer">
-                        Continue Offline →
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* ────────────────── STUDENT: PROFILE & REWARDS ────────────────── */}
-                {selectedRole === 'student' && studentScreen === 'profile' && (
-                  <div className="flex flex-col gap-3">
-                    <div className="p-4 rounded-2xl bg-gradient-to-br from-[#11428E]/10 to-[#A01322]/10 border border-[#11428E]/20 flex items-center gap-3">
-                      <div className="size-12 rounded-2xl bg-[#11428E] text-white flex items-center justify-center text-xl shadow-xs">
-                        🦉
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-extrabold text-[var(--text-main)]">Guro Owl Mascot</h4>
-                        <p className="text-[11px] text-[var(--text-muted)]">Level 3 Explorer • 240 XP</p>
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-2">
-                      <div className="flex items-center justify-between text-xs font-bold text-[var(--text-main)]">
-                        <span>Parent Access Code</span>
-                        <span className="text-emerald-500 font-extrabold">Active</span>
-                      </div>
-                      <div className="p-2 rounded-xl bg-[var(--bg-main)] text-center font-mono font-black text-sm text-[#11428E] dark:text-sky-300 tracking-widest border border-[var(--border-color)]">
-                        582-910
-                      </div>
-                      <p className="text-[10px] text-[var(--text-muted)] text-center">
-                        Give this 6-digit code to parents to track learning progress.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* ────────────────── TEACHER MOBILE VIEW ────────────────── */}
-                {selectedRole === 'teacher' && (
-                  <div className="flex flex-col gap-3">
+                {/* ════════════════════════ TEACHER TABS ════════════════════════ */}
+                {selectedRole === 'teacher' && teacherTab === 'console' && (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-extrabold text-[var(--text-main)]">Teacher Mobile Console</span>
+                      <span className="text-xs font-black text-[var(--text-main)]">Teacher Console</span>
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 font-bold">
-                        Section Grade 4-A
+                        Section Grade 4-Rizal
                       </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
                       <div className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-0.5">
-                        <span className="text-[10px] text-[var(--text-muted)]">Active Students</span>
+                        <span className="text-[10px] text-[var(--text-muted)]">Active Learners</span>
                         <span className="text-lg font-black text-[#11428E] dark:text-sky-300">32</span>
                       </div>
                       <div className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-0.5">
-                        <span className="text-[10px] text-[var(--text-muted)]">Avg Mastery</span>
+                        <span className="text-[10px] text-[var(--text-muted)]">Average Mastery</span>
                         <span className="text-lg font-black text-emerald-500">88.4%</span>
                       </div>
                     </div>
 
                     <div className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-2">
-                      <span className="text-xs font-bold text-[var(--text-main)]">DepEd SF9 Progress</span>
+                      <span className="text-xs font-bold text-[var(--text-main)]">DepEd SF9 Progress Ready</span>
                       <p className="text-[11px] text-[var(--text-muted)]">
                         All student quizzes are aggregated and synced to official quarterly SF9 report forms.
                       </p>
-                      <button className="w-full py-2 rounded-xl border border-[var(--border-color)] hover:bg-[var(--bg-main)] text-xs font-bold text-[var(--text-main)] flex items-center justify-center gap-1.5 cursor-pointer">
-                        <span>Review Mastery Matrix</span>
-                        <ChevronRight size={12} />
-                      </button>
                     </div>
                   </div>
                 )}
 
-                {/* ────────────────── PARENT MOBILE VIEW ────────────────── */}
-                {selectedRole === 'parent' && (
-                  <div className="flex flex-col gap-3">
+                {selectedRole === 'teacher' && teacherTab === 'ingest' && (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
+                    <span className="text-xs font-black text-[var(--text-main)]">AI Lesson Ingestion</span>
+                    <div className="p-4 rounded-2xl bg-[var(--bg-card)] border border-dashed border-[#11428E]/40 text-center flex flex-col items-center gap-2">
+                      <Zap size={24} className="text-[#11428E]" />
+                      <span className="text-xs font-bold text-[var(--text-main)]">Upload Lesson PDF/DOCX</span>
+                      <p className="text-[10px] text-[var(--text-muted)]">AI will extract slides, MELC competencies, and quiz checkpoints.</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedRole === 'teacher' && teacherTab === 'builder' && (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
+                    <span className="text-xs font-black text-[var(--text-main)]">Mobile Lesson Builder</span>
+                    <div className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-2">
+                      <span className="text-[10px] font-bold text-[var(--text-muted)]">Lesson Title</span>
+                      <input type="text" readOnly value="Grade 4 Fractions Module" className="w-full text-xs p-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]" />
+                      <span className="text-[10px] font-bold text-[var(--text-muted)]">Checkpoints: 3 Active</span>
+                    </div>
+                  </div>
+                )}
+
+                {selectedRole === 'teacher' && teacherTab === 'settings' && (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
+                    <span className="text-xs font-black text-[var(--text-main)]">Classroom Pairing</span>
+                    <div className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] text-center flex flex-col items-center gap-1.5">
+                      <span className="text-xs font-bold text-[var(--text-muted)]">Pairing Code</span>
+                      <span className="font-mono text-lg font-black text-[#11428E] dark:text-sky-300">CL-4892</span>
+                      <span className="text-[10px] text-[var(--text-muted)]">Share this code with students to join your class.</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* ════════════════════════ PARENT TABS ════════════════════════ */}
+                {selectedRole === 'parent' && parentTab === 'home' && (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
                     <div className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[var(--text-main)]">Linked Student</span>
+                        <span className="text-xs font-bold text-[var(--text-main)]">Linked Child</span>
                         <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
                           Connected
                         </span>
@@ -662,7 +941,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                       <h4 className="text-sm font-extrabold text-[var(--text-main)]">Juan Dela Cruz (Grade 4)</h4>
                       <div className="flex items-center justify-between text-xs text-[var(--text-muted)] pt-1 border-t border-[var(--border-color)]">
                         <span>Today's Screen Time:</span>
-                        <span className="font-bold text-[var(--text-main)]">38 / 60 mins</span>
+                        <span className="font-bold text-[var(--text-main)]">38 / {screenTimeLimit} mins</span>
                       </div>
                     </div>
 
@@ -672,40 +951,126 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                         <span>Daily Study Regulation</span>
                       </div>
                       <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-300">
-                        Parents can set study limits directly from their phone to ensure healthy learning habits.
+                        Set daily screen limits to ensure healthy learning habits.
                       </p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedRole === 'parent' && parentTab === 'limits' && (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
+                    <span className="text-xs font-black text-[var(--text-main)]">Screen Time Guard</span>
+                    <div className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center gap-3">
+                      <span className="text-xs font-bold text-[var(--text-muted)]">Daily Max Allowed</span>
+                      <span className="text-2xl font-black text-amber-500">{screenTimeLimit} Mins</span>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setScreenTimeLimit(prev => Math.max(15, prev - 15))}
+                          className="px-3 py-1 rounded-xl border border-[var(--border-color)] text-xs font-bold cursor-pointer"
+                        >
+                          - 15 mins
+                        </button>
+                        <button
+                          onClick={() => setScreenTimeLimit(prev => Math.min(180, prev + 15))}
+                          className="px-3 py-1 rounded-xl bg-amber-500 text-white text-xs font-bold cursor-pointer"
+                        >
+                          + 15 mins
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
 
               </div>
 
-              {/* Simulated Phone Bottom Navigation Bar */}
-              <div className="h-14 px-6 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-around z-40">
-                <button
-                  onClick={() => setStudentScreen('study')}
-                  className="flex flex-col items-center gap-0.5 text-[var(--text-muted)] hover:text-[#11428E] cursor-pointer"
-                >
-                  <BookOpen size={16} />
-                  <span className="text-[9px] font-bold">Study</span>
-                </button>
-                <button
-                  onClick={() => setStudentScreen('quiz')}
-                  className="flex flex-col items-center gap-0.5 text-[var(--text-muted)] hover:text-[#11428E] cursor-pointer"
-                >
-                  <Award size={16} />
-                  <span className="text-[9px] font-bold">Quiz</span>
-                </button>
-                <button
-                  onClick={() => setStudentScreen('profile')}
-                  className="flex flex-col items-center gap-0.5 text-[var(--text-muted)] hover:text-[#11428E] cursor-pointer"
-                >
-                  <Users size={16} />
-                  <span className="text-[9px] font-bold">Profile</span>
-                </button>
-              </div>
+              {/* ── Working Mobile Bottom Navigation Bar (Exact Replica of Mobile Tab Navigator) ── */}
+              
+              {/* STUDENT BOTTOM TABS: Home, Lessons, Progress, Profile */}
+              {selectedRole === 'student' && (
+                <div className="h-14 px-3 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-around z-40">
+                  {[
+                    { id: 'home', label: 'Dashboard', icon: Home },
+                    { id: 'lessons', label: 'Lessons', icon: BookOpen },
+                    { id: 'progress', label: 'My Progress', icon: BarChart2 },
+                    { id: 'me', label: 'Profile', icon: UserIcon },
+                  ].map((tabItem) => {
+                    const Icon = tabItem.icon;
+                    const isActive = studentTab === tabItem.id;
+                    return (
+                      <button
+                        key={tabItem.id}
+                        onClick={() => setStudentTab(tabItem.id as StudentTab)}
+                        className={`flex flex-col items-center gap-0.5 cursor-pointer transition-all ${
+                          isActive
+                            ? 'text-[#11428E] dark:text-sky-400 font-extrabold'
+                            : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                        }`}
+                      >
+                        <Icon size={18} />
+                        <span className="text-[9px] font-semibold">{tabItem.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-              {/* Bottom Home Indicator Bar */}
+              {/* TEACHER BOTTOM TABS: Console, AI Ingest, Builder, Settings */}
+              {selectedRole === 'teacher' && (
+                <div className="h-14 px-3 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-around z-40">
+                  {[
+                    { id: 'console', label: 'Console', icon: BarChart2 },
+                    { id: 'ingest', label: 'AI Ingest', icon: Zap },
+                    { id: 'builder', label: 'Builder', icon: PenLine },
+                    { id: 'settings', label: 'Settings', icon: Settings },
+                  ].map((tabItem) => {
+                    const Icon = tabItem.icon;
+                    const isActive = teacherTab === tabItem.id;
+                    return (
+                      <button
+                        key={tabItem.id}
+                        onClick={() => setTeacherTab(tabItem.id as TeacherTab)}
+                        className={`flex flex-col items-center gap-0.5 cursor-pointer transition-all ${
+                          isActive
+                            ? 'text-blue-600 dark:text-blue-400 font-extrabold'
+                            : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                        }`}
+                      >
+                        <Icon size={18} />
+                        <span className="text-[9px] font-semibold">{tabItem.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* PARENT BOTTOM TABS: Growth, Screen Time */}
+              {selectedRole === 'parent' && (
+                <div className="h-14 px-3 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-around z-40">
+                  {[
+                    { id: 'home', label: 'Child Growth', icon: Users },
+                    { id: 'limits', label: 'Time Guard', icon: Clock },
+                  ].map((tabItem) => {
+                    const Icon = tabItem.icon;
+                    const isActive = parentTab === tabItem.id;
+                    return (
+                      <button
+                        key={tabItem.id}
+                        onClick={() => setParentTab(tabItem.id as ParentTab)}
+                        className={`flex flex-col items-center gap-0.5 cursor-pointer transition-all ${
+                          isActive
+                            ? 'text-amber-600 dark:text-amber-400 font-extrabold'
+                            : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                        }`}
+                      >
+                        <Icon size={18} />
+                        <span className="text-[9px] font-semibold">{tabItem.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Bottom Phone Home Indicator Bar */}
               <div className="h-4 flex items-center justify-center bg-[var(--bg-card)]">
                 <div className="w-28 h-1 rounded-full bg-slate-400 dark:bg-slate-600" />
               </div>

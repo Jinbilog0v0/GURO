@@ -55,7 +55,7 @@ describe('App Portal and Navigation Layout (Web)', () => {
     render(<App />);
     const showcaseBtn = screen.getByRole('button', { name: /Mobile Showcase/i });
     fireEvent.click(showcaseBtn);
-    expect(screen.getByText(/Mobile Simulator/i)).toBeInTheDocument();
+    expect(screen.getByText(/Mobile (App )?Simulator/i)).toBeInTheDocument();
 
     const overviewBtn = screen.getByRole('button', { name: /Overview/i });
     fireEvent.click(overviewBtn);
