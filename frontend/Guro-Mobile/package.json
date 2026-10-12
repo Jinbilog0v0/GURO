@@ -37,6 +37,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@expo/config-plugins": "~56.0.16",
     "@react-native/jest-preset": "^0.86.0",
     "@testing-library/react-native": "^14.0.0",
     "@types/jest": "^29.5.14",
