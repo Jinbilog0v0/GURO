@@ -370,27 +370,29 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
               </p>
             </div>
 
-            {/* Grade Switcher */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">
-                4. Simulated Grade Curriculum
-              </label>
-              <div className="flex gap-2">
-                {[4, 5, 6].map((g) => (
-                  <button
-                    key={g}
-                    onClick={() => setSimulatedGrade(g)}
-                    className={`flex-1 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                      simulatedGrade === g
-                        ? 'border-[#11428E] bg-[#11428E] text-white shadow-xs'
-                        : 'border-[var(--border-color)] bg-[var(--bg-main)]/40 text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                    }`}
-                  >
-                    Grade {g}
-                  </button>
-                ))}
+            {/* Grade Switcher (Only visible for Student role) */}
+            {selectedRole === 'student' && (
+              <div className="flex flex-col gap-2">
+                <label className="text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">
+                  4. Simulated Grade Curriculum
+                </label>
+                <div className="flex gap-2">
+                  {[4, 5, 6].map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => setSimulatedGrade(g)}
+                      className={`flex-1 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        simulatedGrade === g
+                          ? 'border-[#11428E] bg-[#11428E] text-white shadow-xs'
+                          : 'border-[var(--border-color)] bg-[var(--bg-main)]/40 text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                      }`}
+                    >
+                      Grade {g}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 

@@ -146,4 +146,33 @@ describe('MobileAppShowcase Component', () => {
 
     expect(screen.getByText(/Correct!/i)).toBeInTheDocument();
   });
+
+  test('Simulated Grade Curriculum is only shown when student role is selected', () => {
+    render(
+      <MobileAppShowcase
+        onBackToOverview={mockBackToOverview}
+        onLaunchPortal={mockLaunchPortal}
+        isDarkMode={false}
+        onToggleTheme={mockToggleTheme}
+      />
+    );
+
+    // Default role is student -> visible
+    expect(screen.getByText(/4\. Simulated Grade Curriculum/i)).toBeInTheDocument();
+
+    // Switch to teacher -> hidden
+    const teacherRoleBtn = screen.getByRole('button', { name: /Teacher/i });
+    fireEvent.click(teacherRoleBtn);
+    expect(screen.queryByText(/4\. Simulated Grade Curriculum/i)).not.toBeInTheDocument();
+
+    // Switch to parent -> hidden
+    const parentRoleBtn = screen.getByRole('button', { name: /Parent/i });
+    fireEvent.click(parentRoleBtn);
+    expect(screen.queryByText(/4\. Simulated Grade Curriculum/i)).not.toBeInTheDocument();
+
+    // Switch back to student -> visible again
+    const studentRoleBtn = screen.getByRole('button', { name: /Student/i });
+    fireEvent.click(studentRoleBtn);
+    expect(screen.getByText(/4\. Simulated Grade Curriculum/i)).toBeInTheDocument();
+  });
 });
