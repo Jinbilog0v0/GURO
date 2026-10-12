@@ -203,7 +203,8 @@ describe('LandingPage Portal (Web)', () => {
     expect(apkLinks.length).toBe(1);
     expect(apkLinks[0]).toHaveAttribute('href', 'https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk');
 
-    // Tagline is removed
+    // Tagline and Showcase button are removed
     expect(screen.queryByText(/Your Learning Companion for Math & English/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Showcase/i })).not.toBeInTheDocument();
   });
 });

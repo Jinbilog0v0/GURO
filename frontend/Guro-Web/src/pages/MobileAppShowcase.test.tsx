@@ -265,22 +265,5 @@ describe('MobileAppShowcase Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Show Simulator Console/i }));
     expect(screen.getByRole('button', { name: /Focus Phone Mode/i })).toBeInTheDocument();
   });
-
-  test('renders and toggles full screen fit button', () => {
-    render(
-      <MobileAppShowcase
-        onBackToOverview={mockBackToOverview}
-        onLaunchPortal={mockLaunchPortal}
-        isDarkMode={false}
-        onToggleTheme={mockToggleTheme}
-      />
-    );
-
-    const fullScreenBtn = screen.getByRole('button', { name: /Full Screen/i });
-    expect(fullScreenBtn).toBeInTheDocument();
-
-    fireEvent.click(fullScreenBtn);
-    expect(screen.getByRole('button', { name: /Exit Full Screen/i })).toBeInTheDocument();
-  });
 });
 

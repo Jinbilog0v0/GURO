@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   ArrowLeft,
   Wifi,
@@ -27,8 +27,6 @@ import {
   Check,
   Play,
   Download,
-  Maximize2,
-  Minimize2,
   SlidersHorizontal
 } from 'lucide-react';
 
@@ -83,27 +81,8 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
   // Mobile console collapse toggle
   const [isMobileConsoleOpen, setIsMobileConsoleOpen] = useState(true);
 
-  // Fullscreen & Focus Mode State
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  // Focus Mode State (Collapse Controls Console)
   const [isConsoleCollapsed, setIsConsoleCollapsed] = useState(false);
-
-  const toggleFullScreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen?.().catch(() => {});
-      setIsFullScreen(true);
-    } else {
-      document.exitFullscreen?.().catch(() => {});
-      setIsFullScreen(false);
-    }
-  };
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullScreen(Boolean(document.fullscreenElement));
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
 
   // Reset simulator
   const handleResetSimulator = () => {
@@ -207,19 +186,6 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
               Mobile App Simulator
             </span>
           </div>
-
-          <a
-            href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
-            target="_blank"
-            rel="noopener noreferrer"
-            download="GURO-preview.apk"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 text-xs font-bold transition-all cursor-pointer shadow-xs ml-1"
-            title="Download Standalone Android APK (v1.0.1)"
-          >
-            <Download className="size-3.5 text-sky-500" />
-            <span className="hidden md:inline">Download APK</span>
-            <span className="md:hidden">APK</span>
-          </a>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -233,14 +199,18 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
             <span>{isConsoleCollapsed ? 'Show Console' : 'Focus Phone'}</span>
           </button>
 
-          <button
-            onClick={toggleFullScreen}
-            aria-label={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
-            className="p-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all cursor-pointer"
-            title={isFullScreen ? 'Exit Full Screen' : 'Full Screen Fit'}
+          <a
+            href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
+            target="_blank"
+            rel="noopener noreferrer"
+            download="GURO-preview.apk"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 text-xs font-bold transition-all cursor-pointer shadow-xs"
+            title="Download Standalone Android APK (v1.0.1)"
           >
-            {isFullScreen ? <Minimize2 className="size-4 text-emerald-500" /> : <Maximize2 className="size-4" />}
-          </button>
+            <Download className="size-3.5 text-sky-500" />
+            <span className="hidden sm:inline">Download APK</span>
+            <span className="sm:hidden">APK</span>
+          </a>
 
           {onToggleTheme && (
             <button
@@ -263,12 +233,8 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
         </div>
       </header>
 
-      {/* ── Main Showcase Workspace (Dynamic screen-fitting layout) ── */}
-      <div className={`flex-1 w-full mx-auto flex flex-col lg:flex-row items-center justify-center transition-all duration-300 ${
-        isFullScreen 
-          ? 'h-[calc(100vh-3.5rem)] p-2 sm:p-4 gap-4 overflow-hidden' 
-          : 'max-w-7xl p-3 sm:p-6 lg:p-6 gap-6 lg:gap-8 min-h-[calc(100vh-4rem)]'
-      }`}>
+      {/* ── Main Showcase Workspace ── */}
+      <div className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-6 flex flex-col lg:flex-row gap-6 lg:gap-8 items-center justify-center min-h-[calc(100vh-4rem)]">
         
         {/* ── Left Column: Simulator Controls Dashboard ── */}
         <div className={`w-full lg:w-[360px] shrink-0 transition-all duration-300 ${
@@ -479,11 +445,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
         <div className="flex-1 w-full h-full flex flex-col items-center justify-center my-auto">
           <div
             data-testid="phone-device-wrapper"
-            className={`w-full mx-auto select-none relative transition-all duration-300 flex flex-col ${
-              isFullScreen
-                ? 'h-[min(88vh,860px)] w-[min(calc(88vh*9/19.5),410px)] max-h-[calc(100vh-4.5rem)] md:rounded-[48px] md:bg-slate-950 md:p-3 md:shadow-2xl md:ring-1 md:ring-slate-800 md:border-4 md:border-slate-700/60'
-                : 'h-[640px] sm:h-[680px] lg:h-[min(760px,calc(100vh-6rem))] md:w-[375px] max-w-md md:rounded-[50px] md:bg-slate-950 md:p-3.5 md:shadow-2xl md:ring-1 md:ring-slate-800/80 md:border-4 md:border-slate-700/60'
-            }`}
+            className="w-full mx-auto select-none relative transition-all duration-300 flex flex-col h-[640px] sm:h-[680px] lg:h-[min(760px,calc(100vh-6rem))] md:w-[375px] max-w-md md:rounded-[50px] md:bg-slate-950 md:p-3.5 md:shadow-2xl md:ring-1 md:ring-slate-800/80 md:border-4 md:border-slate-700/60"
           >
             {/* Dynamic Island / Speaker (Hidden on mobile devices, shown on desktop simulator) */}
             <div

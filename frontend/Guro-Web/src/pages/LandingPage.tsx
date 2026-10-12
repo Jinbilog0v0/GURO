@@ -46,7 +46,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     isDarkMode = false, 
     onToggleTheme,
     onBackToOverview,
-    onOpenMobileShowcase
 }) => {
     const [view, setView] = useState<ViewType>('login');
     const [isAdminMode, setIsAdminMode] = useState(false);
@@ -410,16 +409,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             >
                                 <ArrowLeft className="size-3 text-[var(--text-muted)]" strokeWidth={2.5} />
                                 <span>Overview</span>
-                            </button>
-                        )}
-                        {onOpenMobileShowcase && (
-                            <button
-                                type="button"
-                                onClick={onOpenMobileShowcase}
-                                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 glass-panel border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-[var(--bg-main)] rounded-full shadow-sm transition-all font-semibold text-xs cursor-pointer"
-                            >
-                                <Smartphone className="size-3 text-emerald-500" />
-                                <span className="hidden xs:inline sm:inline">Showcase</span>
                             </button>
                         )}
                         <a

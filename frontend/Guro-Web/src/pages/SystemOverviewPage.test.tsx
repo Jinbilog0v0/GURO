@@ -128,4 +128,20 @@ describe('SystemOverviewPage Component', () => {
     expect(underline).toHaveStyle({ left: '0px' });
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
   });
+
+  test('renders Download APK links in header and hero section', () => {
+    render(
+      <SystemOverviewPage
+        onOpenMobileShowcase={mockOpenMobileShowcase}
+        onOpenAuth={mockOpenAuth}
+        isDarkMode={false}
+        onToggleTheme={mockToggleTheme}
+      />
+    );
+
+    const apkLinks = screen.getAllByRole('link', { name: /Download.*APK/i });
+    expect(apkLinks.length).toBe(2);
+    expect(apkLinks[0]).toHaveAttribute('href', 'https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk');
+    expect(apkLinks[1]).toHaveAttribute('href', 'https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk');
+  });
 });
