@@ -17,6 +17,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from './src/theme/colors';
 import { Fonts, FontSizes } from './src/theme/typography';
 import { ToastContainer } from './src/components';
+import { performBackgroundUpdateCheck } from './src/services/updateService';
 
 const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -46,6 +47,9 @@ export default function App() {
       useAppStore.getState().setServerUrl(envUrl);
       addLog(`[Sync] Updated persisted server URL from env config to: ${envUrl}`);
     }
+
+    // Trigger non-blocking OTA update check on startup (production / EAS builds)
+    performBackgroundUpdateCheck();
   }, []);
 
   // ── Auto-sync when app comes to foreground ──────────────────────────────────
@@ -58,6 +62,9 @@ export default function App() {
             addLog(`[Sync] Auto-synced ${result.syncedCount} events on foreground.`);
           }
         });
+
+        // Check for OTA updates on foreground
+        performBackgroundUpdateCheck();
       }
     };
 

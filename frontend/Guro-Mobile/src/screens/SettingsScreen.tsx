@@ -31,7 +31,16 @@ import {
   Star,
   BarChart2,
   Globe,
+  RotateCw,
+  Smartphone,
 } from 'lucide-react-native';
+
+// ── Update Service ──────────────────────────────────────────────────────────
+import {
+  checkForAppUpdate,
+  fetchAndApplyAppUpdate,
+  getUpdateMetadata,
+} from '../services/updateService';
 
 // ── Design System & UI ────────────────────────────────────────────────────────
 import { Colors } from '../theme/colors';
@@ -105,6 +114,38 @@ export function SettingsScreen({ navigation }: Props) {
   // Dialog states
   const [purchasingOutfit, setPurchasingOutfit] = useState<any | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // OTA Updates State
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [updateStatusText, setUpdateStatusText] = useState<string | null>(null);
+
+  const handleCheckForUpdates = async () => {
+    setIsCheckingUpdate(true);
+    setUpdateStatusText('Checking EAS server for updates...');
+    try {
+      const result = await checkForAppUpdate();
+      if (result.isAvailable) {
+        setUpdateStatusText('New update found! Downloading bundle...');
+        toast.info('New update found! Downloading bundle...');
+        const applyRes = await fetchAndApplyAppUpdate();
+        if (applyRes.success) {
+          toast.success('Update ready! Restarting runtime...');
+        } else {
+          setUpdateStatusText(`Update error: ${applyRes.error}`);
+          toast.error(`Update failed: ${applyRes.error}`);
+        }
+      } else {
+        const msg = result.reason || 'App is up to date!';
+        setUpdateStatusText(msg);
+        toast.success(msg);
+      }
+    } catch (e: any) {
+      setUpdateStatusText('Error checking updates');
+      toast.error('Could not check for updates');
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
 
   const handleConfirmPurchaseOutfit = () => {
     if (!purchasingOutfit) return;
@@ -992,6 +1033,44 @@ export function SettingsScreen({ navigation }: Props) {
                     {log}
                   </Text>
                 ))}
+
+                {/* ── EAS Over-The-Air (OTA) Updates Panel ── */}
+                <View style={{ marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.border }}>
+                  <Text style={[styles.logsHeading, { marginBottom: Spacing.xs }]}>EAS Over-The-Air (OTA) Updates:</Text>
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: Spacing.sm }}>
+                    Runtime: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getUpdateMetadata().runtimeVersion}</Text> • Channel: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getUpdateMetadata().channel || 'production'}</Text>
+                  </Text>
+
+                  {updateStatusText && (
+                    <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.xs, color: Colors.accentPrimary, marginBottom: Spacing.xs }}>
+                      {updateStatusText}
+                    </Text>
+                  )}
+
+                  <TouchableOpacity
+                    testID="check-updates-btn"
+                    onPress={handleCheckForUpdates}
+                    disabled={isCheckingUpdate}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      paddingVertical: Spacing.sm,
+                      paddingHorizontal: Spacing.md,
+                      backgroundColor: Colors.bgInput,
+                      borderRadius: Radius.md,
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <RotateCw size={14} color={Colors.accentPrimary} />
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                      {isCheckingUpdate ? 'Checking EAS Server...' : 'Check for Updates Now'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
@@ -1037,6 +1116,7 @@ export function SettingsScreen({ navigation }: Props) {
             return (
               <TouchableOpacity
                 key={cat.id}
+                testID={`tab-${cat.id}`}
                 onPress={() => setActiveCategory(cat.id)}
                 style={[styles.tabItem, active && styles.tabItemActive]}
                 activeOpacity={0.75}
