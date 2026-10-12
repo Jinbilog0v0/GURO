@@ -217,16 +217,6 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           </a>
 
           <button
-            onClick={onOpenMobileShowcase}
-            aria-label="Mobile Showcase"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-all cursor-pointer shadow-xs"
-          >
-            <Smartphone className="size-3.5 text-emerald-500" />
-            <span className="hidden sm:inline">Mobile Showcase</span>
-            <span className="sm:hidden">Showcase</span>
-          </button>
-
-          <button
             onClick={onOpenAuth}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-95 text-white text-xs font-bold shadow-md shadow-[#11428E]/25 transition-all cursor-pointer hover:scale-102 active:scale-98"
           >
