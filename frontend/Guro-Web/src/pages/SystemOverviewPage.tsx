@@ -341,15 +341,15 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
       {/* ── Main Content Container ── */}
       <main className="flex-1 flex flex-col">
 
-        {/* ── Section 1: Hero Banner — Responsive min-height, no vertical clipping on small/DevTools viewports ── */}
-        <section id="overview" className="relative px-4 sm:px-8 py-2 md:py-16 min-h-[calc(100dvh-7.5rem)] md:min-h-[calc(100vh-3.5rem)] max-w-6xl mx-auto w-full flex flex-col items-center justify-between md:justify-center text-center overflow-x-clip">
+        {/* ── Section 1: Hero Banner — Fully responsive, dynamic viewport fitting with zero overlap ── */}
+        <section id="overview" className="relative px-4 sm:px-8 pt-2 pb-28 md:py-16 min-h-[calc(100dvh-3.5rem)] md:min-h-[calc(100vh-3.5rem)] max-w-6xl mx-auto w-full flex flex-col items-center justify-between md:justify-center text-center overflow-x-clip">
 
           {/* Ambient Background Glow Effect */}
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 size-72 sm:size-96 bg-[#11428E]/15 rounded-full blur-3xl pointer-events-none -z-10" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-80 sm:size-[460px] bg-gradient-to-tr from-[#11428E]/10 to-[#A01322]/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
-          {/* ── Hero Content: vertically centered, even gap between elements ── */}
-          <div className="flex-1 w-full min-h-0 flex flex-col items-center justify-center gap-4 sm:gap-6 py-4 sm:py-0">
+          {/* ── Hero Content: vertically centered, proportional mobile spacing ── */}
+          <div className="flex-1 w-full min-h-0 flex flex-col items-center justify-center gap-3 sm:gap-6 py-2 sm:py-0">
 
             {/* DepEd MELC Badge */}
             <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full border border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300 text-[11px] sm:text-xs font-extrabold shadow-xs animate-in fade-in duration-300">
@@ -358,7 +358,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             </div>
 
             {/* Main Title */}
-            <h1 className="text-[1.6rem] sm:text-5xl lg:text-6xl font-black text-[var(--text-main)] tracking-tight max-w-xs sm:max-w-4xl leading-[1.18] sm:leading-[1.12]">
+            <h1 className="text-[1.55rem] sm:text-5xl lg:text-6xl font-black text-[var(--text-main)] tracking-tight max-w-xs sm:max-w-4xl leading-[1.18] sm:leading-[1.12]">
               Adaptive, Offline-First Learning for{' '}
               <span className="bg-gradient-to-r from-[#11428E] via-[#2563EB] to-[#A01322] bg-clip-text text-transparent">
                 Philippine Classrooms
@@ -366,7 +366,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             </h1>
 
             {/* Curriculum Scope Chips — 2 rows */}
-            <div className="flex flex-col items-center gap-1.5 sm:gap-2 w-full mt-2 mb-2">
+            <div className="flex flex-col items-center gap-1.5 sm:gap-2 w-full mt-1.5 mb-1.5 sm:mt-2 sm:mb-2">
               {/* Row 1: Subject chips */}
               <div className="flex items-center justify-center gap-2">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-bold shadow-2xs">
@@ -385,15 +385,15 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             </div>
 
             {/* Subtitle */}
-            <p className="text-[11.5px] sm:text-base lg:text-lg text-[var(--text-muted)] max-w-[17rem] sm:max-w-2xl leading-[1.6] font-medium">
+            <p className="text-[11.5px] sm:text-base lg:text-lg text-[var(--text-muted)] max-w-[17.5rem] sm:max-w-2xl leading-[1.55] font-medium">
               GURO (Guided Unified Resource Optimization) bridges the digital divide with rich interactive slides, diagnostic quizzes, automated DepEd SF9 reports, and 100% offline capability.
             </p>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-4 w-full max-w-[17rem] sm:max-w-none">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 w-full max-w-[17.5rem] sm:max-w-none">
               <button
                 onClick={onOpenMobileShowcase}
-                className="flex items-center justify-center gap-2 px-5 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/20 transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
+                className="flex items-center justify-center gap-2 px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/20 transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
               >
                 <Smartphone className="size-4" />
                 <span>Explore Mobile Showcase</span>
@@ -403,7 +403,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 download="GURO-preview.apk"
-                className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
+                className="flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
               >
                 <Download className="size-4 text-sky-500" />
                 <span>Download App APK</span>
@@ -411,10 +411,10 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             </div>
           </div>
 
-          {/* ── Mobile View: Continuous Moving Single Row Marquee Ticker ── */}
+          {/* ── Mobile View: Continuous Moving Single Row Marquee Ticker (Elevated above bottom nav pill) ── */}
           <div
             data-testid="hero-metrics-ticker"
-            className="md:hidden w-full overflow-hidden shrink-0 pb-1 mb-3 relative"
+            className="md:hidden w-full overflow-hidden shrink-0 mt-3 sm:mt-4 relative"
             style={{
               maskImage: 'linear-gradient(to right, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%)',
               WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%)',
