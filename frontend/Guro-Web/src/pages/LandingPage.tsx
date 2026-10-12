@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap, Eye, EyeOff, Shield, KeyRound, Terminal, Sun, Moon, Upload, CheckCircle2, Clock, X } from 'lucide-react';
+import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap, Eye, EyeOff, Shield, KeyRound, Terminal, Sun, Moon, Upload, CheckCircle2, Clock, X, Download } from 'lucide-react';
 import { RoleCard, type RoleCardProps } from '../components/landing/RoleCard';
 import { FeatureCard, type FeatureCardProps } from '../components/landing/FeatureCard';
 import { setAuthToken } from '../utils/api';
@@ -408,8 +408,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         )}
                     </div>
 
-                    {onToggleTheme && (
-                        <div className="sm:pointer-events-auto">
+                    <div className="flex items-center gap-2 sm:pointer-events-auto">
+                        <a
+                            href="/downloads/GURO.apk"
+                            download="GURO.apk"
+                            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-2xl glass-panel border border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all shadow-md text-xs font-bold cursor-pointer hover:scale-105 active:scale-95 group"
+                            title="Download GURO Mobile Android APK"
+                        >
+                            <Download size={15} className="text-[#11428E] dark:text-[#3b82f6] group-hover:translate-y-0.5 transition-transform" />
+                            <span className="hidden sm:inline">Download App</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#11428E]/10 dark:bg-[#3b82f6]/20 text-[#11428E] dark:text-[#3b82f6] font-mono">APK</span>
+                        </a>
+
+                        {onToggleTheme && (
                             <button
                                 type="button"
                                 onClick={onToggleTheme}
@@ -419,8 +430,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             >
                                 {isDarkMode ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} className="text-[#11428E]" />}
                             </button>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -630,6 +641,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             >
                                  <Rocket className="size-4 text-[#3b82f6]" /> Continue as guest / try demo
                             </button>
+
+                            <a
+                                href="/downloads/GURO.apk"
+                                download="GURO.apk"
+                                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#11428E]/10 via-[#2563EB]/10 to-[#A01322]/10 hover:from-[#11428E]/20 hover:to-[#A01322]/20 border border-[#11428E]/30 text-[var(--text-main)] font-bold py-2.5 rounded-xl transition-all text-xs cursor-pointer shadow-xs group"
+                            >
+                                <Smartphone className="size-4 text-[#11428E] dark:text-[#3b82f6]" />
+                                <span>Download Learner App (Android APK)</span>
+                                <Download className="size-3.5 text-[var(--text-muted)] group-hover:translate-y-0.5 transition-transform" />
+                            </a>
                         </div>
                     </div>
                 )}

@@ -224,7 +224,7 @@ class AuthController extends Controller
         if ($user->role === 'teacher' && ! $classroomId) {
             $classroom = Classroom::where(function ($q) use ($user) {
                 $q->where('teacher_user_id', $user->id)
-                    ->orWhere('teacher_user_id', $user->user_id)
+                    ->when(is_numeric($user->user_id), fn ($sub) => $sub->orWhere('teacher_user_id', $user->user_id))
                     ->orWhere('teacher_name', $user->name);
             })->orderBy('created_at', 'desc')->first();
             if ($classroom) {
