@@ -12,7 +12,8 @@ import {
   Shield,
   Sun,
   Moon,
-  CheckCircle2
+  CheckCircle2,
+  Download
 } from 'lucide-react';
 
 interface SystemOverviewPageProps {
@@ -195,7 +196,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
         </nav>
 
         {/* Right Action Buttons */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5">
           {onToggleTheme && (
             <button
               onClick={onToggleTheme}
@@ -205,6 +206,20 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
               {isDarkMode ? <Sun className="size-4 text-amber-400" /> : <Moon className="size-4 text-[#11428E]" />}
             </button>
           )}
+
+          <a
+            href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
+            target="_blank"
+            rel="noopener noreferrer"
+            download="GURO-preview.apk"
+            aria-label="Download App APK"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 text-xs font-bold transition-all cursor-pointer shadow-xs"
+            title="Download Standalone Android APK (v1.0.1)"
+          >
+            <Download className="size-3.5 text-sky-500" />
+            <span className="hidden sm:inline">Download APK</span>
+            <span className="sm:hidden">APK</span>
+          </a>
 
           <button
             onClick={onOpenMobileShowcase}
@@ -248,7 +263,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             GURO (Guided Unified Resource Optimization) bridges the digital divide with rich interactive slides, diagnostic quizzes, automated DepEd SF9 reports, and 100% offline capability.
           </p>
 
-          {/* Dual Action Buttons */}
+          {/* Action Buttons */}
           <div className="mt-7 sm:mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4 w-full">
             <button
               onClick={onOpenMobileShowcase}
@@ -257,6 +272,17 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
               <Smartphone className="size-4" />
               <span>Explore Mobile Showcase</span>
             </button>
+
+            <a
+              href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
+              target="_blank"
+              rel="noopener noreferrer"
+              download="GURO-preview.apk"
+              className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
+            >
+              <Download className="size-4 text-sky-500" />
+              <span>Download App APK</span>
+            </a>
 
             <button
               onClick={onOpenAuth}

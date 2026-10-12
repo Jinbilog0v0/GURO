@@ -225,4 +225,62 @@ describe('MobileAppShowcase Component', () => {
     expect(dynamicIsland).toBeInTheDocument();
     expect(dynamicIsland).toHaveClass('hidden', 'md:flex');
   });
+
+  test('renders Download APK link in showcase header with direct EAS build URL', () => {
+    render(
+      <MobileAppShowcase
+        onBackToOverview={mockBackToOverview}
+        onLaunchPortal={mockLaunchPortal}
+        isDarkMode={false}
+        onToggleTheme={mockToggleTheme}
+      />
+    );
+
+    const downloadLink = screen.getByTitle('Download Standalone Android APK (v1.0.1)');
+    expect(downloadLink).toBeInTheDocument();
+    expect(downloadLink).toHaveAttribute(
+      'href',
+      'https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk'
+    );
+  });
+
+  test('toggles Focus Phone mode to collapse and expand the simulator console', () => {
+    render(
+      <MobileAppShowcase
+        onBackToOverview={mockBackToOverview}
+        onLaunchPortal={mockLaunchPortal}
+        isDarkMode={false}
+        onToggleTheme={mockToggleTheme}
+      />
+    );
+
+    const focusBtn = screen.getByRole('button', { name: /Focus Phone Mode/i });
+    expect(focusBtn).toBeInTheDocument();
+
+    // Toggle to collapse console
+    fireEvent.click(focusBtn);
+    expect(screen.getByRole('button', { name: /Show Simulator Console/i })).toBeInTheDocument();
+
+    // Toggle back to expand console
+    fireEvent.click(screen.getByRole('button', { name: /Show Simulator Console/i }));
+    expect(screen.getByRole('button', { name: /Focus Phone Mode/i })).toBeInTheDocument();
+  });
+
+  test('renders and toggles full screen fit button', () => {
+    render(
+      <MobileAppShowcase
+        onBackToOverview={mockBackToOverview}
+        onLaunchPortal={mockLaunchPortal}
+        isDarkMode={false}
+        onToggleTheme={mockToggleTheme}
+      />
+    );
+
+    const fullScreenBtn = screen.getByRole('button', { name: /Full Screen/i });
+    expect(fullScreenBtn).toBeInTheDocument();
+
+    fireEvent.click(fullScreenBtn);
+    expect(screen.getByRole('button', { name: /Exit Full Screen/i })).toBeInTheDocument();
+  });
 });
+

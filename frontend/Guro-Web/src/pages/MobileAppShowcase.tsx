@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft,
   Wifi,
@@ -25,7 +25,11 @@ import {
   Flame,
   Copy,
   Check,
-  Play
+  Play,
+  Download,
+  Maximize2,
+  Minimize2,
+  SlidersHorizontal
 } from 'lucide-react';
 
 interface MobileAppShowcaseProps {
@@ -78,6 +82,28 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
 
   // Mobile console collapse toggle
   const [isMobileConsoleOpen, setIsMobileConsoleOpen] = useState(true);
+
+  // Fullscreen & Focus Mode State
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isConsoleCollapsed, setIsConsoleCollapsed] = useState(false);
+
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+      setIsFullScreen(true);
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+      setIsFullScreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullScreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   // Reset simulator
   const handleResetSimulator = () => {
@@ -165,8 +191,8 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
     <div className="min-h-screen w-full bg-[var(--bg-main)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
       
       {/* ── Top Header Bar ── */}
-      <header className="sticky top-0 z-40 bg-[var(--bg-card)]/90 backdrop-blur-md border-b border-[var(--border-color)] px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-xs">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-40 bg-[var(--bg-card)]/90 backdrop-blur-md border-b border-[var(--border-color)] px-4 sm:px-8 py-3 flex items-center justify-between shadow-xs">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={onBackToOverview}
             className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--bg-card)] text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all cursor-pointer"
@@ -177,13 +203,45 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
           <div className="h-4 w-px bg-[var(--border-color)] hidden sm:block" />
           <div className="flex items-center gap-2">
             <span className="text-sm font-extrabold text-[#11428E] dark:text-sky-400 tracking-tight">GURO</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold hidden sm:inline-block">
               Mobile App Simulator
             </span>
           </div>
+
+          <a
+            href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
+            target="_blank"
+            rel="noopener noreferrer"
+            download="GURO-preview.apk"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 text-xs font-bold transition-all cursor-pointer shadow-xs ml-1"
+            title="Download Standalone Android APK (v1.0.1)"
+          >
+            <Download className="size-3.5 text-sky-500" />
+            <span className="hidden md:inline">Download APK</span>
+            <span className="md:hidden">APK</span>
+          </a>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={() => setIsConsoleCollapsed(!isConsoleCollapsed)}
+            aria-label={isConsoleCollapsed ? 'Show Simulator Console' : 'Focus Phone Mode'}
+            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--bg-card)] text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all cursor-pointer"
+            title={isConsoleCollapsed ? 'Show Controls Console' : 'Focus on Mobile Screen Only'}
+          >
+            <SlidersHorizontal className="size-3.5" />
+            <span>{isConsoleCollapsed ? 'Show Console' : 'Focus Phone'}</span>
+          </button>
+
+          <button
+            onClick={toggleFullScreen}
+            aria-label={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
+            className="p-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all cursor-pointer"
+            title={isFullScreen ? 'Exit Full Screen' : 'Full Screen Fit'}
+          >
+            {isFullScreen ? <Minimize2 className="size-4 text-emerald-500" /> : <Maximize2 className="size-4" />}
+          </button>
+
           {onToggleTheme && (
             <button
               onClick={onToggleTheme}
@@ -196,19 +254,26 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
 
           <button
             onClick={onLaunchPortal}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-95 text-white text-xs font-bold shadow-md shadow-[#11428E]/20 transition-all cursor-pointer hover:scale-102 active:scale-98"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-95 text-white text-xs font-bold shadow-md shadow-[#11428E]/20 transition-all cursor-pointer hover:scale-102 active:scale-98"
           >
-            <span>Launch Web Portal</span>
+            <span className="hidden sm:inline">Launch Web Portal</span>
+            <span className="sm:hidden">Portal</span>
             <ExternalLink className="size-3.5" />
           </button>
         </div>
       </header>
 
-      {/* ── Main Showcase Workspace ── */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 flex flex-col lg:flex-row gap-6 lg:gap-8 items-start justify-center">
+      {/* ── Main Showcase Workspace (Dynamic screen-fitting layout) ── */}
+      <div className={`flex-1 w-full mx-auto flex flex-col lg:flex-row items-center justify-center transition-all duration-300 ${
+        isFullScreen 
+          ? 'h-[calc(100vh-3.5rem)] p-2 sm:p-4 gap-4 overflow-hidden' 
+          : 'max-w-7xl p-3 sm:p-6 lg:p-6 gap-6 lg:gap-8 min-h-[calc(100vh-4rem)]'
+      }`}>
         
         {/* ── Left Column: Simulator Controls Dashboard ── */}
-        <div className="w-full lg:w-[380px] flex flex-col gap-4">
+        <div className={`w-full lg:w-[360px] shrink-0 transition-all duration-300 ${
+          isConsoleCollapsed ? 'hidden' : 'flex flex-col gap-4'
+        }`}>
           <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-4 sm:p-6 shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
               <div>
@@ -411,10 +476,14 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
         </div>
 
         {/* ── Right Column: Smartphone Device Chassis Frame (Native Card on Mobile, Phone Bezel on Desktop) ── */}
-        <div className="flex-1 w-full flex flex-col items-center justify-center">
+        <div className="flex-1 w-full h-full flex flex-col items-center justify-center my-auto">
           <div
             data-testid="phone-device-wrapper"
-            className="w-full max-w-md mx-auto h-[640px] sm:h-[700px] md:h-[740px] md:w-[375px] md:rounded-[50px] md:bg-slate-950 md:p-3.5 md:shadow-2xl md:shadow-slate-950/40 md:ring-1 md:ring-slate-800/80 md:border-4 md:border-slate-700/60 select-none relative"
+            className={`w-full mx-auto select-none relative transition-all duration-300 flex flex-col ${
+              isFullScreen
+                ? 'h-[min(88vh,860px)] w-[min(calc(88vh*9/19.5),410px)] max-h-[calc(100vh-4.5rem)] md:rounded-[48px] md:bg-slate-950 md:p-3 md:shadow-2xl md:ring-1 md:ring-slate-800 md:border-4 md:border-slate-700/60'
+                : 'h-[640px] sm:h-[680px] lg:h-[min(760px,calc(100vh-6rem))] md:w-[375px] max-w-md md:rounded-[50px] md:bg-slate-950 md:p-3.5 md:shadow-2xl md:ring-1 md:ring-slate-800/80 md:border-4 md:border-slate-700/60'
+            }`}
           >
             {/* Dynamic Island / Speaker (Hidden on mobile devices, shown on desktop simulator) */}
             <div

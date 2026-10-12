@@ -191,4 +191,14 @@ describe('LandingPage Portal (Web)', () => {
     expect(emailInput.value).toBe('teacher@guro.dev');
     expect(passwordInput.value).toBe('Password123');
   });
+
+  test('renders Download App APK buttons pointing to the standalone APK artifact', () => {
+    const mockSelectRole = jest.fn();
+    const mockLoginSuccess = jest.fn();
+    render(<LandingPage onSelectRole={mockSelectRole} onLoginSuccess={mockLoginSuccess} />);
+
+    const apkLinks = screen.getAllByRole('link', { name: /Download.*APK/i });
+    expect(apkLinks.length).toBeGreaterThanOrEqual(1);
+    expect(apkLinks[0]).toHaveAttribute('href', 'https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk');
+  });
 });

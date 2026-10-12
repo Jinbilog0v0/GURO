@@ -356,9 +356,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-8 sm:p-8 relative select-none"
             style={pageStyle}
         >
-            {/* ── Top Bar Controls ── */}
+            {/* ── Top Bar Controls (Full-width edge-to-edge alignment) ── */}
             {view === 'guest-roles' ? (
-                <div className="w-full max-w-5xl flex items-center justify-between z-30 pb-4 sm:pb-0 sm:absolute sm:top-6 sm:left-6 sm:right-6 md:top-10 md:left-10 md:right-10">
+                <div className="w-full flex items-center justify-between z-30 pb-4 sm:pb-0 sm:absolute sm:top-6 sm:left-0 sm:right-0 px-4 sm:px-8 md:px-10">
                     <button
                         onClick={() => setView('login')}
                         className="flex items-center gap-2 px-3.5 sm:px-4 py-2 glass-panel border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all font-semibold text-xs cursor-pointer"
@@ -384,8 +384,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </div>
                 </div>
             ) : (
-                <div className="w-full max-w-5xl flex items-center justify-between gap-2 z-30 pb-4 sm:pb-0 sm:absolute sm:top-6 sm:left-6 sm:right-6 md:top-8 md:left-8 md:right-8 sm:pointer-events-none">
-                    <div className="flex items-center gap-1.5 sm:gap-2 sm:pointer-events-auto">
+                <div className="w-full flex items-center justify-between gap-2 z-30 pb-4 sm:pb-0 sm:absolute sm:top-6 sm:left-0 sm:right-0 px-4 sm:px-8 md:px-10 sm:pointer-events-none">
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 sm:pointer-events-auto">
                         {onBackToOverview && (
                             <button
                                 type="button"
@@ -406,20 +406,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                 <span className="hidden xs:inline sm:inline">Showcase</span>
                             </button>
                         )}
+                        <a
+                            href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download="GURO-preview.apk"
+                            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-2 glass-panel border border-sky-500/30 text-sky-600 dark:text-sky-400 hover:bg-[var(--bg-main)] rounded-full shadow-sm transition-all font-semibold text-xs cursor-pointer hover:scale-102 active:scale-98"
+                            title="Download Standalone Android APK (v1.0.1)"
+                        >
+                            <Download className="size-3 text-sky-500" />
+                            <span className="hidden xs:inline sm:inline">Download App APK</span>
+                            <span className="xs:hidden sm:hidden">APK</span>
+                        </a>
                     </div>
 
                     <div className="flex items-center gap-2 sm:pointer-events-auto">
-                        <a
-                            href="/downloads/GURO.apk"
-                            download="GURO.apk"
-                            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 rounded-2xl glass-panel border border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all shadow-md text-xs font-bold cursor-pointer hover:scale-105 active:scale-95 group"
-                            title="Download GURO Mobile Android APK"
-                        >
-                            <Download size={15} className="text-[#11428E] dark:text-[#3b82f6] group-hover:translate-y-0.5 transition-transform" />
-                            <span className="hidden sm:inline">Download App</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#11428E]/10 dark:bg-[#3b82f6]/20 text-[#11428E] dark:text-[#3b82f6] font-mono">APK</span>
-                        </a>
-
                         {onToggleTheme && (
                             <button
                                 type="button"
@@ -641,11 +642,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             >
                                  <Rocket className="size-4 text-[#3b82f6]" /> Continue as guest / try demo
                             </button>
-
                             <a
-                                href="/downloads/GURO.apk"
-                                download="GURO.apk"
+                                href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download="GURO-preview.apk"
                                 className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#11428E]/10 via-[#2563EB]/10 to-[#A01322]/10 hover:from-[#11428E]/20 hover:to-[#A01322]/20 border border-[#11428E]/30 text-[var(--text-main)] font-bold py-2.5 rounded-xl transition-all text-xs cursor-pointer shadow-xs group"
+                                title="Download Standalone Android APK (v1.0.1)"
                             >
                                 <Smartphone className="size-4 text-[#11428E] dark:text-[#3b82f6]" />
                                 <span>Download Learner App (Android APK)</span>
