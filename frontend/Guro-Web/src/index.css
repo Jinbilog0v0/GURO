@@ -381,6 +381,60 @@
   font-family: var(--font-display);
 }
 
+/* ── Hero Metrics Continuous Moving Ticker (Mobile One-Row Marquee) ── */
+@keyframes hero-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* Reverse direction — scrolls right (used for desktop bottom row) */
+@keyframes hero-marquee-reverse {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Mobile: compact, 24s */
+.hero-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: hero-marquee 24s linear infinite;
+  will-change: transform;
+}
+
+/* Desktop row 1: scrolls left, larger cards, 36s (slower = feels weightier) */
+.hero-marquee-track-desktop {
+  display: flex;
+  width: max-content;
+  animation: hero-marquee 36s linear infinite;
+  will-change: transform;
+}
+
+/* Desktop row 2: scrolls right, 40s (slightly different speed for depth) */
+.hero-marquee-track-desktop-reverse {
+  display: flex;
+  width: max-content;
+  animation: hero-marquee-reverse 40s linear infinite;
+  will-change: transform;
+}
+
+/* Pause all tracks on hover/touch */
+.hero-marquee-track:hover,
+.hero-marquee-track:active,
+.hero-marquee-track-desktop:hover,
+.hero-marquee-track-desktop:active,
+.hero-marquee-track-desktop-reverse:hover,
+.hero-marquee-track-desktop-reverse:active {
+  animation-play-state: paused;
+}
+
 /* ── Light Mode Color Variable Overrides ── */
 .light-mode {
   --bg-main: #f8fafc;

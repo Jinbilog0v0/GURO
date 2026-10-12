@@ -442,7 +442,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
             )}
 
-            <div className="flex w-full max-w-5xl flex-col items-center gap-6 sm:gap-10 relative z-10">
+            <div className="flex w-full max-w-5xl flex-col items-center gap-6 sm:gap-10 relative z-10 pt-12 sm:pt-4">
 
                 <div className="flex flex-col items-center gap-1 text-center">
                     <GuroLogoGraphic onClick={handleLogoClick} />

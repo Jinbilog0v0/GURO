@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MobileAppShowcase } from './MobileAppShowcase';
 import '@testing-library/jest-dom';
 
@@ -280,5 +280,36 @@ describe('MobileAppShowcase Component', () => {
     fireEvent.click(signInBtn);
     expect(mockLaunchPortal).toHaveBeenCalledTimes(1);
   });
+
+  test('opens and closes mobile top actions menu sheet', () => {
+    render(
+      <MobileAppShowcase
+        onBackToOverview={mockBackToOverview}
+        onLaunchPortal={mockLaunchPortal}
+        isDarkMode={false}
+        onToggleTheme={mockToggleTheme}
+      />
+    );
+
+    // Initial state: menu is closed
+    expect(screen.queryByTestId('showcase-mobile-top-action-menu')).not.toBeInTheDocument();
+
+    // Click menu toggle button to open
+    const openMenuBtn = screen.getByRole('button', { name: /Open navigation menu/i });
+    fireEvent.click(openMenuBtn);
+
+    const menuDropdown = screen.getByTestId('showcase-mobile-top-action-menu');
+    expect(menuDropdown).toBeInTheDocument();
+    expect(within(menuDropdown).getByText(/Download App/i)).toBeInTheDocument();
+
+    // Toggle theme from mobile menu
+    const themeBtn = within(menuDropdown).getByRole('button', { name: /Dark Mode/i });
+    fireEvent.click(themeBtn);
+    expect(mockToggleTheme).toHaveBeenCalled();
+
+    // Menu closes after selection
+    expect(screen.queryByTestId('showcase-mobile-top-action-menu')).not.toBeInTheDocument();
+  });
 });
+
 

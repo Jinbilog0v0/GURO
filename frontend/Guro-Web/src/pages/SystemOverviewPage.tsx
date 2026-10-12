@@ -13,7 +13,9 @@ import {
   Sun,
   Moon,
   CheckCircle2,
-  Download
+  Download,
+  Menu,
+  X
 } from 'lucide-react';
 
 interface SystemOverviewPageProps {
@@ -28,13 +30,22 @@ type NavSectionId = 'overview' | 'pillars' | 'roles' | 'about';
 interface NavSection {
   id: NavSectionId;
   label: string;
+  shortLabel?: string;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 const NAV_SECTIONS: NavSection[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'pillars', label: 'Why GURO' },
-  { id: 'roles', label: "Who It's For" },
-  { id: 'about', label: 'About' },
+  { id: 'overview', label: 'Overview', icon: Sparkles },
+  { id: 'pillars', label: 'Why GURO', icon: Shield },
+  { id: 'roles', label: "Who It's For", shortLabel: 'Roles', icon: Users },
+  { id: 'about', label: 'About', icon: GraduationCap },
+];
+
+const HERO_METRICS = [
+  { label: 'Offline Ready', value: '100% Zero-Data', desc: 'Quizzes & slides run without internet', dot: 'bg-emerald-500' },
+  { label: 'DepEd Standards', value: 'Grades 4, 5, 6', desc: 'Official MELC curriculum alignment', dot: 'bg-blue-500' },
+  { label: 'Teacher Analytics', value: 'Form SF9 Ready', desc: 'Automated quarterly reports & analytics', dot: 'bg-indigo-500' },
+  { label: 'Guardian Sync', value: '6-Digit Codes', desc: 'Secure guardian sync & screen time', dot: 'bg-amber-500' },
 ];
 
 export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
@@ -45,6 +56,17 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
 }) => {
   const [activeAudienceTab, setActiveAudienceTab] = useState<'student' | 'teacher' | 'parent'>('student');
   const [activeNavSection, setActiveNavSection] = useState<NavSectionId>('overview');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      const userAgent = navigator.userAgent || '';
+      const isApple = /iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      setIsIOS(isApple);
+    }
+  }, []);
+
   const navRef = useRef<HTMLElement>(null);
   const itemRefs = useRef<Record<string, HTMLElement | null>>({});
   const [indicatorStyle, setIndicatorStyle] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
@@ -138,8 +160,12 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
   return (
     <div className="min-h-screen w-full bg-[var(--bg-main)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
       
-      {/* ── Top Navigation Bar ── */}
-      <header className="sticky top-0 z-40 bg-[var(--bg-card)]/90 backdrop-blur-md border-b border-[var(--border-color)] px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-xs">
+      {/* ── Top Navigation Bar — iOS: Frosted Glass | Android: M3 Solid Elevation ── */}
+      <header className={`sticky top-0 z-40 px-4 sm:px-8 py-3.5 flex items-center justify-between transition-all duration-200 ${
+        isIOS
+          ? 'bg-[var(--bg-card)]/70 backdrop-blur-xl border-b border-[var(--border-color)]/60 shadow-[0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/5'
+          : 'bg-[var(--bg-card)] border-b border-[var(--border-color)] shadow-sm'
+      }`}>
         <div className="flex items-center gap-3">
           <div className="size-9 rounded-2xl bg-gradient-to-tr from-[#11428E] via-[#2563EB] to-[#A01322] flex items-center justify-center text-white shadow-md shadow-[#11428E]/20">
             <GraduationCap className="size-5" />
@@ -154,8 +180,8 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           <nav
             ref={navRef}
             aria-label="Overview navigation"
-            style={{ marginLeft: 'max(1rem, calc(50% - 165px))' }}
-            className="flex items-center gap-6 lg:gap-8 text-xs relative py-1"
+            style={{ marginLeft: 'max(0.75rem, calc(50% - 165px))' }}
+            className="flex items-center gap-3 lg:gap-6 xl:gap-8 text-xs relative py-1 shrink-0"
           >
             {NAV_SECTIONS.map((sec) => {
               const isActive = activeNavSection === sec.id;
@@ -193,8 +219,8 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           </nav>
         </div>
 
-        {/* Right Action Buttons */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        {/* Desktop Right Action Buttons (hidden on phone, visible md+) */}
+        <div className="hidden md:flex items-center gap-2 sm:gap-2.5">
           {onToggleTheme && (
             <button
               onClick={onToggleTheme}
@@ -227,66 +253,210 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             <ArrowRight className="size-3.5" />
           </button>
         </div>
+
+        {/* Mobile Header Menu Trigger (Phone only) */}
+        <div className="flex md:hidden items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            className={`p-2 rounded-xl transition-all cursor-pointer relative ${
+              isMobileMenuOpen ? 'z-[60]' : 'z-10'
+            } ${
+              isIOS
+                ? 'border border-[var(--border-color)] bg-[var(--bg-main)]/60 hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] active:scale-90'
+                : 'bg-[var(--bg-card)] hover:bg-[var(--border-color)]/40 text-[var(--text-main)] shadow-sm border border-[var(--border-color)] active:scale-95'
+            }`}
+          >
+            {isMobileMenuOpen ? <X className="size-5 text-[var(--text-main)]" /> : <Menu className="size-5 text-[var(--text-main)]" />}
+          </button>
+        </div>
       </header>
+
+      {/* ── Mobile Top-Right Actions Dropdown (Compact 40-50% width option dropdown) ── */}
+      {isMobileMenuOpen && (
+        <>
+          {/* Backdrop overlay — z-50 to grey out top navigation, hero content, and bottom nav */}
+          <div
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs md:hidden animate-in fade-in duration-200"
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+
+          {/* Floating Dropdown Menu (40-50% screen width, right-aligned) */}
+          <div
+            data-testid="mobile-top-action-menu"
+            className={`fixed top-14 right-3 w-[50%] min-w-[170px] max-w-[210px] z-[60] p-2 rounded-2xl border shadow-2xl md:hidden animate-in fade-in slide-in-from-top-2 duration-150 ${
+              isIOS
+                ? 'bg-[var(--bg-card)]/85 backdrop-blur-2xl border-[var(--border-color)]/70 ring-1 ring-white/10 shadow-black/25'
+                : 'bg-white dark:bg-[#0d1322] border-[var(--border-color)] shadow-[0_12px_32px_rgba(0,0,0,0.35)]'
+            }`}
+          >
+            <div className="flex flex-col gap-1">
+              {/* Download App Link */}
+              <a
+                href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
+                target="_blank"
+                rel="noopener noreferrer"
+                download="GURO-preview.apk"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-2 w-full px-2.5 py-2 rounded-xl text-xs font-bold text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition-colors cursor-pointer"
+              >
+                <Download className="size-3.5 text-sky-500 shrink-0" />
+                <span className="truncate">Download App</span>
+              </a>
+
+              {/* Theme Toggle Button */}
+              {onToggleTheme && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onToggleTheme();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 w-full px-2.5 py-2 rounded-xl text-xs font-bold text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                >
+                  {isDarkMode ? <Sun className="size-3.5 text-amber-400 shrink-0" /> : <Moon className="size-3.5 text-[#11428E] shrink-0" />}
+                  <span className="truncate">{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                </button>
+              )}
+
+              {/* Sign In Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onOpenAuth();
+                }}
+                className="flex items-center justify-between w-full px-3 py-2 mt-0.5 rounded-xl bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-95 text-white text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
+              >
+                <span>Sign In</span>
+                <ArrowRight className="size-3.5 shrink-0" />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── Main Content Container ── */}
       <main className="flex-1 flex flex-col">
 
-        {/* ── Section 1: Hero Banner (Dynamic Screen Fitting) ── */}
-        <section id="overview" className="relative px-4 sm:px-8 py-10 sm:py-16 min-h-[calc(100vh-3.5rem)] max-w-6xl mx-auto w-full flex flex-col items-center justify-center text-center">
-          
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300 text-xs font-extrabold mb-5 shadow-xs animate-in fade-in duration-300">
-            <Sparkles className="size-3.5 text-sky-500" />
-            <span>DepEd MELC Aligned • Grades 4 to 6 Mathematics &amp; English</span>
-          </div>
+        {/* ── Section 1: Hero Banner — Responsive min-height, no vertical clipping on small/DevTools viewports ── */}
+        <section id="overview" className="relative px-4 sm:px-8 py-2 md:py-16 min-h-[calc(100dvh-7.5rem)] md:min-h-[calc(100vh-3.5rem)] max-w-6xl mx-auto w-full flex flex-col items-center justify-between md:justify-center text-center overflow-x-clip">
 
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-[var(--text-main)] tracking-tight max-w-4xl leading-[1.12]">
-            Adaptive, Offline-First Learning for{' '}
-            <span className="bg-gradient-to-r from-[#11428E] via-[#2563EB] to-[#A01322] bg-clip-text text-transparent">
-              Philippine Classrooms
-            </span>
-          </h1>
+          {/* Ambient Background Glow Effect */}
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 size-72 sm:size-96 bg-[#11428E]/15 rounded-full blur-3xl pointer-events-none -z-10" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-80 sm:size-[460px] bg-gradient-to-tr from-[#11428E]/10 to-[#A01322]/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
-          <p className="mt-4 sm:mt-5 text-sm sm:text-base lg:text-lg text-[var(--text-muted)] max-w-2xl leading-relaxed font-medium">
-            GURO (Guided Unified Resource Optimization) bridges the digital divide with rich interactive slides, diagnostic quizzes, automated DepEd SF9 reports, and 100% offline capability.
-          </p>
+          {/* ── Hero Content: vertically centered, even gap between elements ── */}
+          <div className="flex-1 w-full min-h-0 flex flex-col items-center justify-center gap-4 sm:gap-6 py-4 sm:py-0">
 
-          {/* Action Buttons */}
-          <div className="mt-7 sm:mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4 w-full">
-            <button
-              onClick={onOpenMobileShowcase}
-              className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/20 transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
-            >
-              <Smartphone className="size-4" />
-              <span>Explore Mobile Showcase</span>
-            </button>
+            {/* DepEd MELC Badge */}
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full border border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300 text-[11px] sm:text-xs font-extrabold shadow-xs animate-in fade-in duration-300">
+              <Sparkles className="size-3 sm:size-3.5 text-sky-500" />
+              <span>DepEd MELC Aligned • Grades 4 to 6 Mathematics &amp; English</span>
+            </div>
 
-            <a
-              href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
-              target="_blank"
-              rel="noopener noreferrer"
-              download="GURO-preview.apk"
-              className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
-            >
-              <Download className="size-4 text-sky-500" />
-              <span>Download App APK</span>
-            </a>
-          </div>
+            {/* Main Title */}
+            <h1 className="text-[1.6rem] sm:text-5xl lg:text-6xl font-black text-[var(--text-main)] tracking-tight max-w-xs sm:max-w-4xl leading-[1.18] sm:leading-[1.12]">
+              Adaptive, Offline-First Learning for{' '}
+              <span className="bg-gradient-to-r from-[#11428E] via-[#2563EB] to-[#A01322] bg-clip-text text-transparent">
+                Philippine Classrooms
+              </span>
+            </h1>
 
-          {/* Quick Metrics Bar */}
-          <div className="mt-10 sm:mt-14 w-full grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 max-w-4xl text-left">
-            {[
-              { label: 'Offline Ready', value: '100% Zero-Data', desc: 'Quizzes & slides run without internet' },
-              { label: 'DepEd Standards', value: 'Grades 4, 5, 6', desc: 'Official MELC curriculum alignment' },
-              { label: 'Teacher Analytics', value: 'Form SF9 Ready', desc: 'Automated quarterly reports & analytics' },
-              { label: 'Guardian Sync', value: '6-Digit Codes', desc: 'Secure guardian sync & screen time' },
-            ].map((m, idx) => (
-              <div key={idx} className="p-3 sm:p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs flex flex-col gap-0.5 sm:gap-1">
-                <span className="text-[10px] sm:text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{m.label}</span>
-                <span className="text-base sm:text-lg font-black text-[#11428E] dark:text-sky-400">{m.value}</span>
-                <span className="text-[11px] sm:text-xs text-[var(--text-muted)] line-clamp-2">{m.desc}</span>
+            {/* Curriculum Scope Chips — 2 rows */}
+            <div className="flex flex-col items-center gap-1.5 sm:gap-2 w-full mt-2 mb-2">
+              {/* Row 1: Subject chips */}
+              <div className="flex items-center justify-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-bold shadow-2xs">
+                  <span>📐</span> Mathematics
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-bold shadow-2xs">
+                  <span>📖</span> English
+                </span>
               </div>
-            ))}
+              {/* Row 2: Grade chips */}
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                <span className="inline-flex items-center px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-xl bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-color)] text-[11px] sm:text-xs font-bold">Grade 4</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-xl bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-color)] text-[11px] sm:text-xs font-bold">Grade 5</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-xl bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-color)] text-[11px] sm:text-xs font-bold">Grade 6</span>
+              </div>
+            </div>
+
+            {/* Subtitle */}
+            <p className="text-[11.5px] sm:text-base lg:text-lg text-[var(--text-muted)] max-w-[17rem] sm:max-w-2xl leading-[1.6] font-medium">
+              GURO (Guided Unified Resource Optimization) bridges the digital divide with rich interactive slides, diagnostic quizzes, automated DepEd SF9 reports, and 100% offline capability.
+            </p>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-4 w-full max-w-[17rem] sm:max-w-none">
+              <button
+                onClick={onOpenMobileShowcase}
+                className="flex items-center justify-center gap-2 px-5 sm:px-8 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/20 transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
+              >
+                <Smartphone className="size-4" />
+                <span>Explore Mobile Showcase</span>
+              </button>
+              <a
+                href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
+                target="_blank"
+                rel="noopener noreferrer"
+                download="GURO-preview.apk"
+                className="flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
+              >
+                <Download className="size-4 text-sky-500" />
+                <span>Download App APK</span>
+              </a>
+            </div>
+          </div>
+
+          {/* ── Mobile View: Continuous Moving Single Row Marquee Ticker ── */}
+          <div
+            data-testid="hero-metrics-ticker"
+            className="md:hidden w-full overflow-hidden shrink-0 pb-1 mb-3 relative"
+            style={{
+              maskImage: 'linear-gradient(to right, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 14px, black calc(100% - 14px), transparent 100%)',
+            }}
+          >
+            <div className="hero-marquee-track gap-2.5 flex items-center">
+              {[...HERO_METRICS, ...HERO_METRICS].map((m, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs shrink-0 select-none whitespace-nowrap"
+                >
+                  <span className={`size-1.5 rounded-full ${m.dot} shrink-0 animate-pulse`} />
+                  <span className="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">{m.label}:</span>
+                  <span className="text-[11px] font-black text-[#11428E] dark:text-sky-400">{m.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Desktop View: Single Continuous Marquee ── */}
+          <div
+            className="hidden md:block w-full overflow-hidden relative mt-10 sm:mt-14"
+            style={{
+              maskImage: 'linear-gradient(to right, transparent 0%, black 80px, black calc(100% - 80px), transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 80px, black calc(100% - 80px), transparent 100%)',
+            }}
+          >
+            <div className="hero-marquee-track-desktop-reverse gap-4 flex items-stretch">
+              {[...HERO_METRICS, ...HERO_METRICS, ...HERO_METRICS].map((m, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-start gap-3 px-5 py-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs shrink-0 select-none min-w-[220px]"
+                >
+                  <span className={`size-2 rounded-full ${m.dot} shrink-0 mt-1.5 animate-pulse`} />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">{m.label}</span>
+                    <span className="text-sm font-black text-[#11428E] dark:text-sky-400">{m.value}</span>
+                    <span className="text-[11px] text-[var(--text-muted)] leading-snug max-w-[160px]">{m.desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -577,7 +747,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
       </main>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-[var(--border-color)] px-4 sm:px-8 py-8 bg-[var(--bg-card)] text-xs text-[var(--text-muted)]">
+      <footer className="border-t border-[var(--border-color)] px-4 sm:px-8 pt-8 pb-28 md:pb-8 bg-[var(--bg-card)] text-xs text-[var(--text-muted)]">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <GraduationCap className="size-4 text-[#11428E]" />
@@ -595,6 +765,66 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           </div>
         </div>
       </footer>
+
+      {/* ── Mobile Bottom Navigation Bar — iOS: Frosted Glass Pill | Android: M3 Solid Elevation Pill ── */}
+      <nav
+        aria-label="Mobile bottom navigation"
+        data-testid="mobile-bottom-navigation"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-center"
+        style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}
+      >
+        <div
+          className={`flex items-center justify-around px-2 pt-2 pb-1.5 mx-4 w-full max-w-sm rounded-2xl border transition-all duration-200 ${
+            isIOS
+              ? 'bg-[var(--bg-card)]/75 backdrop-blur-2xl border-[var(--border-color)]/50 shadow-2xl shadow-black/25 ring-1 ring-inset ring-white/10'
+              : 'bg-white dark:bg-[#0d1322] border-[var(--border-color)] shadow-[0_8px_30px_rgba(0,0,0,0.30)]'
+          }`}
+        >
+          {NAV_SECTIONS.map((sec) => {
+            const isActive = activeNavSection === sec.id;
+            const Icon = sec.icon;
+            return (
+              <button
+                key={sec.id}
+                onClick={() => handleNavClick(sec.id)}
+                aria-label={`Jump to ${sec.label}`}
+                className={`flex flex-col items-center justify-center flex-1 py-0.5 rounded-xl transition-all duration-150 cursor-pointer ${
+                  isIOS
+                    ? 'active:scale-90'
+                    : 'active:scale-95 active:bg-[var(--border-color)]/30'
+                }`}
+              >
+                {/* Active Indicator / Icon */}
+                <div
+                  className={`flex items-center justify-center transition-all duration-200 ${
+                    isIOS
+                      ? isActive
+                        ? 'text-[#11428E] dark:text-sky-400'
+                        : 'text-[var(--text-muted)]'
+                      : isActive
+                        ? 'px-3.5 py-1 rounded-full bg-[#11428E]/12 text-[#11428E] dark:text-sky-300'
+                        : 'px-3.5 py-1 rounded-full text-[var(--text-muted)]'
+                  }`}
+                >
+                  <Icon className={`size-4.5 ${isActive && !isIOS ? 'scale-105' : ''}`} />
+                </div>
+                {/* Text Label */}
+                <span
+                  className={`text-[10px] tracking-tight mt-0.5 transition-colors ${
+                    isActive
+                      ? isIOS
+                        ? 'font-black text-[#11428E] dark:text-sky-400'
+                        : 'font-bold text-[#11428E] dark:text-sky-400'
+                      : 'font-semibold text-[var(--text-muted)]'
+                  }`}
+                >
+                  {sec.shortLabel || sec.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
     </div>
   );

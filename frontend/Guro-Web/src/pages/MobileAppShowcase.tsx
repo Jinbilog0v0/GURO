@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft,
   Wifi,
@@ -27,7 +27,9 @@ import {
   Check,
   Play,
   Download,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Menu,
+  X
 } from 'lucide-react';
 
 interface MobileAppShowcaseProps {
@@ -50,6 +52,18 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
   isDarkMode = false,
   onToggleTheme,
 }) => {
+  // Mobile platform & menu state
+  const [isIOS, setIsIOS] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      const userAgent = navigator.userAgent || '';
+      const isApple = /iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      setIsIOS(isApple);
+    }
+  }, []);
+
   // Simulator Controls State
   const [selectedRole, setSelectedRole] = useState<SimulatedRole>('student');
   const [studentTab, setStudentTab] = useState<StudentTab>('home');
@@ -169,12 +183,20 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
   return (
     <div className="min-h-screen w-full bg-[var(--bg-main)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
       
-      {/* ── Top Header Bar ── */}
-      <header className="sticky top-0 z-40 bg-[var(--bg-card)]/90 backdrop-blur-md border-b border-[var(--border-color)] px-4 sm:px-8 py-3 flex items-center justify-between shadow-xs">
+      {/* ── Top Header Bar — iOS: Frosted Glass | Android: M3 Solid Elevation ── */}
+      <header className={`sticky top-0 z-40 px-4 sm:px-8 py-3 flex items-center justify-between transition-all duration-200 ${
+        isIOS
+          ? 'bg-[var(--bg-card)]/70 backdrop-blur-xl border-b border-[var(--border-color)]/60 shadow-[0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/5'
+          : 'bg-[var(--bg-card)] border-b border-[var(--border-color)] shadow-sm'
+      }`}>
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={onBackToOverview}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--bg-card)] text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all cursor-pointer"
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-full border text-xs font-bold transition-all cursor-pointer ${
+              isIOS
+                ? 'border-[var(--border-color)]/70 bg-[var(--bg-main)]/60 text-[var(--text-muted)] hover:text-[var(--text-main)] active:scale-90'
+                : 'border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] active:scale-95'
+            }`}
           >
             <ArrowLeft className="size-3.5" />
             <span>Overview</span>
@@ -188,7 +210,8 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Desktop Header Actions (hidden on phone, visible md+) */}
+        <div className="hidden md:flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setIsConsoleCollapsed(!isConsoleCollapsed)}
             aria-label={isConsoleCollapsed ? 'Show Simulator Console' : 'Focus Phone Mode'}
@@ -230,14 +253,97 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
             <ArrowRight className="size-3.5" />
           </button>
         </div>
+
+        {/* Mobile Header Menu Trigger (Phone only) */}
+        <div className="flex md:hidden items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            className={`p-2 rounded-xl transition-all cursor-pointer relative ${
+              isMobileMenuOpen ? 'z-[60]' : 'z-10'
+            } ${
+              isIOS
+                ? 'border border-[var(--border-color)] bg-[var(--bg-main)]/60 hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] active:scale-90'
+                : 'bg-[var(--bg-card)] hover:bg-[var(--border-color)]/40 text-[var(--text-main)] shadow-sm border border-[var(--border-color)] active:scale-95'
+            }`}
+          >
+            {isMobileMenuOpen ? <X className="size-5 text-[var(--text-main)]" /> : <Menu className="size-5 text-[var(--text-main)]" />}
+          </button>
+        </div>
       </header>
 
+      {/* ── Mobile Top-Right Actions Dropdown (Compact 40-50% width) ── */}
+      {isMobileMenuOpen && (
+        <>
+          {/* Backdrop overlay — z-50 to grey out top navigation, phone simulator status bar, and phone bottom navigation */}
+          <div
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs md:hidden animate-in fade-in duration-200"
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+
+          {/* Floating Dropdown Menu (40-50% screen width, right-aligned) */}
+          <div
+            data-testid="showcase-mobile-top-action-menu"
+            className={`fixed top-14 right-3 w-[50%] min-w-[170px] max-w-[210px] z-[60] p-2 rounded-2xl border shadow-2xl md:hidden animate-in fade-in slide-in-from-top-2 duration-150 ${
+              isIOS
+                ? 'bg-[var(--bg-card)]/85 backdrop-blur-2xl border-[var(--border-color)]/70 ring-1 ring-white/10 shadow-black/25'
+                : 'bg-white dark:bg-[#0d1322] border-[var(--border-color)] shadow-[0_12px_32px_rgba(0,0,0,0.35)]'
+            }`}
+          >
+            <div className="flex flex-col gap-1">
+              {/* Download App Link */}
+              <a
+                href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
+                target="_blank"
+                rel="noopener noreferrer"
+                download="GURO-preview.apk"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-2 w-full px-2.5 py-2 rounded-xl text-xs font-bold text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition-colors cursor-pointer"
+              >
+                <Download className="size-3.5 text-sky-500 shrink-0" />
+                <span className="truncate">Download App</span>
+              </a>
+
+              {/* Theme Toggle Button */}
+              {onToggleTheme && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onToggleTheme();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 w-full px-2.5 py-2 rounded-xl text-xs font-bold text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                >
+                  {isDarkMode ? <Sun className="size-3.5 text-amber-400 shrink-0" /> : <Moon className="size-3.5 text-[#11428E] shrink-0" />}
+                  <span className="truncate">{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                </button>
+              )}
+
+              {/* Sign In Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onLaunchPortal();
+                }}
+                className="flex items-center justify-between w-full px-3 py-2 mt-0.5 rounded-xl bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-95 text-white text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
+              >
+                <span>Sign In</span>
+                <ArrowRight className="size-3.5 shrink-0" />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* ── Main Showcase Workspace ── */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-6 flex flex-col lg:flex-row gap-6 lg:gap-8 items-center justify-center min-h-[calc(100vh-4rem)]">
+      <div className="flex-1 max-w-7xl w-full mx-auto p-0 sm:p-6 lg:p-6 flex flex-col lg:flex-row gap-0 lg:gap-8 items-center justify-center h-[calc(100dvh-3.5rem)] md:h-auto md:min-h-[calc(100vh-4rem)] overflow-hidden md:overflow-visible">
         
-        {/* ── Left Column: Simulator Controls Dashboard ── */}
+        {/* ── Left Column: Simulator Controls Dashboard (Hidden on Phone/Tablet screens) ── */}
         <div className={`w-full lg:w-[360px] shrink-0 transition-all duration-300 ${
-          isConsoleCollapsed ? 'hidden' : 'flex flex-col gap-4'
+          isConsoleCollapsed ? 'hidden' : 'hidden lg:flex flex-col gap-4'
         }`}>
           <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-4 sm:p-6 shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
@@ -440,11 +546,11 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
           </div>
         </div>
 
-        {/* ── Right Column: Smartphone Device Chassis Frame (Native Card on Mobile, Phone Bezel on Desktop) ── */}
-        <div className="flex-1 w-full h-full flex flex-col items-center justify-center my-auto">
+        {/* ── Right Column: Smartphone Device Chassis Frame (Edge-to-Edge on Mobile, Phone Bezel on Desktop) ── */}
+        <div className="flex-1 w-full h-full flex flex-col items-center justify-center">
           <div
             data-testid="phone-device-wrapper"
-            className="w-full mx-auto select-none relative transition-all duration-300 flex flex-col h-[640px] sm:h-[680px] lg:h-[min(760px,calc(100vh-6rem))] md:w-[375px] max-w-md md:rounded-[50px] md:bg-slate-950 md:p-3.5 md:shadow-2xl md:ring-1 md:ring-slate-800/80 md:border-4 md:border-slate-700/60"
+            className="w-full mx-auto select-none relative transition-all duration-300 flex flex-col h-full max-h-[calc(100dvh-3.5rem)] md:h-[680px] lg:h-[min(760px,calc(100vh-6rem))] md:w-[375px] max-w-md rounded-none md:rounded-[50px] bg-transparent md:bg-slate-950 p-0 md:p-3.5 md:shadow-2xl md:ring-1 md:ring-slate-800/80 md:border-4 md:border-slate-700/60"
           >
             {/* Dynamic Island / Speaker (Hidden on mobile devices, shown on desktop simulator) */}
             <div
@@ -455,8 +561,8 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
               <div className="size-1.5 rounded-full bg-blue-900/40" />
             </div>
 
-            {/* Inner Phone Screen / Native-feeling Full-Width Card with Rounded Corners on Mobile */}
-            <div className="w-full h-full rounded-3xl md:rounded-[40px] bg-[var(--bg-main)] overflow-hidden flex flex-col relative border border-[var(--border-color)] shadow-xl shadow-black/5 md:shadow-none">
+            {/* Inner Phone Screen / Native Edge-to-Edge Full Screen on Mobile, Bezel Card on Desktop */}
+            <div className="w-full h-full rounded-none md:rounded-[40px] bg-[var(--bg-main)] overflow-hidden flex flex-col relative border-0 md:border md:border-[var(--border-color)] shadow-none">
               
               {/* Phone Status Bar */}
               <div className="h-10 px-4 sm:px-6 pt-1 flex items-center justify-between text-[11px] font-bold text-[var(--text-main)] z-40 bg-[var(--bg-main)]/90 backdrop-blur-sm border-b border-[var(--border-color)]/40">

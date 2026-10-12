@@ -46,14 +46,14 @@ describe('App Portal and Navigation Layout (Web)', () => {
 
   test('can navigate to login portal from overview', () => {
     render(<App />);
-    const signInBtn = screen.getAllByRole('button', { name: /Sign In \/ Portal/i })[0];
+    const signInBtn = screen.getAllByRole('button', { name: /^Sign In$/i })[0];
     fireEvent.click(signInBtn);
     expect(screen.getByText(/Welcome back/i)).toBeInTheDocument();
   });
 
   test('can navigate to mobile app showcase from overview and back', () => {
     render(<App />);
-    const showcaseBtn = screen.getByRole('button', { name: /^Mobile Showcase$/i });
+    const showcaseBtn = screen.getByRole('button', { name: /Explore Mobile Showcase/i });
     fireEvent.click(showcaseBtn);
     expect(screen.getByText(/Mobile (App )?Simulator/i)).toBeInTheDocument();
 

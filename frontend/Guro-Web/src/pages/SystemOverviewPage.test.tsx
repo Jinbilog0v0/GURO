@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { SystemOverviewPage } from './SystemOverviewPage';
 import '@testing-library/jest-dom';
 
@@ -24,8 +24,8 @@ describe('SystemOverviewPage Component', () => {
 
     expect(screen.getByText(/Philippine Classrooms/i)).toBeInTheDocument();
     expect(screen.getAllByText(/DepEd MELC Aligned/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/100% Zero-Data/i)).toBeInTheDocument();
-    expect(screen.getByText(/Form SF9 Ready/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/100% Zero-Data/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/Form SF9 Ready/i).length).toBeGreaterThanOrEqual(1);
   });
 
   test('calls onOpenMobileShowcase when Explore Mobile Showcase is clicked', () => {
@@ -161,5 +161,57 @@ describe('SystemOverviewPage Component', () => {
     expect(screen.getByText(/Pillar R/i)).toBeInTheDocument();
     expect(screen.getByText(/Pillar O/i)).toBeInTheDocument();
     expect(screen.getByText(/Anchored to DepEd K–12 Most Essential Learning Competencies/i)).toBeInTheDocument();
+  });
+
+  test('renders mobile bottom navigation bar with jump buttons', () => {
+    render(
+      <SystemOverviewPage
+        onOpenMobileShowcase={mockOpenMobileShowcase}
+        onOpenAuth={mockOpenAuth}
+        isDarkMode={false}
+        onToggleTheme={mockToggleTheme}
+      />
+    );
+
+    const bottomNav = screen.getByTestId('mobile-bottom-navigation');
+    expect(bottomNav).toBeInTheDocument();
+
+    const jumpWhyGuroBtn = screen.getByRole('button', { name: /Jump to Why GURO/i });
+    expect(jumpWhyGuroBtn).toBeInTheDocument();
+    fireEvent.click(jumpWhyGuroBtn);
+
+    const jumpAboutBtn = screen.getByRole('button', { name: /Jump to About/i });
+    expect(jumpAboutBtn).toBeInTheDocument();
+    fireEvent.click(jumpAboutBtn);
+  });
+
+  test('opens and closes mobile top actions menu sheet', () => {
+    render(
+      <SystemOverviewPage
+        onOpenMobileShowcase={mockOpenMobileShowcase}
+        onOpenAuth={mockOpenAuth}
+        isDarkMode={false}
+        onToggleTheme={mockToggleTheme}
+      />
+    );
+
+    // Initial state: menu is closed
+    expect(screen.queryByTestId('mobile-top-action-menu')).not.toBeInTheDocument();
+
+    // Click menu toggle button to open
+    const openMenuBtn = screen.getByRole('button', { name: /Open navigation menu/i });
+    fireEvent.click(openMenuBtn);
+
+    const menuDropdown = screen.getByTestId('mobile-top-action-menu');
+    expect(menuDropdown).toBeInTheDocument();
+    expect(within(menuDropdown).getByText(/Download App/i)).toBeInTheDocument();
+
+    // Toggle theme from mobile menu
+    const themeBtn = within(menuDropdown).getByRole('button', { name: /Dark Mode/i });
+    fireEvent.click(themeBtn);
+    expect(mockToggleTheme).toHaveBeenCalled();
+
+    // Menu closes after selection
+    expect(screen.queryByTestId('mobile-top-action-menu')).not.toBeInTheDocument();
   });
 });
