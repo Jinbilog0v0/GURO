@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             TeacherUserSeeder::class,
             StudentUserSeeder::class,
             ParentUserSeeder::class,
+            DemoClassroomSeeder::class,
         ]);
     }
 }

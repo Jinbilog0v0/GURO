@@ -295,6 +295,10 @@ it('can request and verify recovery code for teacher@guro.dev', function () {
         'role' => 'teacher',
     ]);
 
+    \Illuminate\Support\Facades\Http::fake([
+        'https://api.resend.com/*' => \Illuminate\Support\Facades\Http::response(['id' => 'fake_id'], 200),
+    ]);
+
     // Send code
     $response = $this->postJson('/api/auth/forgot-password/send-code', [
         'email' => 'teacher@guro.dev',
