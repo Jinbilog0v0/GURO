@@ -29,7 +29,18 @@ import {
   Download,
   SlidersHorizontal,
   Menu,
-  X
+  X,
+  Calendar,
+  HelpCircle,
+  Tag,
+  ChevronDown,
+  ChevronUp,
+  Calculator,
+  Activity,
+  FileText,
+  Folder,
+  Save,
+  Search,
 } from 'lucide-react';
 
 interface MobileAppShowcaseProps {
@@ -92,6 +103,16 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
   // Screen time limit state (Parent)
   const [screenTimeLimit, setScreenTimeLimit] = useState(60);
 
+  // Teacher Experience State (Matches Mobile Teacher Console)
+  const [teacherSubjectFilter, setTeacherSubjectFilter] = useState<'All Subjects' | 'Mathematics' | 'English'>('All Subjects');
+  const [teacherGradeFilter, setTeacherGradeFilter] = useState<'All Grades' | 'Grade 4' | 'Grade 5' | 'Grade 6'>('All Grades');
+  const [teacherLessonSearch, setTeacherLessonSearch] = useState('');
+  const [expandedTeacherTopics, setExpandedTeacherTopics] = useState<Record<string, boolean>>({
+    fractions: false,
+    decimals: false,
+    mult: false,
+  });
+
   // Mobile console collapse toggle
   const [isMobileConsoleOpen, setIsMobileConsoleOpen] = useState(true);
 
@@ -112,6 +133,10 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
     setIsRefresherOpen(false);
     setRefresherAnswer(null);
     setCodeCopied(false);
+    setTeacherSubjectFilter('All Subjects');
+    setTeacherGradeFilter('All Grades');
+    setTeacherLessonSearch('');
+    setExpandedTeacherTopics({ fractions: false, decimals: false, mult: false });
   };
 
   const sampleSlides = [
@@ -444,7 +469,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                       { id: 'console', label: 'Console (Overview)' },
                       { id: 'ingest', label: 'AI Lesson Ingest' },
                       { id: 'builder', label: 'Lesson Builder' },
-                      { id: 'settings', label: 'Classroom Pairing' },
+                      { id: 'settings', label: 'Settings & Diagnostics' },
                     ].map((tb) => (
                       <button
                         key={tb.id}
@@ -1023,64 +1048,472 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                 )}
 
                 {/* ════════════════════════ TEACHER TABS ════════════════════════ */}
+                {/* 1. TEACHER CONSOLE / OVERVIEW */}
                 {selectedRole === 'teacher' && teacherTab === 'console' && (
                   <div className="flex flex-col gap-3 animate-in fade-in duration-200">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-[var(--text-main)]">Teacher Console</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 font-bold">
-                        Section Grade 4-Rizal
+                    {/* Top Header Card (Exact Real Mobile Layout) */}
+                    <div className="relative rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
+                      {/* Top Blue Accent Line */}
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-[#11428E]" />
+
+                      <div className="flex items-start justify-between gap-2 mt-0.5">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-extrabold text-[var(--text-main)] tracking-tight">
+                            GURO Teacher Console
+                          </h4>
+                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#11428E]/8 dark:bg-sky-950/40 text-[#11428E] dark:text-sky-300 border border-[#11428E]/15 text-[9px] font-bold mt-1">
+                            <Calendar size={10} />
+                            <span>S.Y. 2026-2027 • Quarter 1</span>
+                          </div>
+                          <p className="text-[10px] text-[var(--text-muted)] mt-1 leading-tight">
+                            Real-Time Classroom Telemetry &amp; DepEd Reporting
+                          </p>
+                        </div>
+
+                        {/* Stacked Badges & Settings Button */}
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className="px-2 py-0.5 rounded-full bg-[#11428E]/10 border border-[#11428E]/20 text-[#11428E] dark:text-sky-300 text-[9px] font-extrabold uppercase">
+                            TEACHER
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold flex items-center gap-1 ${
+                            isSimulatedOnline
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                          }`}>
+                            <span className={`size-1.5 rounded-full ${isSimulatedOnline ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                            {isSimulatedOnline ? 'Connected' : 'Offline'}
+                          </span>
+                          <button
+                            onClick={() => setTeacherTab('settings')}
+                            className="size-7 rounded-full bg-slate-200/80 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 cursor-pointer transition-colors shadow-xs mt-0.5"
+                            title="Open Settings"
+                          >
+                            <Settings size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Item Bank Overview (3 Stat Cards) */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex flex-col">
+                        <h5 className="text-xs font-black text-[var(--text-main)]">Item Bank Overview</h5>
+                        <span className="text-[10px] text-[var(--text-muted)]">Live count from local item bank</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mt-0.5">
+                        <div className="p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center text-center shadow-xs">
+                          <BookOpen size={16} className="text-slate-500 dark:text-slate-400 mb-1" />
+                          <span className="text-base font-black text-[var(--text-main)]">1</span>
+                          <span className="text-[8px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">SUBJECTS</span>
+                        </div>
+                        <div className="p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center text-center shadow-xs">
+                          <HelpCircle size={16} className="text-slate-500 dark:text-slate-400 mb-1" />
+                          <span className="text-base font-black text-[var(--text-main)]">8</span>
+                          <span className="text-[8px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">QUESTIONS</span>
+                        </div>
+                        <div className="p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center text-center shadow-xs">
+                          <Tag size={16} className="text-slate-500 dark:text-slate-400 mb-1" />
+                          <span className="text-base font-black text-[var(--text-main)]">5</span>
+                          <span className="text-[8px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">TOPICS</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Lessons Overview Card */}
+                    <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3 flex flex-col gap-2.5 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <Folder size={14} className="text-[#11428E] dark:text-sky-300" />
+                          <h5 className="text-xs font-black text-[var(--text-main)]">Lessons Overview</h5>
+                        </div>
+                        <button
+                          onClick={() => setTeacherTab('ingest')}
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/40 text-[#11428E] dark:text-sky-300 border border-[#11428E]/20 text-[10px] font-extrabold cursor-pointer hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors"
+                        >
+                          <Sparkles size={11} />
+                          <span>+ Ingest</span>
+                        </button>
+                      </div>
+                      <span className="text-[10px] text-[var(--text-muted)] -mt-1">
+                        Claimed &amp; active lessons in ENG-G4-URV
                       </span>
+
+                      {/* Search Bar */}
+                      <div className="relative">
+                        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
+                        <input
+                          type="text"
+                          placeholder="Search topics or questions..."
+                          value={teacherLessonSearch}
+                          onChange={(e) => setTeacherLessonSearch(e.target.value)}
+                          className="w-full text-[11px] py-1.5 pl-7 pr-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/60 text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-hidden"
+                        />
+                      </div>
+
+                      {/* Segmented Filter Pills: Subjects */}
+                      <div className="p-1 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center gap-1">
+                        {(['All Subjects', 'Mathematics', 'English'] as const).map((sub) => (
+                          <button
+                            key={sub}
+                            onClick={() => setTeacherSubjectFilter(sub)}
+                            className={`flex-1 py-1 rounded-lg text-[10px] font-bold text-center transition-all cursor-pointer ${
+                              teacherSubjectFilter === sub
+                                ? 'bg-[var(--bg-card)] text-[#11428E] dark:text-sky-300 shadow-xs border border-[var(--border-color)]/60'
+                                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                            }`}
+                          >
+                            {sub}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Segmented Filter Pills: Grades */}
+                      <div className="p-1 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center gap-1">
+                        {(['All Grades', 'Grade 4', 'Grade 5', 'Grade 6'] as const).map((gr) => (
+                          <button
+                            key={gr}
+                            onClick={() => setTeacherGradeFilter(gr)}
+                            className={`flex-1 py-1 rounded-lg text-[10px] font-bold text-center transition-all cursor-pointer ${
+                              teacherGradeFilter === gr
+                                ? 'bg-[var(--bg-card)] text-[#11428E] dark:text-sky-300 shadow-xs border border-[var(--border-color)]/60'
+                                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                            }`}
+                          >
+                            {gr}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Lessons List Accordion Items */}
+                      <div className="flex flex-col gap-2 pt-1 border-t border-[var(--border-color)]/50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-main)]">
+                            <Calculator size={12} className="text-slate-500" />
+                            <span>Mathematics</span>
+                            <span className="size-1 rounded-full bg-emerald-500" />
+                            <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-extrabold uppercase">Grade 4</span>
+                          </div>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            DepEd SF9 Progress Ready
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          {[
+                            { name: 'Fractions', count: 3, id: 'fractions' },
+                            { name: 'Decimals', count: 2, id: 'decimals' },
+                            { name: 'Multiplication & Division', count: 1, id: 'mult' },
+                          ].map((item) => {
+                            const isExpanded = !!expandedTeacherTopics[item.id];
+                            return (
+                              <div key={item.id} className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/40 overflow-hidden">
+                                <button
+                                  onClick={() => setExpandedTeacherTopics(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                                  className="w-full p-2 flex items-center justify-between text-[11px] cursor-pointer hover:bg-[var(--bg-main)] transition-colors"
+                                >
+                                  <div className="flex items-center gap-1.5 font-bold text-[var(--text-main)]">
+                                    {isExpanded ? <ChevronUp size={12} className="text-[var(--text-muted)]" /> : <ChevronDown size={12} className="text-[var(--text-muted)]" />}
+                                    <span>{item.name}</span>
+                                  </div>
+                                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-muted)]">
+                                    {item.count} items
+                                  </span>
+                                </button>
+                                {isExpanded && (
+                                  <div className="px-3 pb-2 pt-1 border-t border-[var(--border-color)]/50 text-[10px] text-[var(--text-muted)] flex flex-col gap-1">
+                                    <div className="flex items-center justify-between">
+                                      <span>• Identifying Common Parts</span>
+                                      <span className="font-bold text-emerald-600 dark:text-emerald-400">3 Checkpoints</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span>• Mixed Numbers Addition</span>
+                                      <span className="font-bold text-emerald-600 dark:text-emerald-400">Mastery Tracked</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-0.5">
-                        <span className="text-[10px] text-[var(--text-muted)]">Active Learners</span>
-                        <span className="text-lg font-black text-[#11428E] dark:text-sky-300">32</span>
+                    {/* Curriculum Health & Tally Section */}
+                    <div className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-between shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="size-7 rounded-xl bg-[#11428E]/10 text-[#11428E] dark:text-sky-300 flex items-center justify-center">
+                          <Activity size={14} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-[var(--text-main)]">Curriculum Health &amp; Tally</span>
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">100% DepEd MELC Aligned</span>
+                        </div>
                       </div>
-                      <div className="p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-0.5">
-                        <span className="text-[10px] text-[var(--text-muted)]">Average Mastery</span>
-                        <span className="text-lg font-black text-emerald-500">88.4%</span>
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-2">
-                      <span className="text-xs font-bold text-[var(--text-main)]">DepEd SF9 Progress Ready</span>
-                      <p className="text-[11px] text-[var(--text-muted)]">
-                        All student quizzes are aggregated and synced to official quarterly SF9 report forms.
-                      </p>
+                      <span className="text-xs font-black text-[#11428E] dark:text-sky-300">Active</span>
                     </div>
                   </div>
                 )}
 
+                {/* 2. TEACHER AI INGEST */}
                 {selectedRole === 'teacher' && teacherTab === 'ingest' && (
                   <div className="flex flex-col gap-3 animate-in fade-in duration-200">
-                    <span className="text-xs font-black text-[var(--text-main)]">AI Lesson Ingestion</span>
-                    <div className="p-4 rounded-2xl bg-[var(--bg-card)] border border-dashed border-[#11428E]/40 text-center flex flex-col items-center gap-2">
-                      <Zap size={24} className="text-[#11428E]" />
-                      <span className="text-xs font-bold text-[var(--text-main)]">Upload Lesson PDF/DOCX</span>
-                      <p className="text-[10px] text-[var(--text-muted)]">AI will extract slides, MELC competencies, and quiz checkpoints.</p>
+                    {/* Header */}
+                    <div className="relative rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-[#11428E]" />
+                      <div className="flex items-start justify-between gap-2 mt-0.5">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-extrabold text-[var(--text-main)] tracking-tight">
+                            AI Lesson Ingestor
+                          </h4>
+                          <p className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-tight">
+                            AI Lesson Ingestion &amp; Curriculum Parser
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className="px-2 py-0.5 rounded-full bg-[#11428E]/10 border border-[#11428E]/20 text-[#11428E] dark:text-sky-300 text-[9px] font-extrabold uppercase">
+                            TEACHER
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                            <span className="size-1.5 rounded-full bg-emerald-500" />
+                            Connected
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Ingestion Workspace */}
+                    <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-3 shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <Zap size={16} className="text-[#11428E] dark:text-sky-300" />
+                        <div>
+                          <h5 className="text-xs font-black text-[var(--text-main)]">Ingestion Workspace</h5>
+                          <p className="text-[10px] text-[var(--text-muted)]">Configure course parameters and paste lesson details</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-extrabold uppercase text-[var(--text-muted)]">SUBJECT</span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button className="py-2 rounded-xl border-2 border-[#11428E] bg-[#11428E]/10 text-[#11428E] dark:text-sky-300 text-xs font-bold">
+                            Mathematics
+                          </button>
+                          <button className="py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] text-xs font-semibold">
+                            English
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-extrabold uppercase text-[var(--text-muted)]">GRADE LEVEL</span>
+                        <div className="grid grid-cols-3 gap-2">
+                          <button className="py-1.5 rounded-xl border-2 border-[#11428E] bg-[#11428E]/10 text-[#11428E] dark:text-sky-300 text-[11px] font-bold">
+                            Grade 4
+                          </button>
+                          <button className="py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] text-[11px] font-semibold">
+                            Grade 5
+                          </button>
+                          <button className="py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] text-[11px] font-semibold">
+                            Grade 6
+                          </button>
+                        </div>
+                      </div>
+
+                      <button className="p-3 rounded-xl border-2 border-dashed border-[#11428E]/40 text-[#11428E] dark:text-sky-300 flex items-center justify-center gap-2 text-xs font-bold hover:bg-[#11428E]/5 transition-colors cursor-pointer">
+                        <FileText size={15} />
+                        <span>Upload PDF Lesson Plan</span>
+                      </button>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-extrabold uppercase text-[var(--text-muted)]">LESSON TOPIC</span>
+                        <input
+                          type="text"
+                          readOnly
+                          value="Adding Dissimilar Fractions"
+                          className="w-full text-xs p-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)]"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-extrabold uppercase text-[var(--text-muted)]">QUESTION VOLUME &amp; DENSITY</span>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <button className="py-1.5 px-1 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] text-[10px] font-semibold text-center">
+                            10 Questions
+                          </button>
+                          <button className="py-1.5 px-1 rounded-xl border-2 border-[#11428E] bg-[#11428E]/10 text-[#11428E] dark:text-sky-300 text-[10px] font-bold text-center">
+                            15 Questions
+                          </button>
+                          <button className="py-1.5 px-1 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] text-[10px] font-semibold text-center">
+                            20 Questions
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
 
+                {/* 3. TEACHER LESSON BUILDER */}
                 {selectedRole === 'teacher' && teacherTab === 'builder' && (
                   <div className="flex flex-col gap-3 animate-in fade-in duration-200">
-                    <span className="text-xs font-black text-[var(--text-main)]">Mobile Lesson Builder</span>
-                    <div className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-2">
-                      <span className="text-[10px] font-bold text-[var(--text-muted)]">Lesson Title</span>
-                      <input type="text" readOnly value="Grade 4 Fractions Module" className="w-full text-xs p-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]" />
-                      <span className="text-[10px] font-bold text-[var(--text-muted)]">Checkpoints: 3 Active</span>
+                    {/* Header */}
+                    <div className="relative rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-[#11428E]" />
+                      <div className="flex items-start justify-between gap-2 mt-0.5">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-extrabold text-[var(--text-main)] tracking-tight">
+                            Manual Lesson Builder
+                          </h4>
+                          <p className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-tight">
+                            Create Lesson Manually
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className="px-2 py-0.5 rounded-full bg-[#11428E]/10 border border-[#11428E]/20 text-[#11428E] dark:text-sky-300 text-[9px] font-extrabold uppercase">
+                            TEACHER
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                            <span className="size-1.5 rounded-full bg-emerald-500" />
+                            Connected
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Step 1: Lesson Metadata Card */}
+                    <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-2.5 shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <BookOpen size={16} className="text-[#11428E] dark:text-sky-300" />
+                        <div>
+                          <h5 className="text-xs font-black text-[var(--text-main)]">Step 1: Lesson Metadata</h5>
+                          <p className="text-[10px] text-[var(--text-muted)]">Set subject, grade, and topic</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-extrabold uppercase text-[var(--text-muted)]">SUBJECT</span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button className="py-1.5 rounded-xl border-2 border-[#11428E] bg-[#11428E]/10 text-[#11428E] dark:text-sky-300 text-xs font-bold">
+                            Mathematics
+                          </button>
+                          <button className="py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] text-xs font-semibold">
+                            English
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-extrabold uppercase text-[var(--text-muted)]">GRADE LEVEL</span>
+                        <div className="grid grid-cols-3 gap-2">
+                          <button className="py-1.5 rounded-xl border-2 border-[#11428E] bg-[#11428E]/10 text-[#11428E] dark:text-sky-300 text-[11px] font-bold">
+                            Grade 4
+                          </button>
+                          <button className="py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] text-[11px] font-semibold">
+                            Grade 5
+                          </button>
+                          <button className="py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] text-[11px] font-semibold">
+                            Grade 6
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-extrabold uppercase text-[var(--text-muted)]">LESSON TOPIC *</span>
+                        <input
+                          type="text"
+                          readOnly
+                          value="Adding Dissimilar Fractions"
+                          className="w-full text-xs p-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Step 2: Item Bank Questions */}
+                    <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-2 shadow-xs">
+                      <h5 className="text-xs font-black text-[var(--text-main)]">Step 2: Item Bank Questions (1)</h5>
+                      <span className="text-[10px] text-[var(--text-muted)]">Tap a letter bubble to mark the correct answer</span>
+                      <div className="p-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)]/40 flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#11428E]/10 text-[#11428E] dark:text-sky-300">Q1</span>
+                          <span className="text-[9px] text-[var(--text-muted)]">Multiple Choice</span>
+                        </div>
+                        <p className="text-xs font-bold text-[var(--text-main)]">What is 1/2 + 1/4?</p>
+                        <div className="grid grid-cols-2 gap-1.5 mt-1 text-[11px]">
+                          <span className="p-1.5 rounded-lg border border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold">A. 3/4 ✓</span>
+                          <span className="p-1.5 rounded-lg border border-[var(--border-color)] text-[var(--text-muted)]">B. 2/6</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
 
+                {/* 4. TEACHER SETTINGS & DIAGNOSTICS */}
                 {selectedRole === 'teacher' && teacherTab === 'settings' && (
                   <div className="flex flex-col gap-3 animate-in fade-in duration-200">
-                    <span className="text-xs font-black text-[var(--text-main)]">Classroom Pairing</span>
-                    <div className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] text-center flex flex-col items-center gap-1.5">
-                      <span className="text-xs font-bold text-[var(--text-muted)]">Pairing Code</span>
-                      <span className="font-mono text-lg font-black text-[#11428E] dark:text-sky-300">CL-4892</span>
-                      <span className="text-[10px] text-[var(--text-muted)]">Share this code with students to join your class.</span>
+                    {/* Header */}
+                    <div className="relative rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-[#11428E]" />
+                      <div className="flex items-start justify-between gap-2 mt-0.5">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-extrabold text-[var(--text-main)] tracking-tight">
+                            Settings &amp; Diagnostics
+                          </h4>
+                          <p className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-tight">
+                            Configure endpoints and file reports
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className="px-2 py-0.5 rounded-full bg-[#11428E]/10 border border-[#11428E]/20 text-[#11428E] dark:text-sky-300 text-[9px] font-extrabold uppercase">
+                            TEACHER
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                            <span className="size-1.5 rounded-full bg-emerald-500" />
+                            Connected
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* New Diagnostic Report Card */}
+                    <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-2 shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <FileText size={16} className="text-[#11428E] dark:text-sky-300" />
+                        <div>
+                          <h5 className="text-xs font-black text-[var(--text-main)]">New Diagnostic Report</h5>
+                          <p className="text-[10px] text-[var(--text-muted)]">Save a student diagnostic to the local file system</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1 mt-1">
+                        <span className="text-[9px] font-extrabold uppercase text-[var(--text-muted)]">REPORT TITLE</span>
+                        <input
+                          type="text"
+                          readOnly
+                          value="Grade4_Math_Fractions_Session1"
+                          className="w-full text-xs p-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)]"
+                        />
+                      </div>
+                      <button className="w-full py-2 px-3 rounded-xl bg-[#11428E] hover:bg-[#0c316b] text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors mt-1">
+                        <Save size={13} />
+                        <span>Save to Device</span>
+                      </button>
+                    </div>
+
+                    {/* Classroom Pairing & Setup */}
+                    <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-2 shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <Users size={16} className="text-[#11428E] dark:text-sky-300" />
+                        <div>
+                          <h5 className="text-xs font-black text-[var(--text-main)]">Classroom Pairing &amp; Setup</h5>
+                          <p className="text-[10px] text-[var(--text-muted)]">Generate codes to link student devices to your dashboard</p>
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-xl bg-[var(--bg-main)]/50 border border-[var(--border-color)] flex items-center justify-between mt-1">
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-extrabold uppercase text-[var(--text-muted)]">INVITE CODE</span>
+                          <span className="font-mono text-sm font-black text-[#11428E] dark:text-sky-300">ENG-G4-URV</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[9px] font-bold">
+                          STATUS: ACTIVE
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1193,12 +1626,12 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                 );
               })()}
 
-              {/* TEACHER BOTTOM TABS: Console, AI Ingest, Builder, Settings */}
+              {/* TEACHER BOTTOM TABS: Console, AI Ingest, Lesson Builder, Settings */}
               {selectedRole === 'teacher' && (() => {
                 const teacherTabs = [
                   { id: 'console', label: 'Console', icon: BarChart2 },
                   { id: 'ingest', label: 'AI Ingest', icon: Zap },
-                  { id: 'builder', label: 'Builder', icon: PenLine },
+                  { id: 'builder', label: 'Lesson Builder', icon: PenLine },
                   { id: 'settings', label: 'Settings', icon: Settings },
                 ];
                 const activeIndex =
@@ -1217,7 +1650,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                           onClick={() => setTeacherTab(tabItem.id as TeacherTab)}
                           className={`flex-1 h-full flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-colors duration-200 relative z-10 ${
                             isActive
-                              ? 'text-blue-600 dark:text-blue-400'
+                              ? 'text-[#11428E] dark:text-sky-400 font-bold'
                               : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                           }`}
                         >
@@ -1236,7 +1669,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                         transform: `translateX(${activeIndex * 100}%)`,
                       }}
                     >
-                      <div className="h-[2.5px] w-9 rounded-full bg-blue-600 dark:bg-blue-400 shadow-[0_0_8px_rgba(37,99,235,0.4)]" />
+                      <div className="h-[2.5px] w-9 rounded-full bg-[#11428E] dark:bg-sky-400 shadow-[0_0_8px_rgba(17,66,142,0.4)]" />
                     </div>
                   </div>
                 );
