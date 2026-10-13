@@ -54,6 +54,7 @@ export function AppNavigator() {
         headerShadowVisible: true,
         contentStyle: { backgroundColor: Colors.bgMain },
         animation: 'fade_from_bottom',
+        gestureEnabled: false,
       }}
     >
       <Stack.Screen

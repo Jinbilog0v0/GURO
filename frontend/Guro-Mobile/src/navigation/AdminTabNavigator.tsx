@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { BackHandler } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarChart2, ShieldCheck, Users, School, Award, Layers, Shield, Zap } from 'lucide-react-native';
 import { AdminOverviewScreen } from '../screens/admin/AdminOverviewScreen';
 import { AdminTeacherVerificationsScreen } from '../screens/admin/AdminTeacherVerificationsScreen';
@@ -26,6 +28,13 @@ export type AdminTabParamList = {
 const Tab = createBottomTabNavigator<AdminTabParamList>();
 
 export function AdminTabNavigator() {
+  const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, []);
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -34,8 +43,8 @@ export function AdminTabNavigator() {
           backgroundColor: Colors.bgSidebar,
           borderTopWidth: 1,
           borderTopColor: Colors.border,
-          height: 64,
-          paddingBottom: 10,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 8,
           elevation: 8,
           shadowColor: '#000',

@@ -362,7 +362,7 @@ export function StudentDashboard() {
     : null;
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.headerBar}>
         <View style={{ flex: 1 }}>

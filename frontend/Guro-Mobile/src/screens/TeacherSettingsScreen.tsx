@@ -9,7 +9,7 @@ import {
   Modal,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppStore, resolveServerUrl } from '../store/useAppStore';
@@ -39,18 +39,15 @@ import {
   History,
   CheckCircle2,
   Calendar,
-  Sun,
-  Moon,
 } from 'lucide-react-native';
 
 export function TeacherSettingsScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const logs = useAppStore((state) => state.logs);
   const addLog = useAppStore((state) => state.addLog);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const clearLogs = useAppStore((state) => state.clearLogs);
-  const themeMode = useAppStore((state) => state.themeMode);
-  const setThemeMode = useAppStore((state) => state.setThemeMode);
 
   const [fullHistoryVisible, setFullHistoryVisible] = useState(false);
 
@@ -459,7 +456,7 @@ export function TeacherSettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -903,88 +900,6 @@ export function TeacherSettingsScreen() {
           )}
         </GlassCard>
 
-        {/* ── Appearance & Theme ── */}
-        <GlassCard style={styles.section}>
-          <SectionHeader
-            title={
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-                <Moon size={20} color={Colors.textMain} />
-                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
-                  Appearance & Theme
-                </Text>
-              </View>
-            }
-            subtitle="Customize interface theme display mode"
-          />
-          <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-            <TouchableOpacity
-              onPress={() => {
-                setThemeMode('light');
-                toast.success('Switched to light mode');
-              }}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Light Mode"
-              style={{
-                flex: 1,
-                minHeight: 52,
-                paddingVertical: Spacing.sm,
-                paddingHorizontal: Spacing.md,
-                borderRadius: Radius.md,
-                backgroundColor: themeMode === 'light' ? 'rgba(17,66,142,0.08)' : Colors.bgInput,
-                borderWidth: 2,
-                borderColor: themeMode === 'light' ? Colors.accentPrimary : Colors.border,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-            >
-              <Sun size={18} color={themeMode === 'light' ? Colors.accentPrimary : Colors.textMuted} />
-              <Text style={{
-                fontFamily: themeMode === 'light' ? Fonts.bodyBold : Fonts.bodyMedium,
-                fontSize: FontSizes.sm,
-                color: themeMode === 'light' ? Colors.accentPrimary : Colors.textMain,
-              }}>
-                Light Mode
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                setThemeMode('dark');
-                toast.success('Switched to dark mode');
-              }}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Dark Mode"
-              style={{
-                flex: 1,
-                minHeight: 52,
-                paddingVertical: Spacing.sm,
-                paddingHorizontal: Spacing.md,
-                borderRadius: Radius.md,
-                backgroundColor: themeMode === 'dark' ? 'rgba(17,66,142,0.08)' : Colors.bgInput,
-                borderWidth: 2,
-                borderColor: themeMode === 'dark' ? Colors.accentPrimary : Colors.border,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-            >
-              <Moon size={18} color={themeMode === 'dark' ? Colors.accentPrimary : Colors.textMuted} />
-              <Text style={{
-                fontFamily: themeMode === 'dark' ? Fonts.bodyBold : Fonts.bodyMedium,
-                fontSize: FontSizes.sm,
-                color: themeMode === 'dark' ? Colors.accentPrimary : Colors.textMain,
-              }}>
-                Dark Mode
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </GlassCard>
-
         {/* ── Activity History ── */}
         <GlassCard style={styles.section}>
           <SectionHeader
@@ -1087,6 +1002,7 @@ export function TeacherSettingsScreen() {
               borderTopLeftRadius: Radius['2xl'],
               borderTopRightRadius: Radius['2xl'],
               padding: Spacing.lg,
+              paddingBottom: Math.max(insets.bottom, Spacing.lg),
               maxHeight: '80%',
               gap: Spacing.md
             }}>

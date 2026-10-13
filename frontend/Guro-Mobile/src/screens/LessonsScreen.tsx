@@ -211,7 +211,7 @@ export function LessonsScreen() {
   const topics = getTopics();
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       {/* Header — O1: SyncBadge added */}
       <View style={styles.headerBar}>
         <View style={{ flex: 1 }}>

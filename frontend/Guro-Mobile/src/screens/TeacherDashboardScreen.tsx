@@ -10,7 +10,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore, resolveServerUrl, Question } from '../store/useAppStore';
 import { Colors } from '../theme/colors';
@@ -189,6 +189,7 @@ function ListExpandControls({
 }
 
 export function TeacherDashboardScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const itemBank = useAppStore((state) => state.itemBank);
   const appMode = useAppStore((state) => state.appMode);
@@ -889,7 +890,7 @@ export function TeacherDashboardScreen() {
   });
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -2688,6 +2689,7 @@ export function TeacherDashboardScreen() {
               borderTopLeftRadius: 20,
               borderTopRightRadius: 20,
               padding: Spacing.lg,
+              paddingBottom: Math.max(insets.bottom, Spacing.lg) + Spacing.xs,
               borderWidth: 1,
               borderColor: Colors.border,
               maxHeight: '80%',

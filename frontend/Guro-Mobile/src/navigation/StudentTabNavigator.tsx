@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BackHandler } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, BookOpen, BarChart2, User2 } from 'lucide-react-native';
 import { StudentDashboard } from '../screens/StudentDashboard';
 import { LessonsScreen } from '../screens/LessonsScreen';
@@ -19,6 +20,8 @@ export type StudentTabParamList = {
 const Tab = createBottomTabNavigator<StudentTabParamList>();
 
 export function StudentTabNavigator() {
+  const insets = useSafeAreaInsets();
+
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
     return () => sub.remove();
@@ -32,8 +35,8 @@ export function StudentTabNavigator() {
           backgroundColor: Colors.bgSidebar,
           borderTopWidth: 1,
           borderTopColor: Colors.border,
-          height: 64,
-          paddingBottom: 10,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 8,
           elevation: 8,
           shadowColor: '#000',

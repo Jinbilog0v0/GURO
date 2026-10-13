@@ -133,7 +133,7 @@ export function ProgressScreen() {
     avg >= 80 ? Colors.success : avg >= 50 ? Colors.warning : Colors.danger;
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       {/* O1: SyncBadge added to Progress header */}
       <View style={styles.headerBar}>
         <View style={{ flex: 1 }}>
