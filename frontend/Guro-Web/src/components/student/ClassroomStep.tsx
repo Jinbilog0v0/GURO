@@ -135,7 +135,7 @@ export const ClassroomStep: React.FC<ClassroomStepProps> = ({
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="e.g. ROOM1"
+                                    placeholder="e.g. MAT-G4-RIZAL"
                                     value={joinCodeInput}
                                     onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
                                     disabled={isJoining}

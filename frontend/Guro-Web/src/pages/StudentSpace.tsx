@@ -445,10 +445,14 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
             if (res.ok) {
                 const data = await res.json();
                 
-                // Strict Grade Level Enforcement
+                // Auto-align student profile grade to match the verified classroom
+                let effectiveGrade = selectedGrade;
                 if (data.gradeLevel && Number(data.gradeLevel) !== Number(selectedGrade)) {
-                    toast.error(`Grade Level Mismatch: Classroom "${data.classroomId}" is strictly for Grade ${data.gradeLevel} students only. Your profile is currently set to Grade ${selectedGrade}.`);
-                    return false;
+                    const newGrade = Number(data.gradeLevel);
+                    setSelectedGrade(newGrade);
+                    localStorage.setItem('guro_student_grade', String(newGrade));
+                    effectiveGrade = newGrade;
+                    toast(`Profile grade switched to Grade ${newGrade} to match classroom.`, { icon: 'ℹ️' });
                 }
 
                 setClassroomCode(data.classroomId);
@@ -478,7 +482,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                 const pairRes = await apiFetch('/api/classroom/pair', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ studentId: activeStudentId, classroomId: data.classroomId, gradeLevel: selectedGrade })
+                    body: JSON.stringify({ studentId: activeStudentId, classroomId: data.classroomId, gradeLevel: effectiveGrade })
                 }).catch(() => null);
 
                 if (pairRes && !pairRes.ok) {
@@ -487,7 +491,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                     return false;
                 }
 
-                toast.success(`Successfully joined ${data.teacherName ? `${data.teacherName}'s ` : ''}Grade ${data.gradeLevel} classroom!`);
+                toast.success(`Successfully joined ${data.teacherName ? `${data.teacherName}'s ` : ''}Grade ${effectiveGrade} classroom!`);
                 fetchItemBank(data.classroomId);
                 return true;
             } else {
@@ -517,6 +521,19 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         localStorage.removeItem(`guro_student_term_${activeStudentId}`);
         localStorage.removeItem('guro_student_section');
         localStorage.removeItem(`guro_student_section_${activeStudentId}`);
+
+        if (currentUser) {
+            try {
+                const sessionRaw = localStorage.getItem('guro_user_session');
+                if (sessionRaw) {
+                    const session = JSON.parse(sessionRaw);
+                    session.classroomId = null;
+                    localStorage.setItem('guro_user_session', JSON.stringify(session));
+                }
+                currentUser.classroomId = null;
+            } catch {}
+        }
+
         toast.success('Successfully left classroom.');
         fetchItemBank('');
     };

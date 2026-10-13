@@ -340,7 +340,7 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                             <form onSubmit={handleJoinSubmit} className="flex flex-col sm:flex-row gap-2 sm:gap-2.5 w-full md:w-auto">
                                 <input
                                     type="text"
-                                    placeholder="Enter Classroom Code"
+                                    placeholder="Code (e.g. MAT-G4-RIZAL)"
                                     value={joinCodeInput}
                                     onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
                                     className="bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-main)] px-4 py-2.5 rounded-2xl font-bold text-xs focus:outline-none w-full md:w-[180px]"

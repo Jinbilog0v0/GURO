@@ -25,6 +25,11 @@ class ClassroomController extends Controller
 
     private function getItemBankPath(): string
     {
+        $primary = base_path('database/data/item_bank.json');
+        if (file_exists($primary)) {
+            return $primary;
+        }
+
         return base_path('../frontend/Guro-Mobile/assets/item_bank.json');
     }
 
@@ -240,12 +245,32 @@ class ClassroomController extends Controller
     // GET /api/classroom/verify
     public function verifyCode(Request $request)
     {
-        $code = $request->query('code');
+        $code = trim((string) $request->query('code', ''));
         if (! $code) {
             return response()->json(['error' => 'Missing code parameter.'], 400);
         }
 
-        $classroom = Classroom::where('classroom_id', strtoupper($code))->first();
+        $upperCode = strtoupper($code);
+        $classroom = Classroom::where('classroom_id', $upperCode)->first();
+
+        // 1. Try matching without dashes (e.g. MATG5NEWTON -> MAT-G5-NEWTON)
+        if (! $classroom) {
+            $cleanCode = str_replace('-', '', $upperCode);
+            $classroom = Classroom::whereRaw("REPLACE(classroom_id, '-', '') = ?", [$cleanCode])->first();
+        }
+
+        // 2. Try suffix / partial code match (e.g. "NEWTON" or "URV" or "4RIZAL")
+        if (! $classroom && strlen($upperCode) >= 3) {
+            $classroom = Classroom::where('classroom_id', 'like', "%-{$upperCode}")
+                ->orWhere('classroom_id', 'like', "%-{$upperCode}-%")
+                ->first();
+        }
+
+        // 3. Try matching section name directly
+        if (! $classroom && strlen($code) >= 2) {
+            $classroom = Classroom::where('section_name', 'ilike', $code)->first();
+        }
+
         if (! $classroom) {
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
@@ -707,14 +732,29 @@ class ClassroomController extends Controller
             'gradeLevel' => 'nullable|integer',
         ]);
 
-        $studentId = $request->input('studentId');
-        $classroomId = strtoupper($request->input('classroomId'));
+        $studentId = trim((string) $request->input('studentId'));
+        $rawClassCode = strtoupper(trim((string) $request->input('classroomId')));
         $studentGrade = $request->input('gradeLevel');
 
-        $classroom = Classroom::where('classroom_id', $classroomId)->first();
+        $classroom = Classroom::where('classroom_id', $rawClassCode)->first();
+        if (! $classroom) {
+            $cleanCode = str_replace('-', '', $rawClassCode);
+            $classroom = Classroom::whereRaw("REPLACE(classroom_id, '-', '') = ?", [$cleanCode])->first();
+        }
+        if (! $classroom && strlen($rawClassCode) >= 3) {
+            $classroom = Classroom::where('classroom_id', 'like', "%-{$rawClassCode}")
+                ->orWhere('classroom_id', 'like', "%-{$rawClassCode}-%")
+                ->first();
+        }
+        if (! $classroom && strlen($rawClassCode) >= 2) {
+            $classroom = Classroom::where('section_name', 'ilike', $rawClassCode)->first();
+        }
+
         if (! $classroom) {
             return response()->json(['error' => 'Classroom not found.'], 404);
         }
+
+        $classroomId = $classroom->classroom_id;
 
         if (! $studentGrade) {
             $latestLog = ProgressLog::where('student_id', $studentId)->latest('timestamp')->first();

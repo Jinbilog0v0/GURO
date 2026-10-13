@@ -67,7 +67,10 @@ class AdminController extends Controller
         }
 
         $geminiKey = env('GEMINI_API_KEY');
-        $itemBankPath = base_path('../frontend/Guro-Mobile/assets/item_bank.json');
+        $itemBankPath = base_path('database/data/item_bank.json');
+        if (! file_exists($itemBankPath)) {
+            $itemBankPath = base_path('../frontend/Guro-Mobile/assets/item_bank.json');
+        }
 
         $health = [
             'database' => $dbStatus,
