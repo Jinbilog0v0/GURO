@@ -116,6 +116,7 @@ interface AppState {
   soundEffectsEnabled: boolean;
   speechRate: number;
   colorTheme: string;
+  themeMode: 'light' | 'dark';
   xpPoints: number;
   virtualStars: number;
   mascotOutfit: string;
@@ -129,6 +130,7 @@ interface AppState {
   setSoundEffectsEnabled: (enabled: boolean) => void;
   setSpeechRate: (rate: number) => void;
   setColorTheme: (theme: string) => void;
+  setThemeMode: (mode: 'light' | 'dark') => void;
   setMascotOutfit: (outfit: string) => void;
   purchaseOutfit: (outfit: string, cost: number) => boolean;
   setVoiceGuideTheme: (theme: string) => void;
@@ -214,6 +216,7 @@ export const useAppStore = create<AppState>()(
       soundEffectsEnabled: true,
       speechRate: 1.0,
       colorTheme: 'blue',
+      themeMode: 'light',
       xpPoints: 0,
       virtualStars: 0,
       mascotOutfit: 'default',
@@ -238,6 +241,7 @@ export const useAppStore = create<AppState>()(
       setSoundEffectsEnabled: (enabled) => set({ soundEffectsEnabled: enabled }),
       setSpeechRate: (rate) => set({ speechRate: rate }),
       setColorTheme: (theme) => set({ colorTheme: theme }),
+      setThemeMode: (mode) => set({ themeMode: mode }),
       setMascotOutfit: (outfit) => set({ mascotOutfit: outfit }),
       purchaseOutfit: (outfit, cost) => {
         const state = get();
@@ -705,6 +709,7 @@ export const useAppStore = create<AppState>()(
         speechRate: state.speechRate,
         soundEffectsEnabled: state.soundEffectsEnabled,
         colorTheme: state.colorTheme,
+        themeMode: state.themeMode,
         adaptiveTiers: state.adaptiveTiers,
         consecutiveFailures: state.consecutiveFailures,
       }),

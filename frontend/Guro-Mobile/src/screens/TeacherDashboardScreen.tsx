@@ -37,11 +37,11 @@ import {
   BarChart2,
   Activity,
   Trash2,
-  School,
-  Users,
   FolderOpen,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
+  SlidersHorizontal,
   Calculator,
   Sparkles,
   Zap,
@@ -60,6 +60,133 @@ import {
 } from 'lucide-react-native';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { toast } from '../components';
+
+interface ListExpandControlsProps {
+  totalCount: number;
+  currentLimit: number;
+  onSeeMore: () => void;
+  onSeeLess: () => void;
+  itemNoun?: string;
+}
+
+function ListExpandControls({
+  totalCount,
+  currentLimit,
+  onSeeMore,
+  onSeeLess,
+  itemNoun,
+}: ListExpandControlsProps) {
+  if (totalCount <= 5) return null;
+
+  const remaining = Math.max(0, totalCount - currentLimit);
+  const isExpanded = currentLimit > 5;
+  const hasMore = remaining > 0;
+  const moreText = itemNoun
+    ? `See more ${itemNoun} (${remaining} remaining)`
+    : `See more (${remaining} remaining)`;
+
+  return (
+    <View style={{ marginTop: Spacing.xs }}>
+      {isExpanded && hasMore ? (
+        <View style={{ flexDirection: 'row', gap: Spacing.xs }}>
+          <TouchableOpacity
+            onPress={onSeeLess}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="See less"
+            style={{
+              flex: 1,
+              minHeight: 44,
+              borderRadius: Radius.sm,
+              backgroundColor: Colors.bgInput,
+              borderWidth: 1,
+              borderColor: Colors.border,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+            }}
+          >
+            <ChevronUp size={14} color={Colors.textMuted} />
+            <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+              See less
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={onSeeMore}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={moreText}
+            style={{
+              flex: 1.6,
+              minHeight: 44,
+              borderRadius: Radius.sm,
+              backgroundColor: 'rgba(17,66,142,0.06)',
+              borderWidth: 1,
+              borderColor: 'rgba(17,66,142,0.2)',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+            }}
+          >
+            <ChevronDown size={14} color={Colors.accentPrimary} />
+            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+              {moreText}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : hasMore ? (
+        <TouchableOpacity
+          onPress={onSeeMore}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel={moreText}
+          style={{
+            minHeight: 44,
+            borderRadius: Radius.sm,
+            backgroundColor: 'rgba(17,66,142,0.06)',
+            borderWidth: 1,
+            borderColor: 'rgba(17,66,142,0.2)',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+          }}
+        >
+          <ChevronDown size={14} color={Colors.accentPrimary} />
+          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+            {moreText}
+          </Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          onPress={onSeeLess}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel="See less"
+          style={{
+            minHeight: 44,
+            borderRadius: Radius.sm,
+            backgroundColor: Colors.bgInput,
+            borderWidth: 1,
+            borderColor: Colors.border,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+          }}
+        >
+          <ChevronUp size={14} color={Colors.textMuted} />
+          <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+            See less
+          </Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
 
 export function TeacherDashboardScreen() {
   const navigation = useNavigation<any>();
@@ -87,7 +214,20 @@ export function TeacherDashboardScreen() {
   const [telemetrySearchInput, setTelemetrySearchInput] = useState('');
   const [telemetryFilterText, setTelemetryFilterText] = useState('');
   const [telemetrySelectedSubject, setTelemetrySelectedSubject] = useState<'All' | 'Mathematics' | 'English'>('All');
+  const [telemetrySelectedGrade, setTelemetrySelectedGrade] = useState<'All' | '4' | '5' | '6'>('All');
   const [telemetrySelectedSection, setTelemetrySelectedSection] = useState('All');
+  const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false);
+  const [draftSubject, setDraftSubject] = useState<'All' | 'Mathematics' | 'English'>('All');
+  const [draftGrade, setDraftGrade] = useState<'All' | '4' | '5' | '6'>('All');
+  const [draftSection, setDraftSection] = useState('All');
+  const [selectedTopicAlert, setSelectedTopicAlert] = useState<any | null>(null);
+  const [expandedCurriculumTopics, setExpandedCurriculumTopics] = useState<Record<string, boolean>>({});
+  const [telemetryLimit, setTelemetryLimit] = useState(5);
+  const [diagnosticAlertsLimit, setDiagnosticAlertsLimit] = useState(5);
+  const [curriculumTopicsLimit, setCurriculumTopicsLimit] = useState(5);
+  const [modalStudentsLimit, setModalStudentsLimit] = useState(5);
+  const [questionsLimits, setQuestionsLimits] = useState<Record<string, number>>({});
+  const [pinResultsLimit, setPinResultsLimit] = useState(5);
   const [refreshing, setRefreshing] = useState(false);
 
   // SF9 Modal State & Signatories
@@ -308,42 +448,83 @@ export function TeacherDashboardScreen() {
   }, [isPinMode, token, currentUser?.userId]);
 
   const getDiagnosticAlerts = () => {
-    const studentTopicStats: Record<string, Record<string, { totalScore: number, totalQuestions: number, attempts: number, subject: string }>> = {};
+    // Group alerts by topic instead of by student
+    const topicStats: Record<string, {
+      topic: string;
+      subject: string;
+      gradeLevel: number | string;
+      studentStats: Record<string, { totalScore: number; totalQuestions: number; attempts: number }>;
+    }> = {};
 
     classroomTelemetry.forEach((evt) => {
-      const sId = evt.studentId;
       const topic = evt.topic;
-      if (!studentTopicStats[sId]) {
-        studentTopicStats[sId] = {};
+      const sId = evt.studentId;
+      const grade = evt.gradeLevel || 4;
+      const subject = evt.subject === 'Math' ? 'Mathematics' : (evt.subject || 'Mathematics');
+      const key = `${subject}-${grade}-${topic}`;
+
+      if (!topicStats[key]) {
+        topicStats[key] = {
+          topic,
+          subject,
+          gradeLevel: grade,
+          studentStats: {},
+        };
       }
-      if (!studentTopicStats[sId][topic]) {
-        studentTopicStats[sId][topic] = { totalScore: 0, totalQuestions: 0, attempts: 0, subject: evt.subject };
+
+      if (!topicStats[key].studentStats[sId]) {
+        topicStats[key].studentStats[sId] = { totalScore: 0, totalQuestions: 0, attempts: 0 };
       }
-      studentTopicStats[sId][topic].totalScore += evt.score;
-      studentTopicStats[sId][topic].totalQuestions += evt.totalQuestions;
-      studentTopicStats[sId][topic].attempts += 1;
+
+      topicStats[key].studentStats[sId].totalScore += evt.score;
+      topicStats[key].studentStats[sId].totalQuestions += evt.totalQuestions;
+      topicStats[key].studentStats[sId].attempts += 1;
     });
 
-    const alerts: { studentId: string, name: string, topic: string, subject: string, avgPct: number, attempts: number }[] = [];
+    const topicAlerts: {
+      key: string;
+      topic: string;
+      subject: string;
+      gradeLevel: number | string;
+      avgPct: number;
+      students: { studentId: string; name: string; avgPct: number; attempts: number }[];
+    }[] = [];
 
-    Object.keys(studentTopicStats).forEach((sId) => {
-      Object.keys(studentTopicStats[sId]).forEach((topic) => {
-        const stats = studentTopicStats[sId][topic];
-        const avgPct = Math.round((stats.totalScore / stats.totalQuestions) * 100);
-        if (avgPct < 60) {
-          alerts.push({
+    Object.keys(topicStats).forEach((key) => {
+      const topicItem = topicStats[key];
+      const strugglingStudents: { studentId: string; name: string; avgPct: number; attempts: number }[] = [];
+
+      Object.keys(topicItem.studentStats).forEach((sId) => {
+        const stats = topicItem.studentStats[sId];
+        const studentAvg = stats.totalQuestions > 0 ? Math.round((stats.totalScore / stats.totalQuestions) * 100) : 0;
+        if (studentAvg < 60) {
+          strugglingStudents.push({
             studentId: sId,
             name: formatStudentName(sId),
-            topic,
-            subject: stats.subject,
-            avgPct,
-            attempts: stats.attempts
+            avgPct: studentAvg,
+            attempts: stats.attempts,
           });
         }
       });
+
+      if (strugglingStudents.length > 0) {
+        // Average score badge: mean of the grouped students' averages
+        const groupMean = Math.round(
+          strugglingStudents.reduce((sum, s) => sum + s.avgPct, 0) / strugglingStudents.length
+        );
+
+        topicAlerts.push({
+          key,
+          topic: topicItem.topic,
+          subject: topicItem.subject,
+          gradeLevel: topicItem.gradeLevel,
+          avgPct: groupMean,
+          students: strugglingStudents.sort((a, b) => a.avgPct - b.avgPct),
+        });
+      }
     });
 
-    return alerts.sort((a, b) => a.avgPct - b.avgPct);
+    return topicAlerts.sort((a, b) => a.avgPct - b.avgPct);
   };
 
   const getGradeLevelCurriculumTally = () => {
@@ -638,12 +819,52 @@ export function TeacherDashboardScreen() {
       .filter(sec => sec !== '')
   )).sort();
 
+  const toggleCurriculumTopic = (key: string) => {
+    setExpandedCurriculumTopics((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const openFilterSheet = () => {
+    setDraftSubject(telemetrySelectedSubject);
+    setDraftGrade(telemetrySelectedGrade);
+    setDraftSection(telemetrySelectedSection);
+    setIsFilterSheetVisible(true);
+  };
+
+  const handleResetFilters = () => {
+    setDraftSubject('All');
+    setDraftGrade('All');
+    setDraftSection('All');
+    setTelemetrySelectedSubject('All');
+    setTelemetrySelectedGrade('All');
+    setTelemetrySelectedSection('All');
+    setIsFilterSheetVisible(false);
+  };
+
+  const handleApplyFilters = () => {
+    setTelemetrySelectedSubject(draftSubject);
+    setTelemetrySelectedGrade(draftGrade);
+    setTelemetrySelectedSection(draftSection);
+    setIsFilterSheetVisible(false);
+  };
+
+  const activeFilterCount =
+    (telemetrySelectedSubject !== 'All' ? 1 : 0) +
+    (telemetrySelectedGrade !== 'All' ? 1 : 0) +
+    (telemetrySelectedSection !== 'All' ? 1 : 0);
+
   const filteredTelemetry = classroomTelemetry.filter((evt) => {
     if (telemetrySelectedSubject !== 'All') {
       const isMathFilter = telemetrySelectedSubject === 'Mathematics';
       const isMathLog = evt.subject === 'Mathematics' || evt.subject === 'Math' || evt.subject?.toLowerCase() === 'mathematics' || evt.subject?.toLowerCase() === 'math';
       if (isMathFilter && !isMathLog) return false;
       if (!isMathFilter && evt.subject?.toLowerCase() !== telemetrySelectedSubject.toLowerCase()) return false;
+    }
+
+    if (telemetrySelectedGrade !== 'All') {
+      if (String(evt.gradeLevel) !== String(telemetrySelectedGrade)) return false;
     }
 
     if (telemetrySelectedSection !== 'All') {
@@ -684,26 +905,29 @@ export function TeacherDashboardScreen() {
       >
         {/* ── Header ── */}
         <View style={styles.header}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flex: 1, minWidth: 140 }}>
-            {isPinMode && (
-              <TouchableOpacity
-                onPress={() => navigation.replace('StudentDashboard')}
-                style={{
-                  paddingHorizontal: Spacing.sm,
-                  paddingVertical: Spacing.xs,
-                  backgroundColor: 'rgba(255,255,255,0.06)',
-                  borderRadius: Radius.sm,
-                  borderWidth: 1,
-                  borderColor: Colors.border,
-                }}
-                accessibilityLabel="Return to student dashboard"
-              >
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMain }}>← Return</Text>
-              </TouchableOpacity>
-            )}
-            <View style={styles.headerLeft}>
+          <View style={styles.headerAccentLine} />
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              {isPinMode && (
+                <TouchableOpacity
+                  onPress={() => navigation.replace('StudentDashboard')}
+                  style={{
+                    alignSelf: 'flex-start',
+                    marginBottom: Spacing.xs,
+                    paddingHorizontal: Spacing.sm,
+                    paddingVertical: Spacing.xs,
+                    backgroundColor: 'rgba(255,255,255,0.06)',
+                    borderRadius: Radius.sm,
+                    borderWidth: 1,
+                    borderColor: Colors.border,
+                  }}
+                  accessibilityLabel="Return to student dashboard"
+                >
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMain }}>← Return</Text>
+                </TouchableOpacity>
+              )}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <Text style={styles.screenTitle} numberOfLines={1}>{isPinMode ? 'GURO Teacher Evaluation' : 'GURO Teacher Console'}</Text>
+                <Text style={styles.screenTitle}>{isPinMode ? 'GURO Teacher Evaluation' : 'GURO Teacher Console'}</Text>
                 <View style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -721,12 +945,13 @@ export function TeacherDashboardScreen() {
                   </Text>
                 </View>
               </View>
-              <Text style={styles.screenSubtitle} numberOfLines={1}>{isPinMode ? `Reviewing: ${formatStudentName(studentId)}` : 'Real-Time Classroom Telemetry & DepEd Reporting'}</Text>
+              <Text style={styles.screenSubtitle}>{isPinMode ? `Reviewing: ${formatStudentName(studentId)}` : 'Real-Time Classroom Telemetry & DepEd Reporting'}</Text>
             </View>
-          </View>
-          <View style={styles.headerRight}>
-            <Badge label="Teacher" variant="indigo" style={styles.roleBadge} />
-            <SyncBadge />
+
+            <View style={styles.headerRight}>
+              <Badge label="Teacher" variant="indigo" style={styles.roleBadge} />
+              <SyncBadge />
+            </View>
           </View>
         </View>
 
@@ -791,114 +1016,53 @@ export function TeacherDashboardScreen() {
               {studentProgress.length === 0 ? (
                 <Text style={styles.emptyText}>No practice logs yet.</Text>
               ) : (
-                studentProgress.slice(0, 5).map((evt) => {
-                  const pct = Math.round((evt.score / evt.totalQuestions) * 100);
-                  const isSuccess = pct >= 80;
-                  return (
-                    <GlassCard key={evt.eventId} variant="subtle" padding={Spacing.sm} style={{ marginBottom: Spacing.xs }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.xs }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flex: 1, minWidth: 0 }}>
-                          {isSuccess ? (
-                            <CheckCircle size={16} color={Colors.success} style={{ flexShrink: 0 }} />
-                          ) : (
-                            <AlertTriangle size={16} color={Colors.warning} style={{ flexShrink: 0 }} />
-                          )}
-                          <View style={{ flex: 1, minWidth: 0 }}>
-                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }} numberOfLines={1}>
-                              {evt.topic}
+                <>
+                  {studentProgress.slice(0, pinResultsLimit).map((evt, pIdx) => {
+                    const pct = Math.round((evt.score / evt.totalQuestions) * 100);
+                    const isSuccess = pct >= 80;
+                    return (
+                      <GlassCard key={evt.eventId || (evt as any).quizId || `pin-${pIdx}`} variant="subtle" padding={Spacing.sm} style={{ marginBottom: Spacing.xs }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.xs }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flex: 1, minWidth: 0 }}>
+                            {isSuccess ? (
+                              <CheckCircle size={16} color={Colors.success} style={{ flexShrink: 0 }} />
+                            ) : (
+                              <AlertTriangle size={16} color={Colors.warning} style={{ flexShrink: 0 }} />
+                            )}
+                            <View style={{ flex: 1, minWidth: 0 }}>
+                              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }} numberOfLines={1}>
+                                {evt.topic}
+                              </Text>
+                              <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }} numberOfLines={1}>
+                                G{evt.gradeLevel} · {evt.subject}
+                              </Text>
+                            </View>
+                          </View>
+                          <View style={{ alignItems: 'flex-end', flexShrink: 0, minWidth: 44 }}>
+                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: isSuccess ? Colors.success : Colors.warning }}>
+                              {evt.score}/{evt.totalQuestions}
                             </Text>
-                            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }} numberOfLines={1}>
-                              G{evt.gradeLevel} · {evt.subject}
+                            <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textDark }}>
+                              {pct}%
                             </Text>
                           </View>
                         </View>
-                        <View style={{ alignItems: 'flex-end', flexShrink: 0, minWidth: 44 }}>
-                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: isSuccess ? Colors.success : Colors.warning }}>
-                            {evt.score}/{evt.totalQuestions}
-                          </Text>
-                          <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textDark }}>
-                            {pct}%
-                          </Text>
-                        </View>
-                      </View>
-                    </GlassCard>
-                  );
-                })
+                      </GlassCard>
+                    );
+                  })}
+
+                  <ListExpandControls
+                    totalCount={studentProgress.length}
+                    currentLimit={pinResultsLimit}
+                    onSeeMore={() => setPinResultsLimit((prev) => prev + 5)}
+                    onSeeLess={() => setPinResultsLimit(5)}
+                  />
+                </>
               )}
             </GlassCard>
           </>
         ) : (
           <>
-            {/* ── Active Classroom Banner & Switcher ── */}
-            <GlassCard style={[styles.section, { marginBottom: Spacing.md }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xs }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <School size={18} color={Colors.accentPrimary} />
-                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
-                    Classroom Section
-                  </Text>
-                </View>
-                {effectiveClassroomId && (
-                  <Badge label={effectiveClassroomId} variant="indigo" />
-                )}
-              </View>
-
-              {classrooms.length === 0 ? (
-                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                  {effectiveClassroomId ? `Linked section: ${effectiveClassroomId}` : 'No active classrooms linked. Ingest lessons or configure on web.'}
-                </Text>
-              ) : (
-                <>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: 4, marginBottom: classrooms.length > 1 ? Spacing.sm : 0, flexWrap: 'wrap' }}>
-                    <Users size={14} color={Colors.accentSecondary} />
-                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                      {(() => {
-                        const current = classrooms.find((c) => c.id === effectiveClassroomId) || classrooms[0];
-                        return `${current.subject} · Grade ${current.gradeLevel}${current.sectionName ? ` · Sec: ${current.sectionName}` : ''} · ${classroomMembers.length} Student${classroomMembers.length === 1 ? '' : 's'} Enrolled`;
-                      })()}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 2 }}>
-                      <Calendar size={12} color={Colors.accentPrimary} />
-                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
-                        {(() => {
-                          const current = classrooms.find((c) => c.id === effectiveClassroomId) || classrooms[0];
-                          const sy = current.schoolYear || activeSchoolYear;
-                          const trm = current.term || activeTerm;
-                          return `S.Y. ${sy} • ${trm}`;
-                        })()}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {classrooms.length > 1 && (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs, marginTop: Spacing.xs }}>
-                      {classrooms.map((c: any) => {
-                        const isActive = effectiveClassroomId === c.id;
-                        return (
-                          <TouchableOpacity
-                            key={c.id}
-                            onPress={() => handleSelectClassroom(c.id)}
-                            style={{
-                              paddingHorizontal: Spacing.sm,
-                              paddingVertical: Spacing.xs,
-                              borderRadius: Radius.full,
-                              backgroundColor: isActive ? 'rgba(17,66,142,0.12)' : 'rgba(255,255,255,0.04)',
-                              borderWidth: 1,
-                              borderColor: isActive ? Colors.accentPrimary : Colors.border,
-                            }}
-                          >
-                            <Text style={{ fontFamily: isActive ? Fonts.bodyBold : Fonts.body, fontSize: FontSizes.xs, color: isActive ? Colors.accentPrimary : Colors.textMuted }}>
-                              {c.id} {c.sectionName ? `(${c.sectionName})` : `(${c.subject})`}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </ScrollView>
-                  )}
-                </>
-              )}
-            </GlassCard>
-
             <SectionHeader
               title="Item Bank Overview"
               subtitle="Live count from local item bank"
@@ -980,73 +1144,100 @@ export function TeacherDashboardScreen() {
                 )}
               </View>
 
-              {/* Filter Pills Row 1: Subject Filter */}
-              <View style={{ flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.xs }}>
-                {(['All', 'Mathematics', 'English'] as const).map((subj) => {
-                  const active = topicsSubjectFilter === subj;
-                  return (
-                    <TouchableOpacity
-                      key={subj}
-                      onPress={() => setTopicsSubjectFilter(subj)}
-                      activeOpacity={0.75}
-                      style={{
-                        flex: 1,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        paddingVertical: Spacing.xs,
-                        borderRadius: Radius.full,
-                        backgroundColor: active ? 'rgba(17,66,142,0.12)' : 'rgba(255,255,255,0.03)',
-                        borderWidth: 1,
-                        borderColor: active ? Colors.accentPrimary : Colors.border,
-                      }}
-                    >
-                      <Text
+              {/* Clean Segmented Filter Controls */}
+              <View style={{ gap: 6, marginBottom: Spacing.md }}>
+                {/* Subject Track */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    backgroundColor: Colors.bgInput,
+                    borderRadius: Radius.md,
+                    padding: 3,
+                    borderWidth: 1,
+                    borderColor: Colors.border,
+                  }}
+                >
+                  {(['All', 'Mathematics', 'English'] as const).map((subj) => {
+                    const active = topicsSubjectFilter === subj;
+                    return (
+                      <TouchableOpacity
+                        key={subj}
+                        onPress={() => setTopicsSubjectFilter(subj)}
+                        activeOpacity={0.75}
                         style={{
-                          fontFamily: active ? Fonts.bodyBold : Fonts.body,
-                          fontSize: FontSizes.xs,
-                          color: active ? Colors.accentPrimary : Colors.textMuted,
+                          flex: 1,
+                          minHeight: 34,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: Radius.sm + 2,
+                          backgroundColor: active ? '#FFFFFF' : 'transparent',
+                          shadowColor: active ? '#000' : 'transparent',
+                          shadowOffset: { width: 0, height: 1 },
+                          shadowOpacity: active ? 0.08 : 0,
+                          shadowRadius: 2,
+                          elevation: active ? 1 : 0,
                         }}
                       >
-                        {subj === 'All' ? 'All Subjects' : subj}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                        <Text
+                          style={{
+                            fontFamily: active ? Fonts.bodyBold : Fonts.bodyMedium,
+                            fontSize: FontSizes.xs,
+                            color: active ? Colors.accentPrimary : Colors.textMuted,
+                          }}
+                        >
+                          {subj === 'All' ? 'All Subjects' : subj}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
 
-              {/* Filter Pills Row 2: Grade Level Filter */}
-              <View style={{ flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.md }}>
-                {(['All', '4', '5', '6'] as const).map((gr) => {
-                  const active = topicsGradeFilter === gr;
-                  const label = gr === 'All' ? 'All Grades' : `Grade ${gr}`;
-                  return (
-                    <TouchableOpacity
-                      key={gr}
-                      onPress={() => setTopicsGradeFilter(gr)}
-                      activeOpacity={0.75}
-                      style={{
-                        flex: 1,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        paddingVertical: 5,
-                        borderRadius: Radius.full,
-                        backgroundColor: active ? 'rgba(6,182,212,0.12)' : 'rgba(255,255,255,0.03)',
-                        borderWidth: 1,
-                        borderColor: active ? Colors.accentSecondary : Colors.border,
-                      }}
-                    >
-                      <Text
+                {/* Grade Level Track */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    backgroundColor: Colors.bgInput,
+                    borderRadius: Radius.md,
+                    padding: 3,
+                    borderWidth: 1,
+                    borderColor: Colors.border,
+                  }}
+                >
+                  {(['All', '4', '5', '6'] as const).map((gr) => {
+                    const active = topicsGradeFilter === gr;
+                    const label = gr === 'All' ? 'All Grades' : `Grade ${gr}`;
+                    return (
+                      <TouchableOpacity
+                        key={gr}
+                        onPress={() => setTopicsGradeFilter(gr)}
+                        activeOpacity={0.75}
                         style={{
-                          fontFamily: active ? Fonts.bodyBold : Fonts.body,
-                          fontSize: 11,
-                          color: active ? Colors.accentSecondary : Colors.textMuted,
+                          flex: 1,
+                          minHeight: 34,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: Radius.sm + 2,
+                          backgroundColor: active ? '#FFFFFF' : 'transparent',
+                          shadowColor: active ? '#000' : 'transparent',
+                          shadowOffset: { width: 0, height: 1 },
+                          shadowOpacity: active ? 0.08 : 0,
+                          shadowRadius: 2,
+                          elevation: active ? 1 : 0,
                         }}
                       >
-                        {label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                        <Text
+                          style={{
+                            fontFamily: active ? Fonts.bodyBold : Fonts.bodyMedium,
+                            fontSize: 11,
+                            color: active ? Colors.accentPrimary : Colors.textMuted,
+                          }}
+                        >
+                          {label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
 
               {/* Topic Tree Content */}
@@ -1133,6 +1324,7 @@ export function TeacherDashboardScreen() {
                                       justifyContent: 'space-between',
                                       paddingHorizontal: Spacing.md,
                                       paddingVertical: Spacing.sm,
+                                      minHeight: 44,
                                       backgroundColor: isExpanded ? 'rgba(17,66,142,0.05)' : 'transparent',
                                     }}
                                   >
@@ -1156,26 +1348,6 @@ export function TeacherDashboardScreen() {
                                     </View>
 
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
-                                      {hasStudy && (
-                                        <View
-                                          style={{
-                                            backgroundColor: 'rgba(6,182,212,0.1)',
-                                            borderColor: 'rgba(6,182,212,0.25)',
-                                            borderWidth: 1,
-                                            paddingHorizontal: 6,
-                                            paddingVertical: 2,
-                                            borderRadius: Radius.full,
-                                            flexDirection: 'row',
-                                            alignItems: 'center',
-                                            gap: 3,
-                                          }}
-                                        >
-                                          <BookOpenText size={10} color={Colors.accentSecondary} />
-                                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentSecondary }}>
-                                            Guide
-                                          </Text>
-                                        </View>
-                                      )}
                                       <View
                                         style={{
                                           backgroundColor: 'rgba(255,255,255,0.06)',
@@ -1219,9 +1391,31 @@ export function TeacherDashboardScreen() {
                                           borderColor: Colors.border,
                                         }}
                                       >
-                                        <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted, flex: 1, minWidth: 110 }} numberOfLines={1}>
-                                          Topic: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{topicName}</Text>
-                                        </Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, minWidth: 110 }}>
+                                          <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }} numberOfLines={1}>
+                                            Topic: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{topicName}</Text>
+                                          </Text>
+                                          {hasStudy && (
+                                            <View
+                                              style={{
+                                                backgroundColor: 'rgba(6,182,212,0.1)',
+                                                borderColor: 'rgba(6,182,212,0.25)',
+                                                borderWidth: 1,
+                                                paddingHorizontal: 6,
+                                                paddingVertical: 2,
+                                                borderRadius: Radius.full,
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                gap: 3,
+                                              }}
+                                            >
+                                              <BookOpenText size={10} color={Colors.accentSecondary} />
+                                              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentSecondary }}>
+                                                Guide
+                                              </Text>
+                                            </View>
+                                          )}
+                                        </View>
                                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flexShrink: 0 }}>
                                           <TouchableOpacity
                                             onPress={() => handleIngestForTopic(topicName, subjName, gradeKey)}
@@ -1309,7 +1503,12 @@ export function TeacherDashboardScreen() {
                                           </Text>
                                         </View>
                                       ) : (
-                                        questions.map((q, qIdx) => {
+                                        (() => {
+                                          const qLimit = questionsLimits[topicKey] || 5;
+                                          const visibleQuestions = questions.slice(0, qLimit);
+                                          return (
+                                            <>
+                                              {visibleQuestions.map((q, qIdx) => {
                                           const diff = q.difficulty || 'Easy';
                                           const isEasy = diff === 'Easy';
                                           const isDiff = diff === 'Difficult';
@@ -1464,8 +1663,19 @@ export function TeacherDashboardScreen() {
                                               )}
                                             </View>
                                           );
-                                        })
-                                      )}
+                                        })}
+
+                                        <ListExpandControls
+                                          totalCount={questions.length}
+                                          currentLimit={qLimit}
+                                          onSeeMore={() => setQuestionsLimits((prev) => ({ ...prev, [topicKey]: (prev[topicKey] || 5) + 5 }))}
+                                          onSeeLess={() => setQuestionsLimits((prev) => ({ ...prev, [topicKey]: 5 }))}
+                                          itemNoun="questions"
+                                        />
+                                      </>
+                                    );
+                                  })()
+                                )}
                                     </View>
                                   )}
                                 </View>
@@ -1742,78 +1952,150 @@ export function TeacherDashboardScreen() {
                           </Text>
                         </View>
 
-                        {displayTopics.map((item) => {
+                        {displayTopics.slice(0, curriculumTopicsLimit).map((item) => {
                           const isStr = item.average >= 80;
                           const isMod = item.average >= 50 && item.average < 80;
+                          const isWeak = item.average < 50;
                           const itemColor = isStr ? Colors.success : isMod ? Colors.warning : Colors.danger;
                           const itemBg = isStr ? 'rgba(16,185,129,0.12)' : isMod ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)';
                           const itemBorder = isStr ? 'rgba(16,185,129,0.25)' : isMod ? 'rgba(245,158,11,0.25)' : 'rgba(239,68,68,0.25)';
                           const statusLabel = isStr ? 'Strong' : isMod ? 'Moderate' : 'Weak';
+                          const isCurriculumExpanded = !!expandedCurriculumTopics[item.key];
 
                           return (
                             <View
                               key={item.key}
                               style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                backgroundColor: 'rgba(255,255,255,0.03)',
-                                paddingHorizontal: Spacing.sm,
-                                paddingVertical: 6,
                                 borderRadius: Radius.sm,
                                 borderWidth: 1,
-                                borderColor: Colors.border,
-                                gap: Spacing.xs,
+                                borderColor: isCurriculumExpanded ? Colors.accentPrimary : Colors.border,
+                                backgroundColor: 'rgba(255,255,255,0.03)',
+                                overflow: 'hidden',
                               }}
                             >
-                              <View style={{ flex: 1, minWidth: 0 }}>
-                                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.textMain }} numberOfLines={1}>
-                                  {item.topic}
-                                </Text>
-                                <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted }} numberOfLines={1}>
-                                  G{item.grade} {item.subject} · {item.attempts} attempt{item.attempts === 1 ? '' : 's'}
-                                </Text>
-                              </View>
-
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                                <View
-                                  style={{
-                                    backgroundColor: itemBg,
-                                    borderWidth: 1,
-                                    borderColor: itemBorder,
-                                    paddingHorizontal: 6,
-                                    paddingVertical: 2,
-                                    borderRadius: 4,
-                                    alignItems: 'center',
-                                  }}
-                                >
-                                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: itemColor }}>
-                                    {item.average}% · {statusLabel}
+                              <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => toggleCurriculumTopic(item.key)}
+                                style={{
+                                  flexDirection: 'row',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  paddingHorizontal: Spacing.sm,
+                                  paddingVertical: Spacing.xs,
+                                  minHeight: 44,
+                                  gap: Spacing.xs,
+                                }}
+                              >
+                                <View style={{ flex: 1, minWidth: 0 }}>
+                                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.textMain }} numberOfLines={1}>
+                                    {item.topic}
+                                  </Text>
+                                  <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted }} numberOfLines={1}>
+                                    G{item.grade} {item.subject} · {item.attempts} {item.attempts === 1 ? 'attempt' : 'attempts'}
                                   </Text>
                                 </View>
 
-                                {!isStr && (
-                                  <TouchableOpacity
-                                    onPress={() => handleIngestExtension(item.topic, item.subject)}
-                                    activeOpacity={0.8}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                                  <View
                                     style={{
-                                      backgroundColor: 'rgba(17,66,142,0.12)',
+                                      backgroundColor: itemBg,
                                       borderWidth: 1,
-                                      borderColor: Colors.accentPrimary,
-                                      borderRadius: 4,
+                                      borderColor: itemBorder,
                                       paddingHorizontal: 6,
-                                      paddingVertical: 3,
+                                      paddingVertical: 2,
+                                      borderRadius: 4,
+                                      alignItems: 'center',
                                     }}
                                   >
-                                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 9.5, color: Colors.accentPrimary }}>
-                                      Ingest Help
+                                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: itemColor }}>
+                                      {item.average}% · {statusLabel}
                                     </Text>
-                                  </TouchableOpacity>
-                                )}
-                              </View>
+                                  </View>
+
+                                  {/* Show Ingest help button only for Weak topics in row */}
+                                  {isWeak && (
+                                    <TouchableOpacity
+                                      onPress={(e) => {
+                                        e.stopPropagation?.();
+                                        handleIngestExtension(item.topic, item.subject);
+                                      }}
+                                      activeOpacity={0.8}
+                                      style={{
+                                        height: 32,
+                                        backgroundColor: 'rgba(17,66,142,0.12)',
+                                        borderWidth: 1,
+                                        borderColor: Colors.accentPrimary,
+                                        borderRadius: 4,
+                                        paddingHorizontal: 8,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                      }}
+                                    >
+                                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                                        Ingest help
+                                      </Text>
+                                    </TouchableOpacity>
+                                  )}
+
+                                  <View style={{ width: 16, alignItems: 'center', justifyContent: 'center' }}>
+                                    {isCurriculumExpanded ? (
+                                      <ChevronUp size={14} color={Colors.textMuted} />
+                                    ) : (
+                                      <ChevronDown size={14} color={Colors.textMuted} />
+                                    )}
+                                  </View>
+                                </View>
+                              </TouchableOpacity>
+
+                              {/* Expanded row on tap */}
+                              {isCurriculumExpanded && (
+                                <View
+                                  style={{
+                                    borderTopWidth: 1,
+                                    borderTopColor: Colors.border,
+                                    padding: Spacing.sm,
+                                    backgroundColor: 'rgba(0,0,0,0.1)',
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: Spacing.xs,
+                                  }}
+                                >
+                                  <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted, flex: 1 }}>
+                                    Status: <Text style={{ fontFamily: Fonts.bodyBold, color: itemColor }}>{statusLabel}</Text> · {item.attempts} student attempts recorded.
+                                  </Text>
+                                  {!isStr && (
+                                    <TouchableOpacity
+                                      onPress={() => handleIngestExtension(item.topic, item.subject)}
+                                      activeOpacity={0.8}
+                                      style={{
+                                        height: 32,
+                                        backgroundColor: 'rgba(17,66,142,0.12)',
+                                        borderWidth: 1,
+                                        borderColor: Colors.accentPrimary,
+                                        borderRadius: 4,
+                                        paddingHorizontal: 8,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                      }}
+                                    >
+                                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                                        Ingest help
+                                      </Text>
+                                    </TouchableOpacity>
+                                  )}
+                                </View>
+                              )}
                             </View>
                           );
                         })}
+
+                        <ListExpandControls
+                          totalCount={displayTopics.length}
+                          currentLimit={curriculumTopicsLimit}
+                          onSeeMore={() => setCurriculumTopicsLimit((prev) => prev + 5)}
+                          onSeeLess={() => setCurriculumTopicsLimit(5)}
+                        />
                       </View>
                     );
                   })()}
@@ -1822,83 +2104,110 @@ export function TeacherDashboardScreen() {
             })()}
 
             {/* ── Diagnostic Alerts ── */}
-            <GlassCard style={[styles.section, { marginBottom: Spacing.md }]}>
-              <SectionHeader
-                title={
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <AlertTriangle size={18} color={Colors.warning} />
-                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Diagnostic Alerts</Text>
-                  </View>
-                }
-                subtitle="Students scoring below target threshold (60%)"
-              />
-
-              {getDiagnosticAlerts().length === 0 ? (
-                <Text style={styles.emptyText}>All students are performing above target threshold (≥ 60%).</Text>
-              ) : (
-                getDiagnosticAlerts().slice(0, 5).map((alert, idx) => (
-                  <GlassCard key={idx} variant="subtle" padding={Spacing.sm} style={{ marginBottom: Spacing.xs, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.2)', backgroundColor: 'rgba(239, 68, 68, 0.03)' }}>
-                    {/* Student Header & Score */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, gap: Spacing.xs }}>
-                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain, flex: 1, minWidth: 0 }} numberOfLines={1}>
-                        {alert.name}
-                      </Text>
-                      <View style={{ backgroundColor: 'rgba(239, 68, 68, 0.12)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.25)', flexShrink: 0 }}>
-                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.danger }}>
-                          {alert.avgPct}% Avg · {alert.attempts} {alert.attempts === 1 ? 'attempt' : 'attempts'}
-                        </Text>
+            {(() => {
+              const topicAlerts = getDiagnosticAlerts();
+              return (
+                <GlassCard style={[styles.section, { marginBottom: Spacing.md }]}>
+                  <SectionHeader
+                    title={
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <AlertTriangle size={18} color={Colors.warning} />
+                        <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Diagnostic alerts</Text>
                       </View>
-                    </View>
+                    }
+                    subtitle={`${topicAlerts.length} ${topicAlerts.length === 1 ? 'topic needs' : 'topics need'} attention`}
+                  />
 
-                    {/* Struggling Topic Details */}
-                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: Spacing.xs }} numberOfLines={2}>
-                      Struggling on: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{alert.topic}</Text> ({alert.subject})
-                    </Text>
-
-                    {/* Action Buttons Row */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, paddingTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
+                  {topicAlerts.length === 0 ? (
+                    <Text style={styles.emptyText}>All topics are performing above target threshold (≥ 60%).</Text>
+                  ) : (
+                    topicAlerts.slice(0, diagnosticAlertsLimit).map((alert, idx) => (
                       <TouchableOpacity
-                        onPress={() => setSelectedSf9StudentId(alert.studentId || alert.name)}
-                        activeOpacity={0.8}
-                        style={{
-                          flex: 1,
-                          backgroundColor: 'rgba(16,185,129,0.1)',
-                          borderWidth: 1,
-                          borderColor: Colors.success,
-                          borderRadius: Radius.sm,
-                          paddingVertical: 6,
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                        key={alert.key || idx}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setSelectedTopicAlert(alert);
+                          setModalStudentsLimit(5);
                         }}
+                        style={{ minHeight: 44, marginBottom: Spacing.xs }}
                       >
-                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.success }}>
-                          SF9 Report
-                        </Text>
-                      </TouchableOpacity>
+                        <GlassCard
+                          variant="subtle"
+                          padding={Spacing.sm}
+                          style={{
+                            borderWidth: 1,
+                            borderColor: 'rgba(239, 68, 68, 0.2)',
+                            backgroundColor: 'rgba(239, 68, 68, 0.03)',
+                          }}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.xs }}>
+                            <View style={{ flex: 1, minWidth: 0 }}>
+                              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }} numberOfLines={1}>
+                                {alert.topic}
+                              </Text>
+                              <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: 2 }}>
+                                {alert.subject} · Grade {alert.gradeLevel}
+                              </Text>
+                            </View>
 
-                      <TouchableOpacity
-                        onPress={() => handleIngestExtension(alert.topic, alert.subject)}
-                        activeOpacity={0.8}
-                        style={{
-                          flex: 1,
-                          backgroundColor: 'rgba(17,66,142,0.12)',
-                          borderWidth: 1,
-                          borderColor: Colors.accentPrimary,
-                          borderRadius: Radius.sm,
-                          paddingVertical: 6,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary }}>
-                          Ingest Help
-                        </Text>
+                            <View
+                              style={{
+                                backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                                paddingHorizontal: 6,
+                                paddingVertical: 2,
+                                borderRadius: 4,
+                                borderWidth: 1,
+                                borderColor: 'rgba(239, 68, 68, 0.25)',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.danger }}>
+                                {alert.avgPct}% avg
+                              </Text>
+                            </View>
+                          </View>
+
+                          <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: 6 }} numberOfLines={2}>
+                            Struggling: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{alert.students.map((s) => s.name).join(', ')}</Text>
+                          </Text>
+
+                          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: Spacing.xs, paddingTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation?.();
+                                handleIngestExtension(alert.topic, alert.subject);
+                              }}
+                              activeOpacity={0.8}
+                              style={{
+                                height: 32,
+                                paddingHorizontal: Spacing.sm,
+                                backgroundColor: 'rgba(17,66,142,0.1)',
+                                borderWidth: 1,
+                                borderColor: Colors.accentPrimary,
+                                borderRadius: Radius.sm,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary }}>
+                                Ingest help
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        </GlassCard>
                       </TouchableOpacity>
-                    </View>
-                  </GlassCard>
-                ))
-              )}
-            </GlassCard>
+                    ))
+                  )}
+
+                  <ListExpandControls
+                    totalCount={topicAlerts.length}
+                    currentLimit={diagnosticAlertsLimit}
+                    onSeeMore={() => setDiagnosticAlertsLimit((prev) => prev + 5)}
+                    onSeeLess={() => setDiagnosticAlertsLimit(5)}
+                  />
+                </GlassCard>
+              );
+            })()}
 
             {/* ── Student Telemetry ── */}
             <GlassCard style={styles.section}>
@@ -1906,7 +2215,7 @@ export function TeacherDashboardScreen() {
                 title={
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Activity size={18} color={Colors.accentPrimary} />
-                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Student Telemetry</Text>
+                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Student telemetry</Text>
                   </View>
                 }
                 subtitle={`Active classroom: ${effectiveClassroomId || 'None'}`}
@@ -1920,11 +2229,11 @@ export function TeacherDashboardScreen() {
                 }
               />
 
-              {/* Search Input Row */}
+              {/* Search & Filter Row */}
               <View style={{ flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.md, alignItems: 'center' }}>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <ThemedTextInput
-                    placeholder="Search student or topic..."
+                    placeholder="Search student or topic…"
                     value={telemetrySearchInput}
                     onChangeText={(t) => {
                       setTelemetrySearchInput(t);
@@ -1933,6 +2242,53 @@ export function TeacherDashboardScreen() {
                     containerStyle={{ marginBottom: 0 }}
                   />
                 </View>
+
+                {/* Single Filter Button replacing stacked chip rows */}
+                <TouchableOpacity
+                  onPress={openFilterSheet}
+                  activeOpacity={0.75}
+                  style={{
+                    height: 44,
+                    paddingHorizontal: Spacing.sm,
+                    borderRadius: Radius.md,
+                    backgroundColor: activeFilterCount > 0 ? 'rgba(17,66,142,0.15)' : 'rgba(255,255,255,0.05)',
+                    borderWidth: 1,
+                    borderColor: activeFilterCount > 0 ? Colors.accentPrimary : Colors.border,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <SlidersHorizontal size={16} color={activeFilterCount > 0 ? Colors.accentPrimary : Colors.textMuted} />
+                  <Text
+                    style={{
+                      fontFamily: Fonts.bodyBold,
+                      fontSize: FontSizes.xs,
+                      color: activeFilterCount > 0 ? Colors.accentPrimary : Colors.textMain,
+                    }}
+                  >
+                    Filter
+                  </Text>
+                  {activeFilterCount > 0 && (
+                    <View
+                      style={{
+                        backgroundColor: Colors.accentPrimary,
+                        borderRadius: Radius.full,
+                        minWidth: 18,
+                        height: 18,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        paddingHorizontal: 4,
+                      }}
+                    >
+                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: '#FFFFFF' }}>
+                        {activeFilterCount}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
                 {(telemetrySearchInput !== '' || telemetryFilterText !== '') && (
                   <TouchableOpacity
                     onPress={() => {
@@ -1956,139 +2312,56 @@ export function TeacherDashboardScreen() {
                 )}
               </View>
 
-              {/* Subject Filter Pills */}
-              <View style={{ flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.md }}>
-                {(['All', 'Mathematics', 'English'] as const).map((subject) => {
-                  const active = telemetrySelectedSubject === subject;
-                  return (
-                    <TouchableOpacity
-                      key={subject}
-                      onPress={() => setTelemetrySelectedSubject(subject)}
-                      activeOpacity={0.75}
-                      style={{
-                        flex: 1,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        paddingVertical: Spacing.xs,
-                        borderRadius: Radius.full,
-                        backgroundColor: active ? 'rgba(17,66,142,0.1)' : 'rgba(255,255,255,0.03)',
-                        borderWidth: 1,
-                        borderColor: active ? Colors.accentPrimary : Colors.border,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: active ? Fonts.bodyBold : Fonts.body,
-                          fontSize: FontSizes.xs,
-                          color: active ? Colors.accentPrimary : Colors.textMuted,
-                        }}
-                      >
-                        {subject === 'All' ? 'All Subjects' : subject}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {/* Section Filter Pills */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  Filter by Section
-                </Text>
-              </View>
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false} 
-                contentContainerStyle={{ gap: Spacing.xs, paddingBottom: Spacing.xs, marginBottom: Spacing.md }}
-              >
-                {['All', ...uniqueSections, 'No Section'].map((sec) => {
-                  const active = telemetrySelectedSection === sec;
-                  const label = sec === 'All' ? 'All Sections' : sec === 'No Section' ? 'No Section / Guest' : sec;
-                  return (
-                    <TouchableOpacity
-                      key={sec}
-                      onPress={() => setTelemetrySelectedSection(sec)}
-                      activeOpacity={0.75}
-                      style={{
-                        paddingHorizontal: Spacing.sm,
-                        paddingVertical: Spacing.xs,
-                        borderRadius: Radius.full,
-                        backgroundColor: active ? 'rgba(6,182,212,0.1)' : 'rgba(255,255,255,0.03)',
-                        borderWidth: 1,
-                        borderColor: active ? Colors.accentSecondary : Colors.border,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: active ? Fonts.bodyBold : Fonts.body,
-                          fontSize: FontSizes.xs,
-                          color: active ? Colors.accentSecondary : Colors.textMuted,
-                        }}
-                      >
-                        {label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-              
               {loadingTelemetry ? (
                 <ActivityIndicator size="small" color={Colors.accentPrimary} style={{ marginVertical: Spacing.md }} />
               ) : filteredTelemetry.length === 0 ? (
                 <Text style={styles.emptyText}>No matching telemetry logs.</Text>
               ) : (
-                filteredTelemetry.slice(0, 10).map((evt) => {
+                filteredTelemetry.slice(0, telemetryLimit).map((evt) => {
                   const pct = Math.round((evt.score / evt.totalQuestions) * 100);
                   const isSuccess = pct >= 80;
                   const timeStr = new Date(evt.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                   return (
-                    <GlassCard key={evt.eventId} variant="subtle" padding={Spacing.sm} style={{ marginBottom: Spacing.xs }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.xs }}>
-                        <TouchableOpacity 
-                          style={{ flex: 1, minWidth: 0, marginRight: Spacing.xs }}
-                          onPress={() => setSelectedSf9StudentId(evt.studentId)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }} numberOfLines={1}>
-                            {formatStudentName(evt.studentId)}
-                          </Text>
-                          <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }} numberOfLines={1}>
-                            {evt.topic} · G{evt.gradeLevel} {evt.subject}
-                          </Text>
-                        </TouchableOpacity>
-                        <View style={{ flexDirection: 'row', gap: Spacing.xs, alignItems: 'center', flexShrink: 0 }}>
-                          <View style={{ alignItems: 'flex-end', minWidth: 44 }}>
-                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: isSuccess ? Colors.success : Colors.warning }}>
-                              {evt.score}/{evt.totalQuestions}
+                    <TouchableOpacity
+                      key={evt.eventId}
+                      onPress={() => setSelectedSf9StudentId(evt.studentId)}
+                      activeOpacity={0.7}
+                      style={{ minHeight: 48, marginBottom: Spacing.xs }}
+                    >
+                      <GlassCard variant="subtle" padding={Spacing.sm} style={{ minHeight: 48, justifyContent: 'center' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.xs }}>
+                          <View style={{ flex: 1, minWidth: 0 }}>
+                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }} numberOfLines={1}>
+                              {formatStudentName(evt.studentId)}
                             </Text>
-                            <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textDark }}>
-                              {timeStr}
+                            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }} numberOfLines={1}>
+                              {evt.topic} · G{evt.gradeLevel} {evt.subject}
                             </Text>
                           </View>
-                          <TouchableOpacity
-                            onPress={() => setSelectedSf9StudentId(evt.studentId)}
-                            activeOpacity={0.8}
-                            style={{
-                              paddingHorizontal: 8,
-                              paddingVertical: 5,
-                              backgroundColor: 'rgba(17,66,142,0.1)',
-                              borderWidth: 1,
-                              borderColor: Colors.accentPrimary,
-                              borderRadius: Radius.sm,
-                            }}
-                          >
-                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
-                              SF9
-                            </Text>
-                          </TouchableOpacity>
+                          <View style={{ flexDirection: 'row', gap: Spacing.xs, alignItems: 'center', flexShrink: 0 }}>
+                            <View style={{ alignItems: 'flex-end', minWidth: 44 }}>
+                              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: isSuccess ? Colors.success : Colors.warning }}>
+                                {evt.score}/{evt.totalQuestions}
+                              </Text>
+                              <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textDark }}>
+                                {timeStr}
+                              </Text>
+                            </View>
+                            <ChevronRight size={16} color={Colors.textMuted} />
+                          </View>
                         </View>
-                      </View>
-                    </GlassCard>
+                      </GlassCard>
+                    </TouchableOpacity>
                   );
                 })
               )}
+
+              <ListExpandControls
+                totalCount={filteredTelemetry.length}
+                currentLimit={telemetryLimit}
+                onSeeMore={() => setTelemetryLimit((prev) => prev + 5)}
+                onSeeLess={() => setTelemetryLimit(5)}
+              />
             </GlassCard>
           </>
         )}
@@ -2290,6 +2563,304 @@ export function TeacherDashboardScreen() {
         onConfirm={executeDeleteTopic}
         onCancel={() => setDeleteTopicTarget(null)}
       />
+
+      {/* ── Diagnostic Alert Struggling Students Modal ── */}
+      {selectedTopicAlert && (
+        <Modal
+          visible={true}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setSelectedTopicAlert(null)}
+        >
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: Spacing.md }}>
+            <View style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: Radius.lg,
+              maxHeight: '80%',
+              padding: Spacing.lg,
+              borderWidth: 1,
+              borderColor: Colors.border,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.1,
+              shadowRadius: 10,
+              elevation: 8,
+            }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border, paddingBottom: Spacing.sm }}>
+                <View style={{ flex: 1, marginRight: Spacing.xs }}>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }} numberOfLines={1}>
+                    {selectedTopicAlert.topic}
+                  </Text>
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                    {selectedTopicAlert.subject} · Grade {selectedTopicAlert.gradeLevel} · {selectedTopicAlert.avgPct}% avg
+                  </Text>
+                  <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.xs, color: Colors.danger, marginTop: 4 }}>
+                    Struggling students ({selectedTopicAlert.students.length})
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setSelectedTopicAlert(null)}
+                  style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <X size={20} color={Colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs }}>
+                {selectedTopicAlert.students.slice(0, modalStudentsLimit).map((stu: any) => (
+                  <View
+                    key={stu.studentId}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      backgroundColor: Colors.bgInput,
+                      padding: Spacing.sm,
+                      borderRadius: Radius.md,
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                      gap: Spacing.xs,
+                      minHeight: 48,
+                    }}
+                  >
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }} numberOfLines={1}>
+                        {stu.name}
+                      </Text>
+                      <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                        {stu.studentId} · {stu.avgPct}% score · {stu.attempts} {stu.attempts === 1 ? 'attempt' : 'attempts'}
+                      </Text>
+                    </View>
+
+                    <TouchableOpacity
+                      onPress={() => setSelectedSf9StudentId(stu.studentId)}
+                      activeOpacity={0.8}
+                      style={{
+                        minHeight: 44,
+                        paddingHorizontal: Spacing.sm,
+                        backgroundColor: 'rgba(16,185,129,0.12)',
+                        borderWidth: 1,
+                        borderColor: Colors.success,
+                        borderRadius: Radius.sm,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.success }}>
+                        SF9 report
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+                <ListExpandControls
+                  totalCount={selectedTopicAlert.students.length}
+                  currentLimit={modalStudentsLimit}
+                  onSeeMore={() => setModalStudentsLimit((prev) => prev + 5)}
+                  onSeeLess={() => setModalStudentsLimit(5)}
+                />
+              </ScrollView>
+
+              <View style={{ marginTop: Spacing.md, paddingTop: Spacing.xs }}>
+                <SecondaryButton
+                  label="Close"
+                  onPress={() => setSelectedTopicAlert(null)}
+                  style={{ height: 44 }}
+                />
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* ── Filters Bottom Sheet Modal ── */}
+      <Modal
+        visible={isFilterSheetVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsFilterSheetVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: Spacing.lg,
+              borderWidth: 1,
+              borderColor: Colors.border,
+              maxHeight: '80%',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -4 },
+              shadowOpacity: 0.1,
+              shadowRadius: 10,
+              elevation: 12,
+            }}
+          >
+            {/* Header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <SlidersHorizontal size={18} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
+                  Filters
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsFilterSheetVisible(false)}
+                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={20} color={Colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.md, paddingBottom: Spacing.xs }}>
+              {/* Subject Filter */}
+              <View>
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Subject
+                </Text>
+                <View style={{ flexDirection: 'row', gap: Spacing.xs }}>
+                  {(['All', 'Mathematics', 'English'] as const).map((subject) => {
+                    const active = draftSubject === subject;
+                    return (
+                      <TouchableOpacity
+                        key={subject}
+                        onPress={() => setDraftSubject(subject)}
+                        activeOpacity={0.75}
+                        style={{
+                          flex: 1,
+                          minHeight: 44,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: Radius.full,
+                          backgroundColor: active ? 'rgba(17,66,142,0.12)' : Colors.bgInput,
+                          borderWidth: 1,
+                          borderColor: active ? Colors.accentPrimary : Colors.border,
+                          paddingHorizontal: Spacing.xs,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: active ? Fonts.bodyBold : Fonts.body,
+                            fontSize: FontSizes.xs,
+                            color: active ? Colors.accentPrimary : Colors.textMuted,
+                          }}
+                        >
+                          {subject === 'All' ? 'All subjects' : subject}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Grade Level Filter */}
+              <View>
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Grade
+                </Text>
+                <View style={{ flexDirection: 'row', gap: Spacing.xs }}>
+                  {(['All', '4', '5', '6'] as const).map((gr) => {
+                    const active = draftGrade === gr;
+                    const label = gr === 'All' ? 'All grades' : `Grade ${gr}`;
+                    return (
+                      <TouchableOpacity
+                        key={gr}
+                        onPress={() => setDraftGrade(gr)}
+                        activeOpacity={0.75}
+                        style={{
+                          flex: 1,
+                          minHeight: 44,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: Radius.full,
+                          backgroundColor: active ? 'rgba(17,66,142,0.12)' : Colors.bgInput,
+                          borderWidth: 1,
+                          borderColor: active ? Colors.accentPrimary : Colors.border,
+                          paddingHorizontal: Spacing.xs,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: active ? Fonts.bodyBold : Fonts.body,
+                            fontSize: 11,
+                            color: active ? Colors.accentPrimary : Colors.textMuted,
+                          }}
+                        >
+                          {label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Section Filter */}
+              <View>
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Section
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: Spacing.xs, paddingBottom: 4 }}
+                >
+                  {['All', ...uniqueSections, 'No Section'].map((sec) => {
+                    const active = draftSection === sec;
+                    const label = sec === 'All' ? 'All sections' : sec === 'No Section' ? 'No section' : sec;
+                    return (
+                      <TouchableOpacity
+                        key={sec}
+                        onPress={() => setDraftSection(sec)}
+                        activeOpacity={0.75}
+                        style={{
+                          minHeight: 44,
+                          paddingHorizontal: Spacing.md,
+                          borderRadius: Radius.full,
+                          backgroundColor: active ? 'rgba(17,66,142,0.12)' : Colors.bgInput,
+                          borderWidth: 1,
+                          borderColor: active ? Colors.accentPrimary : Colors.border,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: active ? Fonts.bodyBold : Fonts.body,
+                            fontSize: FontSizes.xs,
+                            color: active ? Colors.accentPrimary : Colors.textMuted,
+                          }}
+                        >
+                          {label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </ScrollView>
+
+            {/* Action Buttons Row */}
+            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.lg, paddingTop: Spacing.xs }}>
+              <View style={{ flex: 1 }}>
+                <SecondaryButton
+                  label="Reset"
+                  onPress={handleResetFilters}
+                  style={{ height: 44 }}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <PrimaryButton
+                  label="Apply"
+                  onPress={handleApplyFilters}
+                  style={{ height: 44 }}
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

@@ -108,6 +108,64 @@ describe('Teacher Screens', () => {
     expect(stringified).toContain('item');
   });
 
+  test('TeacherDashboardScreen should render uncluttered Console with search, Filter button, and Diagnostic alerts subtitle', async () => {
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<TeacherDashboardScreen />);
+    });
+
+    const stringified = JSON.stringify(root.toJSON());
+    expect(stringified).toContain('Search student or topic');
+    expect(stringified).toContain('Filter');
+    expect(stringified).toContain('Diagnostic alerts');
+    expect(stringified).toContain('topics need attention');
+    expect(stringified).toContain('Student telemetry');
+  });
+
+  test('TeacherDashboardScreen in student mode should paginate recent results and allow collapsing with See less', async () => {
+    const originalUser = mockState.currentUser;
+    const originalProgress = mockState.studentProgress;
+    mockState.currentUser = { name: 'Student Test', role: 'student' };
+    (mockState as any).studentProgress = Array.from({ length: 12 }, (_, i) => ({
+      quizId: `quiz-${i + 1}`,
+      score: 4,
+      totalQuestions: 5,
+      date: new Date().toISOString(),
+      topic: 'Fractions',
+    }));
+
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<TeacherDashboardScreen />);
+    });
+
+    let stringified = JSON.stringify(root.toJSON());
+    expect(stringified).toContain('See more (7 remaining)');
+
+    // Find and press "See more"
+    const seeMoreBtn = root.root.findByProps({ accessibilityLabel: 'See more (7 remaining)' });
+    await act(async () => {
+      seeMoreBtn.props.onPress();
+    });
+
+    stringified = JSON.stringify(root.toJSON());
+    // Both See less and See more should be available now!
+    expect(stringified).toContain('See less');
+    expect(stringified).toContain('See more (2 remaining)');
+
+    // Press "See less" to collapse back to 5
+    const seeLessBtn = root.root.findByProps({ accessibilityLabel: 'See less' });
+    await act(async () => {
+      seeLessBtn.props.onPress();
+    });
+
+    stringified = JSON.stringify(root.toJSON());
+    expect(stringified).toContain('See more (7 remaining)');
+
+    mockState.currentUser = originalUser;
+    mockState.studentProgress = originalProgress;
+  });
+
   test('TeacherSettingsScreen should render saved reports and handle actions', async () => {
     let root: any;
     await act(async () => {

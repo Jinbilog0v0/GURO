@@ -191,13 +191,16 @@ export function TeacherLessonBuilderScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Text style={styles.screenTitle}>Manual Lesson Builder</Text>
-              <Text style={styles.screenSubtitle}>Create Lesson Manually</Text>
-            </View>
-            <View style={styles.headerRight}>
-              <Badge label="Teacher" variant="indigo" style={styles.roleBadge} />
-              <SyncBadge />
+            <View style={styles.headerAccentLine} />
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
+              <View style={styles.headerLeft}>
+                <Text style={styles.screenTitle}>Manual Lesson Builder</Text>
+                <Text style={styles.screenSubtitle}>Create Lesson Manually</Text>
+              </View>
+              <View style={styles.headerRight}>
+                <Badge label="Teacher" variant="indigo" style={styles.roleBadge} />
+                <SyncBadge />
+              </View>
             </View>
           </View>
 

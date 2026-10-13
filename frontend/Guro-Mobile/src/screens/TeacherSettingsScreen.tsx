@@ -39,6 +39,8 @@ import {
   History,
   CheckCircle2,
   Calendar,
+  Sun,
+  Moon,
 } from 'lucide-react-native';
 
 export function TeacherSettingsScreen() {
@@ -47,6 +49,8 @@ export function TeacherSettingsScreen() {
   const addLog = useAppStore((state) => state.addLog);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const clearLogs = useAppStore((state) => state.clearLogs);
+  const themeMode = useAppStore((state) => state.themeMode);
+  const setThemeMode = useAppStore((state) => state.setThemeMode);
 
   const [fullHistoryVisible, setFullHistoryVisible] = useState(false);
 
@@ -471,13 +475,16 @@ export function TeacherSettingsScreen() {
       >
         {/* ── Header ── */}
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.screenTitle}>Settings & Diagnostics</Text>
-            <Text style={styles.screenSubtitle}>Configure endpoints and file reports</Text>
-          </View>
-          <View style={styles.headerRight}>
-            <Badge label="Teacher" variant="indigo" style={styles.roleBadge} />
-            <SyncBadge />
+          <View style={styles.headerAccentLine} />
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.screenTitle}>Settings & Diagnostics</Text>
+              <Text style={styles.screenSubtitle}>Configure endpoints and file reports</Text>
+            </View>
+            <View style={styles.headerRight}>
+              <Badge label="Teacher" variant="indigo" style={styles.roleBadge} />
+              <SyncBadge />
+            </View>
           </View>
         </View>
 
@@ -894,6 +901,88 @@ export function TeacherSettingsScreen() {
               style={{ marginBottom: Spacing.md }}
             />
           )}
+        </GlassCard>
+
+        {/* ── Appearance & Theme ── */}
+        <GlassCard style={styles.section}>
+          <SectionHeader
+            title={
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                <Moon size={20} color={Colors.textMain} />
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
+                  Appearance & Theme
+                </Text>
+              </View>
+            }
+            subtitle="Customize interface theme display mode"
+          />
+          <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+            <TouchableOpacity
+              onPress={() => {
+                setThemeMode('light');
+                toast.success('Switched to light mode');
+              }}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Light Mode"
+              style={{
+                flex: 1,
+                minHeight: 52,
+                paddingVertical: Spacing.sm,
+                paddingHorizontal: Spacing.md,
+                borderRadius: Radius.md,
+                backgroundColor: themeMode === 'light' ? 'rgba(17,66,142,0.08)' : Colors.bgInput,
+                borderWidth: 2,
+                borderColor: themeMode === 'light' ? Colors.accentPrimary : Colors.border,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+            >
+              <Sun size={18} color={themeMode === 'light' ? Colors.accentPrimary : Colors.textMuted} />
+              <Text style={{
+                fontFamily: themeMode === 'light' ? Fonts.bodyBold : Fonts.bodyMedium,
+                fontSize: FontSizes.sm,
+                color: themeMode === 'light' ? Colors.accentPrimary : Colors.textMain,
+              }}>
+                Light Mode
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setThemeMode('dark');
+                toast.success('Switched to dark mode');
+              }}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Dark Mode"
+              style={{
+                flex: 1,
+                minHeight: 52,
+                paddingVertical: Spacing.sm,
+                paddingHorizontal: Spacing.md,
+                borderRadius: Radius.md,
+                backgroundColor: themeMode === 'dark' ? 'rgba(17,66,142,0.08)' : Colors.bgInput,
+                borderWidth: 2,
+                borderColor: themeMode === 'dark' ? Colors.accentPrimary : Colors.border,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+            >
+              <Moon size={18} color={themeMode === 'dark' ? Colors.accentPrimary : Colors.textMuted} />
+              <Text style={{
+                fontFamily: themeMode === 'dark' ? Fonts.bodyBold : Fonts.bodyMedium,
+                fontSize: FontSizes.sm,
+                color: themeMode === 'dark' ? Colors.accentPrimary : Colors.textMain,
+              }}>
+                Dark Mode
+              </Text>
+            </TouchableOpacity>
+          </View>
         </GlassCard>
 
         {/* ── Activity History ── */}
