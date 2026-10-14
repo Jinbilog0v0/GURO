@@ -41,6 +41,13 @@ import {
   Folder,
   Save,
   Search,
+  Trash2,
+  ClipboardList,
+  Target,
+  Shield,
+  Hourglass,
+  Lock,
+  Globe,
 } from 'lucide-react';
 
 interface MobileAppShowcaseProps {
@@ -100,8 +107,16 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
   // Copy code feedback
   const [codeCopied, setCodeCopied] = useState(false);
 
-  // Screen time limit state (Parent)
-  const [screenTimeLimit, setScreenTimeLimit] = useState(60);
+
+  // Parent Experience State (Matches Mobile Parent Explorer)
+  const [parentStudentName, setParentStudentName] = useState('Neal Jean Claro');
+  const [parentAccessCode, setParentAccessCode] = useState('146709');
+  const [parentSubTab, setParentSubTab] = useState<'overview' | 'report' | 'milestones'>('overview');
+  const [parentScreenTimeLimit, setParentScreenTimeLimit] = useState<number>(0);
+  const [parentMathGate, setParentMathGate] = useState(false);
+  const [parentPriorityTopic, setParentPriorityTopic] = useState('');
+  const [parentServerUrl, setParentServerUrl] = useState('https://neoguro.app');
+  const [parentSyncSuccess, setParentSyncSuccess] = useState(false);
 
   // Teacher Experience State (Matches Mobile Teacher Console)
   const [teacherSubjectFilter, setTeacherSubjectFilter] = useState<'All Subjects' | 'Mathematics' | 'English'>('All Subjects');
@@ -137,6 +152,14 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
     setTeacherGradeFilter('All Grades');
     setTeacherLessonSearch('');
     setExpandedTeacherTopics({ fractions: false, decimals: false, mult: false });
+    setParentStudentName('Neal Jean Claro');
+    setParentAccessCode('146709');
+    setParentSubTab('overview');
+    setParentScreenTimeLimit(0);
+    setParentMathGate(false);
+    setParentPriorityTopic('');
+    setParentServerUrl('https://neoguro.app');
+    setParentSyncSuccess(false);
   };
 
   const sampleSlides = [
@@ -1519,54 +1542,388 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                 )}
 
                 {/* ════════════════════════ PARENT TABS ════════════════════════ */}
+                {/* 1. PARENT EXPLORER / CHILD GROWTH */}
                 {selectedRole === 'parent' && parentTab === 'home' && (
                   <div className="flex flex-col gap-3 animate-in fade-in duration-200">
-                    <div className="p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col gap-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[var(--text-main)]">Linked Child</span>
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                          Connected
-                        </span>
-                      </div>
-                      <h4 className="text-sm font-extrabold text-[var(--text-main)]">Juan Dela Cruz (Grade 4)</h4>
-                      <div className="flex items-center justify-between text-xs text-[var(--text-muted)] pt-1 border-t border-[var(--border-color)]">
-                        <span>Today's Screen Time:</span>
-                        <span className="font-bold text-[var(--text-main)]">38 / {screenTimeLimit} mins</span>
+                    {/* Top Header Card */}
+                    <div className="relative rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-[#11428E]" />
+                      <div className="flex items-start justify-between gap-2 mt-0.5">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className="text-sm font-extrabold text-[var(--text-main)] tracking-tight">
+                              GURO Parent Explorer
+                            </h4>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#11428E]/10 border border-[#11428E]/20 text-[#11428E] dark:text-sky-300 text-[9px] font-bold">
+                              <Calendar size={10} />
+                              <span>S.Y. 2026-2027 • Quarter 1</span>
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-tight">
+                            Guardian Oversight &amp; Growth Terminal
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                            <span className="size-1.5 rounded-full bg-emerald-500" />
+                            Connected
+                          </span>
+                          <button
+                            onClick={() => setParentTab('limits')}
+                            className="size-7 rounded-full bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] shadow-xs transition-colors cursor-pointer"
+                            title="Local Device Settings"
+                          >
+                            <Settings size={13} />
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 flex flex-col gap-1.5 text-xs">
-                      <div className="flex items-center gap-1.5 font-bold">
-                        <Clock className="size-3.5 text-amber-500" />
-                        <span>Daily Study Regulation</span>
+                    {/* Parent Progress Explorer Card */}
+                    <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-3 shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <UserIcon size={16} className="text-[#A01322]" />
+                        <div>
+                          <h5 className="text-xs font-black text-[var(--text-main)]">Parent Progress Explorer</h5>
+                          <p className="text-[10px] text-[var(--text-muted)]">Query child performance history from server</p>
+                        </div>
                       </div>
-                      <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-300">
-                        Set daily screen limits to ensure healthy learning habits.
-                      </p>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-extrabold uppercase text-[var(--text-muted)]">
+                          CHILD'S NAME (LAST NAME, FIRST NAME) OR STUDENT ID
+                        </label>
+                        <input
+                          type="text"
+                          value={parentStudentName}
+                          onChange={(e) => setParentStudentName(e.target.value)}
+                          placeholder="e.g. Cruz, Juan or Student ID"
+                          className="w-full text-xs py-2 px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] font-medium focus:outline-hidden"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-extrabold uppercase text-[var(--text-muted)]">
+                          6-DIGIT PARENT ACCESS CODE
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={parentAccessCode}
+                          onChange={(e) => setParentAccessCode(e.target.value)}
+                          placeholder="e.g. 123456"
+                          className="w-full text-xs py-2 px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] font-mono font-medium focus:outline-hidden"
+                        />
+                      </div>
+
+                      <div className="flex gap-2 items-center">
+                        <button
+                          onClick={() => {
+                            // simulated report search
+                          }}
+                          className="flex-1 py-2 px-3 rounded-xl bg-[#11428E] hover:bg-[#1C5BC0] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                        >
+                          <Search size={14} />
+                          <span>Search Reports</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setParentStudentName('');
+                            setParentAccessCode('');
+                          }}
+                          className="size-9 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-[#A01322] border border-[#A01322]/20 flex items-center justify-center transition-colors cursor-pointer"
+                          title="Clear inputs"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Stats Row (3 Columns) */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="p-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center gap-1 text-center shadow-2xs">
+                        <ClipboardList size={16} className="text-[var(--text-muted)]" />
+                        <span className="text-base font-black text-[var(--text-main)] leading-none">1</span>
+                        <span className="text-[8px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">LESSONS COMPLETED</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center gap-1 text-center shadow-2xs">
+                        <Target size={16} className="text-emerald-500" />
+                        <span className="text-base font-black text-emerald-600 dark:text-emerald-400 leading-none">100%</span>
+                        <span className="text-[8px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">AVERAGE ACCURACY</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center justify-center gap-1 text-center shadow-2xs">
+                        <BarChart2 size={16} className="text-emerald-500" />
+                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 leading-none mt-1">Advanced</span>
+                        <span className="text-[8px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">STATUS</span>
+                      </div>
+                    </div>
+
+                    {/* Segmented Sub-Tabs */}
+                    <div className="p-1 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center gap-1">
+                      {[
+                        { id: 'overview', label: 'Activity Heatmap' },
+                        { id: 'report', label: 'Tutor Report' },
+                        { id: 'milestones', label: 'Badge Case' },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => setParentSubTab(t.id as 'overview' | 'report' | 'milestones')}
+                          className={`flex-1 py-1 rounded-lg text-[10px] font-bold text-center transition-all cursor-pointer ${
+                            parentSubTab === t.id
+                              ? 'bg-[#11428E]/10 text-[#11428E] dark:text-sky-300 border border-[#11428E]/20 shadow-2xs'
+                              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                          }`}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Activity Heatmap Card */}
+                    <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-3 shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={16} className="text-[#11428E] dark:text-sky-300" />
+                        <div>
+                          <h5 className="text-xs font-black text-[var(--text-main)]">Activity Heatmap</h5>
+                          <p className="text-[10px] text-[var(--text-muted)]">Daily assessment completion intensity (Past 28 Days)</p>
+                        </div>
+                      </div>
+
+                      {/* 4x7 Dots Grid */}
+                      <div className="flex flex-col items-center my-1">
+                        <div className="grid grid-cols-7 gap-2">
+                          {Array.from({ length: 28 }).map((_, i) => {
+                            const isFilled = i === 27; // today completed
+                            return (
+                              <div
+                                key={i}
+                                className={`size-5 rounded-md border transition-colors ${
+                                  isFilled
+                                    ? 'bg-[#11428E] border-[#11428E] shadow-2xs'
+                                    : 'bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60'
+                                }`}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-1.5 text-[9px] text-[var(--text-muted)]">
+                        <span>Less</span>
+                        <div className="size-2.5 rounded-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
+                        <div className="size-2.5 rounded-xs bg-blue-300 dark:bg-blue-800" />
+                        <div className="size-2.5 rounded-xs bg-blue-500" />
+                        <div className="size-2.5 rounded-xs bg-[#11428E]" />
+                        <span>More</span>
+                      </div>
+                    </div>
+
+                    {/* Linked Child & Daily Regulation Status Badge Card */}
+                    <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <Clock className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <div className="flex flex-col">
+                          <span className="font-bold text-[11px] leading-tight text-amber-800 dark:text-amber-300">
+                            Daily Study Regulation
+                          </span>
+                          <span className="text-[10px] text-amber-700/80 dark:text-amber-400/80">
+                            Linked Child: <strong className="font-bold">{parentStudentName || 'Neal Jean Claro'}</strong>
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setParentTab('limits')}
+                        className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold shrink-0 transition-colors cursor-pointer"
+                      >
+                        Time Guard
+                      </button>
                     </div>
                   </div>
                 )}
 
+                {/* 2. LOCAL DEVICE SETTINGS / TIME GUARD */}
                 {selectedRole === 'parent' && parentTab === 'limits' && (
                   <div className="flex flex-col gap-3 animate-in fade-in duration-200">
-                    <span className="text-xs font-black text-[var(--text-main)]">Screen Time Guard</span>
-                    <div className="p-4 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center gap-3">
-                      <span className="text-xs font-bold text-[var(--text-muted)]">Daily Max Allowed</span>
-                      <span className="text-2xl font-black text-amber-500">{screenTimeLimit} Mins</span>
-                      <div className="flex gap-3">
+                    {/* Top Header Card */}
+                    <div className="relative rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-[#11428E]" />
+                      <div className="flex items-start justify-between gap-2 mt-0.5">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className="text-sm font-extrabold text-[var(--text-main)] tracking-tight">
+                              GURO Parent Explorer
+                            </h4>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#11428E]/10 border border-[#11428E]/20 text-[#11428E] dark:text-sky-300 text-[9px] font-bold">
+                              <Calendar size={10} />
+                              <span>S.Y. 2026-2027 • Quarter 1</span>
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-tight">
+                            Guardian Oversight &amp; Growth Terminal
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                            <span className="size-1.5 rounded-full bg-emerald-500" />
+                            Connected
+                          </span>
+                          <button
+                            onClick={() => setParentTab('home')}
+                            className="size-7 rounded-full bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] shadow-xs transition-colors cursor-pointer"
+                            title="Child Growth Explorer"
+                          >
+                            <Users size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section Header: Local Device Settings */}
+                    <div className="flex items-center gap-2 px-1">
+                      <Settings size={16} className="text-[var(--text-main)]" />
+                      <div>
+                        <h5 className="text-xs font-black text-[var(--text-main)]">Local Device Settings</h5>
+                        <p className="text-[10px] text-[var(--text-muted)]">Configure controls &amp; PIN for this device</p>
+                      </div>
+                    </div>
+
+                    {/* Card 1: Parental Controls / Screen Time Guard */}
+                    <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-3 shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <Shield size={16} className="text-[#11428E] dark:text-sky-300" />
+                        <div>
+                          <h5 className="text-xs font-black text-[var(--text-main)]">Parental Controls</h5>
+                          <p className="text-[10px] text-[var(--text-muted)]">Screen time, gates &amp; language</p>
+                        </div>
+                      </div>
+
+                      {/* Screen Time Limit info */}
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <Hourglass size={13} className="text-slate-400" />
+                        <span className="text-[11px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider">
+                          DAILY SCREEN TIME LIMIT:{' '}
+                          <span className="text-[var(--text-main)]">
+                            {parentScreenTimeLimit === 0 ? 'UNLIMITED' : `${parentScreenTimeLimit} MIN`}
+                          </span>
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs -mt-1 text-[var(--text-muted)]">
+                        <span className="text-[11px]">
+                          Used today: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">0</strong> / {parentScreenTimeLimit === 0 ? '∞' : parentScreenTimeLimit} min
+                        </span>
+                        {parentScreenTimeLimit > 0 && (
+                          <button
+                            onClick={() => setParentScreenTimeLimit(0)}
+                            className="text-[10px] text-[#11428E] dark:text-sky-300 font-bold hover:underline cursor-pointer"
+                          >
+                            Reset
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Screen Time Preset Buttons */}
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {[0, 15, 30, 45, 60].map((mins) => {
+                          const isActive = parentScreenTimeLimit === mins;
+                          return (
+                            <button
+                              key={mins}
+                              onClick={() => {
+                                setParentScreenTimeLimit(mins);
+                              }}
+                              className={`py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                                isActive
+                                  ? 'bg-[#11428E] border-[#11428E] text-white shadow-xs'
+                                  : 'bg-[var(--bg-main)]/50 border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                              }`}
+                            >
+                              {mins === 0 ? 'Off' : `${mins}m`}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Math Progression Gate Toggle Row */}
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg-main)]/40 border border-[var(--border-color)]">
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <Lock size={13} className="text-slate-400" />
+                            <span className="text-xs font-bold text-[var(--text-main)]">Math Progression Gate</span>
+                          </div>
+                          <span className="text-[10px] text-[var(--text-muted)]">Lock English until Math scores &ge; 80%</span>
+                        </div>
                         <button
-                          onClick={() => setScreenTimeLimit(prev => Math.max(15, prev - 15))}
-                          className="px-3 py-1 rounded-xl border border-[var(--border-color)] text-xs font-bold cursor-pointer"
+                          onClick={() => setParentMathGate(!parentMathGate)}
+                          className={`w-10 h-6 rounded-full transition-colors relative cursor-pointer ${
+                            parentMathGate ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
+                          }`}
                         >
-                          - 15 mins
-                        </button>
-                        <button
-                          onClick={() => setScreenTimeLimit(prev => Math.min(180, prev + 15))}
-                          className="px-3 py-1 rounded-xl bg-amber-500 text-white text-xs font-bold cursor-pointer"
-                        >
-                          + 15 mins
+                          <div
+                            className={`size-4 rounded-full bg-white shadow-md transition-transform absolute top-1 ${
+                              parentMathGate ? 'right-1' : 'left-1'
+                            }`}
+                          />
                         </button>
                       </div>
+
+                      {/* Priority Target Topic */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-extrabold uppercase text-[var(--text-muted)]">
+                          PRIORITY TARGET TOPIC
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Fractions (leave blank for none)"
+                          value={parentPriorityTopic}
+                          onChange={(e) => setParentPriorityTopic(e.target.value)}
+                          className="w-full text-xs py-2 px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-hidden"
+                        />
+                      </div>
+
+                      <div className="sr-only">
+                        <span>Screen Time Guard</span>
+                      </div>
+                    </div>
+
+                    {/* Card 2: Cloud Sync */}
+                    <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-3 shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <Globe size={16} className="text-[#11428E] dark:text-sky-300" />
+                        <div>
+                          <h5 className="text-xs font-black text-[var(--text-main)]">Cloud Sync</h5>
+                          <p className="text-[10px] text-[var(--text-muted)]">Upload progress to teacher's server</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-extrabold uppercase text-[var(--text-muted)]">
+                          SERVER URL
+                        </label>
+                        <input
+                          type="text"
+                          value={parentServerUrl}
+                          onChange={(e) => setParentServerUrl(e.target.value)}
+                          className="w-full text-xs py-2 px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] font-mono focus:outline-hidden"
+                        />
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setParentSyncSuccess(true);
+                          setTimeout(() => setParentSyncSuccess(false), 2000);
+                        }}
+                        className="w-full py-2.5 px-3 rounded-xl bg-[#11428E] hover:bg-[#1C5BC0] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                      >
+                        {parentSyncSuccess ? (
+                          <>
+                            <CheckCircle2 size={14} className="text-emerald-400" />
+                            <span>Synced Successfully!</span>
+                          </>
+                        ) : (
+                          <span>Sync Now (0 staged)</span>
+                        )}
+                      </button>
                     </div>
                   </div>
                 )}

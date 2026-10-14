@@ -51,3 +51,13 @@ scripts/
 # Local build artifacts and manuscript generators
 build_clean_lxml/
 build_manuscript_abstract/
+
+# Root EAS ignore (scoped inside frontend/Guro-Mobile)
+/.easignore
+
+# Guides & deployment scripts
+GURO_MOBILE_BUILD_GUIDE.md
+MOBILE_ADAPTIVE_UI_GUIDE.md
+deploy.sh
+set-env.sh
+
