@@ -9,6 +9,7 @@ import {
   Alert,
   Modal,
   TextInput,
+  LayoutAnimation,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -696,6 +697,7 @@ export function TeacherDashboardScreen() {
   };
 
   const toggleTopic = (key: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedTopics((prev) => ({
       ...prev,
       [key]: !prev[key],
@@ -821,6 +823,7 @@ export function TeacherDashboardScreen() {
   )).sort();
 
   const toggleCurriculumTopic = (key: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedCurriculumTopics((prev) => ({
       ...prev,
       [key]: !prev[key],
@@ -1309,15 +1312,20 @@ export function TeacherDashboardScreen() {
                                   key={topicName}
                                   style={{
                                     borderRadius: Radius.md,
-                                    backgroundColor: 'rgba(255,255,255,0.03)',
+                                    backgroundColor: '#FFFFFF',
                                     borderWidth: 1,
                                     borderColor: isExpanded ? Colors.accentPrimary : Colors.border,
                                     overflow: 'hidden',
+                                    elevation: isExpanded ? 2 : 1,
+                                    shadowColor: isExpanded ? Colors.accentPrimary : '#000',
+                                    shadowOffset: { width: 0, height: 1 },
+                                    shadowOpacity: isExpanded ? 0.08 : 0.04,
+                                    shadowRadius: 3,
                                   }}
                                 >
                                   {/* Topic Card Header */}
                                   <TouchableOpacity
-                                    activeOpacity={0.7}
+                                    activeOpacity={0.85}
                                     onPress={() => toggleTopic(topicKey)}
                                     style={{
                                       flexDirection: 'row',
@@ -1326,7 +1334,7 @@ export function TeacherDashboardScreen() {
                                       paddingHorizontal: Spacing.md,
                                       paddingVertical: Spacing.sm,
                                       minHeight: 44,
-                                      backgroundColor: isExpanded ? 'rgba(17,66,142,0.05)' : 'transparent',
+                                      backgroundColor: isExpanded ? 'rgba(17,66,142,0.05)' : '#FFFFFF',
                                     }}
                                   >
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flex: 1, marginRight: Spacing.xs }}>
@@ -1351,15 +1359,15 @@ export function TeacherDashboardScreen() {
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
                                       <View
                                         style={{
-                                          backgroundColor: 'rgba(255,255,255,0.06)',
-                                          borderColor: Colors.border,
+                                          backgroundColor: isExpanded ? 'rgba(17,66,142,0.08)' : '#F1F5F9',
+                                          borderColor: isExpanded ? 'rgba(17,66,142,0.2)' : Colors.border,
                                           borderWidth: 1,
                                           paddingHorizontal: 7,
                                           paddingVertical: 2,
                                           borderRadius: Radius.full,
                                         }}
                                       >
-                                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.textMuted }}>
+                                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: isExpanded ? Colors.accentPrimary : Colors.textMuted }}>
                                           {qCount} {qCount === 1 ? 'item' : 'items'}
                                         </Text>
                                       </View>
@@ -1371,9 +1379,9 @@ export function TeacherDashboardScreen() {
                                     <View
                                       style={{
                                         borderTopWidth: 1,
-                                        borderTopColor: Colors.border,
+                                        borderTopColor: 'rgba(17,66,142,0.12)',
                                         padding: Spacing.md,
-                                        backgroundColor: 'rgba(0,0,0,0.15)',
+                                        backgroundColor: '#F8FAFC',
                                         gap: Spacing.sm,
                                       }}
                                     >
@@ -1385,7 +1393,7 @@ export function TeacherDashboardScreen() {
                                           justifyContent: 'space-between',
                                           flexWrap: 'wrap',
                                           gap: Spacing.xs,
-                                          backgroundColor: 'rgba(255,255,255,0.02)',
+                                          backgroundColor: '#FFFFFF',
                                           padding: Spacing.xs,
                                           borderRadius: Radius.sm,
                                           borderWidth: 1,
@@ -1465,9 +1473,9 @@ export function TeacherDashboardScreen() {
                                       {topicNode?.studyContent && (
                                         <View
                                           style={{
-                                            backgroundColor: 'rgba(6,182,212,0.04)',
+                                            backgroundColor: '#F0FDFA',
                                             borderWidth: 1,
-                                            borderColor: 'rgba(6,182,212,0.18)',
+                                            borderColor: 'rgba(6,182,212,0.25)',
                                             borderRadius: Radius.sm,
                                             padding: Spacing.sm,
                                             gap: 4,
@@ -1533,12 +1541,17 @@ export function TeacherDashboardScreen() {
                                             <View
                                               key={q.id || qIdx}
                                               style={{
-                                                backgroundColor: 'rgba(255,255,255,0.02)',
+                                                backgroundColor: '#FFFFFF',
                                                 borderWidth: 1,
                                                 borderColor: Colors.border,
                                                 borderRadius: Radius.sm,
                                                 padding: Spacing.sm,
                                                 gap: 6,
+                                                elevation: 1,
+                                                shadowColor: '#000',
+                                                shadowOffset: { width: 0, height: 1 },
+                                                shadowOpacity: 0.04,
+                                                shadowRadius: 2,
                                               }}
                                             >
                                               {/* Item Header */}
@@ -1593,9 +1606,9 @@ export function TeacherDashboardScreen() {
                                                           paddingHorizontal: 8,
                                                           paddingVertical: 4,
                                                           borderRadius: 4,
-                                                          backgroundColor: isCorrect ? 'rgba(22,163,74,0.08)' : 'rgba(255,255,255,0.02)',
+                                                          backgroundColor: isCorrect ? 'rgba(22,163,74,0.08)' : '#F8FAFC',
                                                           borderWidth: 1,
-                                                          borderColor: isCorrect ? 'rgba(22,163,74,0.3)' : 'transparent',
+                                                          borderColor: isCorrect ? 'rgba(22,163,74,0.3)' : Colors.border,
                                                           gap: 6,
                                                         }}
                                                       >
@@ -1648,7 +1661,7 @@ export function TeacherDashboardScreen() {
                                               {Boolean(q.feedback) && (
                                                 <View
                                                   style={{
-                                                    backgroundColor: 'rgba(255,255,255,0.03)',
+                                                    backgroundColor: '#F1F5F9',
                                                     borderWidth: 1,
                                                     borderColor: Colors.border,
                                                     borderRadius: 4,
@@ -1975,7 +1988,7 @@ export function TeacherDashboardScreen() {
                               }}
                             >
                               <TouchableOpacity
-                                activeOpacity={0.7}
+                                activeOpacity={0.85}
                                 onPress={() => toggleCurriculumTopic(item.key)}
                                 style={{
                                   flexDirection: 'row',
@@ -2053,9 +2066,9 @@ export function TeacherDashboardScreen() {
                                 <View
                                   style={{
                                     borderTopWidth: 1,
-                                    borderTopColor: Colors.border,
+                                    borderTopColor: 'rgba(17,66,142,0.12)',
                                     padding: Spacing.sm,
-                                    backgroundColor: 'rgba(0,0,0,0.1)',
+                                    backgroundColor: '#F8FAFC',
                                     flexDirection: 'row',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
