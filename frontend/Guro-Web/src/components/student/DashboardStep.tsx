@@ -247,7 +247,7 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
                                         Student Dashboard
                                     </span>
                                 </div>
-                                <h1 className="text-2xl md:text-3xl font-black mt-2">
+                                <h1 className="text-2xl md:text-3xl font-black mt-2 text-white dark:text-black">
                                     Welcome back, {userName}!
                                 </h1>
                             </div>
