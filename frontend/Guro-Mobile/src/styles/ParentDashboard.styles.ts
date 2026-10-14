@@ -11,20 +11,33 @@ export const styles = StyleSheet.create({
 
   // Header
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
+    paddingTop: Spacing.md + 4,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    backgroundColor: Colors.bgSidebar,
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 10,
+  },
+  headerAccentLine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: Colors.accentPrimary,
   },
   headerTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSizes.xl,
+    fontSize: FontSizes.lg,
     color: Colors.textMain,
-    letterSpacing: LetterSpacing.tight,
+    letterSpacing: -0.5,
   },
   headerSub: {
     fontFamily: Fonts.body,
@@ -33,9 +46,16 @@ export const styles = StyleSheet.create({
     marginTop: 2,
   },
   headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
+    gap: 4,
+    flexShrink: 0,
+  },
+  roleBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
   },
   exitBtn: {
     backgroundColor: Colors.accentPrimaryDeep,
@@ -230,5 +250,35 @@ export const styles = StyleSheet.create({
   pinActions: {
     flexDirection: 'row',
     gap: Spacing.md,
+  },
+
+  // Bottom Tab Bar
+  bottomTabBar: {
+    flexDirection: 'row',
+    backgroundColor: Colors.bgSidebar,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabLabel: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSizes.xs,
+    marginTop: 2,
+  },
+  tabLabelActive: {
+    color: Colors.accentPrimary,
+    fontFamily: Fonts.bodyBold,
+  },
+  tabLabelInactive: {
+    color: Colors.textDark,
   },
 });

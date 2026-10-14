@@ -891,6 +891,58 @@ export function TeacherDashboardScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      {/* ── Header (Sticky, Full-Width Edge-to-Edge) ── */}
+      <View style={styles.header}>
+        <View style={styles.headerAccentLine} />
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            {isPinMode && (
+              <TouchableOpacity
+                onPress={() => navigation.replace('StudentDashboard')}
+                style={{
+                  alignSelf: 'flex-start',
+                  marginBottom: Spacing.xs,
+                  paddingHorizontal: Spacing.sm,
+                  paddingVertical: Spacing.xs,
+                  backgroundColor: 'rgba(255,255,255,0.06)',
+                  borderRadius: Radius.sm,
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                }}
+                accessibilityLabel="Return to student dashboard"
+              >
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMain }}>← Return</Text>
+              </TouchableOpacity>
+            )}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <Text style={styles.screenTitle}>{isPinMode ? 'GURO Teacher Evaluation' : 'GURO Teacher Console'}</Text>
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                backgroundColor: 'rgba(17,66,142,0.08)',
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: 'rgba(17,66,142,0.15)',
+              }}>
+                <Calendar size={11} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                  S.Y. {activeSchoolYear} • {activeTerm}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.screenSubtitle}>{isPinMode ? `Reviewing: ${formatStudentName(studentId)}` : 'Real-Time Classroom Telemetry & DepEd Reporting'}</Text>
+          </View>
+
+          <View style={styles.headerRight}>
+            <Badge label="Teacher" variant="indigo" style={styles.roleBadge} />
+            <SyncBadge />
+          </View>
+        </View>
+      </View>
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -904,58 +956,6 @@ export function TeacherDashboardScreen() {
           />
         }
       >
-        {/* ── Header ── */}
-        <View style={styles.header}>
-          <View style={styles.headerAccentLine} />
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              {isPinMode && (
-                <TouchableOpacity
-                  onPress={() => navigation.replace('StudentDashboard')}
-                  style={{
-                    alignSelf: 'flex-start',
-                    marginBottom: Spacing.xs,
-                    paddingHorizontal: Spacing.sm,
-                    paddingVertical: Spacing.xs,
-                    backgroundColor: 'rgba(255,255,255,0.06)',
-                    borderRadius: Radius.sm,
-                    borderWidth: 1,
-                    borderColor: Colors.border,
-                  }}
-                  accessibilityLabel="Return to student dashboard"
-                >
-                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMain }}>← Return</Text>
-                </TouchableOpacity>
-              )}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <Text style={styles.screenTitle}>{isPinMode ? 'GURO Teacher Evaluation' : 'GURO Teacher Console'}</Text>
-                <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  backgroundColor: 'rgba(17,66,142,0.08)',
-                  paddingHorizontal: 8,
-                  paddingVertical: 3,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: 'rgba(17,66,142,0.15)',
-                }}>
-                  <Calendar size={11} color={Colors.accentPrimary} />
-                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
-                    S.Y. {activeSchoolYear} • {activeTerm}
-                  </Text>
-                </View>
-              </View>
-              <Text style={styles.screenSubtitle}>{isPinMode ? `Reviewing: ${formatStudentName(studentId)}` : 'Real-Time Classroom Telemetry & DepEd Reporting'}</Text>
-            </View>
-
-            <View style={styles.headerRight}>
-              <Badge label="Teacher" variant="indigo" style={styles.roleBadge} />
-              <SyncBadge />
-            </View>
-          </View>
-        </View>
-
         {isPinMode ? (
           <>
             <SectionHeader

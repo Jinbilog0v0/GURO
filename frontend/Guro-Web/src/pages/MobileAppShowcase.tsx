@@ -48,6 +48,8 @@ import {
   Hourglass,
   Lock,
   Globe,
+  Key,
+  LogOut,
 } from 'lucide-react';
 
 interface MobileAppShowcaseProps {
@@ -62,7 +64,7 @@ type SimulatedRole = 'student' | 'teacher' | 'parent';
 // Navigation types matching Mobile Navigators
 type StudentTab = 'home' | 'lessons' | 'progress' | 'me' | 'study' | 'quiz';
 type TeacherTab = 'console' | 'ingest' | 'builder' | 'settings';
-type ParentTab = 'home' | 'limits';
+type ParentTab = 'progress' | 'settings' | 'home' | 'limits';
 
 export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
   onBackToOverview,
@@ -86,7 +88,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
   const [selectedRole, setSelectedRole] = useState<SimulatedRole>('student');
   const [studentTab, setStudentTab] = useState<StudentTab>('home');
   const [teacherTab, setTeacherTab] = useState<TeacherTab>('console');
-  const [parentTab, setParentTab] = useState<ParentTab>('home');
+  const [parentTab, setParentTab] = useState<ParentTab>('progress');
   const [isSimulatedOnline, setIsSimulatedOnline] = useState(true);
   const [simulatedGrade, setSimulatedGrade] = useState<number>(4);
 
@@ -117,6 +119,8 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
   const [parentPriorityTopic, setParentPriorityTopic] = useState('');
   const [parentServerUrl, setParentServerUrl] = useState('https://neoguro.app');
   const [parentSyncSuccess, setParentSyncSuccess] = useState(false);
+  const [parentDeviceId, setParentDeviceId] = useState('SAMPLE-PARENT');
+  const [parentDeviceSaved, setParentDeviceSaved] = useState(false);
 
   // Teacher Experience State (Matches Mobile Teacher Console)
   const [teacherSubjectFilter, setTeacherSubjectFilter] = useState<'All Subjects' | 'Mathematics' | 'English'>('All Subjects');
@@ -139,7 +143,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
     setSelectedRole('student');
     setStudentTab('home');
     setTeacherTab('console');
-    setParentTab('home');
+    setParentTab('progress');
     setIsSimulatedOnline(true);
     setSimulatedGrade(4);
     setSelectedQuizAnswer(null);
@@ -387,10 +391,10 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
       )}
 
       {/* ── Main Showcase Workspace ── */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-0 sm:p-6 lg:p-6 flex flex-col lg:flex-row gap-0 lg:gap-8 items-center justify-center h-[calc(100dvh-3.5rem)] md:h-auto md:min-h-[calc(100vh-4rem)] overflow-hidden md:overflow-visible">
+      <div className="flex-1 w-full mx-auto p-0 sm:p-4 lg:p-6 flex flex-col lg:flex-row gap-4 lg:gap-6 items-center justify-center h-[calc(100dvh-3.5rem)] md:h-auto md:min-h-[calc(100vh-4rem)] overflow-hidden md:overflow-visible">
         
         {/* ── Left Column: Simulator Controls Dashboard (Hidden on Phone/Tablet screens) ── */}
-        <div className={`w-full lg:w-[360px] shrink-0 transition-all duration-300 ${
+        <div className={`w-full lg:w-[340px] shrink-0 transition-all duration-300 ${
           isConsoleCollapsed ? 'hidden' : 'hidden lg:flex flex-col gap-4'
         }`}>
           <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-4 sm:p-6 shadow-sm flex flex-col gap-4">
@@ -438,7 +442,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                           setSelectedRole(r.id as SimulatedRole);
                           if (r.id === 'student') setStudentTab('home');
                           if (r.id === 'teacher') setTeacherTab('console');
-                          if (r.id === 'parent') setParentTab('home');
+                          if (r.id === 'parent') setParentTab('progress');
                         }}
                         className={`flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
                           isActive
@@ -512,15 +516,15 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                 {selectedRole === 'parent' && (
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { id: 'home', label: 'Child Growth & Codes' },
-                      { id: 'limits', label: 'Screen Time Guard' },
+                      { id: 'progress', label: 'Child Progress' },
+                      { id: 'settings', label: 'Device Settings' },
                     ].map((tb) => (
                       <button
                         key={tb.id}
                         onClick={() => setParentTab(tb.id as ParentTab)}
                         className={`px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer truncate ${
-                          parentTab === tb.id
-                            ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold'
+                          (parentTab === tb.id || (tb.id === 'progress' && parentTab === 'home') || (tb.id === 'settings' && parentTab === 'limits'))
+                            ? 'border-[#11428E] bg-[#11428E]/10 text-[#11428E] dark:text-sky-300 font-bold'
                             : 'border-[var(--border-color)] bg-[var(--bg-main)]/50 text-[var(--text-muted)] hover:text-[var(--text-main)]'
                         }`}
                       >
@@ -595,10 +599,10 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
         </div>
 
         {/* ── Right Column: Smartphone Device Chassis Frame (Edge-to-Edge on Mobile, Phone Bezel on Desktop) ── */}
-        <div className="flex-1 w-full h-full flex flex-col items-center justify-center">
+        <div className="shrink-0 flex flex-col items-center justify-center">
           <div
             data-testid="phone-device-wrapper"
-            className="w-full mx-auto select-none relative transition-all duration-300 flex flex-col h-full max-h-[calc(100dvh-3.5rem)] md:h-[680px] lg:h-[min(760px,calc(100vh-6rem))] md:w-[375px] max-w-md rounded-none md:rounded-[50px] bg-transparent md:bg-slate-950 p-0 md:p-3.5 md:shadow-2xl md:ring-1 md:ring-slate-800/80 md:border-4 md:border-slate-700/60"
+            className="w-full select-none relative transition-all duration-300 flex flex-col h-full max-h-[calc(100dvh-3.5rem)] md:h-[680px] lg:h-[min(760px,calc(100vh-6rem))] md:w-[375px] max-w-md rounded-none md:rounded-[50px] bg-transparent md:bg-slate-950 p-0 md:p-3.5 md:shadow-2xl md:ring-1 md:ring-slate-800/80 md:border-4 md:border-slate-700/60"
           >
             {/* Dynamic Island / Speaker (Hidden on mobile devices, shown on desktop simulator) */}
             <div
@@ -1074,8 +1078,8 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                 {/* 1. TEACHER CONSOLE / OVERVIEW */}
                 {selectedRole === 'teacher' && teacherTab === 'console' && (
                   <div className="flex flex-col gap-3 animate-in fade-in duration-200">
-                    {/* Top Header Card (Exact Real Mobile Layout) */}
-                    <div className="relative rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
+                    {/* Top Header Card (Sticky, Full-Width Edge-to-Edge) */}
+                    <div className="relative sticky top-0 z-30 -mx-4 -mt-3 w-[calc(100%+2rem)] bg-[var(--bg-card)] border-b border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
                       {/* Top Blue Accent Line */}
                       <div className="absolute top-0 left-0 right-0 h-1 bg-[#11428E]" />
 
@@ -1280,8 +1284,8 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                 {/* 2. TEACHER AI INGEST */}
                 {selectedRole === 'teacher' && teacherTab === 'ingest' && (
                   <div className="flex flex-col gap-3 animate-in fade-in duration-200">
-                    {/* Header */}
-                    <div className="relative rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
+                    {/* Header (Sticky, Full-Width Edge-to-Edge) */}
+                    <div className="relative sticky top-0 z-30 -mx-4 -mt-3 w-[calc(100%+2rem)] bg-[var(--bg-card)] border-b border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
                       <div className="absolute top-0 left-0 right-0 h-1 bg-[#11428E]" />
                       <div className="flex items-start justify-between gap-2 mt-0.5">
                         <div className="flex-1 min-w-0">
@@ -1377,8 +1381,8 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                 {/* 3. TEACHER LESSON BUILDER */}
                 {selectedRole === 'teacher' && teacherTab === 'builder' && (
                   <div className="flex flex-col gap-3 animate-in fade-in duration-200">
-                    {/* Header */}
-                    <div className="relative rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
+                    {/* Header (Sticky, Full-Width Edge-to-Edge) */}
+                    <div className="relative sticky top-0 z-30 -mx-4 -mt-3 w-[calc(100%+2rem)] bg-[var(--bg-card)] border-b border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
                       <div className="absolute top-0 left-0 right-0 h-1 bg-[#11428E]" />
                       <div className="flex items-start justify-between gap-2 mt-0.5">
                         <div className="flex-1 min-w-0">
@@ -1471,8 +1475,8 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                 {/* 4. TEACHER SETTINGS & DIAGNOSTICS */}
                 {selectedRole === 'teacher' && teacherTab === 'settings' && (
                   <div className="flex flex-col gap-3 animate-in fade-in duration-200">
-                    {/* Header */}
-                    <div className="relative rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
+                    {/* Header (Sticky, Full-Width Edge-to-Edge) */}
+                    <div className="relative sticky top-0 z-30 -mx-4 -mt-3 w-[calc(100%+2rem)] bg-[var(--bg-card)] border-b border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
                       <div className="absolute top-0 left-0 right-0 h-1 bg-[#11428E]" />
                       <div className="flex items-start justify-between gap-2 mt-0.5">
                         <div className="flex-1 min-w-0">
@@ -1542,11 +1546,11 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                 )}
 
                 {/* ════════════════════════ PARENT TABS ════════════════════════ */}
-                {/* 1. PARENT EXPLORER / CHILD GROWTH */}
-                {selectedRole === 'parent' && parentTab === 'home' && (
+                {/* 1. CHILD PROGRESS & LEARNING */}
+                {selectedRole === 'parent' && (parentTab === 'progress' || parentTab === 'home') && (
                   <div className="flex flex-col gap-3 animate-in fade-in duration-200">
-                    {/* Top Header Card */}
-                    <div className="relative rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
+                    {/* Top Header Card (Sticky, Full-Width Edge-to-Edge) */}
+                    <div className="relative sticky top-0 z-30 -mx-4 -mt-3 w-[calc(100%+2rem)] bg-[var(--bg-card)] border-b border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
                       <div className="absolute top-0 left-0 right-0 h-1 bg-[#11428E]" />
                       <div className="flex items-start justify-between gap-2 mt-0.5">
                         <div className="flex-1 min-w-0">
@@ -1554,27 +1558,23 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                             <h4 className="text-sm font-extrabold text-[var(--text-main)] tracking-tight">
                               GURO Parent Explorer
                             </h4>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#11428E]/10 border border-[#11428E]/20 text-[#11428E] dark:text-sky-300 text-[9px] font-bold">
-                              <Calendar size={10} />
-                              <span>S.Y. 2026-2027 • Quarter 1</span>
-                            </span>
                           </div>
-                          <p className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-tight">
-                            Guardian Oversight &amp; Growth Terminal
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#11428E]/10 border border-[#11428E]/20 text-[#11428E] dark:text-sky-300 text-[9px] font-bold mt-1">
+                            <Calendar size={10} />
+                            <span>S.Y. 2026-2027 • Quarter 1</span>
+                          </span>
+                          <p className="text-[10px] text-[var(--text-muted)] mt-1 leading-tight">
+                            Child Progress &amp; Parental Controls
                           </p>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                            Parent
+                          </span>
                           <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                             <span className="size-1.5 rounded-full bg-emerald-500" />
                             Connected
                           </span>
-                          <button
-                            onClick={() => setParentTab('limits')}
-                            className="size-7 rounded-full bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] shadow-xs transition-colors cursor-pointer"
-                            title="Local Device Settings"
-                          >
-                            <Settings size={13} />
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -1618,9 +1618,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
 
                       <div className="flex gap-2 items-center">
                         <button
-                          onClick={() => {
-                            // simulated report search
-                          }}
+                          onClick={() => {}}
                           className="flex-1 py-2 px-3 rounded-xl bg-[#11428E] hover:bg-[#1C5BC0] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                         >
                           <Search size={14} />
@@ -1718,76 +1716,31 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                       </div>
                     </div>
 
-                    {/* Linked Child & Daily Regulation Status Badge Card */}
-                    <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 flex items-center justify-between text-xs">
+                    {/* Practice Timeline History Card */}
+                    <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-2.5 shadow-xs">
                       <div className="flex items-center gap-2">
-                        <Clock className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                        <div className="flex flex-col">
-                          <span className="font-bold text-[11px] leading-tight text-amber-800 dark:text-amber-300">
-                            Daily Study Regulation
-                          </span>
-                          <span className="text-[10px] text-amber-700/80 dark:text-amber-400/80">
-                            Linked Child: <strong className="font-bold">{parentStudentName || 'Neal Jean Claro'}</strong>
-                          </span>
+                        <ClipboardList size={16} className="text-[#11428E] dark:text-sky-300" />
+                        <div>
+                          <h5 className="text-xs font-black text-[var(--text-main)]">Practice Timeline History</h5>
+                          <p className="text-[10px] text-[var(--text-muted)]">1 sessions recorded</p>
                         </div>
                       </div>
-                      <button
-                        onClick={() => setParentTab('limits')}
-                        className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold shrink-0 transition-colors cursor-pointer"
-                      >
-                        Time Guard
-                      </button>
-                    </div>
-                  </div>
-                )}
 
-                {/* 2. LOCAL DEVICE SETTINGS / TIME GUARD */}
-                {selectedRole === 'parent' && parentTab === 'limits' && (
-                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
-                    {/* Top Header Card */}
-                    <div className="relative rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-[#11428E]" />
-                      <div className="flex items-start justify-between gap-2 mt-0.5">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <h4 className="text-sm font-extrabold text-[var(--text-main)] tracking-tight">
-                              GURO Parent Explorer
-                            </h4>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#11428E]/10 border border-[#11428E]/20 text-[#11428E] dark:text-sky-300 text-[9px] font-bold">
-                              <Calendar size={10} />
-                              <span>S.Y. 2026-2027 • Quarter 1</span>
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-[var(--text-muted)] mt-0.5 leading-tight">
-                            Guardian Oversight &amp; Growth Terminal
-                          </p>
+                      <div className="p-3 rounded-xl bg-[var(--bg-main)]/60 border border-[var(--border-color)] flex items-center justify-between">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xs font-bold text-[var(--text-main)]">Short Story Comprehension</span>
+                          <span className="text-[10px] text-[var(--text-muted)]">Grade 5 English • 10/14/2026</span>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                            <span className="size-1.5 rounded-full bg-emerald-500" />
-                            Connected
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-bold text-[var(--text-muted)]">1/1</span>
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            100%
                           </span>
-                          <button
-                            onClick={() => setParentTab('home')}
-                            className="size-7 rounded-full bg-[var(--bg-main)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-main)] shadow-xs transition-colors cursor-pointer"
-                            title="Child Growth Explorer"
-                          >
-                            <Users size={13} />
-                          </button>
                         </div>
                       </div>
                     </div>
 
-                    {/* Section Header: Local Device Settings */}
-                    <div className="flex items-center gap-2 px-1">
-                      <Settings size={16} className="text-[var(--text-main)]" />
-                      <div>
-                        <h5 className="text-xs font-black text-[var(--text-main)]">Local Device Settings</h5>
-                        <p className="text-[10px] text-[var(--text-muted)]">Configure controls &amp; PIN for this device</p>
-                      </div>
-                    </div>
-
-                    {/* Card 1: Parental Controls / Screen Time Guard */}
+                    {/* Parental Controls Card */}
                     <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-3 shadow-xs">
                       <div className="flex items-center gap-2">
                         <Shield size={16} className="text-[#11428E] dark:text-sky-300" />
@@ -1880,13 +1833,78 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                           className="w-full text-xs py-2 px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:outline-hidden"
                         />
                       </div>
+                    </div>
 
-                      <div className="sr-only">
-                        <span>Screen Time Guard</span>
+                    {/* Linked Child & Daily Regulation Status Badge Card */}
+                    <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <Clock className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <div className="flex flex-col">
+                          <span className="font-bold text-[11px] leading-tight text-amber-800 dark:text-amber-300">
+                            Daily Study Regulation
+                          </span>
+                          <span className="text-[10px] text-amber-700/80 dark:text-amber-400/80">
+                            Linked Child: <strong className="font-bold">{parentStudentName || 'Neal Jean Claro'}</strong>
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setParentTab('settings')}
+                        className="px-2.5 py-1 rounded-lg bg-[#11428E] hover:bg-[#1C5BC0] text-white text-[10px] font-bold shrink-0 transition-colors cursor-pointer"
+                      >
+                        Device Settings
+                      </button>
+                    </div>
+
+                    <div className="sr-only">
+                      <span>Screen Time Guard</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. LOCAL DEVICE SETTINGS */}
+                {selectedRole === 'parent' && (parentTab === 'settings' || parentTab === 'limits') && (
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
+                    {/* Top Header Card (Sticky, Full-Width Edge-to-Edge) */}
+                    <div className="relative sticky top-0 z-30 -mx-4 -mt-3 w-[calc(100%+2rem)] bg-[var(--bg-card)] border-b border-[var(--border-color)] p-3.5 shadow-xs overflow-hidden">
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-[#11428E]" />
+                      <div className="flex items-start justify-between gap-2 mt-0.5">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className="text-sm font-extrabold text-[var(--text-main)] tracking-tight">
+                              GURO Parent Explorer
+                            </h4>
+                          </div>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#11428E]/10 border border-[#11428E]/20 text-[#11428E] dark:text-sky-300 text-[9px] font-bold mt-1">
+                            <Calendar size={10} />
+                            <span>S.Y. 2026-2027 • Quarter 1</span>
+                          </span>
+                          <p className="text-[10px] text-[var(--text-muted)] mt-1 leading-tight">
+                            Device Configuration &amp; Security
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                            Parent
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                            <span className="size-1.5 rounded-full bg-emerald-500" />
+                            Connected
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Card 2: Cloud Sync */}
+                    {/* Section Header: Local Device Settings */}
+                    <div className="flex items-center gap-2 px-1">
+                      <Settings size={16} className="text-[var(--text-main)]" />
+                      <div>
+                        <h5 className="text-xs font-black text-[var(--text-main)]">Local Device Settings</h5>
+                        <p className="text-[10px] text-[var(--text-muted)]">Configure sync, account &amp; PIN for this device</p>
+                      </div>
+                    </div>
+
+                    {/* Card 1: Cloud Sync */}
                     <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-3 shadow-xs">
                       <div className="flex items-center gap-2">
                         <Globe size={16} className="text-[#11428E] dark:text-sky-300" />
@@ -1925,6 +1943,99 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                         )}
                       </button>
                     </div>
+
+                    {/* Card 2: Device Profile ID */}
+                    <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-3 shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <Key size={16} className="text-[#11428E] dark:text-sky-300" />
+                        <div>
+                          <h5 className="text-xs font-black text-[var(--text-main)]">Device Profile ID</h5>
+                          <p className="text-[10px] text-[var(--text-muted)]">Matches teacher/parent web dashboards</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-extrabold uppercase text-[var(--text-muted)]">
+                          STUDENT ID
+                        </label>
+                        <input
+                          type="text"
+                          value={parentDeviceId}
+                          onChange={(e) => setParentDeviceId(e.target.value)}
+                          className="w-full text-xs py-2 px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] font-mono focus:outline-hidden"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+                        <Key size={13} className="text-slate-400" />
+                        <span>Parent Access Code: <strong>134061</strong></span>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setParentDeviceSaved(true);
+                          setTimeout(() => setParentDeviceSaved(false), 2000);
+                        }}
+                        className="w-full py-2.5 px-3 rounded-xl bg-[#11428E] hover:bg-[#1C5BC0] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                      >
+                        {parentDeviceSaved ? 'Saved Device ID!' : 'Save Device ID'}
+                      </button>
+                    </div>
+
+                    {/* Card 3: Cloud Account */}
+                    <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-3 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Users size={16} className="text-[#11428E] dark:text-sky-300" />
+                          <h5 className="text-xs font-black text-[var(--text-main)]">Cloud Account</h5>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          LINKED
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-[var(--bg-main)]/60 border border-[var(--border-color)] flex flex-col gap-0.5">
+                        <span className="text-xs font-bold text-[var(--text-main)]">Sample Parent</span>
+                        <span className="text-[10px] text-[var(--text-muted)]">parent@guro.dev</span>
+                      </div>
+
+                      <button
+                        className="w-full py-2 px-3 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-[#A01322] text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Log Out of Cloud Account
+                      </button>
+                    </div>
+
+                    {/* Card 4: Portal Settings */}
+                    <div className="rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] p-3.5 flex flex-col gap-2.5 shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <Settings size={16} className="text-[#11428E] dark:text-sky-300" />
+                        <h5 className="text-xs font-black text-[var(--text-main)]">Portal Settings</h5>
+                      </div>
+
+                      <button
+                        className="w-full py-2 px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--bg-card)] text-[var(--text-main)] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Lock size={14} className="text-[var(--text-muted)]" />
+                        <span>Change Dashboard PIN</span>
+                      </button>
+
+                      <button
+                        className="w-full py-2 px-3 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-[#A01322] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Trash2 size={14} className="text-[#A01322]" />
+                        <span>Clear Practice History</span>
+                      </button>
+                    </div>
+
+                    {/* Exit Parent Portal Button */}
+                    <button
+                      onClick={() => setSelectedRole('student')}
+                      className="w-full py-2.5 px-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <LogOut size={14} />
+                      <span>Exit Parent Portal</span>
+                    </button>
                   </div>
                 )}
 
@@ -2032,13 +2143,13 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                 );
               })()}
 
-              {/* PARENT BOTTOM TABS: Growth, Screen Time */}
+              {/* PARENT BOTTOM TABS: Child Progress, Device Settings */}
               {selectedRole === 'parent' && (() => {
                 const parentTabs = [
-                  { id: 'home', label: 'Child Growth', icon: Users },
-                  { id: 'limits', label: 'Time Guard', icon: Clock },
+                  { id: 'progress', label: 'Child Progress', icon: BarChart2 },
+                  { id: 'settings', label: 'Device Settings', icon: Settings },
                 ];
-                const activeIndex = parentTab === 'home' ? 0 : 1;
+                const activeIndex = (parentTab === 'progress' || parentTab === 'home') ? 0 : 1;
 
                 return (
                   <div className="relative h-14 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex items-center z-40 select-none">
@@ -2051,7 +2162,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                           onClick={() => setParentTab(tabItem.id as ParentTab)}
                           className={`flex-1 h-full flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-colors duration-200 relative z-10 ${
                             isActive
-                              ? 'text-amber-600 dark:text-amber-400'
+                              ? 'text-[#11428E] dark:text-sky-400 font-bold'
                               : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                           }`}
                         >
@@ -2070,7 +2181,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                         transform: `translateX(${activeIndex * 100}%)`,
                       }}
                     >
-                      <div className="h-[2.5px] w-14 rounded-full bg-amber-600 dark:bg-amber-400 shadow-[0_0_8px_rgba(217,119,6,0.4)]" />
+                      <div className="h-[2.5px] w-14 rounded-full bg-[#11428E] dark:bg-sky-400 shadow-[0_0_8px_rgba(17,66,142,0.4)]" />
                     </div>
                   </div>
                 );

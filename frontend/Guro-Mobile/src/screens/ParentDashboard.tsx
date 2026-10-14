@@ -11,7 +11,7 @@ import {
   RefreshControl,
   Share,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useAppStore, ProgressEvent, resolveServerUrl } from '../store/useAppStore';
@@ -87,6 +87,16 @@ export function ParentDashboard({ navigation }: Props) {
   const activeTerm = useAppStore((state) => state.activeTerm || 'Quarter 1');
 
   const isPinMode = appMode === 'offline' || currentUser?.role === 'student';
+
+  let insets = { top: 0, bottom: 0, left: 0, right: 0 };
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    insets = useSafeAreaInsets();
+  } catch {
+    // Fallback if rendered outside SafeAreaProvider
+  }
+  const bottomInset = Math.max(insets.bottom || 0, 24);
+  const [activeTab, setActiveTab] = useState<'progress' | 'settings'>('progress');
 
   // ── Intercept Android hardware back button ────────────────────────────────
   useEffect(() => {
@@ -596,52 +606,62 @@ export function ParentDashboard({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
-      {/* ── Header ── */}
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      {/* ── Sticky Full-Width Header Bar (Edge-to-Edge) ── */}
       <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flex: 1 }}>
-          <View>
+        <View style={styles.headerAccentLine} />
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <Text style={styles.headerTitle}>GURO Parent Explorer</Text>
-              <View style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 4,
-                backgroundColor: 'rgba(17,66,142,0.08)',
-                paddingHorizontal: 8,
-                paddingVertical: 3,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: 'rgba(17,66,142,0.15)',
-              }}>
-                <Calendar size={11} color={Colors.accentPrimary} />
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
-                  S.Y. {activeSchoolYear} • {activeTerm}
-                </Text>
-              </View>
             </View>
-            <Text style={styles.headerSub}>Guardian Oversight &amp; Growth Terminal</Text>
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              backgroundColor: 'rgba(17,66,142,0.08)',
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: 'rgba(17,66,142,0.15)',
+              alignSelf: 'flex-start',
+              marginTop: 4,
+              marginBottom: 2,
+            }}>
+              <Calendar size={11} color={Colors.accentPrimary} />
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                S.Y. {activeSchoolYear} • {activeTerm}
+              </Text>
+            </View>
+            <Text style={styles.headerSub}>
+              {activeTab === 'progress' ? 'Child Progress & Parental Controls' : 'Device Configuration & Security'}
+            </Text>
           </View>
-        </View>
-        <View style={styles.headerRight}>
-          <SyncBadge />
+
+          <View style={styles.headerRight}>
+            <Badge label="Parent" variant="indigo" style={styles.roleBadge} />
+            <SyncBadge />
+          </View>
         </View>
       </View>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[Colors.accentPrimary]}
-            tintColor={Colors.accentPrimary}
-          />
-        }
-      >
-        {/* ── Parent Progress Explorer ── */}
+      {/* ── Tab 1: Child Progress & Learning ── */}
+      <View style={activeTab === 'progress' ? { flex: 1 } : { display: 'none', height: 0, flex: 0 }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[Colors.accentPrimary]}
+              tintColor={Colors.accentPrimary}
+            />
+          }
+        >
+          {/* ── Parent Progress Explorer ── */}
         <GlassCard style={styles.section}>
           <SectionHeader
             title={
@@ -1072,20 +1092,6 @@ export function ParentDashboard({ navigation }: Props) {
           </GlassCard>
         )}
 
-        {/* Separator line */}
-        <View style={{ height: 1, backgroundColor: Colors.border, marginVertical: Spacing.sm }} />
-
-        {/* Header for Settings Section */}
-        <SectionHeader
-          title={
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Settings size={18} color={Colors.textMain} />
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Local Device Settings</Text>
-            </View>
-          }
-          subtitle="Configure controls & PIN for this device"
-        />
-
         {/* ── Parental Controls ── */}
         <GlassCard style={styles.section}>
           <SectionHeader
@@ -1172,6 +1178,38 @@ export function ParentDashboard({ navigation }: Props) {
             containerStyle={{ marginTop: Spacing.md }}
           />
         </GlassCard>
+
+        {/* Bottom spacing for Tab 1 */}
+        <View style={{ height: Spacing['3xl'] }} />
+      </ScrollView>
+    </View>
+
+      {/* ── Tab 2: Local Device & Portal Settings ── */}
+      <View style={activeTab === 'settings' ? { flex: 1 } : { display: 'none', height: 0, flex: 0 }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[Colors.accentPrimary]}
+              tintColor={Colors.accentPrimary}
+            />
+          }
+        >
+
+          {/* Header for Settings Section */}
+        <SectionHeader
+          title={
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Settings size={18} color={Colors.textMain} />
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Local Device Settings</Text>
+            </View>
+          }
+          subtitle="Configure sync, account & PIN for this device"
+        />
 
         {/* ── Cloud Sync ── */}
         <GlassCard style={styles.section}>
@@ -1467,6 +1505,63 @@ export function ParentDashboard({ navigation }: Props) {
         {/* Bottom padding */}
         <View style={{ height: Spacing['3xl'] }} />
       </ScrollView>
+    </View>
+
+      {/* ── Bottom Navigation Bar ── */}
+      <View
+        style={[
+          styles.bottomTabBar,
+          {
+            height: 60 + insets.bottom,
+            paddingTop: 8,
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.tabButton}
+          onPress={() => setActiveTab('progress')}
+          activeOpacity={0.7}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'progress' }}
+          accessibilityLabel="Child Progress"
+        >
+          <BarChart2
+            size={22}
+            color={activeTab === 'progress' ? Colors.accentPrimary : Colors.textDark}
+          />
+          <Text
+            style={[
+              styles.tabLabel,
+              activeTab === 'progress' ? styles.tabLabelActive : styles.tabLabelInactive,
+            ]}
+          >
+            Child Progress
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.tabButton}
+          onPress={() => setActiveTab('settings')}
+          activeOpacity={0.7}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'settings' }}
+          accessibilityLabel="Device Settings"
+        >
+          <Settings
+            size={22}
+            color={activeTab === 'settings' ? Colors.accentPrimary : Colors.textDark}
+          />
+          <Text
+            style={[
+              styles.tabLabel,
+              activeTab === 'settings' ? styles.tabLabelActive : styles.tabLabelInactive,
+            ]}
+          >
+            Device Settings
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Clear Practice History Dialog */}
       <ConfirmDialog

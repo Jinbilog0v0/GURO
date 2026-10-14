@@ -91,10 +91,10 @@ describe('MobileAppShowcase Component', () => {
     expect(screen.getByText(/Linked Child/i)).toBeInTheDocument();
     expect(screen.getByText(/Daily Study Regulation/i)).toBeInTheDocument();
 
-    // Click Parent Time Guard bottom tab
-    const limitsTabs = screen.getAllByRole('button', { name: /Time Guard/i });
-    fireEvent.click(limitsTabs[limitsTabs.length - 1]);
-    expect(screen.getAllByText(/Screen Time Guard/i).length).toBeGreaterThanOrEqual(1);
+    // Click Parent Device Settings bottom tab
+    const settingsTabs = screen.getAllByRole('button', { name: /Device Settings/i });
+    fireEvent.click(settingsTabs[settingsTabs.length - 1]);
+    expect(screen.getByText(/Local Device Settings/i)).toBeInTheDocument();
   });
 
   test('bottom navigation switches screens inside the phone (Dashboard -> Lessons -> My Progress -> Profile)', () => {

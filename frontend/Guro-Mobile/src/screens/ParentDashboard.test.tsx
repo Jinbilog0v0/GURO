@@ -60,6 +60,10 @@ jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
 // Mock Reanimated
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children }: any) => children,
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
@@ -148,6 +152,36 @@ describe('ParentDashboard', () => {
     });
 
     expect(mockClearProgress).toHaveBeenCalled();
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test('should switch tabs between Child Progress and Device Settings via bottom navigation bar', async () => {
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<ParentDashboard navigation={mockNavigation as any} route={{} as any} />);
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    const progressTabBtn = root.root.findByProps({ accessibilityLabel: 'Child Progress' });
+    const settingsTabBtn = root.root.findByProps({ accessibilityLabel: 'Device Settings' });
+
+    expect(progressTabBtn).toBeDefined();
+    expect(settingsTabBtn).toBeDefined();
+    expect(progressTabBtn.props.accessibilityState.selected).toBe(true);
+    expect(settingsTabBtn.props.accessibilityState.selected).toBe(false);
+
+    // Switch to settings
+    act(() => {
+      settingsTabBtn.props.onPress();
+    });
+
+    expect(progressTabBtn.props.accessibilityState.selected).toBe(false);
+    expect(settingsTabBtn.props.accessibilityState.selected).toBe(true);
 
     act(() => {
       root.unmount();

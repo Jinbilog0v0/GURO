@@ -179,6 +179,21 @@ export function TeacherLessonBuilderScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      {/* ── Header (Sticky, Full-Width Edge-to-Edge) ── */}
+      <View style={styles.header}>
+        <View style={styles.headerAccentLine} />
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.screenTitle}>Manual Lesson Builder</Text>
+            <Text style={styles.screenSubtitle}>Create Lesson Manually</Text>
+          </View>
+          <View style={styles.headerRight}>
+            <Badge label="Teacher" variant="indigo" style={styles.roleBadge} />
+            <SyncBadge />
+          </View>
+        </View>
+      </View>
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -189,20 +204,6 @@ export function TeacherLessonBuilderScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerAccentLine} />
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
-              <View style={styles.headerLeft}>
-                <Text style={styles.screenTitle}>Manual Lesson Builder</Text>
-                <Text style={styles.screenSubtitle}>Create Lesson Manually</Text>
-              </View>
-              <View style={styles.headerRight}>
-                <Badge label="Teacher" variant="indigo" style={styles.roleBadge} />
-                <SyncBadge />
-              </View>
-            </View>
-          </View>
 
           {!classroomId && (
             <GlassCard style={[styles.section, { borderColor: Colors.warningBorder, backgroundColor: Colors.warningGlow }]}>
