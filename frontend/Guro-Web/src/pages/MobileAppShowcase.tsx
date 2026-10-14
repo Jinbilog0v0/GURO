@@ -649,7 +649,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                           <Flame size={12} /> Level 3 Explorer
                         </span>
                       </div>
-                      <h4 className="text-base font-extrabold tracking-tight text-white dark:text-black">Welcome back, Juan!</h4>
+                      <h4 className="text-base font-extrabold tracking-tight text-white">Welcome back, Juan!</h4>
                       
                       {/* Companion Message */}
                       <div className="p-2 rounded-xl bg-white/10 border border-white/20 text-[11px] flex items-center gap-2">

@@ -24,7 +24,6 @@ import {
   RefreshControl,
   KeyboardAvoidingView,
   Platform,
-  useColorScheme,
 } from 'react-native';
 import * as Network from 'expo-network';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -94,9 +93,6 @@ export function StudentDashboard() {
   const activeSubjects = useAppStore((s) => s.activeSubjects || ['Mathematics', 'English']);
   const activeSchoolYear = useAppStore((s) => s.activeSchoolYear || '2026-2027');
   const activeTerm = useAppStore((s) => s.activeTerm || 'Quarter 1');
-  const themeMode = useAppStore((s) => s.themeMode);
-  const colorScheme = useColorScheme();
-  const isDark = themeMode === 'dark' || (themeMode !== 'light' && colorScheme === 'dark');
 
   const [joinModalVisible, setJoinModalVisible] = React.useState(false);
   const [typedCode, setTypedCode] = React.useState('');
@@ -481,7 +477,7 @@ export function StudentDashboard() {
                   Level {level} Explorer
                 </Text>
               </View>
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: isDark ? '#000000' : Colors.white }}>
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.white }}>
                 Welcome back, {studentName}!
               </Text>
             </View>
