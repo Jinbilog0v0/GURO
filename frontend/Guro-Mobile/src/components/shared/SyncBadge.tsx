@@ -19,18 +19,28 @@ import {
   TouchableOpacity,
   Modal,
   Animated,
+  StyleProp,
+  ViewStyle,
 } from 'react-native';
 import * as Network from 'expo-network';
 import { Colors } from '../../theme/colors';
 import { Fonts, FontSizes } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import { useAppStore } from '../../store/useAppStore';
-import { CheckCircle2, RefreshCw, WifiOff } from 'lucide-react-native';
+import { CheckCircle2, RefreshCw, WifiOff, GraduationCap } from 'lucide-react-native';
 
 type SyncState = 'synced' | 'pending' | 'offline';
 
-export function SyncBadge() {
+export interface SyncBadgeProps {
+  gradeLevel?: number | string;
+  showGradeLevel?: boolean;
+  style?: StyleProp<ViewStyle>;
+}
+
+export function SyncBadge({ gradeLevel, showGradeLevel, style }: SyncBadgeProps = {}) {
   const studentProgress = useAppStore((s) => s.studentProgress);
+  const preferredGrade = useAppStore((s) => s.preferredGrade || 4);
+  const effectiveGrade = gradeLevel !== undefined ? gradeLevel : (showGradeLevel ? preferredGrade : undefined);
   const [status, setStatus] = useState<SyncState>('offline');
   const [infoVisible, setInfoVisible] = useState(false);
   const prevStatus = useRef<SyncState>('offline');
@@ -133,15 +143,21 @@ export function SyncBadge() {
       <TouchableOpacity
         onPress={() => setInfoVisible(true)}
         activeOpacity={0.75}
-        accessibilityLabel={`Network status: ${label}. Tap for more information.`}
+        accessibilityLabel={`Network status: ${label}${effectiveGrade !== undefined ? `, Grade ${effectiveGrade}` : ''}. Tap for more information.`}
         accessibilityRole="button"
         accessibilityHint="Opens a description of your current connection status"
-        style={styles.touchArea}
+        style={[styles.touchArea, style]}
       >
         <Animated.View style={[styles.container, { backgroundColor: flashBg }]}>
           <Animated.View style={[styles.dot, { backgroundColor: dot, opacity: pulseAnim }]} />
           <Text style={[styles.label, { color }]}>{label}</Text>
         </Animated.View>
+        {effectiveGrade !== undefined && (
+          <View style={styles.gradeBadge}>
+            <GraduationCap size={10} color={Colors.accentPrimary} />
+            <Text style={styles.gradeText}>Grade {effectiveGrade}</Text>
+          </View>
+        )}
       </TouchableOpacity>
 
       {/* Info modal */}
@@ -162,6 +178,14 @@ export function SyncBadge() {
               <Text style={styles.modalTitle}>{modalTitle}</Text>
             </View>
             <Text style={styles.modalBody}>{modalBody}</Text>
+            {effectiveGrade !== undefined && (
+              <View style={styles.modalGradeInfo}>
+                <GraduationCap size={15} color={Colors.accentPrimary} />
+                <Text style={styles.modalGradeText}>
+                  Learner Level: Grade {effectiveGrade}
+                </Text>
+              </View>
+            )}
             <TouchableOpacity
               onPress={() => setInfoVisible(false)}
               style={styles.modalCloseBtn}
@@ -181,6 +205,7 @@ const styles = StyleSheet.create({
   touchArea: {
     minHeight: 44,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   container: {
     flexDirection: 'row',
@@ -240,5 +265,40 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodyBold,
     fontSize: FontSizes.sm,
     color: Colors.white,
+  },
+  gradeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(17,66,142,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(17,66,142,0.18)',
+    borderRadius: Radius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginTop: 3,
+    alignSelf: 'center',
+  },
+  gradeText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 10,
+    color: Colors.accentPrimary,
+    letterSpacing: 0.2,
+  },
+  modalGradeInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(17,66,142,0.06)',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(17,66,142,0.12)',
+  },
+  modalGradeText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.xs,
+    color: Colors.accentPrimary,
   },
 });

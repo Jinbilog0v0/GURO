@@ -78,6 +78,7 @@ export function ProfileScreen() {
   const setParentPin        = useAppStore((s) => s.setParentPin);
   const studentId           = useAppStore((s) => s.studentId);
   const logoutFromCloud     = useAppStore((s) => s.logoutFromCloud);
+  const preferredGrade      = useAppStore((s) => s.preferredGrade || 4);
   const setMascotOutfit     = useAppStore((s) => s.setMascotOutfit);
   const purchaseOutfit      = useAppStore((s) => s.purchaseOutfit);
   const serverUrlFromStore  = useAppStore((s) => s.serverUrl);
@@ -211,7 +212,7 @@ export function ProfileScreen() {
           <Text style={styles.headerTitle}>GURO Profile</Text>
           <Text style={styles.headerSubtitle}>Account &amp; learning preferences.</Text>
         </View>
-        <SyncBadge />
+        <SyncBadge gradeLevel={preferredGrade} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

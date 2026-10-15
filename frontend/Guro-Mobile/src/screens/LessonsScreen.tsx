@@ -236,7 +236,7 @@ export function LessonsScreen() {
           </View>
           <Text style={styles.headerSubtitle}>Select a topic to begin learning.</Text>
         </View>
-        <SyncBadge />
+        <SyncBadge gradeLevel={preferredGrade} />
       </View>
 
       {/* Subject tabs */}

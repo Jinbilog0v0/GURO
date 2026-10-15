@@ -391,7 +391,7 @@ export function StudentDashboard() {
             DepEd-Aligned Interactive Learning
           </Text>
         </View>
-        <SyncBadge />
+        <SyncBadge gradeLevel={preferredGrade} />
       </View>
  
       <ScrollView

@@ -45,6 +45,7 @@ export function ProgressScreen() {
   const studentProgress = useAppStore((s) => s.studentProgress);
   const activeSchoolYear = useAppStore((s) => s.activeSchoolYear || '2026-2027');
   const activeTerm = useAppStore((s) => s.activeTerm || 'Quarter 1');
+  const preferredGrade = useAppStore((s) => s.preferredGrade || 4);
 
   // All-time stats calculations
   const totalSessions = studentProgress.length;
@@ -158,7 +159,7 @@ export function ProgressScreen() {
           </View>
           <Text style={styles.headerSubtitle}>Track your learning journey.</Text>
         </View>
-        <SyncBadge />
+        <SyncBadge gradeLevel={preferredGrade} />
       </View>
 
       <ScrollView
