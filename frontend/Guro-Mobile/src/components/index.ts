@@ -9,6 +9,7 @@ export { ProgressBar } from './ui/ProgressBar';
 export { LessonCard } from './ui/LessonCard';
 export { ToastContainer, toast } from './ui/ToastContainer';
 export { ConfirmDialog } from './ui/ConfirmDialog';
+export { ConfettiEffect } from './ui/ConfettiEffect';
 
 // Shared Components
 export { PinPad } from './shared/PinPad';

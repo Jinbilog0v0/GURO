@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 
 // ── Design System ──────────────────────────────────────────────────────────────
 import { GlassCard } from '../components/ui/GlassCard';
+import { ConfettiEffect } from '../components/ui/ConfettiEffect';
 import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
 import { Badge } from '../components/ui/Badge';
 import { SyncBadge } from '../components/shared/SyncBadge';
@@ -23,6 +24,7 @@ import { Colors } from '../theme/colors';
 import { styles } from '../styles/StudyScreen.styles';
 import { Fonts, FontSizes } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
+import { playCorrectSound, playIncorrectSound, playFanfareSound } from '../utils/soundEffects';
 import {
   Rocket,
   BookOpen,
@@ -62,6 +64,7 @@ export function StudyScreen({ route, navigation }: Props) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [selectedRefresherOpt, setSelectedRefresherOpt] = useState<Record<number, string>>({});
   const [refresherChecked, setRefresherChecked] = useState<Record<number, boolean>>({});
+  const [showConfetti, setShowConfetti] = useState(false);
 
   // ── Active-minutes tracker ─────────────────────────────────────────────────
   useEffect(() => {
@@ -73,12 +76,6 @@ export function StudyScreen({ route, navigation }: Props) {
       Speech.stop();
     };
   }, []);
-
-  // Stop speech when sliding between steps
-  useEffect(() => {
-    Speech.stop();
-    setIsSpeaking(false);
-  }, [currentSlide]);
 
   // ── Load study content ──────────────────────────────────────────────────────
   const effectiveBank = itemBank || (itemBankData as any);
@@ -158,6 +155,16 @@ export function StudyScreen({ route, navigation }: Props) {
 
     return list;
   }, [studyContent]);
+
+  // Stop speech, reset confetti, and celebrate completion when sliding between steps
+  useEffect(() => {
+    Speech.stop();
+    setIsSpeaking(false);
+    setShowConfetti(false);
+    if (slides[currentSlide]?.type === 'completed') {
+      playFanfareSound();
+    }
+  }, [currentSlide, slides]);
 
   const studentProgress = useAppStore((s) => s.studentProgress) || [];
   const existingPreTest = Array.isArray(studentProgress)
@@ -249,6 +256,7 @@ export function StudyScreen({ route, navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
+      <ConfettiEffect active={showConfetti || currentItem.type === 'completed'} />
       {/* Progress Bar & Indicators */}
       <View style={styles.progressContainer}>
         <View style={styles.progressLabelRow}>
@@ -576,11 +584,13 @@ export function StudyScreen({ route, navigation }: Props) {
                       LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
                     } catch (e) {}
                     setRefresherChecked(prev => ({ ...prev, [rIdx]: true }));
-                    Haptics.notificationAsync(
-                      selected === currentItem.data.correctAnswer
-                        ? Haptics.NotificationFeedbackType.Success
-                        : Haptics.NotificationFeedbackType.Error
-                    ).catch(() => {});
+                    const isCorrect = selected === currentItem.data.correctAnswer;
+                    if (isCorrect) {
+                      playCorrectSound();
+                      setShowConfetti(true);
+                    } else {
+                      playIncorrectSound();
+                    }
                   }}
                   style={{
                     flex: 1.3,
