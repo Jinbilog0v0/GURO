@@ -141,8 +141,8 @@ describe('SystemOverviewPage Component', () => {
 
     const apkLinks = screen.getAllByRole('link', { name: /Download.*APK/i });
     expect(apkLinks.length).toBe(2);
-    expect(apkLinks[0]).toHaveAttribute('href', 'https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk');
-    expect(apkLinks[1]).toHaveAttribute('href', 'https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk');
+    expect(apkLinks[0]).toHaveAttribute('href', '/downloads/GURO.apk');
+    expect(apkLinks[1]).toHaveAttribute('href', '/downloads/GURO.apk');
   });
 
   test('renders About section with GURO acronym pillars', () => {

@@ -223,7 +223,7 @@ describe('LandingPage Portal (Web)', () => {
     // Header APK button exists
     const apkLinks = screen.getAllByRole('link', { name: /Download.*APK/i });
     expect(apkLinks.length).toBe(1);
-    expect(apkLinks[0]).toHaveAttribute('href', 'https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk');
+    expect(apkLinks[0]).toHaveAttribute('href', '/downloads/GURO.apk');
 
     // Tagline and Showcase button are removed
     expect(screen.queryByText(/Your Learning Companion for Math & English/i)).not.toBeInTheDocument();

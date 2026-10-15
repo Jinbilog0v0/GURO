@@ -236,11 +236,11 @@ describe('MobileAppShowcase Component', () => {
       />
     );
 
-    const downloadLink = screen.getByTitle('Download Standalone Android APK (v1.0.1)');
+    const downloadLink = screen.getByTitle('Download Standalone Android APK');
     expect(downloadLink).toBeInTheDocument();
     expect(downloadLink).toHaveAttribute(
       'href',
-      'https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk'
+      '/downloads/GURO.apk'
     );
   });
 

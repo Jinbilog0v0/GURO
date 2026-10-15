@@ -723,12 +723,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                     <div className="flex items-center gap-2 sm:pointer-events-auto">
                         <a
-                            href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            download="GURO-preview.apk"
+                            href="/downloads/GURO.apk"
+                            download="GURO.apk"
                             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 text-xs font-bold transition-all cursor-pointer shadow-xs"
-                            title="Download Standalone Android APK (v1.0.1)"
+                            title="Download Standalone Android APK"
                         >
                             <Download className="size-3.5 text-sky-500" />
                             <span className="hidden sm:inline">Download APK</span>

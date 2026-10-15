@@ -278,12 +278,10 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
           </button>
 
           <a
-            href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
-            target="_blank"
-            rel="noopener noreferrer"
-            download="GURO-preview.apk"
+            href="/downloads/GURO.apk"
+            download="GURO.apk"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 text-xs font-bold transition-all cursor-pointer shadow-xs"
-            title="Download Standalone Android APK (v1.0.1)"
+            title="Download Standalone Android APK"
           >
             <Download className="size-3.5 text-sky-500" />
             <span className="hidden sm:inline">Download APK</span>
@@ -350,10 +348,8 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
             <div className="flex flex-col gap-1">
               {/* Download App Link */}
               <a
-                href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
-                target="_blank"
-                rel="noopener noreferrer"
-                download="GURO-preview.apk"
+                href="/downloads/GURO.apk"
+                download="GURO.apk"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="flex items-center gap-2 w-full px-2.5 py-2 rounded-xl text-xs font-bold text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition-colors cursor-pointer"
               >

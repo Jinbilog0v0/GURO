@@ -232,13 +232,11 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           )}
 
           <a
-            href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
-            target="_blank"
-            rel="noopener noreferrer"
-            download="GURO-preview.apk"
+            href="/downloads/GURO.apk"
+            download="GURO.apk"
             aria-label="Download App APK"
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 text-xs font-bold transition-all cursor-pointer shadow-xs"
-            title="Download Standalone Android APK (v1.0.1)"
+            title="Download Standalone Android APK"
           >
             <Download className="size-3.5 text-sky-500" />
             <span className="hidden sm:inline">Download APK</span>
@@ -295,10 +293,8 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             <div className="flex flex-col gap-1">
               {/* Download App Link */}
               <a
-                href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
-                target="_blank"
-                rel="noopener noreferrer"
-                download="GURO-preview.apk"
+                href="/downloads/GURO.apk"
+                download="GURO.apk"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="flex items-center gap-2 w-full px-2.5 py-2 rounded-xl text-xs font-bold text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition-colors cursor-pointer"
               >
@@ -399,10 +395,8 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                 <span>Explore Mobile Showcase</span>
               </button>
               <a
-                href="https://expo.dev/artifacts/eas/bjOmN4X0gTuext8-S5sqI4HSyyiOCtFQJk8HscF0wuw.apk"
-                target="_blank"
-                rel="noopener noreferrer"
-                download="GURO-preview.apk"
+                href="/downloads/GURO.apk"
+                download="GURO.apk"
                 className="flex items-center justify-center gap-2 px-6 sm:px-6 py-3 sm:py-3.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer hover:scale-102 active:scale-98 w-full sm:w-auto"
               >
                 <Download className="size-4 text-sky-500" />
