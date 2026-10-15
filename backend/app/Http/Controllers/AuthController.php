@@ -57,7 +57,7 @@ class AuthController extends Controller
         $role = trim($request->input('role'));
 
         if ($role === 'admin' || $role === 'developer') {
-            $expectedKey = env('ADMIN_REGISTRATION_KEY', 'GURO_ADMIN_SECRET_2026');
+            $expectedKey = config('services.admin.registration_key') ?? env('ADMIN_REGISTRATION_KEY', 'GURO_ADMIN_SECRET_2026');
             $providedKey = trim($request->input('admin_secret', ''));
             if ($providedKey === '' || $providedKey !== $expectedKey) {
                 return response()->json(['error' => 'Invalid or missing admin security passkey.'], 403);
@@ -459,8 +459,8 @@ class AuthController extends Controller
 
         // Call Resend API to send the email
         try {
-            $apiKey = env('RESEND_API_KEY');
-            $fromAddress = env('RESEND_FROM_EMAIL', 'GURO Recovery <auth@neoguro.app>');
+            $apiKey = config('services.resend.key') ?? env('RESEND_API_KEY');
+            $fromAddress = config('services.resend.from') ?? env('RESEND_FROM_EMAIL', 'GURO Recovery <auth@neoguro.app>');
 
             $emailHtml = $this->renderOtpEmailHtml(
                 'Password Reset Verification',
@@ -606,8 +606,8 @@ class AuthController extends Controller
 
         // Call Resend API
         try {
-            $apiKey = env('RESEND_API_KEY');
-            $fromAddress = env('RESEND_FROM_EMAIL', 'GURO Recovery <auth@neoguro.app>');
+            $apiKey = config('services.resend.key') ?? env('RESEND_API_KEY');
+            $fromAddress = config('services.resend.from') ?? env('RESEND_FROM_EMAIL', 'GURO Recovery <auth@neoguro.app>');
 
             $user = User::where('email', $email)->first();
             $greetingName = $user ? $user->name : ($request->input('name') ?: 'there');

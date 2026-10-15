@@ -10,7 +10,7 @@ class GeminiService
     public function generateQuestions(string $subject, int $grade, string $topic, ?string $lessonText, ?string $pdfBase64 = null, int $questionCount = 12): array
     {
         set_time_limit(180);
-        $apiKey = env('GEMINI_API_KEY');
+        $apiKey = config('services.gemini.key') ?: env('GEMINI_API_KEY');
         if (! $apiKey) {
             throw new \Exception('GEMINI_API_KEY environment variable is not configured.');
         }

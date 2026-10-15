@@ -66,7 +66,7 @@ class AdminController extends Controller
             $dbStatus = 'Degraded';
         }
 
-        $geminiKey = env('GEMINI_API_KEY');
+        $geminiKey = config('services.gemini.key') ?? env('GEMINI_API_KEY');
         $itemBankPath = base_path('database/data/item_bank.json');
         if (! file_exists($itemBankPath)) {
             $itemBankPath = base_path('../frontend/Guro-Mobile/assets/item_bank.json');

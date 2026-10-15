@@ -20,6 +20,15 @@ return [
 
     'resend' => [
         'key' => env('RESEND_API_KEY'),
+        'from' => env('RESEND_FROM_EMAIL', 'GURO Recovery <auth@neoguro.app>'),
+    ],
+
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+    ],
+
+    'admin' => [
+        'registration_key' => env('ADMIN_REGISTRATION_KEY', 'GURO_ADMIN_SECRET_2026'),
     ],
 
     'ses' => [
