@@ -14,3 +14,4 @@ export { ConfettiEffect } from './ui/ConfettiEffect';
 // Shared Components
 export { PinPad } from './shared/PinPad';
 export { SyncBadge } from './shared/SyncBadge';
+export { ErrorBoundary } from './shared/ErrorBoundary';

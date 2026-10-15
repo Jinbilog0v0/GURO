@@ -30,7 +30,7 @@ describe('withBuildArchitectures config plugin', () => {
       const result = resolveArchitectures();
       expect(result.profile).toBe('preview');
       expect(result.isEmulatorExcluded).toBe(true);
-      expect(result.architectures).toBe('armeabi-v7a,arm64-v8a');
+      expect(result.architectures).toBe('arm64-v8a,armeabi-v7a');
       expect(result.architectures).not.toContain('x86');
       expect(result.architectures).not.toContain('x86_64');
     });
@@ -40,7 +40,7 @@ describe('withBuildArchitectures config plugin', () => {
       const result = resolveArchitectures();
       expect(result.profile).toBe('preview');
       expect(result.isEmulatorExcluded).toBe(true);
-      expect(result.architectures).toBe('armeabi-v7a,arm64-v8a');
+      expect(result.architectures).toBe('arm64-v8a,armeabi-v7a');
     });
 
     it('includes all 4 architectures when EAS_BUILD_PROFILE is "development"', () => {
@@ -91,7 +91,7 @@ describe('withBuildArchitectures config plugin', () => {
       );
 
       expect(archProp).toBeDefined();
-      expect(archProp.value).toBe('armeabi-v7a,arm64-v8a');
+      expect(archProp.value).toBe('arm64-v8a,armeabi-v7a');
       expect(archProp.value).not.toContain('x86');
 
       // Preserves other properties

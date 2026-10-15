@@ -20,7 +20,7 @@ import { SyncBadge } from '../components/shared/SyncBadge';
 import { toast } from '../components';
 import { styles } from '../styles/TeacherDashboard.styles';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import {
   Zap,
   ChevronDown,

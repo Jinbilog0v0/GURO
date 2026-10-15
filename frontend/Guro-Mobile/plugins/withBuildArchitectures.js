@@ -93,7 +93,7 @@ const PKG_NAME = 'with-build-architectures';
 const PKG_VERSION = '1.0.0';
 
 // Physical device architectures (excluding emulators: x86, x86_64)
-const PREVIEW_ARCHS = ['armeabi-v7a', 'arm64-v8a'];
+const PREVIEW_ARCHS = ['arm64-v8a', 'armeabi-v7a'];
 
 // All 4 standard Android architectures (including Intel/AMD emulators: x86, x86_64)
 const ALL_ARCHS = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'];

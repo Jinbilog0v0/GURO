@@ -22,7 +22,7 @@
     },
     "android": {
       "package": "com.guro.app",
-      "versionCode": 6,
+      "versionCode": 7,
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
@@ -49,6 +49,7 @@
       "expo-document-picker",
       "expo-status-bar",
       "expo-updates",
+      "expo-av",
       "./plugins/withBuildArchitectures"
     ],
     "extra": {

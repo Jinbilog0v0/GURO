@@ -168,8 +168,10 @@ interface AppState {
   initializeLocalStore: () => Promise<void>;
 }
 
-export function resolveServerUrl(url: string): string {
-  let cleaned = url.trim();
+export function resolveServerUrl(url?: string | null): string {
+  const fallback = process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+  const target = (url && typeof url === 'string' && url.trim()) ? url.trim() : fallback;
+  let cleaned = target;
   
   // Strip trailing slashes
   cleaned = cleaned.replace(/\/+$/, '');
@@ -596,8 +598,8 @@ export const useAppStore = create<AppState>()(
         }
         get().addLog('Local student progress logs cleared.');
       },
-      syncProgressNow: async (serverUrl) => {
-        const resolvedUrl = resolveServerUrl(serverUrl);
+      syncProgressNow: async (serverUrl?: string) => {
+        const resolvedUrl = resolveServerUrl(serverUrl || get().serverUrl);
         const unsyncedEvents = get().studentProgress.filter((e) => !e.synced);
         if (unsyncedEvents.length === 0) {
           return { success: true, syncedCount: 0, message: 'No new progress logs to sync.' };

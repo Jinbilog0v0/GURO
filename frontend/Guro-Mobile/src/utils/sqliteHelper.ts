@@ -1,112 +1,119 @@
 import * as SQLite from 'expo-sqlite';
 import { ProgressEvent, Question, ItemBank } from '../store/useAppStore';
 
-let dbInstance: SQLite.SQLiteDatabase | null = null;
+let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 // Initialize SQLite connection and create tables
 export async function getLocalDb(): Promise<SQLite.SQLiteDatabase> {
-  if (dbInstance) return dbInstance;
+  if (dbInitPromise) return dbInitPromise;
   
-  const db = await SQLite.openDatabaseAsync('guro_local.db');
-  
-  // Enable Write-Ahead Logging (WAL) for better concurrent performance
-  await db.execAsync('PRAGMA journal_mode = WAL;');
-  
-  // Create tables
-  await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS student_progress (
-      event_id TEXT PRIMARY KEY,
-      subject TEXT NOT NULL,
-      grade_level INTEGER NOT NULL,
-      topic TEXT NOT NULL,
-      score INTEGER NOT NULL,
-      total_questions INTEGER NOT NULL,
-      difficulty TEXT DEFAULT 'Average',
-      assessment_type TEXT DEFAULT 'practice',
-      school_year TEXT DEFAULT '2026-2027',
-      term TEXT DEFAULT 'Quarter 1',
-      timestamp TEXT NOT NULL,
-      synced INTEGER DEFAULT 0
-    );
+  dbInitPromise = (async () => {
+    const db = await SQLite.openDatabaseAsync('guro_local.db');
+    
+    // Enable Write-Ahead Logging (WAL) for better concurrent performance, with graceful fallback
+    try {
+      await db.execAsync('PRAGMA journal_mode = WAL;');
+    } catch (walErr) {
+      console.warn('[SQLite] WAL journal mode not supported in current environment/sandbox. Using default mode.', walErr);
+    }
+    
+    // Create tables
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS student_progress (
+        event_id TEXT PRIMARY KEY,
+        subject TEXT NOT NULL,
+        grade_level INTEGER NOT NULL,
+        topic TEXT NOT NULL,
+        score INTEGER NOT NULL,
+        total_questions INTEGER NOT NULL,
+        difficulty TEXT DEFAULT 'Average',
+        assessment_type TEXT DEFAULT 'practice',
+        school_year TEXT DEFAULT '2026-2027',
+        term TEXT DEFAULT 'Quarter 1',
+        timestamp TEXT NOT NULL,
+        synced INTEGER DEFAULT 0
+      );
 
-    CREATE TABLE IF NOT EXISTS local_item_bank (
-      id TEXT PRIMARY KEY,
-      subject TEXT NOT NULL,
-      grade_level INTEGER NOT NULL,
-      topic TEXT NOT NULL,
-      difficulty TEXT NOT NULL,
-      category TEXT NOT NULL,
-      question_text TEXT NOT NULL,
-      options TEXT NOT NULL, -- JSON string array
-      correct_answer TEXT NOT NULL,
-      feedback_en TEXT NOT NULL,
-      feedback_fil TEXT NOT NULL,
-      type TEXT DEFAULT 'multiple-choice',
-      matching_pairs TEXT -- JSON string (optional)
-    );
+      CREATE TABLE IF NOT EXISTS local_item_bank (
+        id TEXT PRIMARY KEY,
+        subject TEXT NOT NULL,
+        grade_level INTEGER NOT NULL,
+        topic TEXT NOT NULL,
+        difficulty TEXT NOT NULL,
+        category TEXT NOT NULL,
+        question_text TEXT NOT NULL,
+        options TEXT NOT NULL, -- JSON string array
+        correct_answer TEXT NOT NULL,
+        feedback_en TEXT NOT NULL,
+        feedback_fil TEXT NOT NULL,
+        type TEXT DEFAULT 'multiple-choice',
+        matching_pairs TEXT -- JSON string (optional)
+      );
 
-    CREATE TABLE IF NOT EXISTS local_study_content (
-      subject TEXT NOT NULL,
-      grade_level INTEGER NOT NULL,
-      topic TEXT NOT NULL,
-      introduction TEXT NOT NULL,
-      definitions TEXT NOT NULL, -- JSON string array
-      summary TEXT NOT NULL, -- JSON string array
-      order_index INTEGER,
-      PRIMARY KEY (subject, grade_level, topic)
-    );
+      CREATE TABLE IF NOT EXISTS local_study_content (
+        subject TEXT NOT NULL,
+        grade_level INTEGER NOT NULL,
+        topic TEXT NOT NULL,
+        introduction TEXT NOT NULL,
+        definitions TEXT NOT NULL, -- JSON string array
+        summary TEXT NOT NULL, -- JSON string array
+        order_index INTEGER,
+        PRIMARY KEY (subject, grade_level, topic)
+      );
 
-    CREATE TABLE IF NOT EXISTS parent_settings (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL
-    );
+      CREATE TABLE IF NOT EXISTS parent_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
 
-    CREATE INDEX IF NOT EXISTS idx_student_progress_synced ON student_progress (synced);
-    CREATE INDEX IF NOT EXISTS idx_local_item_bank_search ON local_item_bank (subject, grade_level, topic);
-  `);
+      CREATE INDEX IF NOT EXISTS idx_student_progress_synced ON student_progress (synced);
+      CREATE INDEX IF NOT EXISTS idx_local_item_bank_search ON local_item_bank (subject, grade_level, topic);
+    `);
 
-  try {
-    await db.execAsync('ALTER TABLE local_study_content ADD COLUMN order_index INTEGER;');
-  } catch (e) {
-    // Ignore error if column already exists
-  }
+    try {
+      await db.execAsync('ALTER TABLE local_study_content ADD COLUMN order_index INTEGER;');
+    } catch (e) {
+      // Ignore error if column already exists
+    }
 
-  // Run dynamic migrations for assessment_type, school_year, term in student_progress
-  try {
-    await db.execAsync("ALTER TABLE student_progress ADD COLUMN difficulty TEXT DEFAULT 'Average';");
-  } catch (e) {
-    // Column already exists
-  }
-  try {
-    await db.execAsync("ALTER TABLE student_progress ADD COLUMN assessment_type TEXT DEFAULT 'practice';");
-  } catch (e) {
-    // Column already exists
-  }
-  try {
-    await db.execAsync("ALTER TABLE student_progress ADD COLUMN school_year TEXT DEFAULT '2026-2027';");
-  } catch (e) {
-    // Column already exists
-  }
-  try {
-    await db.execAsync("ALTER TABLE student_progress ADD COLUMN term TEXT DEFAULT 'Quarter 1';");
-  } catch (e) {
-    // Column already exists
-  }
+    // Run dynamic migrations for assessment_type, school_year, term in student_progress
+    try {
+      await db.execAsync("ALTER TABLE student_progress ADD COLUMN difficulty TEXT DEFAULT 'Average';");
+    } catch (e) {
+      // Column already exists
+    }
+    try {
+      await db.execAsync("ALTER TABLE student_progress ADD COLUMN assessment_type TEXT DEFAULT 'practice';");
+    } catch (e) {
+      // Column already exists
+    }
+    try {
+      await db.execAsync("ALTER TABLE student_progress ADD COLUMN school_year TEXT DEFAULT '2026-2027';");
+    } catch (e) {
+      // Column already exists
+    }
+    try {
+      await db.execAsync("ALTER TABLE student_progress ADD COLUMN term TEXT DEFAULT 'Quarter 1';");
+    } catch (e) {
+      // Column already exists
+    }
 
-  // Run dynamic migrations for gamified question columns if they don't exist
-  try {
-    await db.execAsync("ALTER TABLE local_item_bank ADD COLUMN type TEXT DEFAULT 'multiple-choice';");
-  } catch (e) {
-    // Column already exists
-  }
-  try {
-    await db.execAsync("ALTER TABLE local_item_bank ADD COLUMN matching_pairs TEXT;");
-  } catch (e) {
-    // Column already exists
-  }
+    // Run dynamic migrations for gamified question columns if they don't exist
+    try {
+      await db.execAsync("ALTER TABLE local_item_bank ADD COLUMN type TEXT DEFAULT 'multiple-choice';");
+    } catch (e) {
+      // Column already exists
+    }
+    try {
+      await db.execAsync("ALTER TABLE local_item_bank ADD COLUMN matching_pairs TEXT;");
+    } catch (e) {
+      // Column already exists
+    }
 
-  dbInstance = db;
-  return db;
+    return db;
+  })();
+
+  return dbInitPromise;
 }
 
 // --- STUDENT PROGRESS EVENTS METHODS ---

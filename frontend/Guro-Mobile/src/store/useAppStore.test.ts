@@ -17,7 +17,7 @@ jest.mock('expo-sqlite', () => ({
   openDatabaseAsync: jest.fn(),
 }));
 
-import { useAppStore } from './useAppStore';
+import { useAppStore, resolveServerUrl } from './useAppStore';
 
 // Mock fetch for API testing
 global.fetch = jest.fn();
@@ -194,6 +194,22 @@ describe('AppStore (Mobile Online Flows)', () => {
       expect(updatedState.parentalControls.priorityTopic).toBeNull();
       expect(updatedState.dailyMinutesUsed).toBe(0);
       expect(updatedState.lastActiveDay).toBeNull();
+    });
+  });
+
+  describe('resolveServerUrl', () => {
+    test('safely falls back to default when input is undefined, null, or empty string', () => {
+      const fallback = process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+      expect(resolveServerUrl(undefined)).toBe(fallback);
+      expect(resolveServerUrl(null)).toBe(fallback);
+      expect(resolveServerUrl('')).toBe(fallback);
+      expect(resolveServerUrl('   ')).toBe(fallback);
+    });
+
+    test('strips trailing slashes and /api safely', () => {
+      expect(resolveServerUrl('https://example.com/')).toBe('https://example.com');
+      expect(resolveServerUrl('https://example.com/api/')).toBe('https://example.com');
+      expect(resolveServerUrl('https://example.com/api')).toBe('https://example.com');
     });
   });
 });

@@ -16,7 +16,7 @@ import { useAppStore } from './src/store/useAppStore';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from './src/theme/colors';
 import { Fonts, FontSizes } from './src/theme/typography';
-import { ToastContainer } from './src/components';
+import { ToastContainer, ErrorBoundary } from './src/components';
 import { performBackgroundUpdateCheck } from './src/services/updateService';
 
 const SERVER_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
@@ -57,11 +57,15 @@ export default function App() {
     const handleAppStateChange = (nextState: AppStateStatus) => {
       if (nextState === 'active') {
         addLog('[Sync] App foregrounded — attempting auto-sync...');
-        syncProgressNow(serverUrl).then((result) => {
-          if (result.syncedCount > 0) {
-            addLog(`[Sync] Auto-synced ${result.syncedCount} events on foreground.`);
-          }
-        });
+        syncProgressNow(serverUrl)
+          .then((result) => {
+            if (result.syncedCount > 0) {
+              addLog(`[Sync] Auto-synced ${result.syncedCount} events on foreground.`);
+            }
+          })
+          .catch((err) => {
+            addLog(`[Sync] Non-fatal auto-sync error: ${err?.message}`);
+          });
 
         // Check for OTA updates on foreground
         performBackgroundUpdateCheck();
@@ -86,11 +90,13 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <AppNavigator />
-        <ToastContainer />
-        <StatusBar style="dark" />
-      </NavigationContainer>
+      <ErrorBoundary>
+        <NavigationContainer>
+          <AppNavigator />
+          <ToastContainer />
+          <StatusBar style="dark" />
+        </NavigationContainer>
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }
