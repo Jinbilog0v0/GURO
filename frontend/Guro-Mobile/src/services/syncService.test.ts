@@ -75,7 +75,7 @@ describe('syncService', () => {
 
       const result = await refreshItemBankIfOnline('CLASS-123');
 
-      expect(mockFetchItemBankFromServer).toHaveBeenCalledWith('http://localhost:8000', 'CLASS-123');
+      expect(mockFetchItemBankFromServer).toHaveBeenCalledWith('https://neoguro.app', 'CLASS-123');
       expect(result).toBe(true);
     });
 

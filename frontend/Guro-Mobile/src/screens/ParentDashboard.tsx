@@ -115,7 +115,7 @@ export function ParentDashboard({ navigation }: Props) {
 
   // Server configurations
   const serverUrlFromStore = useAppStore((state) => state.serverUrl);
-  const [serverUrl, setServerUrl] = useState(serverUrlFromStore || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000');
+  const [serverUrl, setServerUrl] = useState(serverUrlFromStore || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app');
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Search/Explorer states
@@ -1224,7 +1224,7 @@ export function ParentDashboard({ navigation }: Props) {
           />
           <ThemedTextInput
             label="Server URL"
-            placeholder="http://localhost:8000"
+            placeholder="https://neoguro.app"
             value={serverUrl}
             onChangeText={(t) => {
               setServerUrl(t);

@@ -13,6 +13,8 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/promote', [AuthController::class, 'promote']);
 Route::post('/auth/forgot-password/send-code', [AuthController::class, 'sendRecoveryCode']);
 Route::post('/auth/forgot-password/verify-code', [AuthController::class, 'verifyRecoveryCode']);
+Route::post('/auth/email/send-verification', [AuthController::class, 'sendVerificationCode']);
+Route::post('/auth/email/verify', [AuthController::class, 'verifyEmail']);
 Route::get('/classroom/verify', [ClassroomController::class, 'verifyCode']);
 Route::post('/classroom/pair', [ClassroomController::class, 'pairStudent']);
 Route::get('/classroom/active-subjects', [ClassroomController::class, 'getActiveSubjects']);
@@ -44,6 +46,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // User Management
     Route::post('/user/update-profile', [AuthController::class, 'updateProfile']);
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
 
     // Developer — Rate Limit Management
     Route::prefix('dev')->group(function () {

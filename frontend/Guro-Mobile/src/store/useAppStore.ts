@@ -107,6 +107,7 @@ interface AppState {
     schoolName?: string | null;
     schoolIdNumber?: string | null;
     rejectionReason?: string | null;
+    emailVerifiedAt?: string | null;
   } | null;
   appMode: 'online' | 'offline';
   guestName: string | null;
@@ -224,7 +225,7 @@ export const useAppStore = create<AppState>()(
       voiceGuideTheme: 'astronaut',
       correctSoundTheme: 'ding',
       preferredGrade: 4,
-      serverUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000',
+      serverUrl: process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app',
       adaptiveTiers: {},
       consecutiveFailures: {},
       setActiveSchoolYear: (sy) => set({ activeSchoolYear: sy }),
@@ -288,7 +289,7 @@ export const useAppStore = create<AppState>()(
       },
       registerAndPromote: async (email, password, name, firstName, middleName, lastName) => {
         const anonymousStudentId = get().studentId;
-        const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+        const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
         const resolvedUrl = resolveServerUrl(rawUrl);
         try {
           const res = await fetch(`${resolvedUrl}/api/auth/promote`, {
@@ -322,7 +323,7 @@ export const useAppStore = create<AppState>()(
         }
       },
       loginToCloud: async (email, password, role) => {
-        const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+        const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
         const resolvedUrl = resolveServerUrl(rawUrl);
         try {
           const res = await fetch(`${resolvedUrl}/api/auth/login`, {
@@ -352,6 +353,18 @@ export const useAppStore = create<AppState>()(
         }
       },
       logoutFromCloud: () => {
+        const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+        const resolvedUrl = resolveServerUrl(rawUrl);
+        const currentToken = get().token;
+        if (currentToken) {
+          fetch(`${resolvedUrl}/api/auth/logout`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${currentToken}`,
+            },
+          }).catch(() => {});
+        }
         set({
           currentUser: null,
           token: null,
@@ -693,6 +706,7 @@ export const useAppStore = create<AppState>()(
         unlockedBadges: state.unlockedBadges,
         parentalControls: state.parentalControls,
         currentUser: state.currentUser,
+        token: state.token,
         appMode: state.appMode,
         guestName: state.guestName,
         dailyMinutesUsed: state.dailyMinutesUsed,
@@ -713,6 +727,18 @@ export const useAppStore = create<AppState>()(
         adaptiveTiers: state.adaptiveTiers,
         consecutiveFailures: state.consecutiveFailures,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          if (
+            !state.serverUrl ||
+            state.serverUrl.includes('localhost') ||
+            state.serverUrl.includes('127.0.0.1') ||
+            state.serverUrl.includes('10.0.2.2')
+          ) {
+            state.serverUrl = process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+          }
+        }
+      },
     }
   )
 );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, ChevronRight, Mail, GraduationCap } from 'lucide-react';
+import { ArrowLeft, User, ChevronRight, Mail } from 'lucide-react';
 
 interface NameInputStepProps {
     onBack: () => void;
@@ -10,8 +10,8 @@ const STORAGE_KEY_NAME = 'guro_student_name';
 const STORAGE_KEY_EMAIL_ID = 'guro_student_email_or_id';
 
 const GuroLogoGraphic: React.FC = () => (
-    <div className="relative flex size-16 items-center justify-center rounded-3xl bg-gradient-to-tr from-[#11428E] via-[#2563EB] to-[#A01322] text-white shadow-xl shadow-[#11428E]/25 border border-white/30 transform hover:scale-105 transition-all duration-300">
-        <GraduationCap className="size-9" strokeWidth={2.3} />
+    <div className="relative flex size-16 items-center justify-center rounded-2xl overflow-hidden shadow-xl shadow-[#11428E]/25 border border-white/30 transform hover:scale-105 transition-all duration-300">
+        <img src="/images/guro-mark.png" alt="GURO Logo" className="w-full h-full object-cover" />
         <span className="absolute -top-1.5 -right-1.5 text-xs text-amber-300 animate-pulse">✦</span>
     </div>
 );

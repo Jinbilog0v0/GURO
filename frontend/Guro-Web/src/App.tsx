@@ -329,6 +329,7 @@ function App() {
 
   const handleConfirmLogout = () => {
     setIsLogoutModalOpen(false);
+    apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
     if (currentUser?.userId) {
       localStorage.removeItem(`guro_teacher_classroom_code_${currentUser.userId}`);
       localStorage.removeItem(`guro_teacher_classroom_history_${currentUser.userId}`);
@@ -564,13 +565,13 @@ function App() {
               disabled={isSidebarOpen}
               aria-label={!isSidebarOpen ? 'Expand menu' : undefined}
               title={!isSidebarOpen ? 'Click to expand menu' : undefined}
-              className={`w-[42px] h-[42px] shrink-0 rounded-[12px] bg-gradient-to-br from-[#11428E] to-[#1C5BC0] flex items-center justify-center text-white font-extrabold text-sm shadow-[0_6px_16px_rgba(17,66,142,0.34)] border-none p-0 ${
+              className={`w-[42px] h-[42px] shrink-0 rounded-[12px] overflow-hidden flex items-center justify-center shadow-[0_6px_16px_rgba(17,66,142,0.34)] border border-white/20 p-0 ${
                 !isSidebarOpen 
                   ? 'cursor-pointer hover:scale-105 active:scale-95 transition-transform' 
                   : 'cursor-default'
               }`}
             >
-              GU
+              <img src="/images/guro-mark.png" alt="GURO" className="w-full h-full object-cover" />
             </button>
             <div className={`leading-tight overflow-hidden ${!isSidebarOpen ? 'md:hidden' : ''}`}>
               <div className="text-[18px] font-extrabold text-[var(--text-main)]">GURO</div>

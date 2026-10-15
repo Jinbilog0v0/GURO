@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap, Eye, EyeOff, Shield, KeyRound, Terminal, Sun, Moon, Upload, CheckCircle2, Clock, X, Download } from 'lucide-react';
+import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap, Eye, EyeOff, Shield, ShieldCheck, KeyRound, Terminal, Sun, Moon, Upload, CheckCircle2, Clock, X, Download } from 'lucide-react';
 import { RoleCard, type RoleCardProps } from '../components/landing/RoleCard';
 import { FeatureCard, type FeatureCardProps } from '../components/landing/FeatureCard';
 import { setAuthToken } from '../utils/api';
@@ -9,7 +9,6 @@ import { toast } from '../utils/toast';
 
 const GuroLogoGraphic: React.FC<{ size?: 'sm' | 'md' | 'lg'; onClick?: () => void }> = ({ size = 'md', onClick }) => {
     const dimensions = size === 'lg' ? 'size-20' : size === 'sm' ? 'size-12' : 'size-16';
-    const iconSize = size === 'lg' ? 'size-11' : size === 'sm' ? 'size-6' : 'size-9';
     return (
         <div 
             onClick={onClick}
@@ -17,9 +16,13 @@ const GuroLogoGraphic: React.FC<{ size?: 'sm' | 'md' | 'lg'; onClick?: () => voi
             tabIndex={onClick ? 0 : undefined}
             onKeyDown={(e) => { if (onClick && (e.key === 'Enter' || e.key === ' ')) onClick(); }}
             aria-label="GURO Logo"
-            className={`relative flex ${dimensions} items-center justify-center rounded-3xl bg-gradient-to-tr from-[#11428E] via-[#2563EB] to-[#A01322] text-white shadow-xl shadow-[#11428E]/25 border border-white/30 transform hover:scale-105 active:scale-95 transition-all duration-300 ${onClick ? 'cursor-pointer select-none' : ''}`}
+            className={`relative flex ${dimensions} items-center justify-center rounded-3xl overflow-hidden shadow-xl shadow-[#11428E]/25 border border-white/30 transform hover:scale-105 active:scale-95 transition-all duration-300 ${onClick ? 'cursor-pointer select-none' : ''}`}
         >
-            <GraduationCap className={iconSize} strokeWidth={2.3} />
+            <img 
+                src="/images/guro-mark.png" 
+                alt="GURO Logo" 
+                className="w-full h-full object-cover" 
+            />
             <span className="absolute -top-1.5 -right-1.5 text-xs text-amber-300 animate-pulse">✦</span>
         </div>
     );
@@ -64,6 +67,43 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [authError, setAuthError] = useState('');
     const [pendingNotice, setPendingNotice] = useState<string | null>(null);
+
+    // Forgot Password modal state
+    const [showForgotModal, setShowForgotModal] = useState(false);
+    const [forgotStep, setForgotStep] = useState<1 | 2>(1);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotRole, setForgotRole] = useState<'student' | 'teacher' | 'parent'>('student');
+    const [forgotNewPassword, setForgotNewPassword] = useState('');
+    const [forgotLoading, setForgotLoading] = useState(false);
+    const [forgotError, setForgotError] = useState('');
+    const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+    const [resendCooldown, setResendCooldown] = useState(0);
+    const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+    // Live countdown timer for OTP resend
+    useEffect(() => {
+        if (resendCooldown <= 0) return;
+        const timer = setInterval(() => {
+            setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [resendCooldown]);
+
+    // Registration Email Verification OTP state
+    const [showRegisterOtpModal, setShowRegisterOtpModal] = useState(false);
+    const [registerOtpDigits, setRegisterOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+    const [registerOtpLoading, setRegisterOtpLoading] = useState(false);
+    const [registerOtpError, setRegisterOtpError] = useState('');
+    const [registerResendCooldown, setRegisterResendCooldown] = useState(0);
+    const registerOtpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+    useEffect(() => {
+        if (registerResendCooldown <= 0) return;
+        const timer = setInterval(() => {
+            setRegisterResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [registerResendCooldown]);
 
     // Secret 5-tap gesture on logo to toggle Admin Mode
     const clickCountRef = useRef(0);
@@ -199,6 +239,65 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         reader.readAsDataURL(file);
     };
 
+    const handleRegisterOtpChange = (index: number, val: string) => {
+        const cleaned = val.replace(/\D/g, '');
+        if (!cleaned) {
+            const next = [...registerOtpDigits];
+            next[index] = '';
+            setRegisterOtpDigits(next);
+            return;
+        }
+
+        if (cleaned.length > 1) {
+            const next = [...registerOtpDigits];
+            const digits = cleaned.slice(0, 6).split('');
+            digits.forEach((d, i) => {
+                if (index + i < 6) next[index + i] = d;
+            });
+            setRegisterOtpDigits(next);
+            const nextFocusIndex = Math.min(index + digits.length, 5);
+            registerOtpInputRefs.current[nextFocusIndex]?.focus();
+            return;
+        }
+
+        const next = [...registerOtpDigits];
+        next[index] = cleaned;
+        setRegisterOtpDigits(next);
+        if (index < 5) registerOtpInputRefs.current[index + 1]?.focus();
+    };
+
+    const handleRegisterOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Backspace') {
+            if (!registerOtpDigits[index] && index > 0) {
+                const next = [...registerOtpDigits];
+                next[index - 1] = '';
+                setRegisterOtpDigits(next);
+                registerOtpInputRefs.current[index - 1]?.focus();
+            } else {
+                const next = [...registerOtpDigits];
+                next[index] = '';
+                setRegisterOtpDigits(next);
+            }
+        } else if (e.key === 'ArrowLeft' && index > 0) {
+            registerOtpInputRefs.current[index - 1]?.focus();
+        } else if (e.key === 'ArrowRight' && index < 5) {
+            registerOtpInputRefs.current[index + 1]?.focus();
+        }
+    };
+
+    const handleRegisterOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        if (pasted) {
+            const next = ['', '', '', '', '', ''];
+            pasted.split('').forEach((char, i) => {
+                next[i] = char;
+            });
+            setRegisterOtpDigits(next);
+            registerOtpInputRefs.current[Math.min(pasted.length, 5)]?.focus();
+        }
+    };
+
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email.trim() || !password.trim() || !firstName.trim() || !lastName.trim()) return;
@@ -223,6 +322,70 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         setIsSubmitting(true);
         setAuthError('');
         try {
+            const res = await fetch('/api/auth/email/send-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: email.trim(),
+                    name: firstName.trim(),
+                    for_registration: true,
+                }),
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                setRegisterResendCooldown(60);
+                setRegisterOtpDigits(['', '', '', '', '', '']);
+                setRegisterOtpError('');
+                setShowRegisterOtpModal(true);
+                toast.success(`Verification code sent to ${email.trim()}`);
+            } else {
+                setAuthError(data.error || 'Failed to send verification code. Please check your email.');
+            }
+        } catch {
+            setAuthError('Connection error. Could not reach verification service.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleResendRegisterCode = async () => {
+        if (registerResendCooldown > 0 || registerOtpLoading) return;
+        setRegisterOtpLoading(true);
+        setRegisterOtpError('');
+        try {
+            const res = await fetch('/api/auth/email/send-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: email.trim(),
+                    name: firstName.trim(),
+                    for_registration: true,
+                }),
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                setRegisterResendCooldown(60);
+                toast.success(`New verification code sent to ${email.trim()}`);
+            } else {
+                setRegisterOtpError(data.error || 'Failed to resend code.');
+            }
+        } catch {
+            setRegisterOtpError('Connection error. Could not reach verification service.');
+        } finally {
+            setRegisterOtpLoading(false);
+        }
+    };
+
+    const handleConfirmRegistrationWithOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const code = registerOtpDigits.join('');
+        if (code.length !== 6) {
+            setRegisterOtpError('Please enter all 6 digits of the verification code.');
+            return;
+        }
+        setRegisterOtpLoading(true);
+        setRegisterOtpError('');
+        try {
             const effectiveRole = isAdminMode ? 'developer' : roleSelection;
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
@@ -238,11 +401,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     school_name: roleSelection === 'teacher' ? schoolName.trim() : undefined,
                     school_id_number: roleSelection === 'teacher' ? schoolIdNumber.trim() : undefined,
                     id_document: roleSelection === 'teacher' ? idDocument : undefined,
+                    verification_code: code,
                 }),
             });
             if (res.ok) {
                 const data = await res.json();
-                
+                setShowRegisterOtpModal(false);
+
                 // If this is a teacher account, they must wait for admin verification
                 if (data.pendingVerification || data.user?.verificationStatus === 'pending' || effectiveRole === 'teacher') {
                     setView('login');
@@ -260,15 +425,158 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 }
 
                 if (data.token) setAuthToken(data.token);
+                toast.success('Account created and verified successfully!');
                 onLoginSuccess(data.user);
             } else {
-                const err = await res.json().catch(() => ({}));
-                setAuthError(err.error || 'Registration failed.');
+                const data = await res.json().catch(() => ({}));
+                setRegisterOtpError(data.error || 'Failed to complete registration.');
             }
         } catch {
-            setAuthError('Connection error. Is the server running?');
+            setRegisterOtpError('Connection error. Could not complete registration.');
         } finally {
-            setIsSubmitting(false);
+            setRegisterOtpLoading(false);
+        }
+    };
+
+    const handleSendRecoveryCode = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        const trimmed = forgotEmail.trim();
+        if (!trimmed || !trimmed.includes('@')) {
+            setForgotError('Please enter a valid email address.');
+            return;
+        }
+        setForgotLoading(true);
+        setForgotError('');
+        try {
+            const res = await fetch('/api/auth/forgot-password/send-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: trimmed, role: forgotRole }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.success) {
+                toast.success(data.message || 'Verification code sent to your email.');
+                setForgotStep(2);
+                setResendCooldown(60);
+                setOtpDigits(['', '', '', '', '', '']);
+                setTimeout(() => {
+                    otpInputRefs.current[0]?.focus();
+                }, 100);
+            } else {
+                setForgotError(data.error || 'Failed to send recovery code.');
+            }
+        } catch {
+            setForgotError('Connection error. Unable to reach recovery service.');
+        } finally {
+            setForgotLoading(false);
+        }
+    };
+
+    const handleOtpChange = (index: number, val: string) => {
+        const cleaned = val.replace(/\D/g, '');
+        if (!cleaned) {
+            const next = [...otpDigits];
+            next[index] = '';
+            setOtpDigits(next);
+            return;
+        }
+
+        // Handle multi-character paste or fast typing
+        if (cleaned.length > 1) {
+            const next = [...otpDigits];
+            const digits = cleaned.slice(0, 6).split('');
+            digits.forEach((d, i) => {
+                if (index + i < 6) {
+                    next[index + i] = d;
+                }
+            });
+            setOtpDigits(next);
+            const nextFocusIndex = Math.min(index + digits.length, 5);
+            otpInputRefs.current[nextFocusIndex]?.focus();
+            return;
+        }
+
+        const next = [...otpDigits];
+        next[index] = cleaned;
+        setOtpDigits(next);
+
+        if (index < 5) {
+            otpInputRefs.current[index + 1]?.focus();
+        }
+    };
+
+    const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Backspace') {
+            if (!otpDigits[index] && index > 0) {
+                const next = [...otpDigits];
+                next[index - 1] = '';
+                setOtpDigits(next);
+                otpInputRefs.current[index - 1]?.focus();
+            } else {
+                const next = [...otpDigits];
+                next[index] = '';
+                setOtpDigits(next);
+            }
+        } else if (e.key === 'ArrowLeft' && index > 0) {
+            otpInputRefs.current[index - 1]?.focus();
+        } else if (e.key === 'ArrowRight' && index < 5) {
+            otpInputRefs.current[index + 1]?.focus();
+        }
+    };
+
+    const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        if (pasted) {
+            const next = ['', '', '', '', '', ''];
+            pasted.split('').forEach((char, i) => {
+                next[i] = char;
+            });
+            setOtpDigits(next);
+            const focusIndex = Math.min(pasted.length, 5);
+            otpInputRefs.current[focusIndex]?.focus();
+        }
+    };
+
+    const handleVerifyRecoveryCode = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const trimmedCode = otpDigits.join('').trim();
+        if (trimmedCode.length !== 6) {
+            setForgotError('Please enter all 6 digits of the verification code.');
+            return;
+        }
+        if (forgotNewPassword.length < 8 || !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$/.test(forgotNewPassword)) {
+            setForgotError('Password must be at least 8 characters with letters, numbers, and symbols.');
+            return;
+        }
+        setForgotLoading(true);
+        setForgotError('');
+        try {
+            const res = await fetch('/api/auth/forgot-password/verify-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: forgotEmail.trim(),
+                    role: forgotRole,
+                    code: trimmedCode,
+                    new_password: forgotNewPassword,
+                }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.success) {
+                toast.success('Password updated! You can now sign in with your new password.');
+                setShowForgotModal(false);
+                setForgotStep(1);
+                setForgotEmail('');
+                setOtpDigits(['', '', '', '', '', '']);
+                setForgotNewPassword('');
+            } else {
+                setForgotError(data.error || 'Invalid or expired verification code.');
+            }
+        } catch {
+            setForgotError('Connection error. Unable to complete password reset.');
+        } finally {
+            setForgotLoading(false);
         }
     };
 
@@ -613,6 +921,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                     </button>
                                 </div>
                                 {fieldErrors.password && <p id="login-pw-err" className="text-[11px] text-[#A01322] font-semibold pl-1">{fieldErrors.password}</p>}
+                                <div className="flex justify-end pt-0.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setShowForgotModal(true); setForgotStep(1); setForgotError(''); }}
+                                        className="text-[12px] text-[var(--color-primary)] hover:underline font-semibold cursor-pointer"
+                                    >
+                                        Forgot password?
+                                    </button>
+                                </div>
                             </div>
 
                             <button
@@ -945,6 +1262,288 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </div>
                 )}
 
+                {/* ── Forgot Password Modal ── */}
+                {showForgotModal && (
+                    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative text-[var(--text-main)] animate-in fade-in zoom-in-95 duration-200">
+                            <button
+                                type="button"
+                                onClick={() => { setShowForgotModal(false); setForgotStep(1); setForgotError(''); }}
+                                className="absolute right-4 top-4 p-1.5 rounded-full text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                                aria-label="Close modal"
+                            >
+                                <X className="size-5" />
+                            </button>
+
+                            <div className="flex flex-col items-center text-center mb-6">
+                                <div className="size-12 rounded-2xl bg-[#11428E]/10 border border-[#11428E]/25 text-[#11428E] dark:text-blue-400 flex items-center justify-center mb-3 shadow-inner">
+                                    <KeyRound className="size-6" />
+                                </div>
+                                <h3 className="text-xl font-bold font-display tracking-tight text-[var(--text-main)]">
+                                    Reset Password
+                                </h3>
+                                <p className="text-xs text-[var(--text-muted)] mt-1.5 max-w-xs">
+                                    {forgotStep === 1
+                                        ? 'Select your role and enter your registered email address to receive a 6-digit code.'
+                                        : 'Enter the 6-digit code sent to your email and set your new password.'}
+                                </p>
+                            </div>
+
+                            {forgotError && (
+                                <div className="mb-4 bg-[#A01322]/10 border border-[#A01322]/20 text-[#A01322] text-xs font-semibold p-3 rounded-xl flex items-center gap-2">
+                                    <AlertCircle className="size-4 shrink-0" />
+                                    <span>{forgotError}</span>
+                                </div>
+                            )}
+
+                            {forgotStep === 1 ? (
+                                <form onSubmit={handleSendRecoveryCode} className="flex flex-col gap-4">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className={labelCls}>Account Role</label>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {(['student', 'teacher', 'parent'] as const).map((r) => {
+                                                const isSel = forgotRole === r;
+                                                return (
+                                                    <button
+                                                        key={r}
+                                                        type="button"
+                                                        onClick={() => setForgotRole(r)}
+                                                        className={`py-2 px-3 rounded-xl text-xs font-bold capitalize transition-all border cursor-pointer ${
+                                                            isSel
+                                                                ? 'border-[#11428E] bg-[#11428E]/10 text-[#11428E] dark:text-blue-400 shadow-sm'
+                                                                : 'border-[var(--border-color)] text-[var(--text-muted)] hover:border-slate-400'
+                                                        }`}
+                                                    >
+                                                        {r}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className={labelCls} htmlFor="forgot-email">Email address</label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[var(--text-dark)]" />
+                                            <input
+                                                id="forgot-email"
+                                                type="email"
+                                                placeholder="you@school.edu"
+                                                className={inputCls}
+                                                value={forgotEmail}
+                                                onChange={(e) => { setForgotEmail(e.target.value); setForgotError(''); }}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-2 pt-2">
+                                        <button
+                                            type="submit"
+                                            disabled={forgotLoading}
+                                            className="w-full py-3 rounded-xl text-white text-xs font-bold tracking-wide shadow-md transition-all disabled:opacity-60 cursor-pointer"
+                                            style={{ background: 'linear-gradient(135deg, #11428E 0%, #2563EB 100%)' }}
+                                        >
+                                            {forgotLoading ? 'Sending code…' : 'Send Recovery Code'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowForgotModal(false)}
+                                            className="w-full py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <form onSubmit={handleVerifyRecoveryCode} className="flex flex-col gap-4">
+                                    <div className="p-2.5 rounded-xl bg-[var(--bg-main)]/60 border border-[var(--border-color)] flex items-center justify-between text-xs">
+                                        <span className="text-[var(--text-muted)]">Target account:</span>
+                                        <span className="font-semibold text-[var(--text-main)] truncate max-w-[200px]">{forgotEmail} ({forgotRole})</span>
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className={labelCls}>6-Digit Verification Code</label>
+                                            <span className="text-[10px] text-[var(--text-dark)] font-medium">Valid for 10 mins</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+                                            {otpDigits.map((digit, index) => (
+                                                <input
+                                                    key={index}
+                                                    ref={(el) => { otpInputRefs.current[index] = el; }}
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    pattern="[0-9]*"
+                                                    maxLength={1}
+                                                    value={digit}
+                                                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                                                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                                                    onPaste={handleOtpPaste}
+                                                    className="w-11 h-14 sm:w-12 sm:h-14 text-center font-mono text-2xl font-black rounded-2xl border-2 border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] shadow-inner focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 transition-all caret-[#11428E]"
+                                                    aria-label={`Digit ${index + 1}`}
+                                                />
+                                            ))}
+                                        </div>
+
+                                        {/* Live Resend Countdown */}
+                                        <div className="flex items-center justify-center pt-1">
+                                            {resendCooldown > 0 ? (
+                                                <span className="text-[11px] text-[var(--text-dark)] font-medium flex items-center gap-1">
+                                                    <Clock className="size-3 text-[var(--text-dark)]" />
+                                                    Resend code in <strong className="text-[var(--text-main)] font-mono">0:{resendCooldown < 10 ? `0${resendCooldown}` : resendCooldown}</strong>
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    disabled={forgotLoading}
+                                                    onClick={() => handleSendRecoveryCode()}
+                                                    className="text-[11px] font-bold text-[#11428E] dark:text-blue-400 hover:underline cursor-pointer disabled:opacity-50"
+                                                >
+                                                    Didn't receive the code? Resend now
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className={labelCls} htmlFor="forgot-new-password">New Password</label>
+                                        <div className="relative">
+                                            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[var(--text-dark)]" />
+                                            <input
+                                                id="forgot-new-password"
+                                                type="password"
+                                                placeholder="••••••••"
+                                                className={inputCls}
+                                                value={forgotNewPassword}
+                                                onChange={(e) => { setForgotNewPassword(e.target.value); setForgotError(''); }}
+                                                required
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-[var(--text-dark)]">Min. 8 characters with letters, numbers, and special symbols.</p>
+                                    </div>
+
+                                    <div className="flex flex-col gap-2 pt-2">
+                                        <button
+                                            type="submit"
+                                            disabled={forgotLoading}
+                                            className="w-full py-3 rounded-xl text-white text-xs font-bold tracking-wide shadow-md transition-all disabled:opacity-60 cursor-pointer"
+                                            style={{ background: 'linear-gradient(135deg, #11428E 0%, #10B981 100%)' }}
+                                        >
+                                            {forgotLoading ? 'Updating password…' : 'Reset Password'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setForgotStep(1); setForgotError(''); }}
+                                            className="w-full py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                                        >
+                                            ← Back to Email
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Registration Email Verification OTP Modal ── */}
+                {showRegisterOtpModal && (
+                    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative text-[var(--text-main)] animate-in fade-in zoom-in-95 duration-200">
+                            <button
+                                type="button"
+                                onClick={() => { setShowRegisterOtpModal(false); setRegisterOtpError(''); }}
+                                className="absolute right-4 top-4 p-1.5 rounded-full text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-colors cursor-pointer"
+                                aria-label="Close modal"
+                            >
+                                <X className="size-5" />
+                            </button>
+
+                            <div className="flex flex-col items-center text-center mb-6">
+                                <div className="size-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3 shadow-inner">
+                                    <ShieldCheck className="size-6" />
+                                </div>
+                                <h3 className="text-xl font-bold font-display tracking-tight text-[var(--text-main)]">
+                                    Activate Your Account
+                                </h3>
+                                <p className="text-xs text-[var(--text-muted)] mt-1.5 max-w-xs">
+                                    Enter the 6-digit verification code sent to <strong className="text-[var(--text-main)]">{email}</strong> to activate your account.
+                                </p>
+                            </div>
+
+                            {registerOtpError && (
+                                <div className="mb-4 bg-[#A01322]/10 border border-[#A01322]/20 text-[#A01322] text-xs font-semibold p-3 rounded-xl flex items-center gap-2">
+                                    <AlertCircle className="size-4 shrink-0" />
+                                    <span>{registerOtpError}</span>
+                                </div>
+                            )}
+
+                            <form onSubmit={handleConfirmRegistrationWithOtp} className="flex flex-col gap-4">
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between">
+                                        <label className={labelCls}>6-Digit Verification Code</label>
+                                        <span className="text-[10px] text-[var(--text-dark)] font-medium">Valid for 10 mins</span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+                                        {registerOtpDigits.map((digit, index) => (
+                                            <input
+                                                key={index}
+                                                ref={(el) => { registerOtpInputRefs.current[index] = el; }}
+                                                type="text"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                maxLength={1}
+                                                value={digit}
+                                                onChange={(e) => handleRegisterOtpChange(index, e.target.value)}
+                                                onKeyDown={(e) => handleRegisterOtpKeyDown(index, e)}
+                                                onPaste={handleRegisterOtpPaste}
+                                                className="w-11 h-14 sm:w-12 sm:h-14 text-center font-mono text-2xl font-black rounded-2xl border-2 border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] shadow-inner focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 transition-all caret-[#11428E]"
+                                                aria-label={`Digit ${index + 1}`}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    {/* Live Resend Countdown */}
+                                    <div className="flex items-center justify-center pt-1">
+                                        {registerResendCooldown > 0 ? (
+                                            <span className="text-[11px] text-[var(--text-dark)] font-medium flex items-center gap-1">
+                                                <Clock className="size-3 text-[var(--text-dark)]" />
+                                                Resend code in <strong className="text-[var(--text-main)] font-mono">0:{registerResendCooldown < 10 ? `0${registerResendCooldown}` : registerResendCooldown}</strong>
+                                            </span>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                disabled={registerOtpLoading}
+                                                onClick={() => handleResendRegisterCode()}
+                                                className="text-[11px] font-bold text-[#11428E] dark:text-blue-400 hover:underline cursor-pointer disabled:opacity-50"
+                                            >
+                                                Didn't receive the code? Resend now
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-2 pt-2">
+                                    <button
+                                        type="submit"
+                                        disabled={registerOtpLoading}
+                                        className="w-full py-3.5 rounded-xl text-white text-xs font-bold tracking-wide shadow-md transition-all disabled:opacity-60 cursor-pointer"
+                                        style={{ background: 'linear-gradient(135deg, #11428E 0%, #10B981 100%)' }}
+                                    >
+                                        {registerOtpLoading ? 'Verifying & Activating…' : 'Verify & Activate Account'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setShowRegisterOtpModal(false); setRegisterOtpError(''); }}
+                                        className="w-full py-2.5 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                                    >
+                                        ← Edit Registration Details
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

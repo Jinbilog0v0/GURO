@@ -140,18 +140,31 @@ export const styles = StyleSheet.create({
   },
   // Letter badge
   optionLetterBadge: {
-    width: 24,
-    height: 24,
+    width: 26,
+    height: 26,
     borderRadius: Radius.full,
     backgroundColor: Colors.bgInput,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
+  optionLetterBadgeSelected: {
+    backgroundColor: Colors.accentPrimary,
+  },
+  optionLetterBadgeCorrect: {
+    backgroundColor: Colors.success,
+  },
+  optionLetterBadgeWrong: {
+    backgroundColor: Colors.danger,
+  },
   optionLetter: {
     fontFamily: Fonts.display,
     fontSize: FontSizes.sm,
     color: Colors.textMuted,
+  },
+  optionLetterActive: {
+    color: Colors.white,
+    fontFamily: Fonts.bodyBold,
   },
   // Option text
   optionText: {
@@ -177,8 +190,16 @@ export const styles = StyleSheet.create({
   // ── Feedback card ─────────────────────────────────────────────────────────
   feedbackCard: {
     marginBottom: Spacing.sm,
-    borderColor: Colors.accentSecondary,
-    borderWidth: 1,
+    borderWidth: 1.5,
+    borderRadius: Radius.lg || 16,
+  },
+  feedbackCardCorrect: {
+    backgroundColor: 'rgba(22, 163, 74, 0.08)',
+    borderColor: 'rgba(22, 163, 74, 0.35)',
+  },
+  feedbackCardWrong: {
+    backgroundColor: 'rgba(220, 38, 38, 0.06)',
+    borderColor: 'rgba(220, 38, 38, 0.35)',
   },
   langToggleRow: {
     flexDirection: 'row',
@@ -212,8 +233,14 @@ export const styles = StyleSheet.create({
   feedbackResultTitle: {
     fontFamily: Fonts.display,
     fontSize: FontSizes.lg,
-    color: Colors.accentSecondary,
+    color: Colors.textMain,
     marginBottom: Spacing.sm,
+  },
+  feedbackResultTitleCorrect: {
+    color: Colors.success,
+  },
+  feedbackResultTitleWrong: {
+    color: Colors.danger,
   },
   feedbackSectionLabel: {
     fontFamily: Fonts.bodySemiBold,
@@ -229,8 +256,8 @@ export const styles = StyleSheet.create({
   feedbackText: {
     fontFamily: Fonts.body,
     fontSize: FontSizes.sm,
-    color: Colors.textMuted,
-    lineHeight: FontSizes.sm * 1.4,
+    color: Colors.textMain,
+    lineHeight: FontSizes.sm * 1.45,
   },
 
   // ── Action buttons ────────────────────────────────────────────────────────

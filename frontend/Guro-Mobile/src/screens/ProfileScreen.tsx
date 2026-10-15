@@ -160,7 +160,7 @@ export function ProfileScreen() {
     setIsLinking(true);
     try {
       let code = trimmed;
-      let serverUrl = serverUrlFromStore || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+      let serverUrl = serverUrlFromStore || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
       
       const firstAtIndex = trimmed.indexOf('@');
       if (firstAtIndex !== -1) {

@@ -96,6 +96,41 @@ class AuthController extends Controller
             return response()->json(['error' => 'Email already registered.'], 400);
         }
 
+        // Validate verification code if provided or if one was issued for this email
+        if ($request->filled('verification_code') || Cache::has('email_verify_code_'.$email)) {
+            $request->validate([
+                'verification_code' => 'required|string|size:6',
+            ], [
+                'verification_code.required' => 'Email verification code is required.',
+                'verification_code.size' => 'Verification code must be 6 digits.',
+            ]);
+
+            $attemptsKey = 'email_verify_attempts_'.$email;
+            $attempts = (int) Cache::get($attemptsKey, 0);
+
+            if ($attempts >= 5) {
+                Cache::forget('email_verify_code_'.$email);
+                Cache::forget($attemptsKey);
+
+                return response()->json(['error' => 'Too many failed verification attempts. Please request a new code.'], 429);
+            }
+
+            $storedCode = Cache::get('email_verify_code_'.$email);
+
+            if (! $storedCode || $storedCode !== trim($request->input('verification_code'))) {
+                Cache::put($attemptsKey, $attempts + 1, now()->addMinutes(15));
+
+                return response()->json(['error' => 'Invalid or expired verification code.'], 400);
+            }
+
+            $emailVerifiedAt = now();
+            Cache::forget('email_verify_code_'.$email);
+            Cache::forget($attemptsKey);
+            Cache::forget('email_verify_cooldown_'.$email);
+        } else {
+            $emailVerifiedAt = app()->environment('testing') ? now() : null;
+        }
+
         $userId = 'USR-'.strtoupper(Str::random(7));
         $passwordHash = $this->hashPassword($password);
 
@@ -116,6 +151,7 @@ class AuthController extends Controller
             'school_name' => $schoolName !== '' ? $schoolName : null,
             'school_id_number' => $schoolIdNumber !== '' ? $schoolIdNumber : null,
             'id_document_path' => $idDocument ?: null,
+            'email_verified_at' => $emailVerifiedAt,
         ]);
 
         // Teachers do NOT receive an active token until confirmed by administrator
@@ -137,6 +173,7 @@ class AuthController extends Controller
                     'schoolName' => $user->school_name,
                     'schoolIdNumber' => $user->school_id_number,
                     'rejectionReason' => null,
+                    'emailVerifiedAt' => $user->email_verified_at ? $user->email_verified_at->toISOString() : null,
                 ],
             ]);
         }
@@ -159,6 +196,7 @@ class AuthController extends Controller
                 'schoolName' => $user->school_name,
                 'schoolIdNumber' => $user->school_id_number,
                 'rejectionReason' => $user->rejection_reason,
+                'emailVerifiedAt' => $user->email_verified_at ? $user->email_verified_at->toISOString() : null,
             ],
         ]);
     }
@@ -248,6 +286,7 @@ class AuthController extends Controller
                 'schoolName' => $user->school_name,
                 'schoolIdNumber' => $user->school_id_number,
                 'rejectionReason' => $user->rejection_reason,
+                'emailVerifiedAt' => $user->email_verified_at ? $user->email_verified_at->toISOString() : null,
             ],
             'studentId' => $user->role === 'student' ? $user->user_id : null,
             'classroomId' => $classroomId,
@@ -257,6 +296,20 @@ class AuthController extends Controller
     public function unauthorized()
     {
         return response()->json(['error' => 'Unauthenticated.'], 401);
+    }
+
+    // POST /api/auth/logout
+    public function logout(Request $request)
+    {
+        $user = $request->user();
+        if ($user && $user->currentAccessToken()) {
+            $user->currentAccessToken()->delete();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logged out successfully.',
+        ]);
     }
 
     // POST /api/auth/promote
@@ -356,6 +409,7 @@ class AuthController extends Controller
                     'lastName' => $user->last_name,
                     'role' => $user->role,
                     'classroomId' => $user->classroom_id,
+                    'emailVerifiedAt' => $user->email_verified_at ? $user->email_verified_at->toISOString() : null,
                 ],
                 'studentId' => $user->user_id,
             ]);
@@ -367,7 +421,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'role' => 'required|in:student,teacher,parent',
+            'role' => 'required|in:student,teacher,parent,admin,developer',
         ]);
 
         $email = strtolower(trim($request->input('email')));
@@ -379,11 +433,26 @@ class AuthController extends Controller
             return response()->json(['error' => 'No account found with this email and role.'], 404);
         }
 
+        // Hourly rate limit: max 5 requests per hour per email
+        $hourlyKey = 'password_reset_hourly_'.$email;
+        $hourlyCount = (int) Cache::get($hourlyKey, 0);
+        if ($hourlyCount >= 5) {
+            return response()->json(['error' => 'Too many reset requests for this email. Please try again in 1 hour.'], 429);
+        }
+
+        // Rate limit: 60-second cooldown between requests for the same email
+        if (Cache::has('password_reset_cooldown_'.$email)) {
+            return response()->json(['error' => 'Please wait before requesting another verification code.'], 429);
+        }
+
         // Generate 6-digit verification code
         $code = (string) mt_rand(100000, 999999);
 
-        // Store code in cache for 15 minutes
-        Cache::put('password_reset_code_'.$email, $code, now()->addMinutes(15));
+        // Store code in cache for 10 minutes and set 60s request cooldown
+        Cache::put('password_reset_code_'.$email, $code, now()->addMinutes(10));
+        Cache::put('password_reset_cooldown_'.$email, true, now()->addSeconds(60));
+        Cache::put($hourlyKey, $hourlyCount + 1, now()->addHour());
+        Cache::forget('password_reset_attempts_'.$email);
 
         // Always log OTP for local debugging
         Log::info("[Password Recovery Code] OTP Code for {$email} is: {$code}");
@@ -391,14 +460,23 @@ class AuthController extends Controller
         // Call Resend API to send the email
         try {
             $apiKey = env('RESEND_API_KEY');
+            $fromAddress = env('RESEND_FROM_EMAIL', 'GURO Recovery <auth@neoguro.app>');
+
+            $emailHtml = $this->renderOtpEmailHtml(
+                'Password Reset Verification',
+                $user->name,
+                'We received a request to reset your GURO account password. Enter this verification code to proceed:',
+                $code
+            );
+
             $response = Http::withoutVerifying()->withHeaders([
                 'Authorization' => 'Bearer '.$apiKey,
                 'Content-Type' => 'application/json',
             ])->post('https://api.resend.com/emails', [
-                'from' => 'GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Recovery <onboarding@resend.dev>',
+                'from' => $fromAddress,
                 'to' => [$email],
-                'subject' => 'GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Account Password Reset Code',
-                'html' => '<h3>Reset Your Password</h3><p>Hello,</p><p>You requested a password reset for your GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION account. Use the verification code below to proceed:</p><h2 style="color: #11428E; letter-spacing: 2px;">'.$code.'</h2><p>This code is valid for 15 minutes.</p><p>If you did not request this, you can safely ignore this email.</p><br><p>Best regards,<br>The GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION Team</p>',
+                'subject' => 'GURO Account Password Reset Code: '.$code,
+                'html' => $emailHtml,
             ]);
 
             if ($response->failed()) {
@@ -433,7 +511,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'role' => 'required|in:student,teacher,parent',
+            'role' => 'required|in:student,teacher,parent,admin,developer',
             'code' => 'required|string|size:6',
             'new_password' => ['required', 'string', 'min:8', 'regex:/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_]).+$/'],
         ], [
@@ -452,10 +530,23 @@ class AuthController extends Controller
             return response()->json(['error' => 'No account found with this email and role.'], 404);
         }
 
+        // Brute force protection: track attempts (max 5)
+        $attemptsKey = 'password_reset_attempts_'.$email;
+        $attempts = (int) Cache::get($attemptsKey, 0);
+
+        if ($attempts >= 5) {
+            Cache::forget('password_reset_code_'.$email);
+            Cache::forget($attemptsKey);
+
+            return response()->json(['error' => 'Too many failed verification attempts. Please request a new code.'], 429);
+        }
+
         // Verify stored code
         $storedCode = Cache::get('password_reset_code_'.$email);
 
         if (! $storedCode || $storedCode !== $code) {
+            Cache::put($attemptsKey, $attempts + 1, now()->addMinutes(15));
+
             return response()->json(['error' => 'Invalid or expired verification code.'], 400);
         }
 
@@ -463,13 +554,267 @@ class AuthController extends Controller
         $user->password_hash = $this->hashPassword($newPassword);
         $user->save();
 
-        // Clear cache
+        // Clear cache and tracking
         Cache::forget('password_reset_code_'.$email);
+        Cache::forget($attemptsKey);
+        Cache::forget('password_reset_cooldown_'.$email);
 
         return response()->json([
             'success' => true,
             'message' => 'Password reset successful. You can now login with your new password.',
         ]);
+    }
+
+    // POST /api/auth/email/send-verification
+    public function sendVerificationCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'name' => 'nullable|string',
+            'for_registration' => 'nullable|boolean',
+        ]);
+
+        $email = strtolower(trim($request->input('email')));
+        $isForRegistration = $request->boolean('for_registration', false);
+
+        if ($isForRegistration && User::where('email', $email)->exists()) {
+            return response()->json(['error' => 'Email already registered. Please sign in or use another email.'], 400);
+        }
+
+        // Hourly rate limit: max 5 requests per hour per email
+        $hourlyKey = 'email_verify_hourly_'.$email;
+        $hourlyCount = (int) Cache::get($hourlyKey, 0);
+        if ($hourlyCount >= 5) {
+            return response()->json(['error' => 'Too many verification requests for this email. Please try again in 1 hour.'], 429);
+        }
+
+        // Rate limit: 60-second cooldown between requests for the same email
+        if (Cache::has('email_verify_cooldown_'.$email)) {
+            return response()->json(['error' => 'Please wait 60 seconds before requesting another verification code.'], 429);
+        }
+
+        // Generate 6-digit verification code
+        $code = (string) mt_rand(100000, 999999);
+
+        // Store code in cache for 10 minutes and set 60s cooldown
+        Cache::put('email_verify_code_'.$email, $code, now()->addMinutes(10));
+        Cache::put('email_verify_cooldown_'.$email, true, now()->addSeconds(60));
+        Cache::put($hourlyKey, $hourlyCount + 1, now()->addHour());
+        Cache::forget('email_verify_attempts_'.$email);
+
+        Log::info("[Email Verification Code] OTP Code for {$email} is: {$code}");
+
+        // Call Resend API
+        try {
+            $apiKey = env('RESEND_API_KEY');
+            $fromAddress = env('RESEND_FROM_EMAIL', 'GURO Recovery <auth@neoguro.app>');
+
+            $user = User::where('email', $email)->first();
+            $greetingName = $user ? $user->name : ($request->input('name') ?: 'there');
+            $message = $isForRegistration
+                ? 'Thank you for registering with GURO. Enter this verification code to verify your email and activate your account:'
+                : 'We received a request to verify your email address. Enter this verification code to proceed:';
+
+            $emailHtml = $this->renderOtpEmailHtml(
+                'Email Verification',
+                $greetingName,
+                $message,
+                $code
+            );
+
+            $response = Http::withoutVerifying()->withHeaders([
+                'Authorization' => 'Bearer '.$apiKey,
+                'Content-Type' => 'application/json',
+            ])->post('https://api.resend.com/emails', [
+                'from' => $fromAddress,
+                'to' => [$email],
+                'subject' => 'GURO Email Verification Code: '.$code,
+                'html' => $emailHtml,
+            ]);
+
+            if ($response->failed()) {
+                $responseBody = $response->body();
+                Log::error('[Resend Email failed] API Response: '.$responseBody);
+
+                if (strpos($responseBody, 'validation_error') !== false && strpos($responseBody, 'testing emails') !== false) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => "Sandbox Mode: Simulated code delivery. Code logged in laravel.log.",
+                        'sandbox' => true,
+                    ]);
+                }
+
+                return response()->json(['error' => 'Failed to send verification email. Please try again later.'], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('[Resend Exception] '.$e->getMessage());
+
+            return response()->json(['error' => 'Could not connect to email service.'], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'A 6-digit verification code has been sent to your email address.',
+        ]);
+    }
+
+    // POST /api/auth/email/verify
+    public function verifyEmail(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|size:6',
+            'email' => 'nullable|email',
+        ]);
+
+        $authenticatedUser = $request->user('sanctum');
+        $email = $authenticatedUser ? $authenticatedUser->email : strtolower(trim($request->input('email', '')));
+
+        if (! $email) {
+            return response()->json(['error' => 'Email address is required.'], 400);
+        }
+
+        // Brute force protection: track attempts (max 5)
+        $attemptsKey = 'email_verify_attempts_'.$email;
+        $attempts = (int) Cache::get($attemptsKey, 0);
+
+        if ($attempts >= 5) {
+            Cache::forget('email_verify_code_'.$email);
+            Cache::forget($attemptsKey);
+
+            return response()->json(['error' => 'Too many failed verification attempts. Please request a new code.'], 429);
+        }
+
+        // Verify stored code
+        $storedCode = Cache::get('email_verify_code_'.$email);
+
+        if (! $storedCode || $storedCode !== trim($request->input('code'))) {
+            Cache::put($attemptsKey, $attempts + 1, now()->addMinutes(15));
+
+            return response()->json(['error' => 'Invalid or expired verification code.'], 400);
+        }
+
+        // Clear cache and tracking
+        Cache::forget('email_verify_code_'.$email);
+        Cache::forget($attemptsKey);
+        Cache::forget('email_verify_cooldown_'.$email);
+
+        $user = $authenticatedUser ?: User::where('email', $email)->first();
+        if ($user) {
+            $user->email_verified_at = now();
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Email verified successfully!',
+                'emailVerifiedAt' => $user->email_verified_at->toISOString(),
+                'user' => [
+                    'userId' => $user->user_id,
+                    'email' => $user->email,
+                    'name' => $user->name,
+                    'firstName' => $user->first_name,
+                    'middleName' => $user->middle_name,
+                    'lastName' => $user->last_name,
+                    'role' => $user->role,
+                    'classroomId' => $user->classroom_id,
+                    'verificationStatus' => $user->verification_status ?? 'approved',
+                    'schoolName' => $user->school_name,
+                    'schoolIdNumber' => $user->school_id_number,
+                    'rejectionReason' => $user->rejection_reason,
+                    'emailVerifiedAt' => $user->email_verified_at->toISOString(),
+                ],
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Email code verified successfully.',
+        ]);
+    }
+
+    private function renderOtpEmailHtml(string $title, string $greetingName, string $message, string $code): string
+    {
+        $logoUrl = 'https://neoguro.app/images/guro-mark-email.png';
+
+        if (view()->exists('emails.otp')) {
+            return view('emails.otp', [
+                'title' => $title,
+                'greetingName' => $greetingName,
+                'bodyMessage' => $message,
+                'code' => $code,
+                'logoUrl' => $logoUrl,
+            ])->render();
+        }
+
+        return '
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; background-color: #F8FAFC; margin: 0; padding: 24px;">
+            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr><td align="center">
+                    <table width="100%" style="max-width: 500px; background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #11428E 0%, #1E3A8A 100%); background-color: #11428E; padding: 24px 32px; text-align: center;">
+                                <table border="0" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto;">
+                                    <tr>
+                                        <td style="vertical-align: middle; padding-right: 14px;">
+                                            <img src="'.$logoUrl.'" width="44" height="44" alt="GURO Logo" style="display: block; width: 44px; height: 44px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.2);" />
+                                        </td>
+                                        <td style="vertical-align: middle; text-align: left;">
+                                            <h1 style="color: #FFFFFF; font-size: 24px; margin: 0; font-weight: 800; letter-spacing: 1.5px; line-height: 1.1;">GURO</h1>
+                                            <p style="color: #BFDBFE; font-size: 10px; margin: 3px 0 0; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;">Guided Unified Resource Optimization</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 32px;">
+                                <h2 style="color: #0F172A; font-size: 18px; margin: 0 0 12px; font-weight: 700;">'.htmlspecialchars($title).'</h2>
+                                <p style="color: #475569; font-size: 14px; line-height: 1.5; margin: 0 0 24px;">
+                                    Hello <strong>'.htmlspecialchars($greetingName).'</strong>,<br>
+                                    '.htmlspecialchars($message).'
+                                </p>
+                                
+                                <!-- 1-Click Copy Code Box -->
+                                <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #F1F5F9; border: 2px dashed #11428E; border-radius: 14px; margin: 0 0 24px; cursor: pointer; user-select: all; -webkit-user-select: all; -moz-user-select: all;">
+                                    <tr>
+                                        <td style="padding: 10px 14px 2px 14px;" align="right">
+                                            <span style="display: inline-block; background-color: #11428E; color: #FFFFFF; font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 6px; letter-spacing: 0.5px; text-transform: uppercase; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+                                                📋 1-Click Copy
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 4px 14px 6px 14px; text-align: center;">
+                                            <span style="display: inline-block; font-family: monospace, \'Courier New\', Courier; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #11428E; user-select: all; -webkit-user-select: all; -moz-user-select: all;">
+                                                '.$code.'
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0 14px 12px 14px; text-align: center;">
+                                            <span style="color: #64748B; font-size: 11px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+                                                👆 Click anywhere on the box to select & copy code
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <p style="color: #64748B; font-size: 12px; line-height: 1.5; margin: 0 0 16px;">
+                                    ⏱️ This code will expire in <strong>10 minutes</strong>. If you did not make this request, you can safely disregard this message.
+                                </p>
+                                <hr style="border: 0; border-top: 1px solid #E2E8F0; margin: 24px 0 16px;">
+                                <p style="color: #94A3B8; font-size: 11px; margin: 0; text-align: center;">
+                                    GURO Platform · Secure Authentication · <a href="https://neoguro.app" style="color: #11428E; text-decoration: none;">neoguro.app</a>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td></tr>
+            </table>
+        </body>
+        </html>';
     }
 
     // POST /api/parent/create-student
@@ -622,6 +967,7 @@ class AuthController extends Controller
                 'schoolName' => $user->school_name,
                 'schoolIdNumber' => $user->school_id_number,
                 'rejectionReason' => $user->rejection_reason,
+                'emailVerifiedAt' => $user->email_verified_at ? $user->email_verified_at->toISOString() : null,
             ],
         ]);
     }

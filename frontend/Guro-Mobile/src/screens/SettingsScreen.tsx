@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Text,
   View,
@@ -6,6 +6,8 @@ import {
   ScrollView,
   Alert,
   BackHandler,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -33,6 +35,10 @@ import {
   Globe,
   RotateCw,
   Smartphone,
+  Mail,
+  CheckCircle2,
+  ShieldCheck,
+  AlertCircle,
 } from 'lucide-react-native';
 
 // ── Update Service ──────────────────────────────────────────────────────────
@@ -48,7 +54,7 @@ import { Fonts, FontSizes } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
 import { GlassCard } from '../components/ui/GlassCard';
 import { ThemedTextInput } from '../components/ui/ThemedTextInput';
-import { PrimaryButton, DangerButton } from '../components/ui/Buttons';
+import { PrimaryButton, SecondaryButton, DangerButton } from '../components/ui/Buttons';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { toast } from '../components';
 import { styles } from '../styles/SettingsScreen.styles';
@@ -114,6 +120,155 @@ export function SettingsScreen({ navigation }: Props) {
   // Dialog states
   const [purchasingOutfit, setPurchasingOutfit] = useState<any | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // Email verification modal states
+  const [showEmailVerifyModal, setShowEmailVerifyModal] = useState(false);
+  const [verifyOtpDigits, setVerifyOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [isSendingVerifyCode, setIsSendingVerifyCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [verifyCooldown, setVerifyCooldown] = useState(0);
+  const verifyInputRefs = useRef<Array<TextInput | null>>([]);
+
+  useEffect(() => {
+    if (verifyCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setVerifyCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [verifyCooldown]);
+
+  const handleOpenEmailVerifyModal = async () => {
+    if (!currentUser?.email) {
+      toast.error('No email address associated with this account.');
+      return;
+    }
+    setIsSendingVerifyCode(true);
+    try {
+      const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+      const resolvedUrl = resolveServerUrl(rawUrl);
+      const res = await fetch(`${resolvedUrl}/api/auth/email/send-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentUser.email }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setVerifyCooldown(60);
+        setVerifyOtpDigits(['', '', '', '', '', '']);
+        setShowEmailVerifyModal(true);
+        toast.success(`Verification code sent to ${currentUser.email}`);
+      } else {
+        toast.error(data.error || data.message || 'Failed to send verification code.');
+      }
+    } catch {
+      toast.error('Unable to send code. Please check your network connection.');
+    } finally {
+      setIsSendingVerifyCode(false);
+    }
+  };
+
+  const handleResendEmailVerifyCode = async () => {
+    if (verifyCooldown > 0 || isSendingVerifyCode) return;
+    setIsSendingVerifyCode(true);
+    try {
+      const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+      const resolvedUrl = resolveServerUrl(rawUrl);
+      const res = await fetch(`${resolvedUrl}/api/auth/email/send-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentUser?.email }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setVerifyCooldown(60);
+        toast.success(`New code sent to ${currentUser?.email}`);
+      } else {
+        toast.error(data.error || data.message || 'Failed to resend code.');
+      }
+    } catch {
+      toast.error('Unable to resend verification code.');
+    } finally {
+      setIsSendingVerifyCode(false);
+    }
+  };
+
+  const handleVerifyOtpChange = (index: number, val: string) => {
+    const cleaned = val.replace(/[^0-9]/g, '');
+    if (!cleaned) {
+      const next = [...verifyOtpDigits];
+      next[index] = '';
+      setVerifyOtpDigits(next);
+      return;
+    }
+    if (cleaned.length > 1) {
+      const next = [...verifyOtpDigits];
+      const digits = cleaned.slice(0, 6).split('');
+      digits.forEach((d, i) => {
+        if (index + i < 6) next[index + i] = d;
+      });
+      setVerifyOtpDigits(next);
+      const nextFocus = Math.min(index + digits.length, 5);
+      verifyInputRefs.current[nextFocus]?.focus();
+      return;
+    }
+    const next = [...verifyOtpDigits];
+    next[index] = cleaned;
+    setVerifyOtpDigits(next);
+    if (index < 5) verifyInputRefs.current[index + 1]?.focus();
+  };
+
+  const handleVerifyOtpKeyPress = (index: number, key: string) => {
+    if (key === 'Backspace' && !verifyOtpDigits[index] && index > 0) {
+      const next = [...verifyOtpDigits];
+      next[index - 1] = '';
+      setVerifyOtpDigits(next);
+      verifyInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleConfirmEmailVerification = async () => {
+    const code = verifyOtpDigits.join('');
+    if (code.length !== 6) {
+      toast.error('Please enter the 6-digit code.');
+      return;
+    }
+    setIsVerifyingCode(true);
+    try {
+      const token = useAppStore.getState().token;
+      const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+      const resolvedUrl = resolveServerUrl(rawUrl);
+      const res = await fetch(`${resolvedUrl}/api/auth/email/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          code,
+          email: currentUser?.email,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (currentUser) {
+          useAppStore.setState({
+            currentUser: {
+              ...currentUser,
+              emailVerifiedAt: data.emailVerifiedAt || new Date().toISOString(),
+            },
+          });
+        }
+        setShowEmailVerifyModal(false);
+        toast.success('Email verified successfully!');
+      } else {
+        toast.error(data.error || 'Invalid or expired verification code.');
+      }
+    } catch {
+      toast.error('Connection error. Could not reach server.');
+    } finally {
+      setIsVerifyingCode(false);
+    }
+  };
 
   // OTA Updates State
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
@@ -294,7 +449,7 @@ export function SettingsScreen({ navigation }: Props) {
         setIsEditingProfile(false);
       } else {
         const token = useAppStore.getState().token;
-        const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+        const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
         const resolvedUrl = resolveServerUrl(rawUrl);
         
         const response = await fetch(`${resolvedUrl}/api/user/update-profile`, {
@@ -481,9 +636,33 @@ export function SettingsScreen({ navigation }: Props) {
                   {guestName ?? currentUser?.name ?? 'Explorer'}
                 </Text>
                 {currentUser && (
-                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted, marginTop: 4 }}>
-                    Email: {currentUser.email}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
+                      Email: {currentUser.email}
+                    </Text>
+                    {currentUser.emailVerifiedAt ? (
+                      <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', borderWidth: 1, borderColor: '#10B981', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <CheckCircle2 size={10} color="#10B981" />
+                        <Text style={{ color: '#10B981', fontSize: 10, fontFamily: Fonts.bodyBold }}>Verified</Text>
+                      </View>
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', borderWidth: 1, borderColor: '#F59E0B', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                          <AlertCircle size={10} color="#F59E0B" />
+                          <Text style={{ color: '#F59E0B', fontSize: 10, fontFamily: Fonts.bodyBold }}>Unverified</Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={handleOpenEmailVerifyModal}
+                          disabled={isSendingVerifyCode}
+                          style={{ paddingHorizontal: 6, paddingVertical: 2, backgroundColor: 'rgba(17, 66, 142, 0.1)', borderRadius: 6 }}
+                        >
+                          <Text style={{ color: Colors.accentPrimary, fontSize: 10, fontFamily: Fonts.bodyBold }}>
+                            {isSendingVerifyCode ? 'Sending...' : 'Verify Now'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
                 )}
                 <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: 4 }}>
                   Student ID: <Text style={{ fontFamily: Fonts.bodyBold }}>{studentId}</Text>
@@ -1007,7 +1186,7 @@ export function SettingsScreen({ navigation }: Props) {
                       label="Launch Data Sync"
                       icon={<Database size={16} color={Colors.white} style={{ marginRight: 6 }} />}
                       onPress={async () => {
-                        const serverUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+                        const serverUrl = process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
                         const result = await syncProgressNow(serverUrl);
                         if (result.success) {
                           toast.success('Sync Successful!');
@@ -1162,6 +1341,105 @@ export function SettingsScreen({ navigation }: Props) {
         onConfirm={handleConfirmPurchaseOutfit}
         onCancel={() => setPurchasingOutfit(null)}
       />
+
+      {/* ── 6-Square Email Verification Modal ── */}
+      <Modal
+        visible={showEmailVerifyModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEmailVerifyModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.75)', justifyContent: 'center', alignItems: 'center', padding: Spacing.md }}>
+          <GlassCard style={{ width: '100%', maxWidth: 420, padding: Spacing.lg, borderRadius: Radius.xl }}>
+            <View style={{ alignItems: 'center', marginBottom: Spacing.md }}>
+              <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(17, 66, 142, 0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs }}>
+                <Mail size={24} color={Colors.accentPrimary} />
+              </View>
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, textAlign: 'center' }}>
+                Verify Email Address
+              </Text>
+              <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, textAlign: 'center', marginTop: 4 }}>
+                Enter the 6-digit verification code sent to {currentUser?.email} to verify your account.
+              </Text>
+            </View>
+
+            <View style={{ marginBottom: Spacing.md }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs }}>
+                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMain }}>
+                  6-Digit Verification Code
+                </Text>
+                <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted }}>
+                  Valid for 10 mins
+                </Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 6, marginVertical: Spacing.xs }}>
+                {verifyOtpDigits.map((digit, index) => (
+                  <TextInput
+                    key={index}
+                    ref={(ref) => { verifyInputRefs.current[index] = ref; }}
+                    value={digit}
+                    onChangeText={(text) => handleVerifyOtpChange(index, text)}
+                    onKeyPress={({ nativeEvent }) => handleVerifyOtpKeyPress(index, nativeEvent.key)}
+                    keyboardType="number-pad"
+                    maxLength={1}
+                    selectTextOnFocus
+                    style={{
+                      flex: 1,
+                      height: 52,
+                      borderRadius: 14,
+                      borderWidth: 1.5,
+                      borderColor: digit ? Colors.accentPrimary : '#E2E8F0',
+                      backgroundColor: '#F8FAFC',
+                      textAlign: 'center',
+                      fontFamily: Fonts.bodyBold,
+                      fontSize: 22,
+                      color: Colors.textMain,
+                    }}
+                    accessibilityLabel={`Verification digit ${index + 1}`}
+                  />
+                ))}
+              </View>
+
+              {/* Live Resend Countdown */}
+              <View style={{ alignItems: 'center', marginTop: Spacing.xs }}>
+                {verifyCooldown > 0 ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Clock size={12} color={Colors.textMuted} />
+                    <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
+                      Resend code in{' '}
+                      <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>
+                        0:{verifyCooldown < 10 ? `0${verifyCooldown}` : verifyCooldown}
+                      </Text>
+                    </Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    onPress={handleResendEmailVerifyCode}
+                    disabled={isSendingVerifyCode}
+                  >
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary }}>
+                      Didn't receive the code? Resend now
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            <View style={{ gap: Spacing.sm }}>
+              <PrimaryButton
+                label="Verify & Confirm"
+                onPress={handleConfirmEmailVerification}
+                loading={isVerifyingCode}
+              />
+              <SecondaryButton
+                label="Cancel"
+                onPress={() => setShowEmailVerifyModal(false)}
+              />
+            </View>
+          </GlassCard>
+        </View>
+      </Modal>
 
       {/* Logout Confirmation */}
       <ConfirmDialog

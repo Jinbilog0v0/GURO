@@ -39,7 +39,7 @@ import {
 export function TeacherIngestionScreen({ route }: any) {
   const currentUser = useAppStore((state) => state.currentUser);
   const serverUrlFromStore = useAppStore((state) => state.serverUrl);
-  const serverUrl = serverUrlFromStore || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+  const serverUrl = serverUrlFromStore || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
 
   const [subject, setSubject] = useState<'Mathematics' | 'English'>('Mathematics');
   const [grade, setGrade] = useState<number>(4);

@@ -10,7 +10,7 @@ function getAdminHeaders(): HeadersInit {
 }
 
 function getBaseUrl(): string {
-  const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+  const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
   return resolveServerUrl(rawUrl).replace(/\/+$/, '');
 }
 

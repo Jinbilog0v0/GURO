@@ -204,7 +204,7 @@ export function TeacherDashboardScreen() {
   const activeSchoolYear = useAppStore((state) => state.activeSchoolYear || '2026-2027');
   const activeTerm = useAppStore((state) => state.activeTerm || 'Quarter 1');
   const serverUrlFromStore = useAppStore((state) => state.serverUrl);
-  const serverUrl = serverUrlFromStore || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+  const serverUrl = serverUrlFromStore || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
 
   const [classrooms, setClassrooms] = useState<any[]>([]);
   const [activeClassroom, setActiveClassroom] = useState<string | null>(currentUser?.classroomId || storeClassroomId || null);

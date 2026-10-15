@@ -22,6 +22,7 @@ export interface SettingsModalProps {
     firstName?: string;
     middleName?: string;
     lastName?: string;
+    emailVerifiedAt?: string | null;
   } | null;
   isDarkMode: boolean;
   onToggleTheme: () => void;
@@ -212,7 +213,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               />
             )}
 
-            {activeTab === 'security' && <SharedSecuritySection />}
+            {activeTab === 'security' && (
+              <SharedSecuritySection
+                currentUser={currentUser}
+                onEmailVerified={(verifiedAt) => {
+                  if (currentUser) {
+                    currentUser.emailVerifiedAt = verifiedAt;
+                  }
+                }}
+              />
+            )}
 
             {activeTab === 'account' && (
               <div className="flex flex-col gap-6 w-full max-w-2xl">

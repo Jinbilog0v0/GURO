@@ -49,7 +49,7 @@ export function AdminLessonIngestorScreen({ navigation }: any) {
 
     setGenerating(true);
     try {
-      const resolved = resolveServerUrl(serverUrl || 'http://localhost:8000');
+      const resolved = resolveServerUrl(serverUrl || 'https://neoguro.app');
       const res = await fetch(`${resolved}/api/generate`, {
         method: 'POST',
         headers: {

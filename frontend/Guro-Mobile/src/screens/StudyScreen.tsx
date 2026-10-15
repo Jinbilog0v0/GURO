@@ -248,23 +248,22 @@ export function StudyScreen({ route, navigation }: Props) {
   const currentItem = slides[currentSlide];
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
       {/* Progress Bar & Indicators */}
       <View style={styles.progressContainer}>
         <View style={styles.progressLabelRow}>
-          {/* Wrapped in string template to ensure Jest serializes as a single string */}
           <Text style={styles.progressText}>{`Step ${currentSlide + 1} of ${slides.length}`}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             {currentItem.type === 'intro' ? (
-              <BookOpen size={16} color={Colors.accentPrimary} />
+              <BookOpen size={14} color={Colors.accentPrimary} />
             ) : currentItem.type === 'definition' ? (
-              <Lightbulb size={16} color={Colors.accentPrimary} />
+              <Lightbulb size={14} color={Colors.accentPrimary} />
             ) : currentItem.type === 'refresher' ? (
-              <HelpCircle size={16} color={Colors.accentPrimary} />
+              <HelpCircle size={14} color={Colors.accentPrimary} />
             ) : currentItem.type === 'summary' ? (
-              <Sparkles size={16} color={Colors.accentPrimary} />
+              <Sparkles size={14} color={Colors.accentPrimary} />
             ) : (
-              <CheckCircle size={16} color={Colors.accentPrimary} />
+              <CheckCircle size={14} color={Colors.accentPrimary} />
             )}
             <Text style={styles.stepTitleText}>
               {currentItem.type === 'intro'
@@ -288,32 +287,35 @@ export function StudyScreen({ route, navigation }: Props) {
         {/* Topic Info Header */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <Badge label={subject} variant="indigo" style={styles.badge} />
-            <SyncBadge />
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(16,185,129,0.08)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 }}>
-                <WifiOff size={10} color={Colors.success} />
-                <Text style={{ fontFamily: styles.ttsIcon.fontFamily, fontSize: 10, color: Colors.success }}>Offline</Text>
-                <Check size={10} color={Colors.success} strokeWidth={3} />
-              </View>
-              <TouchableOpacity onPress={toggleSpeech} style={[styles.ttsIconBtn, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+            <View style={styles.metaLeft}>
+              <Badge label={subject} variant="indigo" style={styles.badge} />
+              <Badge label={`Grade ${gradeLevel}`} variant="neutral" style={styles.badge} />
+            </View>
+            <View style={styles.metaRight}>
+              <SyncBadge />
+              <TouchableOpacity onPress={toggleSpeech} style={styles.ttsIconBtn}>
                 {isSpeaking ? (
-                  <Square size={14} color={subject === 'Mathematics' ? Colors.accentPrimary : Colors.accentSecondary} />
+                  <Square size={12} color={Colors.accentPrimary} />
                 ) : (
-                  <Volume2 size={14} color={subject === 'Mathematics' ? Colors.accentPrimary : Colors.accentSecondary} />
+                  <Volume2 size={12} color={Colors.accentPrimary} />
                 )}
-                <Text style={[styles.ttsIcon, { color: subject === 'Mathematics' ? Colors.accentPrimary : Colors.accentSecondary }]}>
+                <Text style={styles.ttsIcon}>
                   {isSpeaking ? 'Stop' : 'Listen'}
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-            <Text style={styles.title}>{topic}</Text>
-            <Badge 
-              label={`${currentTier} Level`} 
-              variant={currentTier === 'Easy' ? 'success' : currentTier === 'Difficult' ? 'danger' : 'warning'} 
-            />
+
+          <View style={styles.titleWrapper}>
+            <Text style={[styles.title, { flex: 1 }]} numberOfLines={2}>
+              {topic}
+            </Text>
+            <View style={{ marginTop: 2 }}>
+              <Badge 
+                label={`${currentTier} Level`} 
+                variant={currentTier === 'Easy' ? 'success' : currentTier === 'Difficult' ? 'danger' : 'warning'} 
+              />
+            </View>
           </View>
         </View>
 
@@ -326,7 +328,7 @@ export function StudyScreen({ route, navigation }: Props) {
             </View>
             <Text style={styles.introText}>{currentItem.data}</Text>
             {existingPreTest ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(6,182,212,0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginTop: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(6,182,212,0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginTop: 14 }}>
                 <Sparkles size={14} color={Colors.accentPrimary} />
                 <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
                   Pre-Test Baseline: {Math.round((existingPreTest.score / existingPreTest.totalQuestions) * 100)}%
@@ -335,10 +337,10 @@ export function StudyScreen({ route, navigation }: Props) {
             ) : (
               <TouchableOpacity
                 onPress={() => handleStartQuiz('pre-test')}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(17,66,142,0.08)', borderWidth: 1, borderColor: 'rgba(17,66,142,0.2)', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, marginTop: 14 }}
+                style={styles.preTestCard}
               >
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                     <FileEdit size={13} color={Colors.accentPrimary} />
                     <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
                       Take Diagnostic Pre-Test
@@ -348,7 +350,7 @@ export function StudyScreen({ route, navigation }: Props) {
                     Record your baseline score before studying this topic!
                   </Text>
                 </View>
-                <ChevronRight size={14} color={Colors.accentPrimary} />
+                <ChevronRight size={16} color={Colors.accentPrimary} />
               </TouchableOpacity>
             )}
             {currentItem.imageUrl && (
@@ -370,7 +372,7 @@ export function StudyScreen({ route, navigation }: Props) {
               <Text style={[styles.cardLabel, { marginBottom: 0 }]}>CONCEPT CARD</Text>
             </View>
             
-            <View style={{ backgroundColor: 'rgba(6, 182, 212, 0.04)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(6, 182, 212, 0.15)', marginBottom: 16 }}>
+            <View style={{ backgroundColor: 'rgba(17, 66, 142, 0.04)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(17, 66, 142, 0.12)', marginBottom: 16 }}>
               <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.accentPrimary, marginBottom: 8 }}>
                 {currentItem.data.term}
               </Text>
@@ -531,97 +533,99 @@ export function StudyScreen({ route, navigation }: Props) {
           </GlassCard>
         )}
 
-        {/* ── Slide Navigation Buttons ── */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 20, marginBottom: 40 }}>
-          <SecondaryButton
-            label={currentSlide > 0 ? '← Back' : '← Lessons'}
-            icon={<ChevronLeft size={16} color={Colors.textMuted} />}
-            onPress={() => {
-              if (currentSlide > 0) {
-                try {
-                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                } catch (e) {}
-                setCurrentSlide(currentSlide - 1);
-              } else {
-                navigation.goBack();
-              }
-            }}
-            style={{ flex: 1 }}
-          />
-
-          {currentItem.type === 'completed' ? (
-            <PrimaryButton
-              label="Start Quiz!"
-              icon={<ChevronRight size={16} color={Colors.white} />}
-              onPress={() => handleStartQuiz('post-test')}
-              style={{ flex: 1.3 }}
-            />
-          ) : currentItem.type === 'refresher' ? (
-            (() => {
-              const rIdx = currentItem.refresherIndex ?? 0;
-              const selected = selectedRefresherOpt[rIdx];
-              const hasChecked = refresherChecked[rIdx];
-
-              if (!hasChecked) {
-                return (
-                  <TouchableOpacity
-                    disabled={!selected}
-                    onPress={() => {
-                      try {
-                        LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
-                      } catch (e) {}
-                      setRefresherChecked(prev => ({ ...prev, [rIdx]: true }));
-                      Haptics.notificationAsync(
-                        selected === currentItem.data.correctAnswer
-                          ? Haptics.NotificationFeedbackType.Success
-                          : Haptics.NotificationFeedbackType.Error
-                      ).catch(() => {});
-                    }}
-                    style={{
-                      flex: 1.3,
-                      backgroundColor: selected ? Colors.warning : 'rgba(234,179,8,0.3)',
-                      borderRadius: Radius.lg,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      paddingVertical: Spacing.md,
-                    }}
-                  >
-                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.white }}>
-                      Check Answer
-                    </Text>
-                  </TouchableOpacity>
-                );
-              } else {
-                return (
-                  <PrimaryButton
-                    label="Next →"
-                    icon={<ChevronRight size={16} color={Colors.white} />}
-                    onPress={() => {
-                      try {
-                        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                      } catch (e) {}
-                      setCurrentSlide(currentSlide + 1);
-                    }}
-                    style={{ flex: 1.3 }}
-                  />
-                );
-              }
-            })()
-          ) : (
-            <PrimaryButton
-              label="Next →"
-              icon={<ChevronRight size={16} color={Colors.white} />}
-              onPress={() => {
-                try {
-                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                } catch (e) {}
-                setCurrentSlide(currentSlide + 1);
-              }}
-              style={{ flex: 1.3 }}
-            />
-          )}
-        </View>
+        <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* ── Docked Bottom Navigation Bar ── */}
+      <View style={styles.navBar}>
+        <SecondaryButton
+          label={currentSlide > 0 ? '← Back' : '← Lessons'}
+          icon={<ChevronLeft size={16} color={Colors.textMuted} />}
+          onPress={() => {
+            if (currentSlide > 0) {
+              try {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              } catch (e) {}
+              setCurrentSlide(currentSlide - 1);
+            } else {
+              navigation.goBack();
+            }
+          }}
+          style={{ flex: 1 }}
+        />
+
+        {currentItem.type === 'completed' ? (
+          <PrimaryButton
+            label="Start Quiz!"
+            icon={<ChevronRight size={16} color={Colors.white} />}
+            onPress={() => handleStartQuiz('post-test')}
+            style={{ flex: 1.3 }}
+          />
+        ) : currentItem.type === 'refresher' ? (
+          (() => {
+            const rIdx = currentItem.refresherIndex ?? 0;
+            const selected = selectedRefresherOpt[rIdx];
+            const hasChecked = refresherChecked[rIdx];
+
+            if (!hasChecked) {
+              return (
+                <TouchableOpacity
+                  disabled={!selected}
+                  onPress={() => {
+                    try {
+                      LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
+                    } catch (e) {}
+                    setRefresherChecked(prev => ({ ...prev, [rIdx]: true }));
+                    Haptics.notificationAsync(
+                      selected === currentItem.data.correctAnswer
+                        ? Haptics.NotificationFeedbackType.Success
+                        : Haptics.NotificationFeedbackType.Error
+                    ).catch(() => {});
+                  }}
+                  style={{
+                    flex: 1.3,
+                    backgroundColor: selected ? Colors.warning : 'rgba(234,179,8,0.3)',
+                    borderRadius: Radius.lg,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingVertical: Spacing.md,
+                  }}
+                >
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.white }}>
+                    Check Answer
+                  </Text>
+                </TouchableOpacity>
+              );
+            } else {
+              return (
+                <PrimaryButton
+                  label="Next →"
+                  icon={<ChevronRight size={16} color={Colors.white} />}
+                  onPress={() => {
+                    try {
+                      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    } catch (e) {}
+                    setCurrentSlide(currentSlide + 1);
+                  }}
+                  style={{ flex: 1.3 }}
+                />
+              );
+            }
+          })()
+        ) : (
+          <PrimaryButton
+            label="Next →"
+            icon={<ChevronRight size={16} color={Colors.white} />}
+            onPress={() => {
+              try {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              } catch (e) {}
+              setCurrentSlide(currentSlide + 1);
+            }}
+            style={{ flex: 1.3 }}
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 }

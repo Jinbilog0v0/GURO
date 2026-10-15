@@ -20,6 +20,7 @@ interface SettingsSpaceProps {
     firstName?: string;
     middleName?: string;
     lastName?: string;
+    emailVerifiedAt?: string | null;
   } | null;
   onBack: () => void;
   isDarkMode: boolean;
@@ -142,7 +143,16 @@ export const SettingsSpace: React.FC<SettingsSpaceProps> = ({
             </div>
           )}
 
-          {activeTab === 'security' && <SharedSecuritySection />}
+          {activeTab === 'security' && (
+            <SharedSecuritySection
+              currentUser={currentUser}
+              onEmailVerified={(verifiedAt) => {
+                if (currentUser) {
+                  currentUser.emailVerifiedAt = verifiedAt;
+                }
+              }}
+            />
+          )}
 
           {activeTab === 'account' && (
             <div className="flex flex-col gap-6 max-w-xl">

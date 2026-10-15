@@ -11,6 +11,8 @@ import {
   StatusBar,
   RefreshControl,
   Modal,
+  TextInput,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -29,12 +31,9 @@ import * as Network from 'expo-network';
 
 const GuroLogoGraphic = () => (
   <View style={{
-    width: 64,
-    height: 64,
+    width: 68,
+    height: 68,
     borderRadius: 22,
-    backgroundColor: '#11428E',
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: Spacing.sm,
     shadowColor: '#11428E',
     shadowOffset: { width: 0, height: 6 },
@@ -44,9 +43,14 @@ const GuroLogoGraphic = () => (
     borderWidth: 1.5,
     borderColor: 'rgba(255, 255, 255, 0.3)',
     position: 'relative',
+    overflow: 'hidden',
   }}>
-    <GraduationCap size={36} color="#FFFFFF" strokeWidth={2.2} />
-    <Text style={{ position: 'absolute', top: -4, right: -4, fontSize: 13, color: '#F59E0B', fontWeight: 'bold' }}>✦</Text>
+    <Image
+      source={require('../../assets/guro-mark.png')}
+      style={{ width: '100%', height: '100%' }}
+      resizeMode="cover"
+    />
+    <Text style={{ position: 'absolute', top: -2, right: 3, fontSize: 13, color: '#F59E0B', fontWeight: 'bold' }}>✦</Text>
   </View>
 );
 
@@ -88,9 +92,19 @@ export function LoginScreen({ navigation }: Props) {
   const [forgotStep, setForgotStep] = useState<1 | 2>(1);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotRole, setForgotRole] = useState<Role>('student');
-  const [forgotCode, setForgotCode] = useState('');
   const [forgotNewPassword, setForgotNewPassword] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [mobileOtpDigits, setMobileOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [mobileResendCooldown, setMobileResendCooldown] = useState(0);
+  const mobileOtpRefs = useRef<(any | null)[]>([]);
+
+  useEffect(() => {
+    if (mobileResendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setMobileResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [mobileResendCooldown]);
 
   // Fade-in animation on mount (mirrors web's @keyframes fadeIn)
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -202,7 +216,7 @@ export function LoginScreen({ navigation }: Props) {
 
     setForgotLoading(true);
     try {
-      const resolvedUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+      const resolvedUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
       const cleanUrl = resolvedUrl.replace(/\/+$/, '');
       const res = await fetch(`${cleanUrl}/api/auth/forgot-password/send-code`, {
         method: 'POST',
@@ -219,6 +233,11 @@ export function LoginScreen({ navigation }: Props) {
       if (res.ok && data.success) {
         toast.success(data.message || 'Code sent to your email.');
         setForgotStep(2);
+        setMobileResendCooldown(60);
+        setMobileOtpDigits(['', '', '', '', '', '']);
+        setTimeout(() => {
+          mobileOtpRefs.current[0]?.focus();
+        }, 150);
       } else {
         toast.error(data.error || 'Failed to send recovery code.');
       }
@@ -229,9 +248,54 @@ export function LoginScreen({ navigation }: Props) {
     }
   };
 
+  const handleMobileOtpChange = (index: number, text: string) => {
+    const cleaned = text.replace(/\D/g, '');
+    if (!cleaned) {
+      const next = [...mobileOtpDigits];
+      next[index] = '';
+      setMobileOtpDigits(next);
+      return;
+    }
+
+    if (cleaned.length > 1) {
+      const next = [...mobileOtpDigits];
+      const chars = cleaned.slice(0, 6).split('');
+      chars.forEach((c, i) => {
+        if (index + i < 6) next[index + i] = c;
+      });
+      setMobileOtpDigits(next);
+      const focusTarget = Math.min(index + chars.length, 5);
+      mobileOtpRefs.current[focusTarget]?.focus();
+      return;
+    }
+
+    const next = [...mobileOtpDigits];
+    next[index] = cleaned;
+    setMobileOtpDigits(next);
+
+    if (index < 5) {
+      mobileOtpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleMobileOtpKeyPress = (index: number, key: string) => {
+    if (key === 'Backspace') {
+      if (!mobileOtpDigits[index] && index > 0) {
+        const next = [...mobileOtpDigits];
+        next[index - 1] = '';
+        setMobileOtpDigits(next);
+        mobileOtpRefs.current[index - 1]?.focus();
+      } else {
+        const next = [...mobileOtpDigits];
+        next[index] = '';
+        setMobileOtpDigits(next);
+      }
+    }
+  };
+
   const handleVerifyCode = async () => {
     const trimmedEmail = forgotEmail.trim();
-    const trimmedCode = forgotCode.trim();
+    const trimmedCode = mobileOtpDigits.join('').trim();
     if (!trimmedCode || trimmedCode.length !== 6) {
       toast.error('Please enter the 6-digit verification code.');
       return;
@@ -243,7 +307,7 @@ export function LoginScreen({ navigation }: Props) {
 
     setForgotLoading(true);
     try {
-      const resolvedUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+      const resolvedUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
       const cleanUrl = resolvedUrl.replace(/\/+$/, '');
       const res = await fetch(`${cleanUrl}/api/auth/forgot-password/verify-code`, {
         method: 'POST',
@@ -264,7 +328,7 @@ export function LoginScreen({ navigation }: Props) {
         setShowForgotModal(false);
         setForgotStep(1);
         setForgotEmail('');
-        setForgotCode('');
+        setMobileOtpDigits(['', '', '', '', '', '']);
         setForgotNewPassword('');
       } else {
         toast.error(data.error || 'Verification failed.');
@@ -585,7 +649,7 @@ export function LoginScreen({ navigation }: Props) {
               <View style={{ marginTop: Spacing.md }}>
                 <ThemedTextInput
                   label="Server URL"
-                  placeholder="http://localhost:8000"
+                  placeholder="https://neoguro.app"
                   value={serverUrl}
                   onChangeText={setServerUrl}
                   autoCapitalize="none"
@@ -830,15 +894,58 @@ export function LoginScreen({ navigation }: Props) {
                     />
                   </View>
 
-                  <View style={styles.formGroup}>
-                    <ThemedTextInput
-                      label="Verification Code (6-digit)"
-                      placeholder="e.g. 123456"
-                      value={forgotCode}
-                      onChangeText={setForgotCode}
-                      keyboardType="number-pad"
-                      maxLength={6}
-                    />
+                  <View style={{ marginBottom: Spacing.sm }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs }}>
+                      <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMain }}>
+                        6-Digit Verification Code
+                      </Text>
+                      <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted }}>
+                        Valid for 10 mins
+                      </Text>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 6, marginVertical: Spacing.xs }}>
+                      {mobileOtpDigits.map((digit, index) => (
+                        <TextInput
+                          key={index}
+                          ref={(ref) => { mobileOtpRefs.current[index] = ref; }}
+                          value={digit}
+                          onChangeText={(text) => handleMobileOtpChange(index, text)}
+                          onKeyPress={({ nativeEvent }) => handleMobileOtpKeyPress(index, nativeEvent.key)}
+                          keyboardType="number-pad"
+                          maxLength={1}
+                          selectTextOnFocus
+                          style={{
+                            flex: 1,
+                            height: 52,
+                            borderRadius: 14,
+                            borderWidth: 1.5,
+                            borderColor: digit ? Colors.accentPrimary : '#E2E8F0',
+                            backgroundColor: '#F8FAFC',
+                            textAlign: 'center',
+                            fontFamily: Fonts.bodyBold,
+                            fontSize: 22,
+                            color: Colors.textMain,
+                          }}
+                          accessibilityLabel={`Verification digit ${index + 1}`}
+                        />
+                      ))}
+                    </View>
+
+                    {/* Live Resend Countdown */}
+                    <View style={{ alignItems: 'center', marginTop: Spacing.xs }}>
+                      {mobileResendCooldown > 0 ? (
+                        <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                          Resend code in {mobileResendCooldown}s
+                        </Text>
+                      ) : (
+                        <TouchableOpacity onPress={handleSendCode} disabled={forgotLoading}>
+                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                            Didn't receive code? Resend now
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
 
                   <View style={[styles.passwordFormGroup, { marginBottom: Spacing.lg }]}>

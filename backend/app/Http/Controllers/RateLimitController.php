@@ -8,9 +8,19 @@ use Illuminate\Http\Request;
 
 class RateLimitController extends Controller
 {
-    // GET /api/dev/rate-limits
-    public function index()
+    private function authorizeDeveloperOrAdmin(Request $request): void
     {
+        $user = $request->user();
+        if (! $user || ! in_array($user->role, ['admin', 'developer'])) {
+            abort(403, 'Unauthorized. Developer or administrator access required.');
+        }
+    }
+
+    // GET /api/dev/rate-limits
+    public function index(Request $request)
+    {
+        $this->authorizeDeveloperOrAdmin($request);
+
         $configs = RateLimitConfig::orderBy('role')->get();
 
         return response()->json($configs);
@@ -19,6 +29,8 @@ class RateLimitController extends Controller
     // PUT /api/dev/rate-limits/{role}
     public function upsert(Request $request, string $role)
     {
+        $this->authorizeDeveloperOrAdmin($request);
+
         $data = $request->validate([
             'max_requests' => 'required|integer|min:1|max:1000',
             'window_minutes' => 'required|integer|min:1|max:1440',
@@ -35,8 +47,10 @@ class RateLimitController extends Controller
     }
 
     // DELETE /api/dev/rate-limits/{role}
-    public function destroy(string $role)
+    public function destroy(Request $request, string $role)
     {
+        $this->authorizeDeveloperOrAdmin($request);
+
         RateLimitConfig::where('role', $role)->delete();
 
         return response()->json(['success' => true]);
@@ -44,8 +58,10 @@ class RateLimitController extends Controller
 
     // GET /api/dev/rate-limits/usage
     // Returns per-user usage counts within each role's active window
-    public function usage()
+    public function usage(Request $request)
     {
+        $this->authorizeDeveloperOrAdmin($request);
+
         $configs = RateLimitConfig::where('is_enabled', true)->get()->keyBy('role');
 
         $results = [];

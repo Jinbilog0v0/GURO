@@ -119,7 +119,7 @@ export function StudentDashboard() {
   const handleRefresh = async () => {
     setRefreshing(true);
     const appMode = useAppStore.getState().appMode;
-    const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+    const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
     try {
       if (appMode === 'online') {
         await useAppStore.getState().syncProgressNow(serverUrl);
@@ -160,7 +160,7 @@ export function StudentDashboard() {
 
     setVerifying(true);
     try {
-      const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+      const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
       const resolvedUrl = resolveServerUrl(serverUrl);
       const res = await fetch(`${resolvedUrl}/api/classroom/verify?code=${encodeURIComponent(code)}`);
       if (res.ok) {
@@ -192,7 +192,7 @@ export function StudentDashboard() {
       return;
     }
     const code = verifiedClassroom.classroomId;
-    const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+    const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
 
     setVerifying(true);
     try {

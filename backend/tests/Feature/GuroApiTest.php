@@ -482,3 +482,81 @@ it('returns empty list for newly created teacher with no classrooms', function (
 
     expect($res->json('classrooms'))->toHaveCount(0);
 });
+
+it('can send email verification code and verify email for an existing user', function () {
+    Http::fake([
+        'api.resend.com/*' => Http::response(['id' => 'resend-test-id'], 200),
+    ]);
+
+    $user = User::create([
+        'user_id' => 'USR-UNVERIF-1',
+        'email' => 'unverified@guro.dev',
+        'password_hash' => 'hash',
+        'name' => 'Unverified Student',
+        'role' => 'student',
+        'email_verified_at' => null,
+    ]);
+
+    expect($user->email_verified_at)->toBeNull();
+
+    // Send verification code
+    $sendRes = $this->actingAs($user, 'sanctum')->postJson('/api/auth/email/send-verification', [
+        'email' => 'unverified@guro.dev',
+    ]);
+    $sendRes->assertStatus(200)->assertJson(['success' => true]);
+
+    $code = Cache::get('email_verify_code_unverified@guro.dev');
+    expect($code)->toBeString()->toHaveLength(6);
+
+    // Verify email with the code
+    $verifyRes = $this->actingAs($user, 'sanctum')->postJson('/api/auth/email/verify', [
+        'code' => $code,
+    ]);
+    $verifyRes->assertStatus(200)->assertJson(['success' => true]);
+
+    $user->refresh();
+    expect($user->email_verified_at)->not->toBeNull();
+});
+
+it('can register a new user with email verification code and mark email_verified_at', function () {
+    Http::fake([
+        'api.resend.com/*' => Http::response(['id' => 'resend-reg-id'], 200),
+    ]);
+
+    // Send verification code first for registration
+    $sendRes = $this->postJson('/api/auth/email/send-verification', [
+        'email' => 'newparent@guro.dev',
+        'name' => 'New Parent',
+        'for_registration' => true,
+    ]);
+    $sendRes->assertStatus(200);
+
+    $code = Cache::get('email_verify_code_newparent@guro.dev');
+    expect($code)->toBeString()->toHaveLength(6);
+
+    // Register with invalid code should fail
+    $failRes = $this->postJson('/api/auth/register', [
+        'email' => 'newparent@guro.dev',
+        'password' => 'ParentPass123!',
+        'name' => 'New Parent',
+        'role' => 'parent',
+        'verification_code' => '000000',
+    ]);
+    $failRes->assertStatus(400);
+
+    // Register with correct code
+    $successRes = $this->postJson('/api/auth/register', [
+        'email' => 'newparent@guro.dev',
+        'password' => 'ParentPass123!',
+        'name' => 'New Parent',
+        'role' => 'parent',
+        'verification_code' => $code,
+    ]);
+    $successRes->assertStatus(200)->assertJson(['success' => true]);
+    expect($successRes->json('user.emailVerifiedAt'))->not->toBeNull();
+
+    $newUser = User::where('email', 'newparent@guro.dev')->first();
+    expect($newUser)->not->toBeNull();
+    expect($newUser->email_verified_at)->not->toBeNull();
+});
+

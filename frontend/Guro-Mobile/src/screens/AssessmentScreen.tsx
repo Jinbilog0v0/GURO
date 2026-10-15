@@ -1239,23 +1239,31 @@ export function AssessmentScreen({ route, navigation }: Props) {
           isSelected ? styles.optionSelected : styles.optionDefault,
         ],
         text: [styles.optionText, isSelected && styles.optionTextSelected],
+        badge: isSelected ? styles.optionLetterBadgeSelected : undefined,
+        badgeText: isSelected ? styles.optionLetterActive : undefined,
       };
     }
     if (option === currentQuestion.correctAnswer) {
       return {
         container: [styles.optionBase, styles.optionCorrect],
         text: [styles.optionText, styles.optionTextCorrect],
+        badge: styles.optionLetterBadgeCorrect,
+        badgeText: styles.optionLetterActive,
       };
     }
     if (option === selectedOption) {
       return {
         container: [styles.optionBase, styles.optionWrong],
         text: [styles.optionText, styles.optionTextWrong],
+        badge: styles.optionLetterBadgeWrong,
+        badgeText: styles.optionLetterActive,
       };
     }
     return {
       container: [styles.optionBase, styles.optionDefault],
       text: [styles.optionText],
+      badge: undefined,
+      badgeText: undefined,
     };
   };
 
@@ -1928,12 +1936,12 @@ export function AssessmentScreen({ route, navigation }: Props) {
                         borderRadius: 19,
                         borderWidth: 1.5,
                         borderBottomWidth: item.selected ? 1.5 : 4,
-                        borderColor: item.selected ? 'transparent' : Colors.accentSecondary,
+                        borderColor: item.selected ? 'transparent' : Colors.accentPrimary,
                         backgroundColor: item.selected ? Colors.bgInput : Colors.bgCard,
                         alignItems: 'center',
                         justifyContent: 'center',
                         transform: [{ translateY: item.selected ? 2 : 0 }],
-                        shadowColor: Colors.accentSecondary,
+                        shadowColor: Colors.accentPrimary,
                         shadowOffset: { width: 0, height: item.selected ? 0 : 2 },
                         shadowOpacity: item.selected ? 0 : 0.2,
                         shadowRadius: 2,
@@ -1993,8 +2001,8 @@ export function AssessmentScreen({ route, navigation }: Props) {
                   accessibilityLabel={`Option ${idx + 1}: ${option}`}
                   accessibilityState={{ selected: selectedOption === option }}
                 >
-                  <View style={styles.optionLetterBadge}>
-                    <Text style={styles.optionLetter}>
+                  <View style={[styles.optionLetterBadge, optionStyle.badge]}>
+                    <Text style={[styles.optionLetter, optionStyle.badgeText]}>
                       {String.fromCharCode(65 + idx)}
                     </Text>
                   </View>
@@ -2007,14 +2015,25 @@ export function AssessmentScreen({ route, navigation }: Props) {
 
         {/* ── Feedback card (shown after submit) ── */}
         {isAnswered && (
-          <GlassCard style={styles.feedbackCard}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          <GlassCard style={[
+            styles.feedbackCard,
+            isCorrect ? styles.feedbackCardCorrect : styles.feedbackCardWrong
+          ]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               {isCorrect ? (
-                <Check size={18} color={Colors.success} strokeWidth={3} />
+                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(22, 163, 74, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <Check size={15} color={Colors.success} strokeWidth={3} />
+                </View>
               ) : (
-                <X size={18} color={Colors.danger} strokeWidth={3} />
+                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(220, 38, 38, 0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                  <X size={15} color={Colors.danger} strokeWidth={3} />
+                </View>
               )}
-              <Text style={[styles.feedbackResultTitle, { marginBottom: 0 }]}>
+              <Text style={[
+                styles.feedbackResultTitle,
+                isCorrect ? styles.feedbackResultTitleCorrect : styles.feedbackResultTitleWrong,
+                { marginBottom: 0 }
+              ]}>
                 {isCorrect ? 'Correct!' : 'Incorrect'}
               </Text>
             </View>

@@ -255,6 +255,9 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
           </button>
           <div className="h-4 w-px bg-[var(--border-color)] hidden sm:block" />
           <div className="flex items-center gap-2">
+            <div className="size-6 rounded-md overflow-hidden shadow-xs border border-white/20">
+              <img src="/images/guro-mark.png" alt="GURO Logo" className="w-full h-full object-cover" />
+            </div>
             <span className="text-sm font-extrabold text-[#11428E] dark:text-sky-400 tracking-tight">GURO</span>
             <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold hidden sm:inline-block">
               Mobile App Simulator

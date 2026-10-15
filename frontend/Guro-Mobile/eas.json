@@ -15,8 +15,8 @@
         "simulator": true
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://localhost:8000",
-        "BUILD_PROFILE": "development"
+        "EXPO_PUBLIC_API_URL": "https://neoguro.app",
+        "BUILD_PROFILE": "production"
       }
     },
     "preview": {

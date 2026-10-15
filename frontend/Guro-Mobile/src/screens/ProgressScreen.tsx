@@ -59,7 +59,7 @@ export function ProgressScreen() {
   const handleRefresh = async () => {
     setRefreshing(true);
     const appMode = useAppStore.getState().appMode;
-    const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+    const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
     try {
       if (appMode === 'online') {
         const result = await useAppStore.getState().syncProgressNow(serverUrl);

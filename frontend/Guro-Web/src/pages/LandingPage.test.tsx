@@ -56,6 +56,17 @@ describe('LandingPage Portal (Web)', () => {
 
     fireEvent.click(registerBtn);
 
+    // Verify OTP modal appears
+    expect(await screen.findByRole('heading', { name: /Activate Your Account/i })).toBeInTheDocument();
+
+    // Fill 6-digit OTP
+    for (let i = 1; i <= 6; i++) {
+      fireEvent.change(screen.getByLabelText(`Digit ${i}`), { target: { value: '1' } });
+    }
+
+    const verifyBtn = screen.getByRole('button', { name: /Verify & Activate Account/i });
+    fireEvent.click(verifyBtn);
+
     await waitFor(() => {
       expect(mockLoginSuccess).toHaveBeenCalledWith(expect.objectContaining({ name: 'Neal' }));
     });
@@ -104,6 +115,17 @@ describe('LandingPage Portal (Web)', () => {
       }
 
       fireEvent.click(registerBtn);
+
+      // Verify OTP modal appears
+      expect(await screen.findByRole('heading', { name: /Activate Your Account/i })).toBeInTheDocument();
+
+      // Fill 6-digit OTP
+      for (let i = 1; i <= 6; i++) {
+        fireEvent.change(screen.getByLabelText(`Digit ${i}`), { target: { value: '1' } });
+      }
+
+      const verifyTeacherBtn = screen.getByRole('button', { name: /Verify & Activate Account/i });
+      fireEvent.click(verifyTeacherBtn);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith('/api/auth/register', expect.objectContaining({

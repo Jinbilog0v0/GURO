@@ -167,8 +167,8 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           : 'bg-[var(--bg-card)] border-b border-[var(--border-color)] shadow-sm'
       }`}>
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-2xl bg-gradient-to-tr from-[#11428E] via-[#2563EB] to-[#A01322] flex items-center justify-center text-white shadow-md shadow-[#11428E]/20">
-            <GraduationCap className="size-5" />
+          <div className="size-9 rounded-xl overflow-hidden shadow-md shadow-[#11428E]/20 border border-white/20">
+            <img src="/images/guro-mark.png" alt="GURO Logo" className="w-full h-full object-cover" />
           </div>
           <span className="text-base font-black text-[#11428E] dark:text-sky-400 tracking-tight leading-none">
             GURO
