@@ -245,10 +245,11 @@ class GeminiService
         Log::info("[GeminiService] Triggering Gemini generation for {$subject} Grade {$grade} - Topic: {$topic}");
 
         $baseUrl = rtrim((string) (config('services.gemini.base_url') ?: env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com')), '/');
+        $model = config('services.gemini.model') ?: env('GEMINI_MODEL', 'gemini-3-flash-preview');
 
         $response = Http::withoutVerifying()->withHeaders([
             'Content-Type' => 'application/json',
-        ])->timeout(120)->post("{$baseUrl}/v1beta/models/gemini-2.5-flash:generateContent?key={$apiKey}", [
+        ])->timeout(120)->post("{$baseUrl}/v1beta/models/{$model}:generateContent?key={$apiKey}", [
             'contents' => [
                 [
                     'parts' => $parts,
