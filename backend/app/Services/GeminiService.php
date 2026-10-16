@@ -259,6 +259,9 @@ class GeminiService
                 'responseMimeType' => 'application/json',
                 'responseSchema' => $schema,
                 'temperature' => 0.2,
+                'thinkingConfig' => [
+                    'thinkingBudget' => 0,
+                ],
             ],
         ]);
 
