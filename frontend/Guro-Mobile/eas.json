@@ -16,7 +16,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://neoguro.app",
-        "BUILD_PROFILE": "production"
+        "BUILD_PROFILE": "production",
+        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
       }
     },
     "preview": {
@@ -31,7 +32,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://neoguro.app",
-        "BUILD_PROFILE": "preview"
+        "BUILD_PROFILE": "preview",
+        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
       }
     },
     "production": {
@@ -42,7 +44,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://neoguro.app",
-        "BUILD_PROFILE": "production"
+        "BUILD_PROFILE": "production",
+        "EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK": "1"
       }
     }
   },
