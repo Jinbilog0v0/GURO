@@ -10,7 +10,8 @@ class GeminiService
     public function generateQuestions(string $subject, int $grade, string $topic, ?string $lessonText, ?string $pdfBase64 = null, int $questionCount = 12): array
     {
         set_time_limit(180);
-        $apiKey = config('services.gemini.key') ?: env('GEMINI_API_KEY');
+        $rawKey = config('services.gemini.key') ?: env('GEMINI_API_KEY');
+        $apiKey = trim(trim((string) $rawKey), '"\'');
         if (! $apiKey) {
             throw new \Exception('GEMINI_API_KEY environment variable is not configured.');
         }
@@ -259,8 +260,10 @@ class GeminiService
         ]);
 
         if ($response->failed()) {
+            $errData = $response->json();
+            $geminiMsg = $errData['error']['message'] ?? $response->body();
             Log::error('[GeminiService] API Request failed: '.$response->body());
-            throw new \Exception('Gemini generation failed. API response: '.$response->status());
+            throw new \Exception("Gemini generation failed: {$geminiMsg}");
         }
 
         $data = $response->json();

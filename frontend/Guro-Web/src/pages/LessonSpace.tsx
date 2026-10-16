@@ -55,6 +55,7 @@ export function LessonSpace({
   const [isMinimized, setIsMinimized] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [generationStatus, setGenerationStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle');
   const [isCommiting, setIsCommiting] = useState(false);
 
   const [stagedStudyContent, setStagedStudyContent] = useState<{
@@ -157,6 +158,7 @@ export function LessonSpace({
     if (!topic.trim()) return;
 
     setLoading(true);
+    setGenerationStatus('generating');
     setStagedQuestions([]);
     setStagedStudyContent(null);
     const loadingToastId = toast.loading('Parsing lesson content & generating items...');
@@ -194,9 +196,13 @@ export function LessonSpace({
       const data = await response.json();
       setStagedQuestions(data.questions || []);
       setStagedStudyContent(data.studyContent || null);
+      setGenerationStatus('success');
       toast.success('Successfully parsed lesson and generated questions!', { id: loadingToastId });
     } catch (error: any) {
       console.error(error);
+      setGenerationStatus('error');
+      setShowProgressModal(false);
+      setIsMinimized(false);
       toast.error(error.message || 'Generation failed.', { id: loadingToastId });
     } finally {
       setLoading(false);
@@ -313,7 +319,7 @@ export function LessonSpace({
 
   useEffect(() => {
     let interval: any;
-    if (loading) {
+    if (generationStatus === 'generating') {
       setProgressPercent(0);
       setProgressStage('Initializing ingestion pipeline...');
       setShowProgressModal(true);
@@ -341,20 +347,24 @@ export function LessonSpace({
           setProgressStage('Polishing and validating structured response...');
         }
       }, 100);
-    } else {
+    } else if (generationStatus === 'success') {
       setProgressPercent(100);
       setProgressStage('Structured questions generated!');
       const timeout = setTimeout(() => {
         setShowProgressModal(false);
         setIsMinimized(false);
+        setGenerationStatus('idle');
       }, 800);
       return () => clearTimeout(timeout);
+    } else if (generationStatus === 'error') {
+      setShowProgressModal(false);
+      setIsMinimized(false);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [loading]);
+  }, [generationStatus]);
 
   const renderFloatingBubble = () => {
     if (!loading || !isMinimized) return null;
