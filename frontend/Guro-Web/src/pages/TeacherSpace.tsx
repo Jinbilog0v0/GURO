@@ -288,6 +288,24 @@ export function TeacherSpace({
     }
   }, [classroomCode]);
 
+  useEffect(() => {
+    const handleClassroomUpdated = (e: any) => {
+      const { classroomId, customItemBank } = e.detail || {};
+      if (classroomId) {
+        if (customItemBank) {
+          setClassroomHistory(prev => prev.map(c => c.id === classroomId ? { ...c, customItemBank } : c));
+          if (classroomCode && classroomCode.toUpperCase() === classroomId.toUpperCase()) {
+            setClassroomData(prev => prev ? { ...prev, customItemBank } : prev);
+          }
+        }
+        fetchClassroomData(classroomId);
+      }
+      refreshLogs();
+    };
+    window.addEventListener('guro_classroom_updated', handleClassroomUpdated);
+    return () => window.removeEventListener('guro_classroom_updated', handleClassroomUpdated);
+  }, [classroomCode, refreshLogs]);
+
   // Auto-refresh telemetry every 45 seconds so teachers see live student progress without a manual reload
   useEffect(() => {
     const interval = setInterval(() => {

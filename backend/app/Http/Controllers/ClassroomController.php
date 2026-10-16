@@ -527,7 +527,45 @@ class ClassroomController extends Controller
                 $top = $sel['topic'] ?? null;
 
                 if ($subj && $grd && $top) {
-                    if (isset($globalBank[$subj][$grd][$top])) {
+                    if (! empty($sel['questions']) && is_array($sel['questions'])) {
+                        // Custom lesson with questions passed in selection
+                        if (! isset($bank[$subj])) {
+                            $bank[$subj] = [];
+                        }
+                        if (! isset($bank[$subj][$grd])) {
+                            $bank[$subj][$grd] = [];
+                        }
+
+                        $topicNode = [];
+                        if (! empty($sel['studyContent']) && is_array($sel['studyContent'])) {
+                            $topicNode['studyContent'] = $sel['studyContent'];
+                        }
+
+                        foreach ($sel['questions'] as $q) {
+                            $difficulty = $q['difficulty'] ?? 'Average';
+                            $category = $q['category'] ?? 'General';
+
+                            if (! isset($topicNode[$difficulty])) {
+                                $topicNode[$difficulty] = [];
+                            }
+                            if (! isset($topicNode[$difficulty][$category])) {
+                                $topicNode[$difficulty][$category] = [];
+                            }
+
+                            $type = $q['type'] ?? 'multiple-choice';
+                            $topicNode[$difficulty][$category][] = [
+                                'id' => $q['id'] ?? uniqid('Q-'),
+                                'questionText' => $q['questionText'] ?? '',
+                                'options' => $q['options'] ?? [],
+                                'correctAnswer' => $q['correctAnswer'] ?? '',
+                                'feedback' => $q['feedback'] ?? null,
+                                'type' => $type,
+                                'matchingPairs' => $q['matchingPairs'] ?? null,
+                                'imageUrl' => $q['imageUrl'] ?? null,
+                            ];
+                        }
+                        $bank[$subj][$grd][$top] = $topicNode;
+                    } elseif (isset($globalBank[$subj][$grd][$top])) {
                         if (! isset($bank[$subj])) {
                             $bank[$subj] = [];
                         }
@@ -653,10 +691,10 @@ class ClassroomController extends Controller
             }
 
             $topicNode[$difficulty][$category][] = [
-                'id' => $q['id'],
-                'questionText' => $q['questionText'],
-                'options' => $q['options'],
-                'correctAnswer' => $q['correctAnswer'],
+                'id' => $q['id'] ?? uniqid('Q-'),
+                'questionText' => $q['questionText'] ?? '',
+                'options' => $q['options'] ?? [],
+                'correctAnswer' => $q['correctAnswer'] ?? '',
                 'feedback' => $q['feedback'] ?? null,
                 'type' => $type,
                 'matchingPairs' => $q['matchingPairs'] ?? null,

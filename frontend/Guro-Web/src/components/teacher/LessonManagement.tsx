@@ -77,6 +77,9 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
     subject: string;
     grade: string;
     topic: string;
+    questions?: any[];
+    studyContent?: any;
+    isCustom?: boolean;
   } | null>(null);
   const [selectedClassroomId, setSelectedClassroomId] = useState<string>('');
   const [isAssigning, setIsAssigning] = useState(false);
@@ -186,11 +189,21 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
     return true;
   });
 
-  const handleOpenAssignModal = (lesson: { subject: string; grade: string | number; topic: string }) => {
+  const handleOpenAssignModal = (lesson: {
+    subject: string;
+    grade: string | number;
+    topic: string;
+    questions?: any[];
+    studyContent?: any;
+    isCustom?: boolean;
+  }) => {
     setAssigningLesson({
       subject: lesson.subject,
       grade: String(lesson.grade),
       topic: lesson.topic,
+      questions: lesson.questions,
+      studyContent: lesson.studyContent,
+      isCustom: lesson.isCustom ?? (Boolean(lesson.questions && lesson.questions.length > 0)),
     });
     if (classrooms.length > 0) {
       setSelectedClassroomId(classrooms[0].id);
@@ -210,20 +223,57 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
           toast.success(`Lesson "${assigningLesson.topic}" assigned to classroom!`);
           setAssigningLesson(null);
         }
+      } else if (assigningLesson.isCustom || (assigningLesson.questions && assigningLesson.questions.length > 0)) {
+        // Deploy custom lesson with questions and study content to classroom
+        const res = await apiFetch('/api/classroom/update-lesson', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            classroomId: selectedClassroomId,
+            subject: assigningLesson.subject,
+            grade: parseInt(assigningLesson.grade, 10),
+            topic: assigningLesson.topic,
+            questions: assigningLesson.questions || [],
+            studyContent: assigningLesson.studyContent || null,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          toast.success(`Lesson "${assigningLesson.topic}" deployed to classroom ${selectedClassroomId}!`);
+          setAssigningLesson(null);
+          window.dispatchEvent(new CustomEvent('guro_classroom_updated', {
+            detail: { classroomId: selectedClassroomId, customItemBank: data.customItemBank }
+          }));
+        } else {
+          const err = await res.json().catch(() => ({ error: 'Failed to deploy lesson' }));
+          toast.error(err.error || 'Failed to deploy lesson to classroom.');
+        }
       } else {
+        // System lesson from official global bank
         const res = await apiFetch('/api/classroom/claim', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             classroomId: selectedClassroomId,
-            selections: [assigningLesson]
-          })
+            selections: [{
+              subject: assigningLesson.subject,
+              grade: assigningLesson.grade,
+              topic: assigningLesson.topic,
+              questions: assigningLesson.questions,
+              studyContent: assigningLesson.studyContent,
+            }]
+          }),
         });
         if (res.ok) {
-          toast.success(`Lesson "${assigningLesson.topic}" assigned to classroom!`);
+          const data = await res.json();
+          toast.success(`Lesson "${assigningLesson.topic}" assigned to classroom ${selectedClassroomId}!`);
           setAssigningLesson(null);
+          window.dispatchEvent(new CustomEvent('guro_classroom_updated', {
+            detail: { classroomId: selectedClassroomId, customItemBank: data.customItemBank }
+          }));
         } else {
-          toast.error('Failed to assign lesson to classroom.');
+          const err = await res.json().catch(() => ({ error: 'Failed to assign lesson' }));
+          toast.error(err.error || 'Failed to assign lesson to classroom.');
         }
       }
     } catch (e: any) {
@@ -541,6 +591,9 @@ export const LessonManagement: React.FC<LessonManagementProps> = ({
                         subject: item.subject,
                         grade: item.gradeLevel || item.grade,
                         topic: item.topic || title,
+                        questions: questionsList,
+                        studyContent: item.studyContent ?? null,
+                        isCustom: true,
                       })}
                       className="btn btn-primary flex-1 text-xs py-2 px-2 flex items-center justify-center gap-1"
                     >

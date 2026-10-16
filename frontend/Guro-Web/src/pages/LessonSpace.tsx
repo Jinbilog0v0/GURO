@@ -241,17 +241,24 @@ export function LessonSpace({
         // Also sync to active classroom backend if active class exists
         if (classCode) {
           try {
-            await apiFetch('/api/classroom/update-lesson', {
+            const syncRes = await apiFetch('/api/classroom/update-lesson', {
               method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 classroomId: classCode,
                 subject,
-                grade: parseInt(grade),
+                grade: parseInt(grade, 10),
                 topic: topic.trim(),
                 questions: stagedQuestions,
                 studyContent: stagedStudyContent,
               }),
             });
+            if (syncRes.ok) {
+              const syncData = await syncRes.json();
+              window.dispatchEvent(new CustomEvent('guro_classroom_updated', {
+                detail: { classroomId: classCode, customItemBank: syncData.customItemBank }
+              }));
+            }
           } catch (e) {
             console.warn('Backend classroom sync skipped or failed:', e);
           }
