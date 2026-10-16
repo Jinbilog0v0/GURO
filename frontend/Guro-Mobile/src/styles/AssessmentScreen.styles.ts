@@ -42,7 +42,7 @@ export const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   progressBarContainer: {
-    height: 6,
+    height: 8,
     backgroundColor: Colors.bgCard,
     borderRadius: Radius.full,
     overflow: 'hidden',
@@ -63,13 +63,15 @@ export const styles = StyleSheet.create({
 
   // ── Question card ─────────────────────────────────────────────────────────
   questionCard: {
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
+    padding: Spacing.lg,
+    borderRadius: Radius.xl,
   },
   questionCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: Spacing.sm,
   },
   questionLabelNoMargin: {
     marginBottom: 0,
@@ -78,44 +80,44 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    paddingHorizontal: Spacing.sm,
-    minHeight: 32,
+    paddingHorizontal: Spacing.md,
+    minHeight: 34,
     borderRadius: Radius.full,
   },
   listenButtonText: {
-    fontSize: 12,
+    fontSize: FontSizes.xs,
     fontFamily: Fonts.bodyBold,
   },
   questionLabel: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSizes.xs,
-    color: Colors.textDark,
+    fontFamily: Fonts.bodyBold,
+    fontSize: 12,
+    color: Colors.accentPrimary,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     marginBottom: 4,
   },
   questionText: {
     fontFamily: Fonts.display,
-    fontSize: FontSizes.lg,
+    fontSize: FontSizes.xl,
     color: Colors.textMain,
-    lineHeight: FontSizes.lg * 1.4,
+    lineHeight: 28,
     letterSpacing: -0.3,
   },
 
   // ── Options ───────────────────────────────────────────────────────────────
   optionsContainer: {
-    gap: 6,
-    marginBottom: Spacing.md,
+    gap: 10,
+    marginBottom: Spacing.lg,
   },
   optionBase: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 40,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1.2,
-    gap: Spacing.sm,
+    minHeight: 52,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    gap: 12,
     ...Shadow.card,
   },
   // Default state
@@ -140,9 +142,9 @@ export const styles = StyleSheet.create({
   },
   // Letter badge
   optionLetterBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: Radius.full,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: Colors.bgInput,
     alignItems: 'center',
     justifyContent: 'center',
@@ -168,23 +170,23 @@ export const styles = StyleSheet.create({
   },
   // Option text
   optionText: {
-    fontFamily: Fonts.body,
-    fontSize: FontSizes.sm,
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSizes.md,
     color: Colors.textMain,
     flex: 1,
-    lineHeight: FontSizes.sm * 1.4,
+    lineHeight: 22,
   },
   optionTextSelected: {
     color: Colors.accentPrimary,
-    fontFamily: Fonts.bodyMedium,
+    fontFamily: Fonts.bodyBold,
   },
   optionTextCorrect: {
     color: Colors.success,
-    fontFamily: Fonts.bodyMedium,
+    fontFamily: Fonts.bodyBold,
   },
   optionTextWrong: {
     color: Colors.danger,
-    fontFamily: Fonts.bodyMedium,
+    fontFamily: Fonts.bodyBold,
   },
 
   // ── Feedback card ─────────────────────────────────────────────────────────

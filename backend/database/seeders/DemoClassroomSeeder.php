@@ -82,9 +82,12 @@ class DemoClassroomSeeder extends Seeder
                             'multiple-choice' => [
                                 [
                                     'id' => 'q-frac-e1',
+                                    'questionText' => 'In the fraction 3/4, what number is the numerator?',
                                     'question' => 'In the fraction 3/4, what number is the numerator?',
                                     'options' => ['3', '4', '7', '1'],
+                                    'correctAnswer' => '3',
                                     'answer' => '3',
+                                    'feedback' => ['en' => 'The numerator is the top number in a fraction.', 'fil' => 'Ang numerator ay ang numero sa itaas ng fraction.'],
                                     'explanation' => 'The numerator is the top number in a fraction.',
                                 ],
                             ],
@@ -93,9 +96,12 @@ class DemoClassroomSeeder extends Seeder
                             'multiple-choice' => [
                                 [
                                     'id' => 'q-frac-a1',
+                                    'questionText' => 'What is 2/5 + 1/5 in simplest form?',
                                     'question' => 'What is 2/5 + 1/5 in simplest form?',
                                     'options' => ['3/5', '3/10', '2/10', '1/5'],
+                                    'correctAnswer' => '3/5',
                                     'answer' => '3/5',
+                                    'feedback' => ['en' => 'With like denominators, add numerators: 2 + 1 = 3.', 'fil' => 'Kapag magkapareho ang denominator, idagdag ang numerator: 2 + 1 = 3.'],
                                     'explanation' => 'With like denominators, add numerators: 2 + 1 = 3.',
                                 ],
                             ],
@@ -104,9 +110,12 @@ class DemoClassroomSeeder extends Seeder
                             'multiple-choice' => [
                                 [
                                     'id' => 'q-frac-d1',
+                                    'questionText' => 'Convert 7/2 into a mixed number.',
                                     'question' => 'Convert 7/2 into a mixed number.',
                                     'options' => ['3 1/2', '2 1/2', '3 2/3', '4 1/2'],
+                                    'correctAnswer' => '3 1/2',
                                     'answer' => '3 1/2',
+                                    'feedback' => ['en' => '7 divided by 2 is 3 remainder 1, hence 3 1/2.', 'fil' => 'Ang 7 hinati sa 2 ay 3 may tirang 1, kaya 3 1/2.'],
                                     'explanation' => '7 divided by 2 is 3 remainder 1, hence 3 1/2.',
                                 ],
                             ],
@@ -122,9 +131,12 @@ class DemoClassroomSeeder extends Seeder
                             'multiple-choice' => [
                                 [
                                     'id' => 'q-dec-e1',
+                                    'questionText' => 'What is 0.5 expressed as a fraction?',
                                     'question' => 'What is 0.5 expressed as a fraction?',
                                     'options' => ['1/2', '1/5', '5/100', '2/5'],
+                                    'correctAnswer' => '1/2',
                                     'answer' => '1/2',
+                                    'feedback' => ['en' => '0.5 equals 5/10 which reduces to 1/2.', 'fil' => 'Ang 0.5 ay katumbas ng 5/10 na kapag pinaliit ay 1/2.'],
                                     'explanation' => '0.5 equals 5/10 which reduces to 1/2.',
                                 ],
                             ],
@@ -133,9 +145,12 @@ class DemoClassroomSeeder extends Seeder
                             'multiple-choice' => [
                                 [
                                     'id' => 'q-dec-a1',
+                                    'questionText' => 'What is 1.25 + 0.75?',
                                     'question' => 'What is 1.25 + 0.75?',
                                     'options' => ['2.00', '1.90', '2.50', '1.85'],
+                                    'correctAnswer' => '2.00',
                                     'answer' => '2.00',
+                                    'feedback' => ['en' => '1.25 plus 0.75 equals 2.00.', 'fil' => 'Ang 1.25 dagdagan ng 0.75 ay 2.00.'],
                                     'explanation' => '1.25 plus 0.75 equals 2.00.',
                                 ],
                             ],
@@ -151,9 +166,12 @@ class DemoClassroomSeeder extends Seeder
                             'multiple-choice' => [
                                 [
                                     'id' => 'q-mul-e1',
+                                    'questionText' => 'What is 12 x 8?',
                                     'question' => 'What is 12 x 8?',
                                     'options' => ['96', '84', '92', '108'],
+                                    'correctAnswer' => '96',
                                     'answer' => '96',
+                                    'feedback' => ['en' => '12 multiplied by 8 equals 96.', 'fil' => 'Ang 12 kapag pinarami ng 8 ay 96.'],
                                     'explanation' => '12 multiplied by 8 equals 96.',
                                 ],
                             ],
@@ -169,9 +187,12 @@ class DemoClassroomSeeder extends Seeder
                             'multiple-choice' => [
                                 [
                                     'id' => 'q-geo-e1',
+                                    'questionText' => 'What is the perimeter of a square with side length 5 cm?',
                                     'question' => 'What is the perimeter of a square with side length 5 cm?',
                                     'options' => ['20 cm', '25 cm', '15 cm', '10 cm'],
+                                    'correctAnswer' => '20 cm',
                                     'answer' => '20 cm',
+                                    'feedback' => ['en' => 'Perimeter of a square = 4 x side = 4 x 5 = 20 cm.', 'fil' => 'Perimeter ng square = 4 x gilid = 4 x 5 = 20 cm.'],
                                     'explanation' => 'Perimeter of a square = 4 x side = 4 x 5 = 20 cm.',
                                 ],
                             ],
@@ -187,9 +208,12 @@ class DemoClassroomSeeder extends Seeder
                             'multiple-choice' => [
                                 [
                                     'id' => 'q-word-a1',
+                                    'questionText' => 'Maria bought 3 notebooks at 25 pesos each. How much did she pay in total?',
                                     'question' => 'Maria bought 3 notebooks at 25 pesos each. How much did she pay in total?',
                                     'options' => ['75 pesos', '65 pesos', '85 pesos', '50 pesos'],
+                                    'correctAnswer' => '75 pesos',
                                     'answer' => '75 pesos',
+                                    'feedback' => ['en' => '3 times 25 equals 75 pesos.', 'fil' => '3 beses ng 25 ay 75 pesos.'],
                                     'explanation' => '3 times 25 equals 75 pesos.',
                                 ],
                             ],

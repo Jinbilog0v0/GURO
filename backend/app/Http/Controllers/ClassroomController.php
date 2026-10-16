@@ -677,11 +677,15 @@ class ClassroomController extends Controller
                 $topicNode[$difficulty][$category] = [];
             }
 
+            $qText = $q['questionText'] ?? $q['question'] ?? '';
+            $cAnswer = $q['correctAnswer'] ?? $q['answer'] ?? '';
+            $feedback = $q['feedback'] ?? $q['explanation'] ?? null;
+
             $type = $q['type'] ?? null;
             if (! $type || $type === 'multiple-choice') {
                 if (! empty($q['matchingPairs'])) {
                     $type = 'drag-drop-matching';
-                } elseif (str_contains($q['questionText'], '[[blank]]') || str_contains($q['questionText'], '____') || str_contains($q['questionText'], '______')) {
+                } elseif (str_contains($qText, '[[blank]]') || str_contains($qText, '____') || str_contains($qText, '______')) {
                     $type = 'fill-in-the-blank';
                 } elseif (isset($q['options']) && count($q['options']) === 2 && (($q['options'][0] === 'True' && $q['options'][1] === 'False') || ($q['options'][0] === 'False' && $q['options'][1] === 'True'))) {
                     $type = 'true-false';
@@ -692,10 +696,13 @@ class ClassroomController extends Controller
 
             $topicNode[$difficulty][$category][] = [
                 'id' => $q['id'] ?? uniqid('Q-'),
-                'questionText' => $q['questionText'] ?? '',
+                'questionText' => $qText,
+                'question' => $qText,
                 'options' => $q['options'] ?? [],
-                'correctAnswer' => $q['correctAnswer'] ?? '',
-                'feedback' => $q['feedback'] ?? null,
+                'correctAnswer' => $cAnswer,
+                'answer' => $cAnswer,
+                'feedback' => $feedback,
+                'explanation' => is_array($feedback) ? ($feedback['en'] ?? '') : (string) $feedback,
                 'type' => $type,
                 'matchingPairs' => $q['matchingPairs'] ?? null,
                 'imageUrl' => $q['imageUrl'] ?? null,

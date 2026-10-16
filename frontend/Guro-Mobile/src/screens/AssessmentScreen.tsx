@@ -100,6 +100,97 @@ const matchColors = [
   { bg: 'rgba(16, 185, 129, 0.08)', border: '#10B981', text: '#059669', badgeBg: 'rgba(16, 185, 129, 0.15)' },
 ];
 
+export const normalizeQuestion = (raw: any, index: number = 0): Question => {
+  if (!raw || typeof raw !== 'object') {
+    return {
+      id: `q-${index}-${Date.now()}`,
+      questionText: 'Question not available',
+      options: ['True', 'False'],
+      correctAnswer: 'True',
+      feedback: { en: 'No feedback available.', fil: 'Walang paliwanag.' },
+      type: 'multiple-choice',
+    };
+  }
+
+  const id = String(raw.id || `q-${index}-${Date.now()}`);
+  const questionText = String(
+    raw.questionText !== undefined && raw.questionText !== null
+      ? raw.questionText
+      : (raw.question !== undefined && raw.question !== null ? raw.question : (raw.prompt || raw.text || ''))
+  ).trim();
+
+  let options: string[] = [];
+  if (Array.isArray(raw.options) && raw.options.length > 0) {
+    options = raw.options.map((opt: any) => String(opt).trim());
+  } else if (raw.choices && Array.isArray(raw.choices)) {
+    options = raw.choices.map((opt: any) => String(opt).trim());
+  } else if (raw.type === 'true-false') {
+    options = ['True', 'False'];
+  } else {
+    options = ['Option A', 'Option B', 'Option C', 'Option D'];
+  }
+
+  const correctAnswer = String(
+    raw.correctAnswer !== undefined && raw.correctAnswer !== null
+      ? raw.correctAnswer
+      : (raw.answer !== undefined && raw.answer !== null ? raw.answer : (options[0] || ''))
+  ).trim();
+
+  let feedback = raw.feedback;
+  if (!feedback && raw.explanation) {
+    feedback = {
+      en: typeof raw.explanation === 'string' ? raw.explanation : JSON.stringify(raw.explanation),
+      fil: typeof raw.explanation === 'string' ? raw.explanation : JSON.stringify(raw.explanation),
+    };
+  } else if (typeof feedback === 'string') {
+    feedback = { en: feedback, fil: feedback };
+  } else if (!feedback || typeof feedback !== 'object') {
+    feedback = { en: 'Good effort!', fil: 'Magaling na pagsisikap!' };
+  }
+
+  let type = raw.type;
+  if (!type || type === 'multiple-choice') {
+    if (raw.matchingPairs && Object.keys(raw.matchingPairs).length > 0) {
+      type = 'drag-drop-matching';
+    } else if (
+      questionText.includes('[[blank]]') ||
+      questionText.includes('____') ||
+      questionText.includes('______')
+    ) {
+      type = 'fill-in-the-blank';
+    } else if (
+      options.length === 2 &&
+      ((options[0] === 'True' && options[1] === 'False') ||
+        (options[0] === 'False' && options[1] === 'True'))
+    ) {
+      type = 'true-false';
+    } else {
+      type = 'multiple-choice';
+    }
+  }
+
+  return {
+    ...raw,
+    id,
+    questionText,
+    question: questionText,
+    options,
+    correctAnswer,
+    answer: correctAnswer,
+    feedback,
+    explanation: typeof feedback === 'object' && feedback ? feedback.en : String(feedback || ''),
+    type,
+    matchingPairs: raw.matchingPairs || undefined,
+    imageUrl: raw.imageUrl || raw.image_url || undefined,
+  };
+};
+
+export const isQuestionAnswerCorrect = (selected: string | null, q: any): boolean => {
+  if (!selected || !q) return false;
+  const target = (q.correctAnswer ?? q.answer ?? '').toString().trim();
+  return selected.trim().toLowerCase() === target.toLowerCase();
+};
+
 export function AssessmentScreen({ route, navigation }: Props) {
   const { subject, gradeLevel, topic, assessmentType = 'practice' } = route.params;
 
@@ -130,41 +221,138 @@ export function AssessmentScreen({ route, navigation }: Props) {
   const getQuestions = (): Question[] => {
     const effectiveBank = itemBank || (itemBankData as any);
     if (!effectiveBank) return [];
-    const subjectData = effectiveBank[subject];
+
+    // 1. Subject lookup with aliases and case-insensitivity
+    let subjectKey = subject;
+    if (!effectiveBank[subjectKey]) {
+      const foundKey = Object.keys(effectiveBank).find(
+        (k) => k.toLowerCase() === subject.toLowerCase()
+      );
+      if (foundKey) {
+        subjectKey = foundKey;
+      } else if (subject.toLowerCase().includes('math')) {
+        subjectKey = Object.keys(effectiveBank).find((k) => k.toLowerCase().includes('math')) || subject;
+      } else if (subject.toLowerCase().includes('eng')) {
+        subjectKey = Object.keys(effectiveBank).find((k) => k.toLowerCase().includes('eng')) || subject;
+      } else if (subject.toLowerCase().includes('sci')) {
+        subjectKey = Object.keys(effectiveBank).find((k) => k.toLowerCase().includes('sci')) || subject;
+      }
+    }
+    const subjectData = effectiveBank[subjectKey];
     if (!subjectData) return [];
-    const gradeData = subjectData[gradeLevel.toString()];
+
+    // 2. Grade lookup
+    const gradeKey = gradeLevel.toString();
+    const gradeData = subjectData[gradeKey] || subjectData[parseInt(gradeKey, 10)];
     if (!gradeData) return [];
-    const topicData = gradeData[topic];
+
+    // 3. Topic lookup with case-insensitivity
+    let topicData = gradeData[topic];
+    if (!topicData) {
+      const cleanTopic = topic.trim().toLowerCase();
+      const foundTopicKey = Object.keys(gradeData).find(
+        (k) => k.trim().toLowerCase() === cleanTopic
+      );
+      if (foundTopicKey) {
+        topicData = gradeData[foundTopicKey];
+      }
+    }
     if (!topicData) return [];
-    
-    const list: Question[] = [];
-    const diffData = topicData[currentTier] as Record<string, Question[]> | undefined;
-    if (diffData && typeof diffData === 'object') {
-      Object.keys(diffData).forEach((cat) => {
-        list.push(...diffData[cat]);
+
+    const candidateQuestions: any[] = [];
+
+    // Check direct questions array
+    if (Array.isArray(topicData.questions) && topicData.questions.length > 0) {
+      candidateQuestions.push(...topicData.questions);
+    } else if (Array.isArray(topicData) && topicData.length > 0) {
+      candidateQuestions.push(...topicData);
+    }
+
+    // Check current tier
+    const diffData = topicData[currentTier];
+    if (diffData) {
+      if (Array.isArray(diffData)) {
+        candidateQuestions.push(...diffData);
+      } else if (typeof diffData === 'object') {
+        Object.keys(diffData).forEach((cat) => {
+          if (Array.isArray(diffData[cat])) {
+            candidateQuestions.push(...diffData[cat]);
+          }
+        });
+      }
+    }
+
+    // If candidateQuestions has fewer than 5 items, gather from all tiers
+    if (candidateQuestions.length < 5) {
+      const tiers = ['Easy', 'Average', 'Difficult'];
+      tiers.forEach((tier) => {
+        if (tier === currentTier) return;
+        const tierNode = topicData[tier];
+        if (!tierNode) return;
+        if (Array.isArray(tierNode)) {
+          candidateQuestions.push(...tierNode);
+        } else if (typeof tierNode === 'object') {
+          Object.keys(tierNode).forEach((cat) => {
+            if (Array.isArray(tierNode[cat])) {
+              candidateQuestions.push(...tierNode[cat]);
+            }
+          });
+        }
+      });
+
+      // Also gather from any other keys (excluding studyContent & questions)
+      Object.keys(topicData).forEach((key) => {
+        if (key === 'studyContent' || key === 'questions' || tiers.includes(key)) return;
+        const extraNode = topicData[key];
+        if (Array.isArray(extraNode)) {
+          candidateQuestions.push(...extraNode);
+        } else if (extraNode && typeof extraNode === 'object') {
+          Object.keys(extraNode).forEach((cat) => {
+            if (Array.isArray(extraNode[cat])) {
+              candidateQuestions.push(...extraNode[cat]);
+            }
+          });
+        }
       });
     }
 
-    if (list.length === 0) {
-      Object.keys(topicData).forEach((diff) => {
-        if (diff === 'studyContent') return;
-        const fallbackDiffData = topicData[diff] as Record<string, Question[]> | undefined;
-        if (!fallbackDiffData || typeof fallbackDiffData !== 'object') return;
-        Object.keys(fallbackDiffData).forEach((cat) => {
-          list.push(...fallbackDiffData[cat]);
-        });
-      });
-    }
-    return list;
+    // Deduplicate and normalize
+    const seen = new Set<string>();
+    const uniqueQuestions: Question[] = [];
+    candidateQuestions.forEach((q, idx) => {
+      const norm = normalizeQuestion(q, idx);
+      const key = norm.id || norm.questionText;
+      if (!seen.has(key) && norm.questionText.length > 0) {
+        seen.add(key);
+        uniqueQuestions.push(norm);
+      }
+    });
+
+    return uniqueQuestions;
   };
 
   const [questions, setQuestions] = useState<Question[]>(() => {
     const rawQuestions = getQuestions();
     return shuffle(rawQuestions).map((q) => ({
       ...q,
-      options: shuffle(q.options),
+      options: shuffle(q.options || []),
     }));
   });
+
+  // Re-populate questions if itemBank loads asynchronously
+  useEffect(() => {
+    if (questions.length === 0) {
+      const rawQuestions = getQuestions();
+      if (rawQuestions.length > 0) {
+        setQuestions(
+          shuffle(rawQuestions).map((q) => ({
+            ...q,
+            options: shuffle(q.options || []),
+          }))
+        );
+      }
+    }
+  }, [itemBank]);
 
   // ── Quiz state ─────────────────────────────────────────────────────────────
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -403,9 +591,9 @@ export function AssessmentScreen({ route, navigation }: Props) {
   }
 
 
-  const progress = (currentIndex + (isAnswered ? 1 : 0)) / questions.length;
+  const progress = (currentIndex + (isAnswered ? 1 : 0)) / (questions.length || 1);
   const isLastQuestion = currentIndex + 1 === questions.length;
-  const isCorrect = selectedOption === currentQuestion.correctAnswer;
+  const isCorrect = isQuestionAnswerCorrect(selectedOption, currentQuestion);
 
   // ── Speech Handlers ────────────────────────────────────────────────────────
   const toggleSpeech = () => {
@@ -413,11 +601,13 @@ export function AssessmentScreen({ route, navigation }: Props) {
       Speech.stop();
       setIsSpeaking(false);
     } else {
+      if (!currentQuestion) return;
       setIsSpeaking(true);
-      const optionsText = currentQuestion.options
+      const optionsText = (currentQuestion.options || [])
         .map((opt: string, idx: number) => `Option ${String.fromCharCode(65 + idx)}: ${opt}`)
         .join('. ');
-      const cleanQuestionText = currentQuestion.questionText
+      const rawQText = String(currentQuestion.questionText || currentQuestion.question || '');
+      const cleanQuestionText = rawQText
         .replace(/\[\[blank\]\]/g, ' blank ')
         .replace(/_+/g, ' blank ');
       const textToSpeak = `${cleanQuestionText}. ${optionsText}`;
@@ -438,8 +628,8 @@ export function AssessmentScreen({ route, navigation }: Props) {
   };
 
   const handleSubmit = () => {
-    if (!selectedOption || isAnswered) return;
-    const correct = selectedOption === currentQuestion.correctAnswer;
+    if (!selectedOption || isAnswered || !currentQuestion) return;
+    const correct = isQuestionAnswerCorrect(selectedOption, currentQuestion);
     if (correct) setScore((prev) => prev + 1);
     Haptics.notificationAsync(
       correct
@@ -450,17 +640,17 @@ export function AssessmentScreen({ route, navigation }: Props) {
     setAnswerLog((prev) => [
       ...prev,
       {
-        questionText: currentQuestion.questionText,
+        questionText: currentQuestion.questionText || currentQuestion.question || 'Question',
         selectedOption: selectedOption,
-        correctAnswer: currentQuestion.correctAnswer,
+        correctAnswer: currentQuestion.correctAnswer || currentQuestion.answer || '',
         explanation:
           typeof currentQuestion.feedback === 'object' && currentQuestion.feedback !== null
-            ? currentQuestion.feedback.en
-            : String(currentQuestion.feedback || ''),
+            ? (currentQuestion.feedback.en || currentQuestion.explanation || '')
+            : String(currentQuestion.feedback || currentQuestion.explanation || ''),
         isCorrect: correct,
       },
     ]);
-    addLog(`Submitted answer for ${currentQuestion.id}. Correct: ${correct}`);
+    addLog(`Submitted answer for ${currentQuestion.id || 'question'}. Correct: ${correct}`);
 
     // Dynamic voice feedback and sound effects
     const soundEnabled = useAppStore.getState().soundEffectsEnabled;
@@ -1130,19 +1320,21 @@ export function AssessmentScreen({ route, navigation }: Props) {
 
   // ── Option style helper ────────────────────────────────────────────────────
   const getOptionStyle = (option: string) => {
+    const isThisSelected = selectedOption !== null && (option === selectedOption || option.trim().toLowerCase() === selectedOption.trim().toLowerCase());
+    const isThisCorrect = isQuestionAnswerCorrect(option, currentQuestion);
+
     if (!isAnswered) {
-      const isSelected = selectedOption === option;
       return {
         container: [
           styles.optionBase,
-          isSelected ? styles.optionSelected : styles.optionDefault,
+          isThisSelected ? styles.optionSelected : styles.optionDefault,
         ],
-        text: [styles.optionText, isSelected && styles.optionTextSelected],
-        badge: isSelected ? styles.optionLetterBadgeSelected : undefined,
-        badgeText: isSelected ? styles.optionLetterActive : undefined,
+        text: [styles.optionText, isThisSelected && styles.optionTextSelected],
+        badge: isThisSelected ? styles.optionLetterBadgeSelected : undefined,
+        badgeText: isThisSelected ? styles.optionLetterActive : undefined,
       };
     }
-    if (option === currentQuestion.correctAnswer) {
+    if (isThisCorrect) {
       return {
         container: [styles.optionBase, styles.optionCorrect],
         text: [styles.optionText, styles.optionTextCorrect],
@@ -1150,7 +1342,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
         badgeText: styles.optionLetterActive,
       };
     }
-    if (option === selectedOption) {
+    if (isThisSelected) {
       return {
         container: [styles.optionBase, styles.optionWrong],
         text: [styles.optionText, styles.optionTextWrong],
@@ -1169,8 +1361,8 @@ export function AssessmentScreen({ route, navigation }: Props) {
   // ── Feedback text ──────────────────────────────────────────────────────────
   const feedbackText =
     typeof currentQuestion?.feedback === 'object' && currentQuestion?.feedback !== null
-      ? currentQuestion.feedback.en
-      : currentQuestion?.feedback || '';
+      ? (currentQuestion.feedback.en || currentQuestion.explanation || '')
+      : (currentQuestion?.feedback || currentQuestion?.explanation || '');
 
   const comboStreak = (() => {
     let streak = 0;
@@ -1255,12 +1447,13 @@ export function AssessmentScreen({ route, navigation }: Props) {
               </Text>
             </TouchableOpacity>
           </View>
-          {currentQuestion.type === 'fill-in-the-blank' && (currentQuestion.questionText.includes('[[blank]]') || currentQuestion.questionText.includes('______') || currentQuestion.questionText.includes('____')) ? (
+          {currentQuestion.type === 'fill-in-the-blank' && ((currentQuestion.questionText || currentQuestion.question || '').includes('[[blank]]') || (currentQuestion.questionText || currentQuestion.question || '').includes('______') || (currentQuestion.questionText || currentQuestion.question || '').includes('____')) ? (
             (() => {
-              const delimiter = currentQuestion.questionText.includes('[[blank]]')
+              const qText = currentQuestion.questionText || currentQuestion.question || '';
+              const delimiter = qText.includes('[[blank]]')
                 ? '[[blank]]'
-                : (currentQuestion.questionText.includes('______') ? '______' : '____');
-              const parts = currentQuestion.questionText.split(delimiter);
+                : (qText.includes('______') ? '______' : '____');
+              const parts = qText.split(delimiter);
               return (
                 <Text style={styles.questionText}>
                   {parts[0]}
@@ -1272,7 +1465,9 @@ export function AssessmentScreen({ route, navigation }: Props) {
               );
             })()
           ) : (
-            <Text style={styles.questionText}>{currentQuestion.questionText}</Text>
+            <Text style={styles.questionText}>
+              {currentQuestion.questionText || currentQuestion.question || 'Select the correct answer:'}
+            </Text>
           )}
           {currentQuestion.imageUrl && (
             <View style={styles.illustrationContainer}>
@@ -1426,8 +1621,8 @@ export function AssessmentScreen({ route, navigation }: Props) {
             <View style={{ flexDirection: 'row', gap: 12, width: '100%', marginVertical: 10 }}>
               {['True', 'False'].map((option, idx) => {
                 const isSelected = selectedOption === option;
-                const isCorrect = option === currentQuestion.correctAnswer;
-                const isWrong = isSelected && selectedOption !== currentQuestion.correctAnswer;
+                const isCorrect = isQuestionAnswerCorrect(option, currentQuestion);
+                const isWrong = isSelected && !isCorrect;
 
                 let btnColor: string = Colors.bgCard;
                 let borderColor: string = Colors.border;
@@ -1547,7 +1742,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
                     borderRadius: 24,
                     borderWidth: 3,
                     borderColor: isAnswered 
-                      ? selectedOption === currentQuestion.correctAnswer 
+                      ? isQuestionAnswerCorrect(selectedOption, currentQuestion)
                         ? Colors.success 
                         : Colors.danger
                       : selectedOption
@@ -1583,7 +1778,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
                     lineHeight: 18,
                     marginBottom: selectedOption ? 16 : 0,
                   }}>
-                    {currentQuestion.questionText}
+                    {currentQuestion.questionText || currentQuestion.question || 'Swipe to categorize'}
                   </Text>
 
                   {selectedOption && (
@@ -1591,21 +1786,21 @@ export function AssessmentScreen({ route, navigation }: Props) {
                       position: 'absolute',
                       bottom: 12,
                       backgroundColor: isAnswered 
-                        ? (selectedOption === currentQuestion.correctAnswer ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)')
+                        ? (isQuestionAnswerCorrect(selectedOption, currentQuestion) ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)')
                         : 'rgba(99, 102, 241, 0.08)',
                       paddingHorizontal: 8,
                       paddingVertical: 3,
                       borderRadius: 10,
                       borderWidth: 1,
                       borderColor: isAnswered
-                        ? (selectedOption === currentQuestion.correctAnswer ? Colors.success : Colors.danger)
+                        ? (isQuestionAnswerCorrect(selectedOption, currentQuestion) ? Colors.success : Colors.danger)
                         : Colors.accentPrimary,
                     }}>
                       <Text style={{
                         fontSize: 9,
                         fontFamily: Fonts.bodyBold,
                         color: isAnswered
-                          ? (selectedOption === currentQuestion.correctAnswer ? Colors.success : Colors.danger)
+                          ? (isQuestionAnswerCorrect(selectedOption, currentQuestion) ? Colors.success : Colors.danger)
                           : Colors.accentPrimary,
                         textTransform: 'uppercase',
                         letterSpacing: 0.5,
@@ -1889,11 +2084,11 @@ export function AssessmentScreen({ route, navigation }: Props) {
               )}
             </View>
           ) : (
-            currentQuestion.options.map((option: string, idx: number) => {
+            (currentQuestion.options || []).map((option: string, idx: number) => {
               const optionStyle = getOptionStyle(option);
               return (
                 <TouchableOpacity
-                  key={`${currentQuestion.id}-opt-${idx}`}
+                  key={`${currentQuestion.id || 'q'}-opt-${idx}`}
                   onPress={() => handleOptionSelect(option)}
                   activeOpacity={isAnswered ? 1 : 0.75}
                   style={optionStyle.container}
