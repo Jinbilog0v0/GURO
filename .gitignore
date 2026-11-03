@@ -63,3 +63,7 @@ MOBILE_ADAPTIVE_UI_GUIDE.md
 deploy.sh
 set-env.sh
 
+
+# Local push scripts
+push_to_github.bat
+push_to_github.ps1
