@@ -72,7 +72,8 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
 
   const getCellStyles = (percentage: number | null) => {
     if (percentage === null) return { backgroundColor: 'rgba(255,255,255,0.02)', color: '#64748B', fontWeight: 500 };
-    if (percentage >= 80) return { backgroundColor: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.25)', fontWeight: 700 };
+    // DepEd passing standard: >= 75%
+    if (percentage >= 75) return { backgroundColor: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.25)', fontWeight: 700 };
     if (percentage >= 50) return { backgroundColor: 'rgba(245,158,11,0.12)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.25)', fontWeight: 700 };
     return { backgroundColor: 'rgba(160,19,34,0.12)', color: '#A01322', border: '1px solid rgba(160,19,34,0.25)', fontWeight: 700 };
   };
@@ -83,7 +84,7 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
         <BarChart3 className="size-6 text-blue-500 shrink-0" aria-hidden="true" />
         <div>
           <h3 className="text-base font-bold text-[var(--text-main)]">Classroom Mastery Matrix</h3>
-          <p className="text-xs text-[var(--text-muted)] mt-0.5">Overview of topic mastery grades across all synced student profiles.</p>
+          <p className="text-xs text-[var(--text-muted)] mt-0.5">Overview of topic mastery grades across all synced student profiles (DepEd passing standard: ≥75%).</p>
         </div>
       </div>
 
@@ -199,14 +200,8 @@ export const MasteryMatrix: React.FC<MasteryMatrixProps> = ({ progressLogs, last
                           lastUpdatedCell &&
                           lastUpdatedCell.studentId === student &&
                           lastUpdatedCell.topic === topic &&
-                          Date.now() - lastUpdatedCell.timestamp < 5000;
-
-                        let pulseClass = '';
-                        if (isRecentlyUpdated && bestScore !== null) {
-                          if (bestScore >= 80) pulseClass = 'flash-green';
-                          else if (bestScore >= 50) pulseClass = 'flash-yellow';
-                          else pulseClass = 'flash-red';
-                        }
+                          Date.now() - lastUpdatedCell.timestamp < 3000;
+                        const pulseClass = isRecentlyUpdated ? 'animate-pulse ring-2 ring-emerald-400' : '';
 
                         const label = bestScore !== null
                           ? `Score ${Math.round(bestScore)}% for ${student} on ${topic}`

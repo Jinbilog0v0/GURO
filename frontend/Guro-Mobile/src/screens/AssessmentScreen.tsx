@@ -59,7 +59,7 @@ import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
 import Svg, { Path, Circle } from 'react-native-svg';
 
-// ── Design System ──────────────────────────────────────────────────────────────────────────────
+// ── Design System ──────────────────────────────────────────────────────────────
 import { Colors } from '../theme/colors';
 import { Fonts, FontSizes } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
@@ -360,6 +360,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
+  const showQuizAnswers = useAppStore((state) => state.showQuizAnswers ?? true);
   const [showAnswerReview, setShowAnswerReview] = useState(false);
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
   const [shadedSlices, setShadedSlices] = useState<number[]>([]);
@@ -590,7 +591,6 @@ export function AssessmentScreen({ route, navigation }: Props) {
     );
   }
 
-
   const progress = (currentIndex + (isAnswered ? 1 : 0)) / (questions.length || 1);
   const isLastQuestion = currentIndex + 1 === questions.length;
   const isCorrect = isQuestionAnswerCorrect(selectedOption, currentQuestion);
@@ -725,7 +725,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
         state.setAdaptiveTier(topicKey, remediation.tier);
       }
 
-      if (percentage < 80) {
+      if (percentage < 75) {
         let nextFailures = 1;
         if (typeof state.incrementConsecutiveFailures === 'function') {
           nextFailures = state.incrementConsecutiveFailures(topicKey);
@@ -1089,28 +1089,51 @@ export function AssessmentScreen({ route, navigation }: Props) {
               </View>
             )}
 
-            {/* Answer Review Toggle */}
+            {/* Answer Review Toggle / Lock Notice */}
             {answerLog.length > 0 && (
-              <TouchableOpacity
-                onPress={() => setShowAnswerReview((v) => !v)}
-                activeOpacity={0.75}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  paddingVertical: 10,
-                  marginTop: 4,
-                }}
-              >
-                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.accentPrimary }}>
-                  {showAnswerReview ? 'Hide' : 'Review My Answers'}
-                </Text>
-                {showAnswerReview
-                  ? <ChevronUp size={16} color={Colors.accentPrimary} />
-                  : <ChevronDown size={16} color={Colors.accentPrimary} />
-                }
-              </TouchableOpacity>
+              !showQuizAnswers ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    marginTop: 4,
+                    backgroundColor: Colors.bgInput,
+                    borderRadius: Radius.md,
+                    borderWidth: 1,
+                    borderColor: Colors.border,
+                  }}
+                >
+                  <Lock size={14} color={Colors.textMuted} />
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                    Detailed answer review is locked by the teacher.
+                  </Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => setShowAnswerReview((v) => !v)}
+                  activeOpacity={0.75}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    paddingVertical: 10,
+                    marginTop: 4,
+                  }}
+                >
+                  <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.accentPrimary }}>
+                    {showAnswerReview ? 'Hide' : 'Review My Answers'}
+                  </Text>
+                  {showAnswerReview
+                    ? <ChevronUp size={16} color={Colors.accentPrimary} />
+                    : <ChevronDown size={16} color={Colors.accentPrimary} />
+                  }
+                </TouchableOpacity>
+              )
             )}
           </GlassCard>
 
@@ -2199,4 +2222,3 @@ export function AssessmentScreen({ route, navigation }: Props) {
     </SafeAreaView>
   );
 }
-

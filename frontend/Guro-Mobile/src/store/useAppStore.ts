@@ -85,6 +85,8 @@ interface AppState {
   studentId: string;
   classroomId: string | null;
   teacherName: string | null;
+  showQuizAnswers: boolean;
+  consultationHours: string | null;
   activeSubjects: string[];
   activeSchoolYear: string;
   activeTerm: string;
@@ -145,7 +147,9 @@ interface AppState {
   loadItemBankSync: () => Promise<void>;
   setParentPin: (pin: string | null) => void;
   setStudentId: (id: string) => void;
-  setClassroomId: (id: string | null, teacherName?: string | null) => void;
+  setClassroomId: (id: string | null, teacherName?: string | null, showQuizAnswers?: boolean, consultationHours?: string | null) => void;
+  setShowQuizAnswers: (val: boolean) => void;
+  setConsultationHours: (hours: string | null) => void;
   setTeacherName: (name: string | null) => void;
   adaptiveTiers: Record<string, 'Easy' | 'Average' | 'Difficult'>;
   consecutiveFailures: Record<string, number>;
@@ -197,6 +201,8 @@ export const useAppStore = create<AppState>()(
       studentId: 'GURO-STUDENT-LOCAL',
       classroomId: null,
       teacherName: null,
+      showQuizAnswers: true,
+      consultationHours: null,
       activeSubjects: ['Mathematics', 'English'],
       activeSchoolYear: '2026-2027',
       activeTerm: 'Quarter 1',
@@ -431,16 +437,20 @@ export const useAppStore = create<AppState>()(
         set({ studentId: sanitized });
         get().addLog(`Student Device ID configured to: ${sanitized}`);
       },
-      setClassroomId: (id, teacherName) => {
+      setClassroomId: (id, teacherName, showQuizAnswers, consultationHours) => {
         set({
           classroomId: id,
           teacherName: teacherName !== undefined ? teacherName : (id ? get().teacherName : null),
+          showQuizAnswers: showQuizAnswers !== undefined ? showQuizAnswers : get().showQuizAnswers,
+          consultationHours: consultationHours !== undefined ? consultationHours : get().consultationHours,
         });
         if (!id) {
           set({ activeSubjects: ['Mathematics', 'English'], teacherName: null });
         }
         get().addLog(id ? `Linked device to classroom invite code: ${id}` : 'Unlinked device from classroom invite code.');
       },
+      setShowQuizAnswers: (val) => set({ showQuizAnswers: val }),
+      setConsultationHours: (hours) => set({ consultationHours: hours }),
       setTeacherName: (name) => {
         set({ teacherName: name });
       },
@@ -472,13 +482,19 @@ export const useAppStore = create<AppState>()(
                 console.error('[Store] Failed to fetch active subjects:', subErr);
               }
 
-              // Auto-fetch teacher name, school year, and term if not already cached
+              // Auto-fetch teacher name, school year, consultation schedule, and answer review visibility
               try {
                 const verRes = await fetch(`${resolvedUrl}/api/classroom/verify?code=${encodeURIComponent(id)}`);
                 if (verRes.ok) {
                   const verData = await verRes.json();
                   if (verData.teacherName) {
                     set({ teacherName: verData.teacherName });
+                  }
+                  if (verData.showQuizAnswers !== undefined) {
+                    set({ showQuizAnswers: verData.showQuizAnswers });
+                  }
+                  if (verData.consultationHours) {
+                    set({ consultationHours: verData.consultationHours });
                   }
                   if (verData.schoolYear) {
                     set({ activeSchoolYear: verData.schoolYear });
@@ -704,6 +720,9 @@ export const useAppStore = create<AppState>()(
         activeSchoolYear: state.activeSchoolYear,
         activeTerm: state.activeTerm,
         classroomId: state.classroomId,
+        teacherName: state.teacherName,
+        showQuizAnswers: state.showQuizAnswers,
+        consultationHours: state.consultationHours,
         streakCount: state.streakCount,
         unlockedBadges: state.unlockedBadges,
         parentalControls: state.parentalControls,

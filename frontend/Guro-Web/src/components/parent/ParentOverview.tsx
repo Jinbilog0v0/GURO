@@ -24,8 +24,8 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({ logs, studentNam
     ? Math.round(logs.reduce((acc, curr) => acc + (curr.score / curr.totalQuestions) * 100, 0) / totalQuizzes)
     : 0;
 
-  const statusLabel = avgScore >= 80 ? 'Advanced' : avgScore >= 50 ? 'Progressing' : 'Remedial';
-  const statusColor = avgScore >= 80 ? '#10B981' : avgScore >= 50 ? '#F59E0B' : '#EF4444';
+  const statusLabel = avgScore >= 75 ? 'Advanced' : avgScore >= 50 ? 'Progressing' : 'Remedial';
+  const statusColor = avgScore >= 75 ? '#10B981' : avgScore >= 50 ? '#F59E0B' : '#EF4444';
 
   const mathLogs = logs.filter(l => l.subject.toLowerCase() === 'mathematics' || l.subject.toLowerCase() === 'math');
   const englishLogs = logs.filter(l => l.subject.toLowerCase() === 'english');
@@ -103,7 +103,7 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({ logs, studentNam
             <span className="text-2xl font-black" style={{ color: statusColor }}>
               {statusLabel}
             </span>
-            {avgScore >= 80 ? (
+            {avgScore >= 75 ? (
               <Star size={20} className="text-emerald-500 fill-emerald-500 shrink-0" />
             ) : avgScore >= 50 ? (
               <TrendingUp size={20} className="text-amber-500 shrink-0" />
@@ -112,7 +112,7 @@ export const ParentOverview: React.FC<ParentOverviewProps> = ({ logs, studentNam
             )}
           </div>
           <span className="text-[11px] text-[var(--text-muted)] mt-0.5">
-            {avgScore >= 80 ? 'Excelling in core competencies' : avgScore >= 50 ? 'Steady practice progress' : 'Targeted review advised'}
+            {avgScore >= 75 ? 'Excelling in core competencies' : avgScore >= 50 ? 'Steady practice progress' : 'Targeted review advised'}
           </span>
         </div>
       </div>

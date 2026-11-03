@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\RateLimitController;
 use App\Http\Controllers\SyncController;
@@ -22,6 +23,11 @@ Route::get('/item-bank', [ClassroomController::class, 'getItemBank']);
 Route::post('/sync', [SyncController::class, 'syncTelemetry']);
 Route::get('/progress', [SyncController::class, 'getProgress']);
 
+// Parent-Teacher Chat Suite
+Route::get('/chat/messages', [ChatController::class, 'getMessages']);
+Route::post('/chat/send', [ChatController::class, 'sendMessage']);
+Route::post('/chat/mark-read', [ChatController::class, 'markRead']);
+
 // Protected — valid Sanctum token required for Teachers & Admins
 Route::middleware('auth:sanctum')->group(function () {
     // Item Bank & Generation
@@ -32,6 +38,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/classroom/my-classrooms', [ClassroomController::class, 'getMyClassrooms']);
     Route::post('/classroom/create', [ClassroomController::class, 'createClassroom']);
     Route::post('/classroom/lock', [ClassroomController::class, 'lockClassroom']);
+    Route::post('/classroom/toggle-answers', [ClassroomController::class, 'toggleQuizAnswers']);
+    Route::post('/classroom/update-schedule', [ClassroomController::class, 'updateConsultationSchedule']);
     Route::post('/classroom/claim', [ClassroomController::class, 'claimTemplateBank']);
     Route::post('/classroom/update-lesson', [ClassroomController::class, 'updateClassroomLesson']);
     Route::post('/classroom/delete-lesson', [ClassroomController::class, 'deleteClassroomLesson']);

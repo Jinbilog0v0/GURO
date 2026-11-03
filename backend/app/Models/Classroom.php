@@ -17,10 +17,13 @@ class Classroom extends Model
         'term',
         'custom_item_bank',
         'expires_at',
+        'show_quiz_answers',
+        'consultation_hours',
     ];
 
     protected $casts = [
         'custom_item_bank' => 'array',
         'expires_at' => 'datetime',
+        'show_quiz_answers' => 'boolean',
     ];
 }

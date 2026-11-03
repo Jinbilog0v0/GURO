@@ -198,7 +198,12 @@ export function StudentDashboard() {
     try {
       const ok = await useAppStore.getState().fetchItemBankFromServer(serverUrl, code);
       if (ok) {
-        setClassroomId(code, verifiedClassroom?.teacherName || null);
+        setClassroomId(
+          code,
+          verifiedClassroom?.teacherName || null,
+          verifiedClassroom?.showQuizAnswers,
+          verifiedClassroom?.consultationHours
+        );
         
         // Update the student's preferred grade based on the classroom joined
         if (verifiedClassroom && verifiedClassroom.gradeLevel) {

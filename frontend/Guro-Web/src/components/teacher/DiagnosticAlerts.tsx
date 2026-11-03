@@ -60,8 +60,9 @@ export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs
     };
   });
 
-  const strongTopics = topicSummaryList.filter((t) => t.average >= 80).sort((a, b) => b.average - a.average);
-  const progressingTopics = topicSummaryList.filter((t) => t.average >= 50 && t.average < 80).sort((a, b) => b.average - a.average);
+  // DepEd 75% passing threshold
+  const strongTopics = topicSummaryList.filter((t) => t.average >= 75).sort((a, b) => b.average - a.average);
+  const progressingTopics = topicSummaryList.filter((t) => t.average >= 50 && t.average < 75).sort((a, b) => b.average - a.average);
   const weakTopics = topicSummaryList.filter((t) => t.average < 50).sort((a, b) => a.average - b.average);
 
   const lowAverageTopics = [...weakTopics, ...progressingTopics];
@@ -81,9 +82,9 @@ export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs
             Curriculum Health &amp; Strong/Weak Lessons Tally
           </span>
           <span className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[var(--bg-main)] border border-[var(--border-color)]">
-            <span className="text-emerald-500 inline-flex items-center gap-1"><CheckCircle2 size={11} className="text-emerald-500" /> {strongTopics.length} Strong</span>
-            <span className="text-amber-500 inline-flex items-center gap-1"><AlertCircle size={11} className="text-amber-500" /> {progressingTopics.length} In-Progress</span>
-            <span className="text-red-500 inline-flex items-center gap-1"><AlertTriangle size={11} className="text-red-500" /> {weakTopics.length} Bottlenecks</span>
+            <span className="text-emerald-500 inline-flex items-center gap-1"><CheckCircle2 size={11} className="text-emerald-500" /> {strongTopics.length} Strong (≥75%)</span>
+            <span className="text-amber-500 inline-flex items-center gap-1"><AlertCircle size={11} className="text-amber-500" /> {progressingTopics.length} In-Progress (50-74%)</span>
+            <span className="text-red-500 inline-flex items-center gap-1"><AlertTriangle size={11} className="text-red-500" /> {weakTopics.length} Bottlenecks (&lt;50%)</span>
           </span>
         </div>
         {isOpen ? <ChevronUp size={16} className="text-[var(--text-muted)] shrink-0" /> : <ChevronDown size={16} className="text-[var(--text-muted)] shrink-0" />}
@@ -113,7 +114,7 @@ export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs
               })}
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs font-bold text-[var(--text-muted)] mr-1">Subject:</span>
               {(['All', 'Mathematics', 'English'] as const).map((subj) => {
                 const active = selectedSubject === subj;
@@ -142,13 +143,13 @@ export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs
             </div>
             <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3.5 flex flex-col gap-1 items-center justify-center">
               <span className="text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
-                <CheckCircle2 size={13} className="text-emerald-500" /> Strong Topics (≥80%)
+                <CheckCircle2 size={13} className="text-emerald-500" /> Strong Topics (≥75%)
               </span>
               <span className="text-xl font-black text-emerald-500">{strongTopics.length}</span>
             </div>
             <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3.5 flex flex-col gap-1 items-center justify-center">
               <span className="text-[10.5px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
-                <AlertCircle size={13} className="text-amber-500" /> Moderate (50-79%)
+                <AlertCircle size={13} className="text-amber-500" /> Moderate (50-74%)
               </span>
               <span className="text-xl font-black text-amber-500">{progressingTopics.length}</span>
             </div>
@@ -166,12 +167,12 @@ export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <Award size={16} className="text-emerald-500" aria-hidden="true" />
-                <h4 className="text-[13.5px] font-bold text-[var(--text-main)]">Top Mastered Topics (Cohort Strengths)</h4>
+                <h4 className="text-[13.5px] font-bold text-[var(--text-main)]">Top Mastered Topics (Cohort Strengths ≥75%)</h4>
               </div>
               <div className="flex flex-col gap-2 overflow-y-auto max-h-[220px]">
                 {strongTopics.length === 0 ? (
                   <div className="p-3.5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-muted)] text-xs italic text-center">
-                    No topics have reached 80%+ cohort mastery for this filter yet.
+                    No topics have reached 75%+ cohort mastery for this filter yet.
                   </div>
                 ) : (
                   strongTopics.slice(0, 3).map((item) => (
@@ -195,12 +196,12 @@ export const DiagnosticAlerts: React.FC<DiagnosticAlertsProps> = ({ progressLogs
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <TrendingDown size={16} className="text-[#A01322]" aria-hidden="true" />
-                <h4 className="text-[13.5px] font-bold text-[var(--text-main)]">Priority Bottlenecks (Needs Review)</h4>
+                <h4 className="text-[13.5px] font-bold text-[var(--text-main)]">Priority Bottlenecks (Needs Review &lt;75%)</h4>
               </div>
               <div className="flex flex-col gap-2 overflow-y-auto max-h-[220px]">
                 {lowAverageTopics.length === 0 ? (
                   <div className="p-3.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl text-emerald-500 text-xs font-semibold flex items-center gap-1.5 justify-center">
-                    <CheckCircle2 size={14} /> All topics are above mastery threshold!
+                    <CheckCircle2 size={14} /> All topics are above DepEd 75% mastery threshold!
                   </div>
                 ) : (
                   lowAverageTopics.slice(0, 3).map((item) => {

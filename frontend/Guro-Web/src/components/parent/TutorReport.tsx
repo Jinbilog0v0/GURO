@@ -57,8 +57,9 @@ export const TutorReport: React.FC<TutorReportProps> = ({ logs }) => {
     };
   });
 
-  const strongTopics = topicList.filter((t) => t.accuracy >= 80).sort((a, b) => b.accuracy - a.accuracy);
-  const progressingTopics = topicList.filter((t) => t.accuracy >= 50 && t.accuracy < 80).sort((a, b) => b.accuracy - a.accuracy);
+  // DepEd 75% passing threshold
+  const strongTopics = topicList.filter((t) => t.accuracy >= 75).sort((a, b) => b.accuracy - a.accuracy);
+  const progressingTopics = topicList.filter((t) => t.accuracy >= 50 && t.accuracy < 75).sort((a, b) => b.accuracy - a.accuracy);
   const weakTopics = topicList.filter((t) => t.accuracy < 50).sort((a, b) => a.accuracy - b.accuracy);
 
   const strongestTopic = strongTopics[0] || topicList.sort((a, b) => b.accuracy - a.accuracy)[0] || { topic: 'N/A', accuracy: 0, subject: 'Mathematics', grade: 4 };
@@ -121,8 +122,8 @@ export const TutorReport: React.FC<TutorReportProps> = ({ logs }) => {
       return 'Ask your child to pick a lesson on their mobile app to begin practice.';
     }
 
-    if (weakestTopic.accuracy >= 85) {
-      return `Exceptional work! Your child is mastering all topics, including ${weakestTopic.topic}. Ask them to "teach" you the topic during dinner to cement deep retention.`;
+    if (weakestTopic.accuracy >= 75) {
+      return `Exceptional work! Your child is mastering all active topics (above DepEd 75% threshold), including ${weakestTopic.topic}. Encourage them to review foundational concepts to reinforce retention.`;
     }
 
     if (weakestTopic.topic.toLowerCase().includes('fraction')) {
@@ -154,7 +155,7 @@ export const TutorReport: React.FC<TutorReportProps> = ({ logs }) => {
           <Sparkles size={20} className="text-[#EC4899]" />
           <div>
             <h3 className="text-base font-bold text-[var(--text-main)]">Child Learning Pulse &amp; Progress Insights</h3>
-            <p className="text-xs text-[var(--text-muted)]">Comprehensive mastery analytics and home guidance</p>
+            <p className="text-xs text-[var(--text-muted)]">Comprehensive mastery analytics and home guidance (DepEd passing standard: ≥75%)</p>
           </div>
         </div>
 
@@ -188,7 +189,7 @@ export const TutorReport: React.FC<TutorReportProps> = ({ logs }) => {
                     <span className="font-bold text-[var(--text-main)] flex items-center gap-1.5">
                       <Icon size={14} style={{ color }} /> {subj}
                     </span>
-                    <span className="font-bold" style={{ color: pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444' }}>
+                    <span className="font-bold" style={{ color: pct >= 75 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444' }}>
                       {pct}% ({data.count} {data.count === 1 ? 'quiz' : 'quizzes'})
                     </span>
                   </div>
@@ -197,7 +198,7 @@ export const TutorReport: React.FC<TutorReportProps> = ({ logs }) => {
                       className="h-full rounded-full transition-all duration-500"
                       style={{
                         width: `${Math.min(100, Math.max(5, pct))}%`,
-                        backgroundColor: pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444',
+                        backgroundColor: pct >= 75 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444',
                       }}
                     />
                   </div>
@@ -217,48 +218,65 @@ export const TutorReport: React.FC<TutorReportProps> = ({ logs }) => {
           </div>
         </div>
 
-        {/* Strengths & Weaknesses Tally */}
+        {/* Strengths & Weaknesses Tally: Topics where students struggle or excel */}
         <div className="bg-[var(--bg-main)]/50 border border-[var(--border-color)] rounded-xl p-4 flex flex-col gap-3">
           <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
-            <Award size={14} className="text-amber-500" /> Topic Performance Tally
+            <Award size={14} className="text-amber-500" /> Topics Where Student Excels &amp; Struggles
           </h4>
 
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            {/* Strengths */}
-            <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-lg p-2.5 flex flex-col gap-1.5">
-              <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                <CheckCircle size={12} /> Top Strengths ({strongTopics.length})
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            {/* Excelling Topics */}
+            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3 flex flex-col gap-2">
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 text-xs">
+                <CheckCircle size={14} /> Excelling Topics ({strongTopics.length})
               </span>
               {strongTopics.length === 0 ? (
-                <span className="text-[11px] text-[var(--text-muted)] italic">Keep practicing to reach 80%+</span>
+                <span className="text-[11px] text-[var(--text-muted)] italic">Scores ≥75% appear here as mastered.</span>
               ) : (
-                strongTopics.slice(0, 2).map((t) => (
-                  <div key={t.topic} className="text-[11px] text-[var(--text-main)] truncate" title={t.topic}>
-                    • <strong>{t.topic}</strong> ({t.accuracy}%)
-                  </div>
-                ))
+                <div className="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1">
+                  {strongTopics.map((t) => (
+                    <div key={t.topic} className="flex justify-between items-center text-[11px] bg-emerald-500/10 p-1.5 px-2 rounded-md">
+                      <span className="font-semibold text-[var(--text-main)] truncate" title={t.topic}>
+                        {t.topic}
+                      </span>
+                      <span className="font-extrabold text-emerald-600 dark:text-emerald-400 shrink-0 ml-1">
+                        {t.accuracy}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
-            {/* Needs Focus */}
-            <div className="bg-red-500/5 border border-red-500/15 rounded-lg p-2.5 flex flex-col gap-1.5">
-              <span className="font-bold text-red-600 dark:text-red-400 flex items-center gap-1">
-                <AlertTriangle size={12} /> Needs Support ({weakTopics.length + progressingTopics.length})
+            {/* Struggling / Needs Focus Topics */}
+            <div className="bg-red-500/5 border border-red-500/20 rounded-lg p-3 flex flex-col gap-2">
+              <span className="font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5 text-xs">
+                <AlertTriangle size={14} /> Struggling Topics ({weakTopics.length + progressingTopics.length})
               </span>
               {(weakTopics.length === 0 && progressingTopics.length === 0) ? (
-                <span className="text-[11px] text-[var(--text-muted)] italic">No weak topics detected!</span>
+                <span className="text-[11px] text-emerald-500 font-medium">All completed topics meet the 75% passing mark!</span>
               ) : (
-                [...weakTopics, ...progressingTopics].slice(0, 2).map((t) => (
-                  <div key={t.topic} className="text-[11px] text-[var(--text-main)] truncate" title={t.topic}>
-                    • <strong>{t.topic}</strong> ({t.accuracy}%)
-                  </div>
-                ))
+                <div className="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1">
+                  {[...weakTopics, ...progressingTopics].map((t) => {
+                    const isSevere = t.accuracy < 50;
+                    return (
+                      <div key={t.topic} className={`flex justify-between items-center text-[11px] p-1.5 px-2 rounded-md ${isSevere ? 'bg-red-500/10 text-red-600 dark:text-red-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
+                        <span className="font-semibold truncate text-[var(--text-main)]" title={t.topic}>
+                          {t.topic}
+                        </span>
+                        <span className="font-extrabold shrink-0 ml-1">
+                          {t.accuracy}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
 
           <p className="text-[11.5px] text-[var(--text-muted)] mt-1 leading-4">
-            Strongest: <strong className="text-emerald-500 font-bold">{strongestTopic.topic} ({strongestTopic.accuracy}%)</strong> · Priority Review: <strong className="text-red-500 font-bold">{weakestTopic.topic} ({weakestTopic.accuracy}%)</strong>
+            Strongest Topic: <strong className="text-emerald-500 font-bold">{strongestTopic.topic} ({strongestTopic.accuracy}%)</strong> · Priority Review: <strong className="text-red-500 font-bold">{weakestTopic.topic} ({weakestTopic.accuracy}%)</strong>
           </p>
         </div>
       </div>
@@ -274,5 +292,3 @@ export const TutorReport: React.FC<TutorReportProps> = ({ logs }) => {
     </div>
   );
 };
-
-

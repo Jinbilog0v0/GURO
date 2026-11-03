@@ -63,6 +63,8 @@ import {
   Zap,
   TrendingUp,
   CheckCircle,
+  Clock,
+  Send,
 } from 'lucide-react-native';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ParentDashboard'>;
@@ -144,7 +146,13 @@ export function ParentDashboard({ navigation }: Props) {
 
   // PIN change states
   const [isChangingPin, setIsChangingPin] = useState(false);
-  const [parentSubTab, setParentSubTab] = useState<'overview' | 'report' | 'milestones'>('overview');
+  const [parentSubTab, setParentSubTab] = useState<'overview' | 'report' | 'chat' | 'milestones'>('overview');
+  const [chatMessages, setChatMessages] = useState<Array<{ id: number; sender_name: string; sender_role: string; message_body: string; created_at: string }>>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isSendingChat, setIsSendingChat] = useState(false);
+  const [loadingChat, setLoadingChat] = useState(false);
+  const [activeTeacherName, setActiveTeacherName] = useState<string | null>(null);
+  const [activeConsultationHours, setActiveConsultationHours] = useState<string | null>(null);
   const [currentPinInput, setCurrentPinInput] = useState('');
   const [newPinInput, setNewPinInput] = useState('');
   const [confirmPinInput, setConfirmPinInput] = useState('');
@@ -253,6 +261,70 @@ export function ParentDashboard({ navigation }: Props) {
       console.warn('[Storage] Failed to clear search credentials:', e);
     }
   };
+
+  const fetchChatMessages = async (classroomIdToUse?: string, studentIdToUse?: string) => {
+    const cId = classroomIdToUse || searchedLogs[0]?.classroomId || useAppStore.getState().classroomId;
+    const sId = studentIdToUse || searchStudentId.trim() || studentId;
+    if (!cId || !sId) return;
+    setLoadingChat(true);
+    try {
+      const resolvedUrl = resolveServerUrl(serverUrl);
+      const res = await fetch(`${resolvedUrl}/api/chat/messages?classroomId=${encodeURIComponent(cId)}&studentId=${encodeURIComponent(sId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.messages) setChatMessages(data.messages);
+        if (data.teacherName) setActiveTeacherName(data.teacherName);
+        if (data.consultationHours) setActiveConsultationHours(data.consultationHours);
+      }
+    } catch (e) {
+      console.warn('[ParentChat] fetch error:', e);
+    } finally {
+      setLoadingChat(false);
+    }
+  };
+
+  const handleSendChat = async () => {
+    const body = chatInput.trim();
+    if (!body) return;
+    const cId = searchedLogs[0]?.classroomId || useAppStore.getState().classroomId;
+    const sId = searchStudentId.trim() || studentId;
+    if (!cId) {
+      toast.error('No classroom associated with this student profile.');
+      return;
+    }
+    setIsSendingChat(true);
+    try {
+      const resolvedUrl = resolveServerUrl(serverUrl);
+      const res = await fetch(`${resolvedUrl}/api/chat/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          classroomId: cId,
+          studentId: sId,
+          messageBody: body,
+          senderRole: 'parent',
+          senderName: currentUser?.name || 'Parent/Guardian',
+        }),
+      });
+      if (res.ok) {
+        setChatInput('');
+        await fetchChatMessages(cId, sId);
+        toast.success('Message sent to teacher.');
+      } else {
+        toast.error('Failed to send message.');
+      }
+    } catch {
+      toast.error('Network error. Could not send message.');
+    } finally {
+      setIsSendingChat(false);
+    }
+  };
+
+  useEffect(() => {
+    if (parentSubTab === 'chat') {
+      fetchChatMessages();
+    }
+  }, [parentSubTab]);
 
   // Run initial search automatically on mount if ID and Access Code are available in AsyncStorage
   useEffect(() => {
@@ -393,8 +465,8 @@ export function ParentDashboard({ navigation }: Props) {
       count: topicAverages[top].count,
     })).sort((a, b) => b.average - a.average);
 
-    const strongTopics = sortedTopics.filter((t) => t.average >= 80);
-    const progressingTopics = sortedTopics.filter((t) => t.average >= 50 && t.average < 80);
+    const strongTopics = sortedTopics.filter((t) => t.average >= 75);
+    const progressingTopics = sortedTopics.filter((t) => t.average >= 50 && t.average < 75);
     const weakTopics = sortedTopics.filter((t) => t.average < 50);
 
     const strongestTopic = strongTopics[0] || sortedTopics[0] || { name: 'N/A', average: 0, subject: '' };
@@ -749,23 +821,24 @@ export function ParentDashboard({ navigation }: Props) {
                 <StatCard
                   label="Average Accuracy"
                   value={`${avgScore}%`}
-                  valueColor={avgScore >= 80 ? Colors.success : avgScore >= 60 ? Colors.warning : Colors.danger}
+                  valueColor={avgScore >= 75 ? Colors.success : avgScore >= 50 ? Colors.warning : Colors.danger}
                   icon={Target}
                 />
                 <StatCard
                   label="Status"
-                  value={avgScore >= 80 ? 'Advanced' : avgScore >= 50 ? 'Progressing' : 'Remedial'}
-                  valueColor={avgScore >= 80 ? Colors.success : avgScore >= 50 ? Colors.warning : Colors.danger}
+                  value={avgScore >= 75 ? 'Advanced' : avgScore >= 50 ? 'Progressing' : 'Remedial'}
+                  valueColor={avgScore >= 75 ? Colors.success : avgScore >= 50 ? Colors.warning : Colors.danger}
                   icon={BarChart2}
                 />
               </View>
 
               {/* Segmented Sub-Tabs */}
               <View style={{ flexDirection: 'row', backgroundColor: Colors.bgInput, padding: 4, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border }}>
-                {(['overview', 'report', 'milestones'] as const).map((tab) => {
+                {(['overview', 'report', 'chat', 'milestones'] as const).map((tab) => {
                   const active = parentSubTab === tab;
                   let label = 'Activity Heatmap';
                   if (tab === 'report') label = 'Tutor Report';
+                  if (tab === 'chat') label = 'Teacher Chat';
                   if (tab === 'milestones') label = 'Badge Case';
                   return (
                     <TouchableOpacity
@@ -865,7 +938,7 @@ export function ParentDashboard({ navigation }: Props) {
                             </Text>
                             <Badge
                               label={`${percentage}%`}
-                              variant={percentage >= 80 ? 'success' : percentage >= 50 ? 'warning' : 'danger'}
+                              variant={percentage >= 75 ? 'success' : percentage >= 50 ? 'warning' : 'danger'}
                             />
                           </View>
                         </GlassCard>
@@ -911,7 +984,7 @@ export function ParentDashboard({ navigation }: Props) {
                           const pct = data.total > 0 ? Math.round((data.score / data.total) * 100) : 0;
                           const isMath = subj === 'Mathematics';
                           const IconComp = isMath ? Calculator : BookOpen;
-                          const color = pct >= 80 ? Colors.success : pct >= 50 ? Colors.warning : Colors.danger;
+                          const color = pct >= 75 ? Colors.success : pct >= 50 ? Colors.warning : Colors.danger;
                           return (
                             <View key={subj} style={{ gap: 4 }}>
                               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -939,9 +1012,9 @@ export function ParentDashboard({ navigation }: Props) {
                             <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.success }}>Top Strengths ({report.strongTopics.length})</Text>
                           </View>
                           {report.strongTopics.length === 0 ? (
-                            <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted, fontStyle: 'italic' }}>Reach 80%+ to unlock</Text>
+                            <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted, fontStyle: 'italic' }}>Reach 75%+ to unlock</Text>
                           ) : (
-                            report.strongTopics.slice(0, 2).map((t) => (
+                            report.strongTopics.slice(0, 8).map((t) => (
                               <Text key={t.name} style={{ fontFamily: Fonts.body, fontSize: 10.5, color: Colors.textMain }} numberOfLines={1}>
                                 • {t.name} ({t.average}%)
                               </Text>
@@ -957,7 +1030,7 @@ export function ParentDashboard({ navigation }: Props) {
                           {(report.weakTopics.length === 0 && report.progressingTopics.length === 0) ? (
                             <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.success }}>No weak topics!</Text>
                           ) : (
-                            [...report.weakTopics, ...report.progressingTopics].slice(0, 2).map((t) => (
+                            [...report.weakTopics, ...report.progressingTopics].slice(0, 8).map((t) => (
                               <Text key={t.name} style={{ fontFamily: Fonts.body, fontSize: 10.5, color: Colors.textMain }} numberOfLines={1}>
                                 • {t.name} ({t.average}%)
                               </Text>
@@ -1016,6 +1089,153 @@ export function ParentDashboard({ navigation }: Props) {
                 );
               })()}
 
+              {parentSubTab === 'chat' && (
+                <GlassCard style={styles.section}>
+                  <SectionHeader
+                    title={
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <MessageCircle size={18} color={Colors.accentPrimary} />
+                        <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
+                          Teacher Consultation & Chat
+                        </Text>
+                      </View>
+                    }
+                    subtitle={`Direct line to ${activeTeacherName || 'Classroom Teacher'}`}
+                  />
+
+                  {/* Consultation Hours Card */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: Spacing.sm,
+                      backgroundColor: 'rgba(17,66,142,0.06)',
+                      borderWidth: 1,
+                      borderColor: 'rgba(17,66,142,0.2)',
+                      borderRadius: Radius.md,
+                      padding: Spacing.md,
+                      marginBottom: Spacing.sm,
+                    }}
+                  >
+                    <Clock size={18} color={Colors.accentPrimary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, textTransform: 'uppercase' }}>
+                        Teacher's Consultation Hours
+                      </Text>
+                      <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.xs, color: Colors.textMain, marginTop: 2 }}>
+                        {activeConsultationHours || 'Monday – Friday: 3:00 PM – 5:00 PM (DepEd Consultation Window)'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Chat Messages Log */}
+                  <View
+                    style={{
+                      backgroundColor: Colors.bgInput,
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                      borderRadius: Radius.md,
+                      padding: Spacing.md,
+                      minHeight: 180,
+                      maxHeight: 280,
+                    }}
+                  >
+                    <ScrollView nestedScrollEnabled style={{ flex: 1 }}>
+                      {loadingChat ? (
+                        <ActivityIndicator size="small" color={Colors.accentPrimary} style={{ marginVertical: Spacing.lg }} />
+                      ) : chatMessages.length === 0 ? (
+                        <View style={{ alignItems: 'center', paddingVertical: Spacing.xl }}>
+                          <MessageCircle size={28} color={Colors.textMuted} />
+                          <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: Spacing.xs, textAlign: 'center' }}>
+                            No messages yet. Send an inquiry or progress consultation question below.
+                          </Text>
+                        </View>
+                      ) : (
+                        chatMessages.map((msg) => {
+                          const isParent = msg.sender_role === 'parent';
+                          return (
+                            <View
+                              key={msg.id}
+                              style={{
+                                alignSelf: isParent ? 'flex-end' : 'flex-start',
+                                maxWidth: '85%',
+                                marginVertical: 4,
+                                paddingHorizontal: Spacing.md,
+                                paddingVertical: Spacing.sm,
+                                borderRadius: Radius.md,
+                                backgroundColor: isParent ? Colors.accentPrimary : Colors.bgCard,
+                                borderWidth: 1,
+                                borderColor: isParent ? Colors.accentPrimary : Colors.border,
+                              }}
+                            >
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.sm, marginBottom: 2 }}>
+                                <Text
+                                  style={{
+                                    fontFamily: Fonts.bodyBold,
+                                    fontSize: 10,
+                                    color: isParent ? 'rgba(255,255,255,0.85)' : Colors.accentPrimary,
+                                  }}
+                                >
+                                  {isParent ? 'You (Parent)' : `${msg.sender_name || 'Teacher'}`}
+                                </Text>
+                                <Text
+                                  style={{
+                                    fontFamily: Fonts.body,
+                                    fontSize: 9,
+                                    color: isParent ? 'rgba(255,255,255,0.7)' : Colors.textMuted,
+                                  }}
+                                >
+                                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </Text>
+                              </View>
+                              <Text
+                                style={{
+                                  fontFamily: Fonts.body,
+                                  fontSize: FontSizes.xs,
+                                  color: isParent ? '#FFFFFF' : Colors.textMain,
+                                  lineHeight: 18,
+                                }}
+                              >
+                                {msg.message_body}
+                              </Text>
+                            </View>
+                          );
+                        })
+                      )}
+                    </ScrollView>
+                  </View>
+
+                  {/* Chat Input & Send */}
+                  <View style={{ flexDirection: 'row', gap: Spacing.xs, marginTop: Spacing.sm, alignItems: 'center' }}>
+                    <View style={{ flex: 1 }}>
+                      <ThemedTextInput
+                        placeholder="Type a message or consultation question..."
+                        value={chatInput}
+                        onChangeText={setChatInput}
+                      />
+                    </View>
+                    <TouchableOpacity
+                      onPress={handleSendChat}
+                      disabled={isSendingChat || !chatInput.trim()}
+                      style={{
+                        backgroundColor: chatInput.trim() ? Colors.accentPrimary : Colors.border,
+                        borderRadius: Radius.md,
+                        paddingHorizontal: Spacing.md,
+                        height: 48,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      {isSendingChat ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Send size={18} color="#FFFFFF" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </GlassCard>
+              )}
+
               {parentSubTab === 'milestones' && (
                 <GlassCard style={styles.section}>
                   <SectionHeader
@@ -1025,7 +1245,7 @@ export function ParentDashboard({ navigation }: Props) {
                         <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Badge Case</Text>
                       </View>
                     }
-                    subtitle="Badges unlock at 80%+ mastery"
+                    subtitle="Badges unlock at 75%+ mastery"
                   />
 
                   <View style={{ gap: Spacing.sm }}>

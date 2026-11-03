@@ -46,6 +46,8 @@ pgdata/
 
 # Documentation manuscripts and report generation scripts
 docs/
+!docs/GURO_Capstone_Manuscript_Updated.docx
+!docs/GURO_Capstone_Manuscript_Updated.doc
 scripts/
 
 # Local build artifacts and manuscript generators

@@ -14,11 +14,15 @@ import {
   BookOpen, 
   Edit3, 
   Trash2, 
-  Inbox
+  Inbox,
+  Eye,
+  EyeOff,
+  Clock
 } from 'lucide-react';
 import { ClassroomCard, type ClassroomItem } from './ClassroomCard';
 import { CreateClassroomModal, type ClassroomCreationData } from './CreateClassroomModal';
 import { toast } from '../../utils/toast';
+import { apiFetch } from '../../utils/api';
 
 export interface ClassroomManagementProps {
   classrooms: ClassroomItem[];
@@ -74,6 +78,25 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
   const [now, setNow] = useState(() => Date.now());
   const [isLocking, setIsLocking] = useState(false);
 
+  // Quiz answer visibility & Teacher consultation schedule
+  const [showQuizAnswers, setShowQuizAnswers] = useState<boolean>(() => {
+    return activeClassroomData?.showQuizAnswers !== undefined ? Boolean(activeClassroomData.showQuizAnswers) : true;
+  });
+  const [consultationHours, setConsultationHours] = useState<string>(() => {
+    return activeClassroomData?.consultationHours || 'Monday – Friday: 3:00 PM – 5:00 PM';
+  });
+  const [isUpdatingAnswers, setIsUpdatingAnswers] = useState(false);
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+
+  useEffect(() => {
+    if (activeClassroomData?.showQuizAnswers !== undefined) {
+      setShowQuizAnswers(Boolean(activeClassroomData.showQuizAnswers));
+    }
+    if (activeClassroomData?.consultationHours !== undefined) {
+      setConsultationHours(activeClassroomData.consultationHours || 'Monday – Friday: 3:00 PM – 5:00 PM');
+    }
+  }, [activeClassroomData]);
+
   useEffect(() => {
     if (!activeClassroomData?.expiresAt) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -112,6 +135,54 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
     }
   };
 
+  // Toggle Quiz Answer Visibility
+  const handleToggleQuizAnswers = async () => {
+    if (!activeClassroomCode) return;
+    const newSetting = !showQuizAnswers;
+    setIsUpdatingAnswers(true);
+    try {
+      const res = await apiFetch('/api/classroom/toggle-answers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classroomId: activeClassroomCode, showQuizAnswers: newSetting })
+      });
+      if (res.ok) {
+        setShowQuizAnswers(newSetting);
+        if (activeClassroomData) activeClassroomData.showQuizAnswers = newSetting;
+        toast.success(newSetting ? 'Quiz answers are now visible to students.' : 'Quiz answers are now hidden from students.');
+      } else {
+        toast.error('Failed to update quiz answer visibility.');
+      }
+    } catch {
+      toast.error('Network error updating quiz answer visibility.');
+    } finally {
+      setIsUpdatingAnswers(false);
+    }
+  };
+
+  // Update Consultation Schedule
+  const handleSaveSchedule = async () => {
+    if (!activeClassroomCode) return;
+    setIsSavingSchedule(true);
+    try {
+      const res = await apiFetch('/api/classroom/update-schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classroomId: activeClassroomCode, consultationHours })
+      });
+      if (res.ok) {
+        if (activeClassroomData) activeClassroomData.consultationHours = consultationHours;
+        toast.success('Consultation hours saved and visible to parents.');
+      } else {
+        toast.error('Failed to update consultation schedule.');
+      }
+    } catch {
+      toast.error('Network error saving consultation schedule.');
+    } finally {
+      setIsSavingSchedule(false);
+    }
+  };
+
   // Filter classrooms
   const filteredClassrooms = classrooms.filter((c) => {
     const q = searchQuery.toLowerCase().trim();
@@ -141,7 +212,7 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
               My Classrooms
             </h2>
             <p className="text-xs text-[var(--text-muted)] mt-1">
-              Manage live classroom sessions, device pairing codes, and curriculum claiming.
+              Manage live classroom sessions, device pairing codes, quiz review visibility, and consultation hours.
             </p>
           </div>
         </div>
@@ -224,8 +295,8 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
               </div>
             </div>
 
-            {/* Right: Classroom Attributes & Quick Actions */}
-            <div className="lg:col-span-7 flex flex-col justify-between gap-5">
+            {/* Right: Classroom Attributes & Settings */}
+            <div className="lg:col-span-7 flex flex-col justify-between gap-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="bg-[var(--bg-main)] p-3 rounded-2xl border border-[var(--border-color)]">
                   <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase block">Section</span>
@@ -245,6 +316,63 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
                   <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase block">Academic Term</span>
                   <span className="text-sm font-extrabold text-[var(--text-main)] truncate block mt-0.5">
                     {activeClassroomData.term || 'Q1'} ({activeClassroomData.schoolYear || '2026-2027'})
+                  </span>
+                </div>
+              </div>
+
+              {/* Teacher Controls: Answer Visibility & Consultation Schedule */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[var(--bg-main)] p-3.5 rounded-2xl border border-[var(--border-color)]">
+                {/* Answer Visibility */}
+                <div className="flex flex-col justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    {showQuizAnswers ? <Eye size={15} className="text-emerald-500" /> : <EyeOff size={15} className="text-amber-500" />}
+                    <span className="text-xs font-bold text-[var(--text-main)]">Student Quiz Answer Key</span>
+                  </div>
+                  <p className="text-[11px] text-[var(--text-muted)] m-0 leading-tight">
+                    {showQuizAnswers
+                      ? 'Students see answer reviews & explanations upon quiz completion.'
+                      : 'Answers are hidden to maintain assessment integrity.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleToggleQuizAnswers}
+                    disabled={isUpdatingAnswers}
+                    className={`mt-1 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      showQuizAnswers
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
+                        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20'
+                    }`}
+                  >
+                    {showQuizAnswers ? <Eye size={13} /> : <EyeOff size={13} />}
+                    <span>{showQuizAnswers ? 'Answers Visible (Click to Hide)' : 'Answers Hidden (Click to Show)'}</span>
+                  </button>
+                </div>
+
+                {/* Consultation Schedule */}
+                <div className="flex flex-col justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Clock size={15} className="text-[#11428E]" />
+                    <span className="text-xs font-bold text-[var(--text-main)]">Parent Consultation Hours</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <input
+                      type="text"
+                      value={consultationHours}
+                      onChange={(e) => setConsultationHours(e.target.value)}
+                      placeholder="e.g. Mon-Fri: 3:00 PM - 5:00 PM"
+                      className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-2.5 py-1 text-xs text-[var(--text-main)] focus:outline-none focus:border-[#11428E]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveSchedule}
+                      disabled={isSavingSchedule}
+                      className="px-3 py-1 bg-[#11428E] text-white rounded-xl text-xs font-bold hover:bg-[#0d3470] transition-colors cursor-pointer shrink-0"
+                    >
+                      {isSavingSchedule ? '...' : 'Save'}
+                    </button>
+                  </div>
+                  <span className="text-[10px] text-[var(--text-muted)] leading-tight">
+                    Published to parents in their GURO Parent Dashboard.
                   </span>
                 </div>
               </div>

@@ -4,8 +4,8 @@
 export type DifficultyTier = 'Easy' | 'Average' | 'Difficult';
 export type RoutingInstruction = 'advance' | 'repeat' | 'drop';
 
-/** Unified mastery threshold used across mobile quiz results, progress badges, and web dashboard labels. */
-export const MASTERY_THRESHOLD = 80;
+/** Unified mastery threshold used across mobile quiz results, progress badges, and web dashboard labels. Aligned with DepEd Order No. 8, s. 2015 passing standard (75%). */
+export const MASTERY_THRESHOLD = 75;
 
 /**
  * Robust implementation of the Fisher-Yates (Knuth) Shuffle algorithm.
@@ -39,9 +39,9 @@ export function shuffle<T>(array: T[]): T[] {
  * Rule-based routing function to calculate the adaptive progression step
  * based on a student's percentage score in an assessment category.
  * 
- * Thresholds applied:
- * - Score >= 80%: 'advance' (move up a tier if possible)
- * - Score 50% - 79%: 'repeat' (maintain current tier)
+ * Thresholds applied (DepEd 75% passing standard):
+ * - Score >= 75%: 'advance' (move up a tier if possible)
+ * - Score 50% - 74%: 'repeat' (maintain current tier)
  * - Score < 50%: 'drop' (move down a tier if possible)
  * 
  * @param {number} score The percentage score obtained (0 to 100).
@@ -64,8 +64,8 @@ export function calculateNextDifficulty(
     throw new TypeError(`Invalid currentDifficulty: ${currentDifficulty}. Must be 'Easy', 'Average', or 'Difficult'.`);
   }
 
-  // Threshold Routing Logic
-  if (score >= 80) {
+  // Threshold Routing Logic (DepEd standard)
+  if (score >= 75) {
     return 'advance';
   } else if (score >= 50) {
     return 'repeat';
@@ -89,8 +89,8 @@ export interface RemediationRoutingResult {
  * and determining actionable remediation pathways.
  *
  * Routing logic:
- * - Score >= 80%: 'advance' (Mastery achieved, unlock next tier or topic)
- * - Score 50% - 79%: 'scaffold_review' (Borderline result, trigger guided micro-lesson on current topic)
+ * - Score >= 75%: 'advance' (Mastery achieved, unlock next tier or topic)
+ * - Score 50% - 74%: 'scaffold_review' (Borderline result, trigger guided micro-lesson on current topic)
  * - Score < 50%: 'prerequisite_return' (Critical skill gap, return to prerequisite topic or foundation review)
  */
 export function evaluateRemediationRouting(
@@ -143,7 +143,6 @@ export function evaluateRemediationRouting(
   }
 }
 
-
 /**
  * 1:1 Strict Lesson Progression Sequence across grades.
  */
@@ -178,7 +177,7 @@ export interface ProgressLogItem {
  * Checks if a lesson is locked based on strict 1:1 progression sequence.
  * A lesson is unlocked if:
  * 1. It's the first lesson in the subject sequence.
- * 2. Or, the student passed the previous lesson in the sequence with >= 80% score.
+ * 2. Or, the student passed the previous lesson in the sequence with >= 75% score (DepEd standard).
  * 3. Or, the grade of the lesson is strictly less than the student's specified (preferred) grade.
  * 4. Or, the grade of the lesson equals the student's specified grade, and the previous lesson is of a lower grade level (bypass lower grade requirements).
  */
@@ -223,7 +222,7 @@ export function isLessonLocked(
     // If the topic is not even in the sequence, let it be unlocked
     if (index <= 0) return false;
 
-    // The student needs to pass the previous lesson in the custom sequence
+    // The student needs to pass the previous lesson in the custom sequence with >= 75%
     const prevLesson = customSequence[index - 1];
     const hasPassedPrev = studentProgress.some(
       (p) =>
@@ -231,7 +230,7 @@ export function isLessonLocked(
         p.gradeLevel === prevLesson.gradeLevel &&
         p.topic === prevLesson.topic &&
         p.totalQuestions > 0 &&
-        (p.score / p.totalQuestions) >= 0.8
+        (p.score / p.totalQuestions) >= 0.75
     );
     return !hasPassedPrev;
   }
@@ -249,7 +248,7 @@ export function isLessonLocked(
       p.gradeLevel === prevLesson.grade &&
       p.topic === prevLesson.topic &&
       p.totalQuestions > 0 &&
-      (p.score / p.totalQuestions) >= 0.8
+      (p.score / p.totalQuestions) >= 0.75
   );
   if (hasPassedPrev) return false;
 

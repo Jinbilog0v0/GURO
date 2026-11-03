@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AttendanceNotification;
 use App\Models\Classroom;
 use App\Models\ClassroomMember;
 use App\Models\ProgressLog;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class SyncController extends Controller
 {
@@ -115,6 +118,7 @@ class SyncController extends Controller
 
         if (! empty($recordsToInsert)) {
             ProgressLog::insert($recordsToInsert);
+            $this->notifyParentAttendance($studentId, $normClassroomId);
         }
 
         return response()->json([
@@ -393,5 +397,61 @@ class SyncController extends Controller
         }
 
         return (string) (100000 + ($sum % 900000));
+    }
+
+    protected function notifyParentAttendance(string $studentId, ?string $classroomId): void
+    {
+        try {
+            $today = now()->toDateString();
+            $alreadyNotified = AttendanceNotification::where('student_id', $studentId)
+                ->whereDate('session_date', $today)
+                ->exists();
+
+            if ($alreadyNotified) {
+                return;
+            }
+
+            $student = User::where('user_id', $studentId)->first();
+            $parentEmail = null;
+            $parentName = 'Parent/Guardian';
+            $studentName = $student ? $student->name : $studentId;
+
+            if ($student && $student->parent_access_token) {
+                $parentUser = User::where('role', 'parent')
+                    ->where(function ($q) use ($student) {
+                        $q->where('email', 'like', '%'.strtolower(explode('-', $student->user_id)[0]).'%');
+                    })->first();
+                if ($parentUser) {
+                    $parentEmail = $parentUser->email;
+                    $parentName = $parentUser->name;
+                }
+            }
+
+            AttendanceNotification::create([
+                'student_id' => $studentId,
+                'parent_id' => $student ? $student->parent_access_token : null,
+                'parent_email' => $parentEmail ?? ($student ? $student->email : null),
+                'parent_phone' => null,
+                'channel' => 'email',
+                'session_date' => now(),
+                'status' => 'sent',
+            ]);
+
+            $targetEmail = $parentEmail ?: ($student ? $student->email : null);
+            $apiKey = config('services.resend.key') ?? env('RESEND_API_KEY');
+            if ($apiKey && $targetEmail) {
+                Http::withoutVerifying()->withHeaders([
+                    'Authorization' => 'Bearer '.$apiKey,
+                    'Content-Type' => 'application/json',
+                ])->post('https://api.resend.com/emails', [
+                    'from' => config('services.resend.from') ?? env('RESEND_FROM_EMAIL', 'GURO Attendance <attendance@neoguro.app>'),
+                    'to' => [$targetEmail],
+                    'subject' => "GURO Attendance Alert: {$studentName} is Active Today",
+                    'html' => "<div style='font-family:sans-serif;padding:20px;color:#1e293b;'><h2 style='color:#11428E;'>GURO Learning Session Active</h2><p>Dear {$parentName},</p><p>This is an automated notification confirming that your child, <strong>{$studentName}</strong>, has successfully logged in and synchronized active learning progress in GURO for today (".now()->format('F j, Y g:i A').").</p><p>You can check their updated mastery scores, struggling topics, and teacher consultation hours anytime in your Parent Space.</p><br><p style='font-size:12px;color:#64748b;'>GURO Automated Attendance Notification System</p></div>",
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Attendance notification dispatch: '.$e->getMessage());
+        }
     }
 }

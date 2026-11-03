@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Star, RefreshCw, LayoutDashboard, CheckCircle2, XCircle, Zap, ArrowLeft, Lightbulb } from 'lucide-react';
+import { Trophy, Star, RefreshCw, LayoutDashboard, CheckCircle2, XCircle, Zap, ArrowLeft, Lightbulb, Lock } from 'lucide-react';
 
 interface AnsweredQuestion {
     questionText: string;
@@ -16,6 +16,7 @@ interface QuizResultsStepProps {
     subject?: string;
     earnedXP?: number;
     answeredQuestions?: AnsweredQuestion[];
+    showQuizAnswers?: boolean;
     onBackToSubjects: () => void;
     onTryAgain: () => void;
     onSelectPrerequisite?: (topic: string, grade: number) => void;
@@ -37,11 +38,11 @@ const LESSON_SEQUENCE: Record<string, { grade: number; topic: string }[]> = {
 };
 
 export function evaluateWebRemediation(scorePct: number, subjectName?: string, currentTopicName?: string) {
-  if (scorePct >= 80) {
+  if (scorePct >= 75) {
     return {
       instruction: 'advance',
       title: 'Mastery Achieved!',
-      message: `Outstanding job! You scored ${scorePct}%. You have demonstrated solid mastery and are ready to advance.`,
+      message: `Outstanding job! You scored ${scorePct}%. You have demonstrated solid mastery (>= 75% DepEd passing standard) and are ready to advance.`,
     };
   } else if (scorePct >= 50) {
     return {
@@ -66,7 +67,7 @@ export function evaluateWebRemediation(scorePct: number, subjectName?: string, c
 }
 
 const STAR_THRESHOLDS = [
-    { min: 80, stars: 3, label: 'Excellent!', labelFil: 'Napakahusay!', color: 'text-amber-500' },
+    { min: 75, stars: 3, label: 'Excellent!', labelFil: 'Napakahusay!', color: 'text-amber-500' },
     { min: 60, stars: 2, label: 'Good Job!', labelFil: 'Magaling!', color: 'text-blue-500' },
     { min: 0, stars: 1, label: 'Keep Trying!', labelFil: 'Huwag Sumuko!', color: 'text-zinc-500' },
 ];
@@ -83,7 +84,7 @@ function ScoreRing({ percentage, size = 140 }: { percentage: number; size?: numb
     }, [percentage]);
 
     const ringColor =
-        percentage >= 80 ? '#10B981' : percentage >= 60 ? '#3B82F6' : '#F59E0B';
+        percentage >= 75 ? '#10B981' : percentage >= 50 ? '#3B82F6' : '#F59E0B';
 
     return (
         <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
@@ -142,6 +143,7 @@ export const QuizResultsStep: React.FC<QuizResultsStepProps> = ({
     subject,
     earnedXP,
     answeredQuestions = [],
+    showQuizAnswers = true,
     onBackToSubjects,
     onTryAgain,
     onSelectPrerequisite,
@@ -159,131 +161,132 @@ export const QuizResultsStep: React.FC<QuizResultsStepProps> = ({
     }, []);
 
     return (
-        <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 md:p-8 bg-[var(--bg-main)] relative overflow-hidden select-none">
-            {/* Ambient blurs */}
-            <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 bg-purple-500/5 rounded-full blur-[160px]" />
-            <div className="absolute -top-32 right-1/4 size-72 bg-blue-500/5 rounded-full blur-[140px]" />
+        <div className="min-h-screen bg-[var(--bg-main)] flex flex-col items-center justify-center p-4 sm:p-6 lg:p-12 animate-in fade-in duration-300">
+            <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {/* LEFT COLUMN: Overview Card & Actions (5 columns on desktop) */}
+                <div className="lg:col-span-5 flex flex-col gap-4">
+                    <div className="bg-[var(--bg-card)] rounded-[32px] border border-[var(--border-color)] p-6 sm:p-8 flex flex-col items-center text-center shadow-xl gap-6 relative overflow-hidden">
+                        {/* Background subtle tint */}
+                        <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-amber-500/10 to-transparent pointer-events-none" />
 
-            <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10 items-start">
-                {/* LEFT COLUMN: Main Score & Action Card (5 columns on desktop) */}
-                <div className="lg:col-span-5 bg-[var(--bg-card)] rounded-[32px] p-6 sm:p-8 shadow-2xl border border-[var(--border-color)] flex flex-col items-center gap-5 lg:sticky lg:top-8">
-                    {/* XP earned badge */}
-                    {earnedXP !== undefined && earnedXP > 0 && (
-                        <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full animate-in fade-in slide-in-from-top-2 duration-500">
-                            <Zap className="size-3.5 text-amber-500 fill-amber-400" />
-                            <span className="text-xs font-extrabold text-amber-600 dark:text-amber-400">+{earnedXP} XP Earned</span>
-                        </div>
-                    )}
-
-                    {/* Score ring */}
-                    <ScoreRing percentage={percentage} />
-
-                    {/* Stars */}
-                    <div
-                        className={`flex flex-col items-center gap-2 transition-all duration-500 ${starsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
-                    >
-                        <StarRow stars={tier.stars} />
-                        <div className="text-center">
-                            <h1 className={`text-2xl font-black tracking-tight ${tier.color}`}>{tier.label}</h1>
-                            <p className="text-sm font-medium text-[var(--text-muted)]">{tier.labelFil}</p>
-                        </div>
-                    </div>
-
-                    {/* Score fraction */}
-                    <div className="flex flex-col items-center gap-1 w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4">
-                        <span className="text-4xl font-black text-[var(--text-main)]">
-                            {correctAnswersCount}
-                            <span className="text-2xl text-[var(--text-muted)] font-bold">/{totalQuestionsCount}</span>
-                        </span>
-                        <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Correct Answers</span>
-                        {topicName && (
-                            <span className="text-xs font-semibold text-[var(--text-muted)] mt-0.5">{topicName}</span>
-                        )}
-                    </div>
-
-                    {/* Actionable Remediation & Prerequisite Return Card */}
-                    {(() => {
-                        const remediation = evaluateWebRemediation(percentage, subject, topicName);
-                        const isPrereq = remediation.instruction === 'prerequisite_return';
-                        const isScaffold = remediation.instruction === 'scaffold_review';
-
-                        const cardBg = isPassed
-                            ? 'bg-emerald-500/10 border-emerald-500/30'
-                            : isPrereq
-                            ? 'bg-red-500/10 border-red-500/30'
-                            : 'bg-amber-500/10 border-amber-500/30';
-
-                        const titleColor = isPassed
-                            ? 'text-emerald-700 dark:text-emerald-300'
-                            : isPrereq
-                            ? 'text-red-700 dark:text-red-300'
-                            : 'text-amber-700 dark:text-amber-300';
-
-                        return (
-                            <div className={`w-full p-4 rounded-2xl border ${cardBg} flex flex-col gap-2 text-left`}>
-                                <span className={`text-xs font-extrabold ${titleColor}`}>{remediation.title}</span>
-                                <p className="text-xs text-[var(--text-main)] leading-relaxed font-medium">
-                                    {remediation.message}
-                                </p>
-                                {isPrereq && remediation.targetLesson && onSelectPrerequisite && (
-                                    <button
-                                        onClick={() => onSelectPrerequisite(remediation.targetLesson!.topic, remediation.targetLesson!.grade)}
-                                        className="mt-1 w-full py-2.5 px-3 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                                    >
-                                        <ArrowLeft className="size-3.5 shrink-0" />
-                                        Return to Prerequisite: {remediation.targetLesson.topic} (Grade {remediation.targetLesson.grade})
-                                    </button>
-                                )}
-                                {isScaffold && onStudyReview && (
-                                    <button
-                                        onClick={onStudyReview}
-                                        className="mt-1 w-full py-2.5 px-3 text-xs font-bold text-zinc-800 bg-amber-200 hover:bg-amber-300 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                                    >
-                                        <Lightbulb className="size-3.5 shrink-0" />
-                                        Start Guided Study Review: {topicName}
-                                    </button>
-                                )}
+                        {/* XP earned pill */}
+                        {earnedXP !== undefined && earnedXP > 0 && (
+                            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-black border border-amber-500/20 shadow-xs">
+                                <Zap className="size-3.5 fill-amber-400" />
+                                <span>+{earnedXP} XP Earned</span>
                             </div>
-                        );
-                    })()}
-
-                    {/* Action buttons */}
-                    <div className="w-full flex flex-col gap-3">
-                        {isPassed ? (
-                            <>
-                                <button
-                                    onClick={onBackToSubjects}
-                                    className="w-full py-3.5 text-sm font-bold text-white bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-90 rounded-2xl shadow-md transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
-                                >
-                                    <LayoutDashboard className="size-4" />
-                                    Back to Dashboard
-                                </button>
-                                <button
-                                    onClick={onTryAgain}
-                                    className="w-full py-3.5 text-sm font-bold text-[var(--text-main)] bg-[var(--bg-main)] border border-[var(--border-color)] hover:bg-[var(--bg-card)] rounded-2xl transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
-                                >
-                                    <RefreshCw className="size-4" />
-                                    Try Again
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <button
-                                    onClick={onTryAgain}
-                                    className="w-full py-3.5 text-sm font-bold text-white bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-90 rounded-2xl shadow-md transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
-                                >
-                                    <RefreshCw className="size-4" />
-                                    Try Again
-                                </button>
-                                <button
-                                    onClick={onBackToSubjects}
-                                    className="w-full py-3.5 text-sm font-bold text-[var(--text-main)] bg-[var(--bg-main)] border border-[var(--border-color)] hover:bg-[var(--bg-card)] rounded-2xl transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
-                                >
-                                    <LayoutDashboard className="size-4" />
-                                    Back to Dashboard
-                                </button>
-                            </>
                         )}
+
+                        {/* Animated Score Ring */}
+                        <ScoreRing percentage={percentage} />
+
+                        {/* Stars */}
+                        <div
+                            className={`flex flex-col items-center gap-2 transition-all duration-500 ${starsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
+                        >
+                            <StarRow stars={tier.stars} />
+                            <div className="text-center">
+                                <h1 className={`text-2xl font-black tracking-tight ${tier.color}`}>{tier.label}</h1>
+                                <p className="text-sm font-medium text-[var(--text-muted)]">{tier.labelFil}</p>
+                            </div>
+                        </div>
+
+                        {/* Score fraction */}
+                        <div className="flex flex-col items-center gap-1 w-full bg-[var(--bg-main)] border border-[var(--border-color)] rounded-2xl py-4">
+                            <span className="text-4xl font-black text-[var(--text-main)]">
+                                {correctAnswersCount}
+                                <span className="text-2xl text-[var(--text-muted)] font-bold">/{totalQuestionsCount}</span>
+                            </span>
+                            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Correct Answers</span>
+                            {topicName && (
+                                <span className="text-xs font-semibold text-[var(--text-muted)] mt-0.5">{topicName}</span>
+                            )}
+                        </div>
+
+                        {/* Actionable Remediation & Prerequisite Return Card */}
+                        {(() => {
+                            const remediation = evaluateWebRemediation(percentage, subject, topicName);
+                            const isPrereq = remediation.instruction === 'prerequisite_return';
+                            const isScaffold = remediation.instruction === 'scaffold_review';
+
+                            const cardBg = isPassed
+                                ? 'bg-emerald-500/10 border-emerald-500/30'
+                                : isPrereq
+                                ? 'bg-red-500/10 border-red-500/30'
+                                : 'bg-amber-500/10 border-amber-500/30';
+
+                            const titleColor = isPassed
+                                ? 'text-emerald-700 dark:text-emerald-300'
+                                : isPrereq
+                                ? 'text-red-700 dark:text-red-300'
+                                : 'text-amber-700 dark:text-amber-300';
+
+                            return (
+                                <div className={`w-full p-4 rounded-2xl border ${cardBg} flex flex-col gap-2 text-left`}>
+                                    <span className={`text-xs font-extrabold ${titleColor}`}>{remediation.title}</span>
+                                    <p className="text-xs text-[var(--text-main)] leading-relaxed font-medium">
+                                        {remediation.message}
+                                    </p>
+                                    {isPrereq && remediation.targetLesson && onSelectPrerequisite && (
+                                        <button
+                                            onClick={() => onSelectPrerequisite(remediation.targetLesson!.topic, remediation.targetLesson!.grade)}
+                                            className="mt-1 w-full py-2.5 px-3 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                        >
+                                            <ArrowLeft className="size-3.5 shrink-0" />
+                                            Return to Prerequisite: {remediation.targetLesson.topic} (Grade {remediation.targetLesson.grade})
+                                        </button>
+                                    )}
+                                    {isScaffold && onStudyReview && (
+                                        <button
+                                            onClick={onStudyReview}
+                                            className="mt-1 w-full py-2.5 px-3 text-xs font-bold text-zinc-800 bg-amber-200 hover:bg-amber-300 rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                        >
+                                            <Lightbulb className="size-3.5 shrink-0" />
+                                            Start Guided Study Review: {topicName}
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })()}
+
+                        {/* Action buttons */}
+                        <div className="w-full flex flex-col gap-3">
+                            {isPassed ? (
+                                <>
+                                    <button
+                                        onClick={onBackToSubjects}
+                                        className="w-full py-3.5 text-sm font-bold text-white bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-90 rounded-2xl shadow-md transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+                                    >
+                                        <LayoutDashboard className="size-4" />
+                                        Back to Dashboard
+                                    </button>
+                                    <button
+                                        onClick={onTryAgain}
+                                        className="w-full py-3.5 text-sm font-bold text-[var(--text-main)] bg-[var(--bg-main)] border border-[var(--border-color)] hover:bg-[var(--bg-card)] rounded-2xl transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+                                    >
+                                        <RefreshCw className="size-4" />
+                                        Try Again
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={onTryAgain}
+                                        className="w-full py-3.5 text-sm font-bold text-white bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-90 rounded-2xl shadow-md transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+                                    >
+                                        <RefreshCw className="size-4" />
+                                        Try Again
+                                    </button>
+                                    <button
+                                        onClick={onBackToSubjects}
+                                        className="w-full py-3.5 text-sm font-bold text-[var(--text-main)] bg-[var(--bg-main)] border border-[var(--border-color)] hover:bg-[var(--bg-card)] rounded-2xl transition-all active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+                                    >
+                                        <LayoutDashboard className="size-4" />
+                                        Back to Dashboard
+                                    </button>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -291,23 +294,37 @@ export const QuizResultsStep: React.FC<QuizResultsStepProps> = ({
                 <div className="lg:col-span-7 flex flex-col gap-4">
                     {answeredQuestions.length > 0 && (
                         <div className="bg-[var(--bg-card)] rounded-[32px] border border-[var(--border-color)] shadow-xl overflow-hidden">
-                            {/* Header bar */}
-                            <div className="w-full flex items-center justify-between px-6 py-5 bg-[var(--bg-main)] border-b border-[var(--border-color)]">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl">
-                                        <Trophy className="size-5" />
+                            {!showQuizAnswers ? (
+                                <div className="flex flex-col items-center justify-center p-8 sm:p-12 text-center gap-3 bg-[var(--bg-main)]/50">
+                                    <div className="p-3 bg-amber-500/10 text-amber-600 rounded-full border border-amber-500/20">
+                                        <Lock className="size-6" />
                                     </div>
-                                    <div className="flex flex-col">
-                                        <h2 className="text-base font-extrabold text-[var(--text-main)]">Answer Breakdown &amp; Analysis</h2>
-                                        <p className="text-xs text-[var(--text-muted)] font-medium">Review your answers and learn key concepts</p>
-                                    </div>
+                                    <h3 className="text-base font-bold text-[var(--text-main)]">Quiz Answers Hidden by Teacher</h3>
+                                    <p className="text-xs text-[var(--text-muted)] max-w-sm">
+                                        Your teacher has configured this assessment to conceal question answers and explanations to maintain testing integrity.
+                                    </p>
                                 </div>
-                                <span className="px-3 py-1 text-xs font-black bg-[var(--bg-card)] text-[var(--text-main)] rounded-full border border-[var(--border-color)]">
-                                    {answeredQuestions.length} Questions
-                                </span>
-                            </div>
+                            ) : (
+                                <>
+                                    {/* Header bar */}
+                                    <div className="w-full flex items-center justify-between px-6 py-5 bg-[var(--bg-main)] border-b border-[var(--border-color)]">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl">
+                                                <Trophy className="size-5" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <h2 className="text-base font-extrabold text-[var(--text-main)]">Answer Breakdown &amp; Analysis</h2>
+                                                <p className="text-xs text-[var(--text-muted)] font-medium">Review your answers and learn key concepts</p>
+                                            </div>
+                                        </div>
+                                        <span className="px-3 py-1 text-xs font-black bg-[var(--bg-card)] text-[var(--text-main)] rounded-full border border-[var(--border-color)]">
+                                            {answeredQuestions.length} Questions
+                                        </span>
+                                    </div>
 
-                            <ReviewBreakdownList answeredQuestions={answeredQuestions} />
+                                    <ReviewBreakdownList answeredQuestions={answeredQuestions} />
+                                </>
+                            )}
                         </div>
                     )}
                 </div>

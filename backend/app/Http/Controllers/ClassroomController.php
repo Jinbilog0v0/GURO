@@ -287,6 +287,8 @@ class ClassroomController extends Controller
             'sectionName' => $classroom->section_name,
             'schoolYear' => $classroom->school_year ?? '2026-2027',
             'term' => $classroom->term ?? 'Quarter 1',
+            'showQuizAnswers' => (bool) ($classroom->show_quiz_answers ?? true),
+            'consultationHours' => $classroom->consultation_hours ?? 'Mon-Fri 8:00 AM - 4:00 PM',
             'customItemBank' => $classroom->custom_item_bank ?: (object) [],
             'expiresAt' => $classroom->expires_at ? $classroom->expires_at->toIso8601String() : null,
         ]);
@@ -373,6 +375,8 @@ class ClassroomController extends Controller
                     'sectionName' => $c->section_name,
                     'schoolYear' => $c->school_year ?? '2026-2027',
                     'term' => $c->term ?? 'Quarter 1',
+                    'showQuizAnswers' => (bool) ($c->show_quiz_answers ?? true),
+                    'consultationHours' => $c->consultation_hours ?? 'Mon-Fri 8:00 AM - 4:00 PM',
                     'customItemBank' => $c->custom_item_bank ?: (object) [],
                     'expiresAt' => $c->expires_at ? ($c->expires_at instanceof \DateTimeInterface ? $c->expires_at->toIso8601String() : date('c', strtotime($c->expires_at))) : null,
                     'createdAt' => $c->created_at ? ($c->created_at instanceof \DateTimeInterface ? $c->created_at->toIso8601String() : date('c', strtotime($c->created_at))) : null,
@@ -491,6 +495,60 @@ class ClassroomController extends Controller
             'success' => true,
             'classroomId' => $classroom->classroom_id,
             'expiresAt' => $classroom->expires_at->toIso8601String(),
+        ]);
+    }
+
+    // POST /api/classroom/toggle-answers
+    public function toggleQuizAnswers(Request $request)
+    {
+        $request->validate([
+            'classroomId' => 'required|string',
+            'showQuizAnswers' => 'required|boolean',
+        ]);
+
+        $classroom = Classroom::where('classroom_id', strtoupper($request->input('classroomId')))->first();
+        if (! $classroom) {
+            return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        if (! $this->isClassroomOwner($classroom, $request->user())) {
+            return response()->json(['error' => 'Forbidden.'], 403);
+        }
+
+        $classroom->show_quiz_answers = $request->boolean('showQuizAnswers');
+        $classroom->save();
+
+        return response()->json([
+            'success' => true,
+            'classroomId' => $classroom->classroom_id,
+            'showQuizAnswers' => (bool) $classroom->show_quiz_answers,
+        ]);
+    }
+
+    // POST /api/classroom/update-schedule
+    public function updateConsultationSchedule(Request $request)
+    {
+        $request->validate([
+            'classroomId' => 'required|string',
+            'consultationHours' => 'required|string|max:255',
+        ]);
+
+        $classroom = Classroom::where('classroom_id', strtoupper($request->input('classroomId')))->first();
+        if (! $classroom) {
+            return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        if (! $this->isClassroomOwner($classroom, $request->user())) {
+            return response()->json(['error' => 'Forbidden.'], 403);
+        }
+
+        $classroom->consultation_hours = trim($request->input('consultationHours'));
+        $classroom->save();
+
+        return response()->json([
+            'success' => true,
+            'classroomId' => $classroom->classroom_id,
+            'consultationHours' => $classroom->consultation_hours,
         ]);
     }
 
