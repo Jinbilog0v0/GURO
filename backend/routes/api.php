@@ -20,6 +20,10 @@ Route::get('/classroom/verify', [ClassroomController::class, 'verifyCode']);
 Route::post('/classroom/pair', [ClassroomController::class, 'pairStudent']);
 Route::get('/classroom/active-subjects', [ClassroomController::class, 'getActiveSubjects']);
 Route::get('/item-bank', [ClassroomController::class, 'getItemBank']);
+Route::get('/version', fn () => response()->json([
+    'version' => config('app.version', '1.0.2'),
+    'name' => config('app.name', 'GURO'),
+]));
 Route::post('/sync', [SyncController::class, 'syncTelemetry']);
 Route::get('/progress', [SyncController::class, 'getProgress']);
 
