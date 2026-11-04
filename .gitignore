@@ -67,3 +67,7 @@ set-env.sh
 # Local push scripts
 push_to_github.bat
 push_to_github.ps1
+
+# Knowledge graph generated files
+graphify-out/
+
