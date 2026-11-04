@@ -62,6 +62,7 @@ const styles = StyleSheet.create({
     color: Colors.textMain,
     letterSpacing: -0.5,
     textAlign: 'center',
+    fontVariant: ['tabular-nums'],
   },
   unit: {
     fontFamily: Fonts.body,
@@ -69,6 +70,7 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: 2,
     textAlign: 'center',
+    fontVariant: ['tabular-nums'],
   },
   label: {
     fontFamily: Fonts.bodySemiBold,
@@ -78,5 +80,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginTop: Spacing.xs,
     textAlign: 'center',
+    fontVariant: ['tabular-nums'],
   },
 });
