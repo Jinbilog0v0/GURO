@@ -25,22 +25,20 @@ describe('withBuildArchitectures config plugin', () => {
       expect(result.architectures).toContain('x86_64');
     });
 
-    it('excludes emulators when EAS_BUILD_PROFILE is "preview"', () => {
+    it('sets preview architectures when EAS_BUILD_PROFILE is "preview"', () => {
       process.env.EAS_BUILD_PROFILE = 'preview';
       const result = resolveArchitectures();
       expect(result.profile).toBe('preview');
-      expect(result.isEmulatorExcluded).toBe(true);
-      expect(result.architectures).toBe('arm64-v8a,armeabi-v7a');
-      expect(result.architectures).not.toContain('x86');
-      expect(result.architectures).not.toContain('x86_64');
+      expect(result.isEmulatorExcluded).toBe(false);
+      expect(result.architectures).toBe('arm64-v8a,armeabi-v7a,x86_64');
     });
 
-    it('excludes emulators when BUILD_PROFILE is "preview"', () => {
+    it('sets preview architectures when BUILD_PROFILE is "preview"', () => {
       process.env.BUILD_PROFILE = 'preview';
       const result = resolveArchitectures();
       expect(result.profile).toBe('preview');
-      expect(result.isEmulatorExcluded).toBe(true);
-      expect(result.architectures).toBe('arm64-v8a,armeabi-v7a');
+      expect(result.isEmulatorExcluded).toBe(false);
+      expect(result.architectures).toBe('arm64-v8a,armeabi-v7a,x86_64');
     });
 
     it('includes all 4 architectures when EAS_BUILD_PROFILE is "development"', () => {
@@ -91,8 +89,7 @@ describe('withBuildArchitectures config plugin', () => {
       );
 
       expect(archProp).toBeDefined();
-      expect(archProp.value).toBe('arm64-v8a,armeabi-v7a');
-      expect(archProp.value).not.toContain('x86');
+      expect(archProp.value).toBe('arm64-v8a,armeabi-v7a,x86_64');
 
       // Preserves other properties
       const androidxProp = result.modResults.find(

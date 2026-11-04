@@ -92,16 +92,16 @@ function getPluginHelpers() {
 const PKG_NAME = 'with-build-architectures';
 const PKG_VERSION = '1.0.0';
 
-// Physical device architectures (excluding emulators: x86, x86_64)
-const PREVIEW_ARCHS = ['arm64-v8a', 'armeabi-v7a'];
+// Universal preview architectures supporting both physical devices and emulators
+const PREVIEW_ARCHS = ['arm64-v8a', 'armeabi-v7a', 'x86_64'];
 
-// All 4 standard Android architectures (including Intel/AMD emulators: x86, x86_64)
+// All 4 standard Android architectures (including 32-bit & 64-bit Intel/AMD emulators)
 const ALL_ARCHS = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'];
 
 /**
  * Determine the target Android architectures based on build profile:
- * - 'preview': Excludes emulators (x86, x86_64), only bundles physical device ARM architectures (armeabi-v7a, arm64-v8a)
- * - 'development' (or default): Bundles all 4 architectures so emulators and devices work seamlessly
+ * - 'preview': Bundles arm64-v8a, armeabi-v7a, and x86_64 so both physical phones and PC emulators run smoothly
+ * - 'development' (or default): Bundles all 4 architectures
  */
 function resolveArchitectures(options = {}) {
   const profile = (
@@ -116,7 +116,7 @@ function resolveArchitectures(options = {}) {
     return {
       profile: 'preview',
       architectures: Array.isArray(list) ? list.join(',') : list,
-      isEmulatorExcluded: true,
+      isEmulatorExcluded: false,
     };
   }
 
