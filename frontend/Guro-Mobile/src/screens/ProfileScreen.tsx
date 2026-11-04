@@ -41,6 +41,7 @@ import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { SyncBadge } from '../components/shared/SyncBadge';
 import { styles } from '../styles/ProfileScreen.styles';
+import { getAppVersionFooter } from '../constants/appVersion';
 import { toast } from '../components';
 
 type PinTarget = 'teacher' | 'parent' | 'parent-setup';
@@ -424,6 +425,12 @@ export function ProfileScreen() {
             </Text>
           </GlassCard>
         </TouchableOpacity>
+
+        <View style={{ alignItems: 'center', marginTop: Spacing.md, marginBottom: Spacing.xs }}>
+          <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+            {getAppVersionFooter()}
+          </Text>
+        </View>
 
         <View style={{ height: Spacing['3xl'] }} />
       </ScrollView>

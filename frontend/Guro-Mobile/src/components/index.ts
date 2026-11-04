@@ -15,3 +15,4 @@ export { ConfettiEffect } from './ui/ConfettiEffect';
 export { PinPad } from './shared/PinPad';
 export { SyncBadge } from './shared/SyncBadge';
 export { ErrorBoundary } from './shared/ErrorBoundary';
+export { AppVersionText } from '../constants/appVersion';

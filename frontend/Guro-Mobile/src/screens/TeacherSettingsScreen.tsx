@@ -27,6 +27,7 @@ import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { Badge } from '../components/ui/Badge';
 import { SyncBadge } from '../components/shared/SyncBadge';
 import { styles } from '../styles/TeacherDashboard.styles';
+import { getAppVersionFooter } from '../constants/appVersion';
 import {
   RefreshCw,
   Users,
@@ -1371,6 +1372,12 @@ export function TeacherSettingsScreen() {
             onPress={() => setShowLogoutConfirm(true)}
           />
         )}
+
+        <View style={{ alignItems: 'center', marginTop: Spacing.md, marginBottom: Spacing.sm }}>
+          <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+            {getAppVersionFooter()}
+          </Text>
+        </View>
 
         {/* Teacher Logout Confirmation */}
         <ConfirmDialog

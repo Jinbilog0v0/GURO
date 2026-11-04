@@ -28,6 +28,7 @@ import { Badge } from '../components/ui/Badge';
 import { SyncBadge } from '../components/shared/SyncBadge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { styles } from '../styles/ParentDashboard.styles';
+import { getAppVersionFooter } from '../constants/appVersion';
 import { toast } from '../components';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -1721,6 +1722,12 @@ export function ParentDashboard({ navigation }: Props) {
           onPress={() => setShowExitPortalConfirm(true)}
           style={{ marginTop: Spacing.md }}
         />
+
+        <View style={{ alignItems: 'center', marginTop: Spacing.md, marginBottom: Spacing.xs }}>
+          <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+            {getAppVersionFooter()}
+          </Text>
+        </View>
 
         {/* Bottom padding */}
         <View style={{ height: Spacing['3xl'] }} />

@@ -58,6 +58,7 @@ import { PrimaryButton, SecondaryButton, DangerButton } from '../components/ui/B
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { toast } from '../components';
 import { styles } from '../styles/SettingsScreen.styles';
+import { getFormattedAppVersion, getAppVersionFooter } from '../constants/appVersion';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -1217,7 +1218,7 @@ export function SettingsScreen({ navigation }: Props) {
                 <View style={{ marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.border }}>
                   <Text style={[styles.logsHeading, { marginBottom: Spacing.xs }]}>EAS Over-The-Air (OTA) Updates:</Text>
                   <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: Spacing.sm }}>
-                    Runtime: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getUpdateMetadata().runtimeVersion}</Text> • Channel: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getUpdateMetadata().channel || 'production'}</Text>
+                    App: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getFormattedAppVersion()}</Text> • Runtime: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getUpdateMetadata().runtimeVersion}</Text> • Channel: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getUpdateMetadata().channel || 'production'}</Text>
                   </Text>
 
                   {updateStatusText && (
@@ -1317,6 +1318,11 @@ export function SettingsScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
       >
         {renderSettingsBox()}
+        <View style={{ alignItems: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xs }}>
+          <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+            {getAppVersionFooter()}
+          </Text>
+        </View>
       </ScrollView>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}

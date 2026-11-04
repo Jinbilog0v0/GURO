@@ -26,6 +26,7 @@ import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
 import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { toast } from '../components';
 import { styles } from '../styles/LoginScreen.styles';
+import { getAppVersionFooter } from '../constants/appVersion';
 import { School, Users, GraduationCap, Cloud, WifiOff, Shield, MoreVertical, Terminal, KeyRound, Sparkles } from 'lucide-react-native';
 import * as Network from 'expo-network';
 
@@ -773,7 +774,7 @@ export function LoginScreen({ navigation }: Props) {
 
           {/* ── Footer ── */}
           <Text style={styles.footer}>
-            GURO v1.0 · Offline-first · SQLite powered
+            {getAppVersionFooter()}
           </Text>
         </Animated.View>
       </ScrollView>

@@ -27,6 +27,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { Colors } from '../../theme/colors';
 import { Fonts, FontSizes } from '../../theme/typography';
 import { Radius, Spacing } from '../../theme/spacing';
+import { getFormattedAppVersion } from '../../constants/appVersion';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 340);
@@ -224,6 +225,10 @@ export function AdminSidebar({ visible, onClose, navigation, currentRoute }: Adm
               <View style={styles.statusRow}>
                 <View style={[styles.statusDot, { backgroundColor: Colors.accentPrimary }]} />
                 <Text style={styles.statusText}>SQLite Database: Synchronized</Text>
+              </View>
+              <View style={styles.statusRow}>
+                <View style={[styles.statusDot, { backgroundColor: '#E8890C' }]} />
+                <Text style={styles.statusText}>App Version: {getFormattedAppVersion(false, true)}</Text>
               </View>
             </View>
           </ScrollView>

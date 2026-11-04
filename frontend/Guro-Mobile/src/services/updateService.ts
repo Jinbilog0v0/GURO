@@ -1,5 +1,6 @@
 import * as Updates from 'expo-updates';
 import { useAppStore } from '../store/useAppStore';
+import { APP_VERSION } from '../constants/appVersion';
 
 export interface UpdateMetadata {
   isEnabled: boolean;
@@ -35,7 +36,7 @@ export function getUpdateMetadata(): UpdateMetadata {
   return {
     isEnabled: Updates.isEnabled ?? false,
     channel: Updates.channel ?? 'development',
-    runtimeVersion: Updates.runtimeVersion ?? '1.0.1',
+    runtimeVersion: Updates.runtimeVersion ?? APP_VERSION,
     updateId: Updates.updateId ?? null,
     isEmbeddedLaunch: Updates.isEmbeddedLaunch ?? true,
   };
@@ -75,6 +76,7 @@ export async function checkForAppUpdate(): Promise<CheckUpdateResult> {
 
 /**
  * Downloads the latest update bundle and immediately reloads the React Native runtime.
+ * Used for explicit manual triggers in Settings.
  */
 export async function fetchAndApplyAppUpdate(): Promise<ApplyUpdateResult> {
   const addLog = useAppStore.getState().addLog;
@@ -103,8 +105,9 @@ export async function fetchAndApplyAppUpdate(): Promise<ApplyUpdateResult> {
 }
 
 /**
- * Safe background check for app startup or foreground event.
- * Never throws and never interrupts user experience.
+ * Safe non-blocking background check for app startup or foreground event.
+ * Downloads the bundle in background so it activates on next cold launch
+ * without abruptly interrupting active user sessions or causing startup reload loops.
  */
 export async function performBackgroundUpdateCheck(): Promise<void> {
   if (!isUpdatesEnabled()) return;
@@ -112,9 +115,10 @@ export async function performBackgroundUpdateCheck(): Promise<void> {
   try {
     const checkResult = await checkForAppUpdate();
     if (checkResult.isAvailable) {
-      const applyResult = await fetchAndApplyAppUpdate();
-      if (applyResult.success) {
-        useAppStore.getState().addLog('[EAS Update] Applied update in background.');
+      useAppStore.getState().addLog('[EAS Update] New bundle detected. Caching in background...');
+      const result = await Updates.fetchUpdateAsync();
+      if (result.isNew) {
+        useAppStore.getState().addLog('[EAS Update] Background update cached successfully. It will apply smoothly on next launch.');
       }
     }
   } catch (err: any) {
