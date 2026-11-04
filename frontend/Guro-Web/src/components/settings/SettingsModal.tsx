@@ -6,6 +6,7 @@ import { AdminSettings } from './AdminSettings';
 import { SharedSecuritySection } from './SharedSecuritySection';
 import { ThemePreferencesSection } from './ThemePreferencesSection';
 import { User, Lock, LogOut, Shield, School, Users, GraduationCap, X, Sliders, Palette } from 'lucide-react';
+import { getFormattedAppVersion } from '../../constants/appVersion';
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -236,6 +237,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="flex justify-between py-1.5 border-b border-[var(--border-color)]">
                       <span className="text-[var(--text-muted)]">User role:</span>
                       <span className="font-bold uppercase text-[var(--accent-primary-text)]">{role}</span>
+                    </div>
+                    <div className="flex justify-between py-1.5 border-b border-[var(--border-color)]">
+                      <span className="text-[var(--text-muted)]">Application release:</span>
+                      <span className="font-bold font-mono text-[var(--accent-primary-text)]">{getFormattedAppVersion(true, true)}</span>
                     </div>
                     <div className="flex justify-between py-1.5">
                       <span className="text-[var(--text-muted)]">Storage environment:</span>

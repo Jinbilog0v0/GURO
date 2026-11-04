@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { AppVersionBadge } from '../constants/appVersion';
 import {
   GraduationCap,
   School,
@@ -746,6 +747,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           <div className="flex items-center gap-2">
             <GraduationCap className="size-4 text-[#11428E]" />
             <span className="font-extrabold text-[var(--text-main)]">GURO Platform</span>
+            <AppVersionBadge variant="pill" />
             <span>• Guided Unified Resource Optimization</span>
           </div>
           <div className="flex items-center gap-4 font-semibold">

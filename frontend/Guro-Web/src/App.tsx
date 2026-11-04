@@ -17,6 +17,7 @@ const ParentSpace = lazy(() => import('./pages/ParentSpace').then(m => ({ defaul
 const LessonSpace = lazy(() => import('./pages/LessonSpace').then(m => ({ default: m.LessonSpace })));
 const DashboardSpace = lazy(() => import('./pages/DashboardSpace').then(m => ({ default: m.DashboardSpace })));
 import { SettingsModal } from './components/settings/SettingsModal';
+import { getFormattedAppVersion } from './constants/appVersion';
 import {
   Menu,
   LayoutDashboard,
@@ -953,7 +954,7 @@ function App() {
                   {currentUser ? currentUser.name : 'Guest Workspace'}
                 </span>
                 <span className={`text-[11.5px] font-semibold truncate ${isAdmin ? 'text-[#CE1126]' : 'text-[var(--success)]'}`}>
-                  {isAdmin ? 'ADMIN · Division Office' : currentUser ? `${currentUser.role.toUpperCase()} · Sync'd` : 'Local Session'}
+                  {isAdmin ? 'ADMIN · Division Office' : currentUser ? `${currentUser.role.toUpperCase()} · Sync'd` : 'Local Session'} · {getFormattedAppVersion()}
                 </span>
               </div>
             </button>
