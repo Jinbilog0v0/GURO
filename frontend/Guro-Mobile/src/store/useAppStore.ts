@@ -74,6 +74,7 @@ export interface ProgressEvent {
   term?: string;
   timestamp: string;
   synced: boolean;
+  classroomId?: string;
 }
 
 interface AppState {

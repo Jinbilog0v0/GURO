@@ -95,8 +95,8 @@ describe('Mobile Comprehensive Feature Test Suite', () => {
 
   // ── 2. Adaptive Learning Engine Flow ─────────────────────────────────────────
   describe('Adaptive Learning Engine & Mastery Progression', () => {
-    it('applies mastery threshold rule: score >= 80% advances tier', () => {
-      expect(MASTERY_THRESHOLD).toBe(80);
+    it('applies mastery threshold rule: score >= 75% advances tier', () => {
+      expect(MASTERY_THRESHOLD).toBe(75);
 
       const highResult = calculateNextDifficulty(85, 'Easy');
       expect(highResult).toBe('advance');
@@ -244,7 +244,7 @@ describe('Mobile Comprehensive Feature Test Suite', () => {
   describe('EAS OTA Update Service Flow', () => {
     it('retrieves update metadata matching runtimeVersion and channel', () => {
       const meta = updateService.getUpdateMetadata();
-      expect(meta.runtimeVersion).toBe('1.0.1');
+      expect(meta.runtimeVersion).toBe('1.0.2');
       expect(meta.channel).toBe('production');
       expect(meta.updateId).toBe('mock-update-id-001');
     });

@@ -32,6 +32,7 @@ describe('Algorithmic Engine (Mobile)', () => {
     const tiers: DifficultyTier[] = ['Easy', 'Average', 'Difficult'];
 
     test('should return "advance" for scores >= 80%', () => {
+      expect(calculateNextDifficulty(75, 'Easy')).toBe('advance');
       expect(calculateNextDifficulty(80, 'Easy')).toBe('advance');
       expect(calculateNextDifficulty(95, 'Average')).toBe('advance');
       expect(calculateNextDifficulty(100, 'Difficult')).toBe('advance');
@@ -39,8 +40,8 @@ describe('Algorithmic Engine (Mobile)', () => {
 
     test('should return "repeat" for scores between 50% and 79%', () => {
       expect(calculateNextDifficulty(50, 'Easy')).toBe('repeat');
-      expect(calculateNextDifficulty(75, 'Average')).toBe('repeat');
-      expect(calculateNextDifficulty(79, 'Difficult')).toBe('repeat');
+      expect(calculateNextDifficulty(65, 'Average')).toBe('repeat');
+      expect(calculateNextDifficulty(74, 'Difficult')).toBe('repeat');
     });
 
     test('should return "drop" for scores < 50%', () => {
