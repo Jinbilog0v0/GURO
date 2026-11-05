@@ -43,7 +43,8 @@ import {
   Award,
   Calendar,
   Sparkles,
-  Edit3
+  Edit3,
+  MessageCircle
 } from 'lucide-react';
 
 interface SyncedEvent {
@@ -800,6 +801,16 @@ function App() {
                     </div>
                   )}
                 </div>
+
+                {/* 4. Parent Consultations */}
+                <button 
+                  onClick={() => { setActiveTab('teacher'); setActiveSubTab('parent-consultations'); }} 
+                  className={navBtn(activeTab === 'teacher' && activeSubTab === 'parent-consultations')} 
+                  aria-current={activeTab === 'teacher' && activeSubTab === 'parent-consultations' ? 'page' : undefined}
+                >
+                  <MessageCircle size={18} className="shrink-0 text-cyan-400" />
+                  <span>Parent Consultations</span>
+                </button>
               </div>
             ) : (
               <div className="flex flex-col gap-1">
@@ -807,6 +818,7 @@ function App() {
                 <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('classrooms'); }} className={navBtnIcon(activeTab === 'teacher' && (activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing'))} title="My Classrooms" aria-label="My Classrooms"><School size={18} /></button>
                 <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('lessons'); }} className={navBtnIcon(activeTab === 'teacher' && (activeSubTab.startsWith('lesson') || activeSubTab === 'manual-lesson'))} title="Lesson Management" aria-label="Lesson Management"><BookOpen size={18} /></button>
                 <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('analytics'); }} className={navBtnIcon(activeTab === 'teacher' && (activeSubTab.startsWith('analytics') || activeSubTab === 'pre-post-test' || activeSubTab === 'eosy-promotion'))} title="Classroom Analytics" aria-label="Classroom Analytics"><TrendingUp size={18} /></button>
+                <button onClick={() => { setActiveTab('teacher'); setActiveSubTab('parent-consultations'); }} className={navBtnIcon(activeTab === 'teacher' && activeSubTab === 'parent-consultations')} title="Parent Consultations" aria-label="Parent Consultations"><MessageCircle size={18} /></button>
               </div>
             )
           )}

@@ -9,6 +9,7 @@ import { EosyPromotionConsole } from '../components/teacher/EosyPromotionConsole
 import { LessonManagement } from '../components/teacher/LessonManagement';
 import { ClassroomDetailView } from '../components/teacher/ClassroomDetailView';
 import { ClassroomManagement } from '../components/teacher/ClassroomManagement';
+import { ParentConsultationHub } from '../components/teacher/ParentConsultationHub';
 import { StudentDirectory } from '../components/teacher/StudentDirectory';
 import { LessonSpace } from './LessonSpace';
 import { SkeletonStatCards, SkeletonCard, SkeletonTable } from '../components/shared/SkeletonLoader';
@@ -31,6 +32,7 @@ interface SyncedEvent {
 
 export type TeacherSubTab = 
   | 'classrooms' 
+  | 'parent-consultations'
   | 'lessons' 
   | 'lessons-system'
   | 'lessons-custom'
@@ -1649,7 +1651,12 @@ export function TeacherSpace({
         </div>
       )}
 
-      {(activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing') ? (
+      {activeSubTab === 'parent-consultations' ? (
+        <ParentConsultationHub
+          currentUser={user}
+          classroomHistory={classroomHistory}
+        />
+      ) : (activeSubTab === 'classrooms' || activeSubTab === 'classroom-pairing') ? (
         selectedClassroomForDetail ? (
           <ClassroomDetailView
             classroom={(() => {
