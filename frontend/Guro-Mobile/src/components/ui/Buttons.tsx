@@ -36,7 +36,7 @@ export function PrimaryButton({ label, onPress, disabled, loading, style, icon }
       style={[
         Buttons.base,
         Buttons.primary,
-        isInactive && Buttons.disabled,
+        isInactive && (disabled ? Buttons.primaryDisabled : Buttons.disabled),
         style,
       ]}
     >
@@ -45,7 +45,7 @@ export function PrimaryButton({ label, onPress, disabled, loading, style, icon }
       ) : (
         <>
           {icon}
-          <Text style={TextStyles.btnTextPrimary}>{label}</Text>
+          <Text style={disabled ? TextStyles.btnTextPrimaryDisabled : TextStyles.btnTextPrimary}>{label}</Text>
         </>
       )}
     </TouchableOpacity>

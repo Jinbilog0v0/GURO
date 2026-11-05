@@ -54,6 +54,7 @@ import { Badges } from '../theme/styles';
 import { GlassCard } from '../components/ui/GlassCard';
 import { SyncBadge } from '../components/shared/SyncBadge';
 import { ProgressBar } from '../components/ui/ProgressBar';
+import { LessonCard } from '../components/ui/LessonCard';
 import { styles } from '../styles/StudentDashboard.styles';
 import { isLessonLocked, LESSON_SEQUENCE } from '../utils/engine';
 import itemBankData from '../../assets/item_bank.json';
@@ -365,6 +366,58 @@ export function StudentDashboard() {
   const lastActivity = filteredProgress.length > 0
     ? filteredProgress.reduce((a, b) => (new Date(a.timestamp) > new Date(b.timestamp) ? a : b))
     : null;
+
+  const dashboardTopics = React.useMemo(() => {
+    const effectiveBank = itemBank || (itemBankData as any);
+    if (!effectiveBank) return [];
+    const list: Array<{
+      topic: string;
+      subject: string;
+      gradeLevel: number;
+      completionPercent: number;
+      bestScore: number | null;
+      questionCount: number;
+      isLocked: boolean;
+      lockReason?: string;
+    }> = [];
+
+    const subjects = Array.from(new Set(['Mathematics', 'English', ...(activeSubjects || [])]));
+    for (const sub of subjects) {
+      const gradeData = effectiveBank[sub]?.[preferredGrade.toString()];
+      if (!gradeData) continue;
+      for (const top of Object.keys(gradeData)) {
+        if (top === 'studyContent') continue;
+        const logs = studentProgress.filter(
+          (p) => (p.subject === sub || (sub === 'Mathematics' && p.subject === 'Math')) &&
+                 p.gradeLevel === preferredGrade && p.topic === top
+        );
+        const bestScore = logs.length > 0 ? Math.round(Math.max(...logs.map((p) => (p.score / p.totalQuestions) * 100))) : null;
+        const completionPercent = bestScore ?? 0;
+        const qCount = Array.isArray(gradeData[top]?.questions) ? gradeData[top].questions.length : 4;
+        const isProgLocked = isLessonLocked(sub, preferredGrade, top, studentProgress, preferredGrade, effectiveBank);
+        const isEngLocked = sub === 'English' && isEnglishLocked(preferredGrade);
+        const isLocked = isProgLocked || isEngLocked;
+        let lockReason: string | undefined = undefined;
+        if (isEngLocked) {
+          lockReason = `Reach 80% in Math first`;
+        } else if (isProgLocked) {
+          lockReason = `Locked`;
+        }
+
+        list.push({
+          topic: top,
+          subject: sub,
+          gradeLevel: preferredGrade,
+          completionPercent,
+          bestScore,
+          questionCount: qCount,
+          isLocked,
+          lockReason,
+        });
+      }
+    }
+    return list;
+  }, [itemBank, preferredGrade, activeSubjects, studentProgress]);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
@@ -790,6 +843,89 @@ export function StudentDashboard() {
             </TouchableOpacity>
           </GlassCard>
         )}
+        {/* Explore Topics / Quick Curriculum Access with See All */}
+        {dashboardTopics.length > 0 && (
+          <View style={{ gap: Spacing.sm, marginTop: Spacing.xs }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 }}>
+              <View>
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, letterSpacing: -0.3 }}>
+                  Explore Topics
+                </Text>
+                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                  Grade {preferredGrade} • {dashboardTopics.length} topics available
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Lessons')}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 3,
+                  backgroundColor: 'rgba(17,66,142,0.08)',
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                  borderRadius: Radius.full,
+                }}
+              >
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                  See All
+                </Text>
+                <ChevronRight size={14} color={Colors.accentPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ gap: Spacing.sm }}>
+              {dashboardTopics.slice(0, 3).map((item) => (
+                <LessonCard
+                  key={`${item.subject}-${item.gradeLevel}-${item.topic}`}
+                  topic={item.topic}
+                  subject={item.subject}
+                  gradeLevel={item.gradeLevel}
+                  completionPercent={item.completionPercent}
+                  bestScore={item.bestScore}
+                  questionCount={item.questionCount}
+                  isLocked={item.isLocked}
+                  lockReason={item.lockReason}
+                  onPress={() => {
+                    if (isTimeLimitExceeded) {
+                      toast.warning("You've reached your daily screen time limit.");
+                      return;
+                    }
+                    navigation.navigate('Study', {
+                      subject: item.subject,
+                      gradeLevel: item.gradeLevel,
+                      topic: item.topic,
+                    });
+                  }}
+                  accessibilityLabel={`Start ${item.topic}`}
+                />
+              ))}
+            </View>
+
+            {dashboardTopics.length > 3 && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Lessons')}
+                activeOpacity={0.8}
+                style={{
+                  backgroundColor: Colors.bgInput,
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  borderRadius: Radius.md,
+                  minHeight: 44,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginTop: 2,
+                }}
+              >
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                  See All Topics ({dashboardTopics.length}) →
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         <View style={styles.bottomSpacer} />
       </ScrollView>
 

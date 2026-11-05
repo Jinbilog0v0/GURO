@@ -9,9 +9,10 @@ export const styles = StyleSheet.create({
     backgroundColor: Colors.bgMain,
   },
   scrollContent: {
-    padding: Spacing.lg,
-    gap: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
     paddingBottom: Spacing['4xl'],
+    gap: Spacing.lg,
   },
   
   // Header Profile Section

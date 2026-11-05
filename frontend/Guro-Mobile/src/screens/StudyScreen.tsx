@@ -219,7 +219,7 @@ export function StudyScreen({ route, navigation }: Props) {
   // ── Fallback if study content is empty ─────────────────────────────────────
   if (!studyContent || slides.length === 0) {
     return (
-      <SafeAreaView style={styles.screen}>
+      <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.header}>
             <Badge label={subject} variant="indigo" style={styles.badge} />
@@ -255,7 +255,7 @@ export function StudyScreen({ route, navigation }: Props) {
   const currentItem = slides[currentSlide];
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
+    <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
       <ConfettiEffect active={showConfetti || currentItem.type === 'completed'} />
       {/* Progress Bar & Indicators */}
       <View style={styles.progressContainer}>
@@ -587,7 +587,7 @@ export function StudyScreen({ route, navigation }: Props) {
                     const isCorrect = selected === currentItem.data.correctAnswer;
                     if (isCorrect) {
                       playCorrectSound();
-                      setShowConfetti(true);
+
                     } else {
                       playIncorrectSound();
                     }

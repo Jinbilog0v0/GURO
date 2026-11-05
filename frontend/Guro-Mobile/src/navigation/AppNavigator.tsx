@@ -13,7 +13,7 @@ import { DetailsScreen } from '../screens/DetailsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { StudentProgressReportScreen } from '../screens/StudentProgressReportScreen';
 import { Colors } from '../theme/colors';
-import { Fonts } from '../theme/typography';
+import { Fonts, FontSizes } from '../theme/typography';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -48,7 +48,7 @@ export function AppNavigator() {
         headerTintColor: Colors.textMain,
         headerTitleStyle: {
           fontFamily: Fonts.display,
-          fontSize: 16,
+          fontSize: FontSizes.xl,
           color: Colors.textMain,
         },
         headerShadowVisible: true,

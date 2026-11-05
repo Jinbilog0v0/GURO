@@ -13,7 +13,7 @@ export function DetailsScreen({ route, navigation }: Props) {
   const { fileName, content } = route.params;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
           <Text style={styles.label}>DOCUMENT REFERENCE</Text>

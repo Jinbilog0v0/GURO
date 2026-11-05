@@ -10,6 +10,7 @@ import {
   Modal,
   TextInput,
   LayoutAnimation,
+  Clipboard,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -58,6 +59,9 @@ import {
   AlertCircle,
   Check,
   Calendar,
+  Copy,
+  School,
+  Users,
 } from 'lucide-react-native';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { toast } from '../components';
@@ -316,6 +320,27 @@ export function TeacherDashboardScreen() {
     }
   };
 
+  const handleSelectClassroom = async (target: any) => {
+    const code = typeof target === 'string' ? target : target?.id;
+    if (!code) return;
+    const selected = typeof target === 'string' ? classrooms.find((c) => c.id === target) : target;
+    setActiveClassroom(code);
+    if (selected) {
+      setActiveClassroomData(selected);
+    }
+    if (code !== storeClassroomId && setClassroomId) {
+      setClassroomId(code, selected?.teacherName);
+    }
+    await fetchClassroomDetails(code);
+    await fetchClassroomTelemetry(code);
+    toast.info(`Switched to classroom: ${code}`);
+  };
+
+  const handleCopyClassroomCode = (code: string) => {
+    Clipboard.setString(code);
+    toast.success(`Classroom code "${code}" copied to clipboard!`);
+  };
+
   const parseStudentId = (id: string) => {
     if (!id) return { name: '', section: '' };
     let cleaned = id.replace(/-/g, ' ').trim();
@@ -378,19 +403,6 @@ export function TeacherDashboardScreen() {
     } finally {
       setLoadingTelemetry(false);
     }
-  };
-
-  const handleSelectClassroom = (code: string) => {
-    setActiveClassroom(code);
-    const selected = classrooms.find((c) => c.id === code);
-    if (selected) {
-      setActiveClassroomData(selected);
-    }
-    if (setClassroomId) {
-      setClassroomId(code, selected?.teacherName);
-    }
-    fetchClassroomDetails(code);
-    fetchClassroomTelemetry(code);
   };
 
   const handleDeleteTopic = (subject: string, grade: string, topic: string) => {
@@ -1043,7 +1055,7 @@ export function TeacherDashboardScreen() {
                             </View>
                           </View>
                           <View style={{ alignItems: 'flex-end', flexShrink: 0, minWidth: 44 }}>
-                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: isSuccess ? Colors.success : Colors.warning }}>
+                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: isSuccess ? Colors.success : Colors.warning, fontVariant: ['tabular-nums'] }}>
                               {evt.score}/{evt.totalQuestions}
                             </Text>
                             <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textDark }}>
@@ -1067,6 +1079,106 @@ export function TeacherDashboardScreen() {
           </>
         ) : (
           <>
+            <SectionHeader
+              title="Classroom & Curriculum Hub"
+              subtitle={`Active Section: ${activeClassroomData?.sectionName || effectiveClassroomId || 'Default'}`}
+            />
+
+            {/* ── Active Classroom Hub ── */}
+            <View style={styles.classroomCard}>
+              <View style={styles.classroomCardHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                  <View style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: Radius.md,
+                    backgroundColor: 'rgba(17,66,142,0.1)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: 'rgba(17,66,142,0.2)',
+                  }}>
+                    <School size={18} color={Colors.accentPrimary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
+                      {activeClassroomData?.sectionName
+                        ? `Grade ${activeClassroomData.gradeLevel} - ${activeClassroomData.sectionName}`
+                        : `Grade ${activeClassroomData?.gradeLevel || 4} Classroom`}
+                    </Text>
+                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                      {activeClassroomData?.subject || 'Mathematics'} • S.Y. {activeClassroomData?.schoolYear || activeSchoolYear} ({activeClassroomData?.term || activeTerm})
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={{
+                  backgroundColor: 'rgba(16,185,129,0.12)',
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: Radius.full,
+                  borderWidth: 1,
+                  borderColor: 'rgba(16,185,129,0.25)',
+                }}>
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.success }}>
+                    Active
+                  </Text>
+                </View>
+              </View>
+
+              {/* Classroom Code & Copy */}
+              <View style={styles.classroomCodeContainer}>
+                <View>
+                  <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 10, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Classroom Code
+                  </Text>
+                  <Text style={styles.classroomCodeText}>
+                    {effectiveClassroomId || 'NO-CODE'}
+                  </Text>
+                </View>
+                {effectiveClassroomId && (
+                  <TouchableOpacity
+                    onPress={() => handleCopyClassroomCode(effectiveClassroomId)}
+                    activeOpacity={0.75}
+                    accessibilityRole="button"
+                    accessibilityLabel="Copy classroom code"
+                    style={styles.copyCodeBtn}
+                  >
+                    <Copy size={13} color={Colors.accentPrimary} />
+                    <Text style={styles.copyCodeText}>Copy</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Classroom Switcher (if teacher has multiple classrooms) */}
+              {classrooms.length > 1 && (
+                <View style={{ marginTop: Spacing.xs, gap: 4 }}>
+                  <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 10, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Switch Section / Class
+                  </Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.classroomSwitcherRow}>
+                    {classrooms.map((c) => {
+                      const isActive = (activeClassroom || effectiveClassroomId) === c.id;
+                      return (
+                        <TouchableOpacity
+                          key={c.id}
+                          onPress={() => handleSelectClassroom(c)}
+                          activeOpacity={0.8}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Select classroom ${c.id}`}
+                          style={[styles.classroomChip, isActive && styles.classroomChipActive]}
+                        >
+                          <Text style={[styles.classroomChipText, isActive && styles.classroomChipTextActive]}>
+                            {c.sectionName ? `G${c.gradeLevel} ${c.sectionName}` : c.id}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+
             <SectionHeader
               title="Item Bank Overview"
               subtitle="Live count from local item bank"
@@ -2354,7 +2466,7 @@ export function TeacherDashboardScreen() {
                           </View>
                           <View style={{ flexDirection: 'row', gap: Spacing.xs, alignItems: 'center', flexShrink: 0 }}>
                             <View style={{ alignItems: 'flex-end', minWidth: 44 }}>
-                              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: isSuccess ? Colors.success : Colors.warning }}>
+                              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: isSuccess ? Colors.success : Colors.warning, fontVariant: ['tabular-nums'] }}>
                                 {evt.score}/{evt.totalQuestions}
                               </Text>
                               <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textDark }}>

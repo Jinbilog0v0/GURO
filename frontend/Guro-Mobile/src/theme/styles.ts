@@ -32,6 +32,52 @@ export const Layout = StyleSheet.create({
   flex1: {
     flex: 1,
   },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    backgroundColor: '#FFFFFF',
+    gap: Spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+    minHeight: 56,
+  },
+  headerTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.xl,
+    color: Colors.textMain,
+    letterSpacing: LetterSpacing.tight,
+  },
+  headerSubtitle: {
+    fontFamily: Fonts.body,
+    fontSize: FontSizes.sm,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  scrollContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing['4xl'],
+    gap: Spacing.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  sectionTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.xl,
+    color: Colors.textMain,
+    letterSpacing: LetterSpacing.tight,
+  },
 });
 
 // ─── Cards (replaces .glass-panel) ───────────────────────────────────────────
@@ -91,6 +137,12 @@ export const Buttons = StyleSheet.create({
   // .btn-disabled
   disabled: {
     opacity: 0.5,
+  },
+  primaryDisabled: {
+    backgroundColor: '#E2E8F0',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    opacity: 1,
   },
 });
 
@@ -156,6 +208,18 @@ export const Text = StyleSheet.create({
     fontFamily: Fonts.bodyBold,
     fontSize: FontSizes.md,
     color: Colors.white,
+  },
+  btnTextPrimaryDisabled: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.md,
+    color: '#94A3B8',
+  },
+  metric: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes['2xl'],
+    color: Colors.textMain,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: LetterSpacing.tight,
   },
 });
 

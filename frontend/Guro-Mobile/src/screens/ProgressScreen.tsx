@@ -7,12 +7,12 @@ import React, { useState } from 'react';
 import { Text, View, ScrollView, Alert, Clipboard, TouchableOpacity, RefreshControl, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
-import { Trophy, Flame, Calculator, BookOpen, CheckCircle2, AlertCircle, Clock, Star, Award, Zap, Lock, X, Calendar } from 'lucide-react-native';
+import { Trophy, Flame, Calculator, BookOpen, CheckCircle2, AlertCircle, Clock, Star, Award, Zap, Lock, X, Calendar, ChevronRight } from 'lucide-react-native';
 import { MASTERY_THRESHOLD } from '../utils/engine';
 
 import { Colors } from '../theme/colors';
 import { Fonts, FontSizes } from '../theme/typography';
-import { Spacing } from '../theme/spacing';
+import { Spacing, Radius } from '../theme/spacing';
 import { Badges } from '../theme/styles';
 import { GlassCard } from '../components/ui/GlassCard';
 import { ProgressBar } from '../components/ui/ProgressBar';
@@ -203,7 +203,7 @@ export function ProgressScreen() {
               <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
                 XP to next level
               </Text>
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary, fontVariant: ['tabular-nums'] }}>
                 {xpInLevel} / 100
               </Text>
             </View>
@@ -214,30 +214,30 @@ export function ProgressScreen() {
         {/* All-Time Stats card */}
         <GlassCard padding={Spacing.lg} style={{ gap: Spacing.md }}>
           <SectionHeader title="All-Time Stats" subtitle="Your learning milestone numbers" />
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.sm }}>
-            <View style={{ flex: 1, backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: Colors.border }}>
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
+          <View style={styles.statsRow}>
+            <View style={styles.statTile}>
+              <Text style={styles.statValue}>
                 {totalSessions}
               </Text>
-              <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted, marginTop: 2, textAlign: 'center' }}>
+              <Text style={styles.statLabel}>
                 Lessons Completed
               </Text>
             </View>
 
-            <View style={{ flex: 1, backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: Colors.border }}>
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.success }}>
+            <View style={styles.statTile}>
+              <Text style={[styles.statValue, { color: Colors.success }]}>
                 {totalCorrect}
               </Text>
-              <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted, marginTop: 2, textAlign: 'center' }}>
+              <Text style={styles.statLabel}>
                 Correct Answers
               </Text>
             </View>
 
-            <View style={{ flex: 1, backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: Colors.border }}>
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.accentPrimary }}>
+            <View style={styles.statTile}>
+              <Text style={[styles.statValue, { color: Colors.accentPrimary }]}>
                 {totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0}%
               </Text>
-              <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted, marginTop: 2, textAlign: 'center' }}>
+              <Text style={styles.statLabel}>
                 Average Score
               </Text>
             </View>
@@ -306,7 +306,7 @@ export function ProgressScreen() {
                       <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.textMain }}>
                         {subject} · Grade {grade}
                       </Text>
-                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color }}>
+                      <Text style={[{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color, fontVariant: ['tabular-nums'] }]}>
                         {avg}% ({attempts} {attempts === 1 ? 'quiz' : 'quizzes'})
                       </Text>
                     </View>
@@ -320,7 +320,7 @@ export function ProgressScreen() {
 
         {/* Badge showcase */}
         <SectionHeader title="Badge Case" subtitle="Earn badges through lessons and streaks" />
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+        <View style={styles.badgeGrid}>
           {ALL_BADGES.map((key) => {
             const info = BADGE_INFO[key];
             const unlocked = unlockedBadges.includes(key);
@@ -329,11 +329,13 @@ export function ProgressScreen() {
                 key={key}
                 activeOpacity={0.7}
                 onPress={() => handleBadgePress(key)}
-                style={{ width: '48%' }}
+                accessibilityRole="button"
+                accessibilityLabel={`${info.label}: ${unlocked ? 'Unlocked' : 'Locked'}`}
+                style={styles.badgeTouchable}
               >
                 <GlassCard
                   padding={Spacing.md}
-                  style={[styles.badgeCard, { opacity: unlocked ? 1 : 0.38, width: '100%' }]}
+                  style={[styles.badgeCard, { opacity: unlocked ? 1 : 0.42 }]}
                 >
                   <View style={{ height: 32, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs }}>
                     {unlocked ? (
@@ -368,7 +370,7 @@ export function ProgressScreen() {
                         {t.subject} · Grade {t.grade}
                       </Text>
                     </View>
-                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.success }}>
+                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.success, fontVariant: ['tabular-nums'] }}>
                       {t.best}%
                     </Text>
                   </View>
@@ -395,7 +397,7 @@ export function ProgressScreen() {
                         {t.subject} · Grade {t.grade}
                       </Text>
                     </View>
-                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.warning }}>
+                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.warning, fontVariant: ['tabular-nums'] }}>
                       {t.best}%
                     </Text>
                   </View>
@@ -408,7 +410,32 @@ export function ProgressScreen() {
         {/* Recent Activity */}
         {recentActivity.length > 0 && (
           <>
-            <SectionHeader title="Assessment History" subtitle="Your last 5 quiz attempts" />
+            <SectionHeader
+              title="Assessment History"
+              subtitle={studentProgress.length > 5 ? `Showing 5 of ${studentProgress.length} attempts` : `${studentProgress.length} quiz attempts`}
+              right={
+                studentProgress.length > 5 ? (
+                  <TouchableOpacity
+                    onPress={() => setFullHistoryVisible(true)}
+                    activeOpacity={0.7}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 3,
+                      backgroundColor: 'rgba(17,66,142,0.08)',
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                      borderRadius: Radius.full,
+                    }}
+                  >
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                      See All
+                    </Text>
+                    <ChevronRight size={14} color={Colors.accentPrimary} />
+                  </TouchableOpacity>
+                ) : null
+              }
+            />
             <View style={{ gap: Spacing.sm }}>
               {recentActivity.map((p, idx) => {
                 const pct = Math.round((p.score / p.totalQuestions) * 100);
@@ -427,10 +454,10 @@ export function ProgressScreen() {
                         </Text>
                       </View>
                       <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                        <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: passed ? Colors.success : Colors.warning }}>
+                        <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: passed ? Colors.success : Colors.warning, fontVariant: ['tabular-nums'] }}>
                           {pct}%
                         </Text>
-                        <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                        <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, fontVariant: ['tabular-nums'] }}>
                           {p.score}/{p.totalQuestions}
                         </Text>
                       </View>
@@ -451,6 +478,8 @@ export function ProgressScreen() {
                   borderColor: Colors.border,
                   borderRadius: 16,
                   marginTop: Spacing.sm,
+                  minHeight: 44,
+                  justifyContent: 'center',
                 }}
               >
                 <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
@@ -497,8 +526,8 @@ export function ProgressScreen() {
                   padding: Spacing.xs,
                   backgroundColor: Colors.bgInput,
                   borderRadius: 16,
-                  width: 32,
-                  height: 32,
+                  width: 36,
+                  height: 36,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -546,10 +575,10 @@ export function ProgressScreen() {
                             </Text>
                           </View>
                           <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: passed ? Colors.success : Colors.warning }}>
+                            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: passed ? Colors.success : Colors.warning, fontVariant: ['tabular-nums'] }}>
                               {pct}%
                             </Text>
-                            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, fontVariant: ['tabular-nums'] }}>
                               {p.score}/{p.totalQuestions}
                             </Text>
                           </View>

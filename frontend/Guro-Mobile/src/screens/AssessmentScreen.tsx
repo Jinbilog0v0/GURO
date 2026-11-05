@@ -570,7 +570,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
   // ── Error state: no questions ──────────────────────────────────────────────
   if (questions.length === 0) {
     return (
-      <SafeAreaView style={styles.screen}>
+      <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
         <View style={styles.centeredContainer}>
           <GlassCard style={styles.errorCard}>
             <Inbox size={32} color="#94A3B8" style={{ marginBottom: 12, alignSelf: 'center' }} />
@@ -790,7 +790,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
     const unsyncedCount = (useAppStore.getState().studentProgress || []).filter((p) => !p.synced).length;
 
     return (
-      <SafeAreaView style={styles.screen}>
+      <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
         {passed && <ConfettiEffect active={passed} count={50} />}
         <ScrollView
           contentContainerStyle={styles.finishedScroll}
@@ -1398,7 +1398,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
 
   // ── Main render ────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
       <ConfettiEffect active={showConfetti} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -1408,20 +1408,26 @@ export function AssessmentScreen({ route, navigation }: Props) {
         {/* ── Header ── */}
         <View style={styles.header}>
           <View style={styles.headerMeta}>
-            <Badge label={subject} variant="indigo" />
-            <Badge
-              label={`Grade ${gradeLevel}`}
-              variant="indigo"
-              style={styles.headerBadgeGap}
-            />
-            {comboStreak >= 2 && (
+            <View style={styles.headerMetaBadges}>
+              <Badge label={subject} variant="indigo" />
               <Badge
-                label={`${comboStreak}x Combo`}
-                icon={Flame}
-                variant="warning"
+                label={`Grade ${gradeLevel}`}
+                variant="indigo"
                 style={styles.headerBadgeGap}
               />
-            )}
+              {comboStreak >= 2 && (
+                <Badge
+                  label={`${comboStreak}x Combo`}
+                  icon={Flame}
+                  variant="warning"
+                  style={styles.headerBadgeGap}
+                />
+              )}
+            </View>
+            <View style={styles.questionCounterPill}>
+              <Text style={styles.questionCounterCurrent}>{currentIndex + 1}</Text>
+              <Text style={styles.questionCounterTotal}> / {questions.length}</Text>
+            </View>
           </View>
           <Text style={styles.headerTopic}>{topic}</Text>
 
@@ -1431,15 +1437,12 @@ export function AssessmentScreen({ route, navigation }: Props) {
               style={[
                 styles.progressBarFill,
                 {
-                  width: `${Math.round(progress * 100)}%` as `${number}%`,
-                  backgroundColor: Colors.success,
+                  width: `${Math.max(6, Math.round(progress * 100))}%` as `${number}%`,
+                  backgroundColor: Colors.accentPrimary,
                 },
               ]}
             />
           </View>
-          <Text style={styles.progressLabel}>
-            {currentIndex + 1} / {questions.length}
-          </Text>
         </View>
 
         {/* ── Question card ── */}
@@ -2171,8 +2174,8 @@ export function AssessmentScreen({ route, navigation }: Props) {
               />
               {/* U2: Helper text shown when no answer is selected so children understand what to do */}
               {!selectedOption && (
-                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, textAlign: 'center', marginTop: 6 }}>
-                  Pick an answer above to continue ↑
+                <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.xs, color: Colors.textMuted, textAlign: 'center', marginTop: 8 }}>
+                  Select an answer above to continue
                 </Text>
               )}
             </>

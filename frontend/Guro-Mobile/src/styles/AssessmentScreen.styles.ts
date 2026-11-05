@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { Colors } from '../theme/colors';
 import { Fonts, FontSizes } from '../theme/typography';
-import { Spacing, Radius, Shadow } from '../theme/spacing';
+import { Spacing, Radius } from '../theme/spacing';
 
 export const styles = StyleSheet.create({
   // ── Screen ────────────────────────────────────────────────────────────────
@@ -10,8 +10,10 @@ export const styles = StyleSheet.create({
     backgroundColor: Colors.bgMain,
   },
   scrollContent: {
-    padding: Spacing.lg,
-    paddingTop: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing['4xl'],
+    gap: Spacing.md,
   },
 
   // ── Centered utility (error / finished) ───────────────────────────────────
@@ -24,30 +26,58 @@ export const styles = StyleSheet.create({
 
   // ── Header / progress ─────────────────────────────────────────────────────
   header: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.xs,
+    gap: Spacing.xs,
   },
   headerMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.xs,
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  headerMetaBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
   },
   headerBadgeGap: {
-    marginLeft: Spacing.xs,
+    marginLeft: 0,
   },
   headerTopic: {
     fontFamily: Fonts.display,
     fontSize: FontSizes.xl,
     color: Colors.textMain,
-    marginBottom: Spacing.sm,
     letterSpacing: -0.5,
   },
+  questionCounterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EEF4FF',
+    borderWidth: 1,
+    borderColor: '#D0E1FD',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+  },
+  questionCounterCurrent: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.xs,
+    color: Colors.accentPrimary,
+    fontVariant: ['tabular-nums'],
+  },
+  questionCounterTotal: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+    fontVariant: ['tabular-nums'],
+  },
   progressBarContainer: {
-    height: 8,
-    backgroundColor: Colors.bgCard,
+    height: 6,
+    backgroundColor: '#E2E8F0',
     borderRadius: Radius.full,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.border,
+    marginTop: 2,
   },
   progressBarFill: {
     height: '100%',
@@ -59,13 +89,22 @@ export const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'right',
     marginTop: Spacing.xs,
+    fontVariant: ['tabular-nums'],
   },
 
   // ── Question card ─────────────────────────────────────────────────────────
   questionCard: {
-    marginBottom: Spacing.md,
-    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    padding: Spacing.xl,
     borderRadius: Radius.xl,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
   questionCardHeader: {
     flexDirection: 'row',
@@ -81,8 +120,10 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
     minHeight: 34,
     borderRadius: Radius.full,
+    gap: 6,
   },
   listenButtonText: {
     fontSize: FontSizes.xs,
@@ -106,46 +147,57 @@ export const styles = StyleSheet.create({
 
   // ── Options ───────────────────────────────────────────────────────────────
   optionsContainer: {
-    gap: 10,
-    marginBottom: Spacing.lg,
+    gap: 12,
+    marginBottom: Spacing.xl,
   },
   optionBase: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 52,
-    paddingVertical: 12,
+    minHeight: 56,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: Radius.lg,
     borderWidth: 1.5,
-    gap: 12,
-    ...Shadow.card,
+    gap: 14,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8F0',
+    // DO NOT use Android elevation here! Elevation on semi-transparent backgrounds
+    // causes Android to render an opaque dark gray rectangle artifact behind text.
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 0,
   },
   // Default state
   optionDefault: {
-    backgroundColor: Colors.bgCard,
-    borderColor: Colors.border,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8F0',
   },
   // Selected (not yet submitted)
   optionSelected: {
-    backgroundColor: Colors.accentPrimaryDeep,
+    backgroundColor: '#EEF4FF',
     borderColor: Colors.accentPrimary,
+    borderWidth: 2,
   },
   // Correct answer revealed
   optionCorrect: {
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    backgroundColor: '#F0FDF4',
     borderColor: Colors.success,
+    borderWidth: 2,
   },
   // Wrong selected answer revealed
   optionWrong: {
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    backgroundColor: '#FEF2F2',
     borderColor: Colors.danger,
+    borderWidth: 2,
   },
   // Letter badge
   optionLetterBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.bgInput,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -162,7 +214,7 @@ export const styles = StyleSheet.create({
   optionLetter: {
     fontFamily: Fonts.display,
     fontSize: FontSizes.sm,
-    color: Colors.textMuted,
+    color: '#475569',
   },
   optionLetterActive: {
     color: Colors.white,
@@ -191,7 +243,7 @@ export const styles = StyleSheet.create({
 
   // ── Feedback card ─────────────────────────────────────────────────────────
   feedbackCard: {
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
     borderWidth: 1.5,
     borderRadius: Radius.lg || 16,
   },
@@ -264,10 +316,13 @@ export const styles = StyleSheet.create({
 
   // ── Action buttons ────────────────────────────────────────────────────────
   actionsRow: {
+    marginTop: Spacing.sm,
     marginBottom: Spacing.md,
   },
   actionBtn: {
     width: '100%',
+    minHeight: 52,
+    borderRadius: Radius.md,
   },
 
   // ── Error screen ──────────────────────────────────────────────────────────
@@ -358,7 +413,7 @@ export const styles = StyleSheet.create({
 
   // ── Misc ──────────────────────────────────────────────────────────────────
   bottomSpacer: {
-    height: Spacing.md,
+    height: Spacing['2xl'],
   },
   illustrationContainer: {
     width: '100%',

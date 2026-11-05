@@ -11,7 +11,7 @@ try {
   Audio = null;
 }
 
-// Sound asset references
+// Sound asset references matching web synthesizer frequencies
 let chimeAsset: any = null;
 let buzzAsset: any = null;
 let fanfareAsset: any = null;
@@ -24,26 +24,56 @@ try {
   // Sound assets optional fallback
 }
 
-/**
- * Play audio asset via expo-av Sound object
- */
-async function playExpoSound(asset: any, volume = 0.8): Promise<boolean> {
-  if (!Audio || !asset) return false;
+// In-memory sound cache to eliminate playback latency on mobile devices
+const soundObjectCache: Record<string, any> = {};
+let isAudioModeConfigured = false;
+
+async function ensureAudioMode() {
+  if (isAudioModeConfigured || !Audio) return;
   try {
     await Audio.setAudioModeAsync({
       playsInSilentModeIOS: true,
       staysActiveInBackground: false,
       shouldDuckAndroid: true,
+      playThroughEarpieceAndroid: false,
     });
+    isAudioModeConfigured = true;
+  } catch {
+    // Audio mode configuration fallback
+  }
+}
+
+/**
+ * Play audio asset via expo-av Sound object with instant replay caching
+ */
+async function playExpoSound(key: string, asset: any, volume = 0.85): Promise<boolean> {
+  if (!Audio || !asset) return false;
+  try {
+    await ensureAudioMode();
+
+    let cached = soundObjectCache[key];
+    if (cached) {
+      try {
+        const status = await cached.getStatusAsync();
+        if (status.isLoaded) {
+          await cached.setPositionAsync(0);
+          await cached.setVolumeAsync(volume);
+          await cached.playAsync();
+          return true;
+        }
+      } catch {
+        soundObjectCache[key] = null;
+      }
+    }
+
     const { sound } = await Audio.Sound.createAsync(
       asset,
       { shouldPlay: true, volume },
       (status: any) => {
-        if (status.didJustFinish) {
-          sound.unloadAsync().catch(() => {});
-        }
+        // Keep sound loaded for fast repeated play
       }
     );
+    soundObjectCache[key] = sound;
     return true;
   } catch {
     return false;
@@ -51,10 +81,13 @@ async function playExpoSound(asset: any, volume = 0.8): Promise<boolean> {
 }
 
 /**
- * Web Audio API fallback for browser runtime
+ * Web Audio API synthesis matching the exact web student sound design
+ * - Correct: Bright, ascending game-like chime (E5 -> A5 -> C6)
+ * - Incorrect: Softer, quick retro double-bloop (A3 -> D3, G3 -> C3)
+ * - Fanfare: Ascending arpeggio (C5 -> E5 -> G5 -> C6)
  */
 function playWebAudio(type: 'correct' | 'incorrect' | 'fanfare') {
-  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  if (typeof window === 'undefined') return;
   try {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContextClass) return;
@@ -77,9 +110,9 @@ function playWebAudio(type: 'correct' | 'incorrect' | 'fanfare') {
         osc.start(start);
         osc.stop(start + dur);
       };
-      playNote(659.25, now, 0.3);
-      playNote(880.00, now + 0.08, 0.4);
-      playNote(1046.50, now + 0.16, 0.5);
+      playNote(659.25, now, 0.3);         // E5
+      playNote(880.00, now + 0.08, 0.4);   // A5
+      playNote(1046.50, now + 0.16, 0.5);  // C6
     } else if (type === 'incorrect') {
       const playBuzz = (startFreq: number, endFreq: number, start: number, dur: number) => {
         const osc = ctx.createOscillator();
@@ -95,8 +128,8 @@ function playWebAudio(type: 'correct' | 'incorrect' | 'fanfare') {
         osc.start(start);
         osc.stop(start + dur);
       };
-      playBuzz(220, 147, now, 0.15);
-      playBuzz(196, 131, now + 0.1, 0.25);
+      playBuzz(220, 147, now, 0.15);        // A3 -> D3
+      playBuzz(196, 131, now + 0.1, 0.25);  // G3 -> C3
     } else if (type === 'fanfare') {
       const notes = [523.25, 659.25, 783.99, 1046.5];
       notes.forEach((freq, idx) => {
@@ -120,7 +153,7 @@ function playWebAudio(type: 'correct' | 'incorrect' | 'fanfare') {
 }
 
 /**
- * Play Correct Answer Sound + Success Haptic
+ * Play Correct Answer Sound (bright ascending chime) + Success Haptic
  */
 export async function playCorrectSound() {
   const soundEnabled = useAppStore.getState().soundEffectsEnabled;
@@ -129,15 +162,15 @@ export async function playCorrectSound() {
   // Haptic feedback
   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 
-  // Try Expo AV native sound first
-  const played = await playExpoSound(chimeAsset, 0.85);
+  // Try Expo AV native sound first (chime.wav E5->A5->C6)
+  const played = await playExpoSound('chime', chimeAsset, 0.85);
   if (!played) {
     playWebAudio('correct');
   }
 }
 
 /**
- * Play Incorrect Answer Sound + Error Haptic
+ * Play Incorrect Answer Sound (retro double-bloop buzz) + Error Haptic
  */
 export async function playIncorrectSound() {
   const soundEnabled = useAppStore.getState().soundEffectsEnabled;
@@ -146,8 +179,8 @@ export async function playIncorrectSound() {
   // Haptic feedback
   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
 
-  // Try Expo AV native sound first
-  const played = await playExpoSound(buzzAsset, 0.7);
+  // Try Expo AV native sound first (buzz.wav A3->D3, G3->C3)
+  const played = await playExpoSound('buzz', buzzAsset, 0.75);
   if (!played) {
     playWebAudio('incorrect');
   }
@@ -163,8 +196,8 @@ export async function playFanfareSound() {
   // Celebration haptic
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
 
-  // Try Expo AV native sound first
-  const played = await playExpoSound(fanfareAsset, 0.9);
+  // Try Expo AV native sound first (fanfare.wav)
+  const played = await playExpoSound('fanfare', fanfareAsset, 0.9);
   if (!played) {
     playWebAudio('fanfare');
   }

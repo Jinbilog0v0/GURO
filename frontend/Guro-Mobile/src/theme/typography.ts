@@ -23,15 +23,15 @@ export const Fonts = {
 } as const;
 
 export const FontSizes = {
-  xs: 12,   // badge text
-  sm: 12,   // labels, captions
-  base: 13, // secondary body
-  md: 14,   // primary body, buttons
-  lg: 16,   // subheadings
-  xl: 18,   // section titles
-  '2xl': 22,
-  '3xl': 28,
-  '4xl': 36,
+  xs: 11,   // badge text, micro chips, counter pills
+  sm: 12,   // labels, captions, subtitles, helper text
+  base: 13, // secondary body, compact meta
+  md: 14,   // primary body, buttons, options, form inputs
+  lg: 16,   // subheadings, card titles, large buttons
+  xl: 18,   // screen header titles, section titles
+  '2xl': 22, // primary page titles, modal titles
+  '3xl': 28, // stats counters, celebration titles
+  '4xl': 36, // hero numbers
 } as const;
 
 export const LineHeights = {

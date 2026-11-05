@@ -14,12 +14,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '../store/useAppStore';
-import { Inbox, Lock, WifiOff, Calendar } from 'lucide-react-native';
+import { Inbox, Lock, WifiOff, Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { isLessonLocked, LESSON_SEQUENCE } from '../utils/engine';
 
 import { Colors } from '../theme/colors';
 import { Fonts, FontSizes } from '../theme/typography';
-import { Spacing } from '../theme/spacing';
+import { Spacing, Radius } from '../theme/spacing';
 import { GlassCard } from '../components/ui/GlassCard';
 import { LessonCard } from '../components/ui/LessonCard';
 import { SectionHeader } from '../components/ui/SectionHeader';
@@ -208,7 +208,20 @@ export function LessonsScreen() {
     navigation.navigate('Study', { subject: selectedSubject, gradeLevel, topic });
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showAll, setShowAll] = useState(false);
+  const PAGE_SIZE = 5;
+
   const topics = getTopics();
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedSubject, preferredGrade]);
+
+  const totalPages = Math.ceil(topics.length / PAGE_SIZE) || 1;
+  const displayedTopics = showAll
+    ? topics
+    : topics.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
@@ -280,7 +293,39 @@ export function LessonsScreen() {
 
         <SectionHeader
           title={`${selectedSubject} Topics`}
-          subtitle={`${topics.length} available`}
+          subtitle={
+            topics.length === 0
+              ? 'No topics available'
+              : showAll
+              ? `${topics.length} topics total`
+              : `Showing ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, topics.length)} of ${topics.length}`
+          }
+          right={
+            topics.length > PAGE_SIZE ? (
+              <TouchableOpacity
+                onPress={() => setShowAll(!showAll)}
+                activeOpacity={0.7}
+                style={{
+                  backgroundColor: showAll ? Colors.accentPrimary : 'rgba(17,66,142,0.08)',
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                  borderRadius: Radius.full,
+                  borderWidth: 1,
+                  borderColor: showAll ? Colors.accentPrimary : 'rgba(17,66,142,0.15)',
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: Fonts.bodyBold,
+                    fontSize: FontSizes.xs,
+                    color: showAll ? Colors.white : Colors.accentPrimary,
+                  }}
+                >
+                  {showAll ? 'Paginate' : `See All (${topics.length})`}
+                </Text>
+              </TouchableOpacity>
+            ) : null
+          }
         />
 
         {topics.length === 0 ? (
@@ -316,7 +361,7 @@ export function LessonsScreen() {
           )
         ) : (
           <View style={{ gap: Spacing.sm }}>
-            {topics.map(({ gradeLevel, topic }) => {
+            {displayedTopics.map(({ gradeLevel, topic }) => {
               const { completionPercent, bestScore } = getTopicStats(gradeLevel, topic);
               const questionCount = getQuestionCount(gradeLevel, topic);
               const isProgLocked = isLessonLocked(selectedSubject, gradeLevel, topic, studentProgress, preferredGrade, itemBank);
@@ -393,6 +438,84 @@ export function LessonsScreen() {
                 />
               );
             })}
+          </View>
+        )}
+
+        {/* ── Pagination Controls ── */}
+        {!showAll && totalPages > 1 && (
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingVertical: Spacing.sm,
+            marginTop: Spacing.xs,
+          }}>
+            <TouchableOpacity
+              onPress={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                borderRadius: Radius.md,
+                backgroundColor: currentPage === 1 ? Colors.bgInput : '#EEF4FF',
+                borderWidth: 1,
+                borderColor: currentPage === 1 ? Colors.border : '#D0E1FD',
+                opacity: currentPage === 1 ? 0.45 : 1,
+              }}
+            >
+              <ChevronLeft size={16} color={currentPage === 1 ? Colors.textDark : Colors.accentPrimary} />
+              <Text style={{
+                fontFamily: Fonts.bodyBold,
+                fontSize: FontSizes.xs,
+                color: currentPage === 1 ? Colors.textDark : Colors.accentPrimary,
+              }}>
+                Previous
+              </Text>
+            </TouchableOpacity>
+
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: Colors.bgInput,
+              paddingHorizontal: 12,
+              paddingVertical: 7,
+              borderRadius: Radius.full,
+              borderWidth: 1,
+              borderColor: Colors.border,
+            }}>
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMain, fontVariant: ['tabular-nums'] }}>
+                Page {currentPage} of {totalPages}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                borderRadius: Radius.md,
+                backgroundColor: currentPage === totalPages ? Colors.bgInput : '#EEF4FF',
+                borderWidth: 1,
+                borderColor: currentPage === totalPages ? Colors.border : '#D0E1FD',
+                opacity: currentPage === totalPages ? 0.45 : 1,
+              }}
+            >
+              <Text style={{
+                fontFamily: Fonts.bodyBold,
+                fontSize: FontSizes.xs,
+                color: currentPage === totalPages ? Colors.textDark : Colors.accentPrimary,
+              }}>
+                Next
+              </Text>
+              <ChevronRight size={16} color={currentPage === totalPages ? Colors.textDark : Colors.accentPrimary} />
+            </TouchableOpacity>
           </View>
         )}
 

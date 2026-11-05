@@ -17,8 +17,14 @@ export const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    backgroundColor: Colors.bgSidebar,
+    backgroundColor: '#FFFFFF',
     gap: Spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+    minHeight: 56,
   },
   headerTitle: {
     fontFamily: Fonts.display,
@@ -42,8 +48,11 @@ export const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   subjectTab: {
-    paddingVertical: Spacing.md,
+    minHeight: 46,
+    paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
@@ -57,6 +66,7 @@ export const styles = StyleSheet.create({
   },
   subjectTabTextActive: {
     color: Colors.accentPrimary,
+    fontFamily: Fonts.bodyBold,
   },
 
   // ── Grade pills ───────────────────────────────────────────────────────────────
@@ -71,7 +81,7 @@ export const styles = StyleSheet.create({
   },
   gradePill: {
     flex: 1,
-    minHeight: 36,
+    minHeight: 40,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: Radius.full,
@@ -87,9 +97,11 @@ export const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSizes.sm,
     color: Colors.textMuted,
+    fontVariant: ['tabular-nums'],
   },
   gradePillTextActive: {
     color: Colors.accentPrimary,
+    fontVariant: ['tabular-nums'],
   },
 
   // ── Scroll ──────────────────────────────────────────────────────────────────
