@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Text,
   View,
@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   RefreshControl,
   Share,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -99,7 +101,7 @@ export function ParentDashboard({ navigation }: Props) {
     // Fallback if rendered outside SafeAreaProvider
   }
   const bottomInset = Math.max(insets.bottom || 0, 24);
-  const [activeTab, setActiveTab] = useState<'progress' | 'settings'>('progress');
+  const [activeTab, setActiveTab] = useState<'progress' | 'chat' | 'settings'>('progress');
 
   // ── Intercept Android hardware back button ────────────────────────────────
   useEffect(() => {
@@ -147,11 +149,13 @@ export function ParentDashboard({ navigation }: Props) {
 
   // PIN change states
   const [isChangingPin, setIsChangingPin] = useState(false);
-  const [parentSubTab, setParentSubTab] = useState<'overview' | 'report' | 'chat' | 'milestones'>('overview');
+  const [parentSubTab, setParentSubTab] = useState<'overview' | 'report' | 'milestones'>('overview');
+  const chatScrollRef = useRef<ScrollView>(null);
   const [chatMessages, setChatMessages] = useState<Array<{ id: number; sender_name: string; sender_role: string; message_body: string; created_at: string }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [loadingChat, setLoadingChat] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
   const [activeTeacherName, setActiveTeacherName] = useState<string | null>(null);
   const [activeConsultationHours, setActiveConsultationHours] = useState<string | null>(null);
   const [currentPinInput, setCurrentPinInput] = useState('');
@@ -268,6 +272,7 @@ export function ParentDashboard({ navigation }: Props) {
     const sId = studentIdToUse || searchStudentId.trim() || studentId;
     if (!cId || !sId) return;
     setLoadingChat(true);
+    setChatError(null);
     try {
       const resolvedUrl = resolveServerUrl(serverUrl);
       const res = await fetch(`${resolvedUrl}/api/chat/messages?classroomId=${encodeURIComponent(cId)}&studentId=${encodeURIComponent(sId)}`);
@@ -276,9 +281,13 @@ export function ParentDashboard({ navigation }: Props) {
         if (data.messages) setChatMessages(data.messages);
         if (data.teacherName) setActiveTeacherName(data.teacherName);
         if (data.consultationHours) setActiveConsultationHours(data.consultationHours);
+        setChatError(null);
+      } else {
+        setChatError('Server returned an error. Please try again.');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn('[ParentChat] fetch error:', e);
+      setChatError('Failed to connect to school server. Please verify your internet connection.');
     } finally {
       setLoadingChat(false);
     }
@@ -322,10 +331,10 @@ export function ParentDashboard({ navigation }: Props) {
   };
 
   useEffect(() => {
-    if (parentSubTab === 'chat') {
+    if (activeTab === 'chat') {
       fetchChatMessages();
     }
-  }, [parentSubTab]);
+  }, [activeTab]);
 
   // Run initial search automatically on mount if ID and Access Code are available in AsyncStorage
   useEffect(() => {
@@ -708,7 +717,11 @@ export function ParentDashboard({ navigation }: Props) {
               </Text>
             </View>
             <Text style={styles.headerSub}>
-              {activeTab === 'progress' ? 'Child Progress & Parental Controls' : 'Device Configuration & Security'}
+              {activeTab === 'progress'
+                ? 'Child Progress & Parental Controls'
+                : activeTab === 'chat'
+                ? 'Teacher Consultation & Messages'
+                : 'Device Configuration & Security'}
             </Text>
           </View>
 
@@ -834,31 +847,39 @@ export function ParentDashboard({ navigation }: Props) {
               </View>
 
               {/* Segmented Sub-Tabs */}
-              <View style={{ flexDirection: 'row', backgroundColor: Colors.bgInput, padding: 4, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border }}>
-                {(['overview', 'report', 'chat', 'milestones'] as const).map((tab) => {
-                  const active = parentSubTab === tab;
-                  let label = 'Activity Heatmap';
-                  if (tab === 'report') label = 'Tutor Report';
-                  if (tab === 'chat') label = 'Teacher Chat';
-                  if (tab === 'milestones') label = 'Badge Case';
+              <View style={styles.subTabsContainer}>
+                {(
+                  [
+                    { key: 'overview', label: 'Overview', icon: Calendar },
+                    { key: 'report', label: 'Report', icon: Sparkles },
+                    { key: 'milestones', label: 'Badges', icon: Award },
+                  ] as const
+                ).map((tabItem) => {
+                  const active = parentSubTab === tabItem.key;
+                  const IconComp = tabItem.icon;
                   return (
                     <TouchableOpacity
-                      key={tab}
-                      onPress={() => setParentSubTab(tab)}
+                      key={tabItem.key}
+                      onPress={() => setParentSubTab(tabItem.key)}
                       activeOpacity={0.8}
-                      style={{
-                        flex: 1,
-                        paddingVertical: Spacing.sm,
-                        borderRadius: Radius.sm,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: active ? 'rgba(17,66,142,0.08)' : 'transparent',
-                        borderWidth: active ? 1 : 0,
-                        borderColor: Colors.accentPrimary
-                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={tabItem.label}
+                      style={[
+                        styles.subTabButton,
+                        active && styles.subTabButtonActive,
+                      ]}
                     >
-                      <Text style={{ fontFamily: active ? Fonts.bodyBold : Fonts.body, fontSize: FontSizes.xs, color: active ? Colors.accentPrimary : Colors.textMuted }}>
-                        {label}
+                      <IconComp
+                        size={14}
+                        color={active ? Colors.accentPrimary : Colors.textMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.subTabLabel,
+                          active && styles.subTabLabelActive,
+                        ]}
+                      >
+                        {tabItem.label}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -880,33 +901,47 @@ export function ParentDashboard({ navigation }: Props) {
                       subtitle="Daily assessment completion intensity (Past 28 Days)"
                     />
 
-                    <View style={{ alignItems: 'center', marginVertical: Spacing.sm }}>
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', width: 224, gap: 8, justifyContent: 'center' }}>
-                        {getPast28Days().map((date, idx) => {
-                          const count = getEventCountForDate(date);
-                          return (
-                            <View
-                              key={idx}
-                              style={{
-                                width: 24,
-                                height: 24,
-                                borderRadius: Radius.sm,
-                                backgroundColor: getHeatmapColor(count),
-                                borderWidth: 1,
-                                borderColor: Colors.border,
-                              }}
-                            />
-                          );
-                        })}
-                      </View>
-                    </View>
+                    {(() => {
+                      const pastDays = getPast28Days();
+                      const weeks = [
+                        pastDays.slice(0, 7),
+                        pastDays.slice(7, 14),
+                        pastDays.slice(14, 21),
+                        pastDays.slice(21, 28),
+                      ];
+                      return (
+                        <View style={styles.heatmapContainer}>
+                          <View style={styles.heatmapHeaderRow}>
+                            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => (
+                              <Text key={idx} style={styles.heatmapHeaderDay}>{day}</Text>
+                            ))}
+                          </View>
+                          {weeks.map((week, wIdx) => (
+                            <View key={wIdx} style={styles.heatmapWeekRow}>
+                              {week.map((date, dIdx) => {
+                                const count = getEventCountForDate(date);
+                                return (
+                                  <View
+                                    key={dIdx}
+                                    style={[
+                                      styles.heatmapDayBox,
+                                      { backgroundColor: getHeatmapColor(count) },
+                                    ]}
+                                  />
+                                );
+                              })}
+                            </View>
+                          ))}
+                        </View>
+                      );
+                    })()}
 
-                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 4 }}>
+                    <View style={styles.heatmapLegend}>
                       <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textDark }}>Less</Text>
-                      <View style={{ width: 12, height: 12, borderRadius: Radius.sm, backgroundColor: getHeatmapColor(0) }} />
-                      <View style={{ width: 12, height: 12, borderRadius: Radius.sm, backgroundColor: getHeatmapColor(1) }} />
-                      <View style={{ width: 12, height: 12, borderRadius: Radius.sm, backgroundColor: getHeatmapColor(2) }} />
-                      <View style={{ width: 12, height: 12, borderRadius: Radius.sm, backgroundColor: getHeatmapColor(3) }} />
+                      <View style={[styles.heatmapDayBox, { width: 14, height: 14, backgroundColor: getHeatmapColor(0) }]} />
+                      <View style={[styles.heatmapDayBox, { width: 14, height: 14, backgroundColor: getHeatmapColor(1) }]} />
+                      <View style={[styles.heatmapDayBox, { width: 14, height: 14, backgroundColor: getHeatmapColor(2) }]} />
+                      <View style={[styles.heatmapDayBox, { width: 14, height: 14, backgroundColor: getHeatmapColor(3) }]} />
                       <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textDark }}>More</Text>
                     </View>
                   </GlassCard>
@@ -1090,153 +1125,6 @@ export function ParentDashboard({ navigation }: Props) {
                 );
               })()}
 
-              {parentSubTab === 'chat' && (
-                <GlassCard style={styles.section}>
-                  <SectionHeader
-                    title={
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <MessageCircle size={18} color={Colors.accentPrimary} />
-                        <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
-                          Teacher Consultation & Chat
-                        </Text>
-                      </View>
-                    }
-                    subtitle={`Direct line to ${activeTeacherName || 'Classroom Teacher'}`}
-                  />
-
-                  {/* Consultation Hours Card */}
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: Spacing.sm,
-                      backgroundColor: 'rgba(17,66,142,0.06)',
-                      borderWidth: 1,
-                      borderColor: 'rgba(17,66,142,0.2)',
-                      borderRadius: Radius.md,
-                      padding: Spacing.md,
-                      marginBottom: Spacing.sm,
-                    }}
-                  >
-                    <Clock size={18} color={Colors.accentPrimary} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, textTransform: 'uppercase' }}>
-                        Teacher's Consultation Hours
-                      </Text>
-                      <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.xs, color: Colors.textMain, marginTop: 2 }}>
-                        {activeConsultationHours || 'Monday – Friday: 3:00 PM – 5:00 PM (DepEd Consultation Window)'}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Chat Messages Log */}
-                  <View
-                    style={{
-                      backgroundColor: Colors.bgInput,
-                      borderWidth: 1,
-                      borderColor: Colors.border,
-                      borderRadius: Radius.md,
-                      padding: Spacing.md,
-                      minHeight: 180,
-                      maxHeight: 280,
-                    }}
-                  >
-                    <ScrollView nestedScrollEnabled style={{ flex: 1 }}>
-                      {loadingChat ? (
-                        <ActivityIndicator size="small" color={Colors.accentPrimary} style={{ marginVertical: Spacing.lg }} />
-                      ) : chatMessages.length === 0 ? (
-                        <View style={{ alignItems: 'center', paddingVertical: Spacing.xl }}>
-                          <MessageCircle size={28} color={Colors.textMuted} />
-                          <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: Spacing.xs, textAlign: 'center' }}>
-                            No messages yet. Send an inquiry or progress consultation question below.
-                          </Text>
-                        </View>
-                      ) : (
-                        chatMessages.map((msg) => {
-                          const isParent = msg.sender_role === 'parent';
-                          return (
-                            <View
-                              key={msg.id}
-                              style={{
-                                alignSelf: isParent ? 'flex-end' : 'flex-start',
-                                maxWidth: '85%',
-                                marginVertical: 4,
-                                paddingHorizontal: Spacing.md,
-                                paddingVertical: Spacing.sm,
-                                borderRadius: Radius.md,
-                                backgroundColor: isParent ? Colors.accentPrimary : Colors.bgCard,
-                                borderWidth: 1,
-                                borderColor: isParent ? Colors.accentPrimary : Colors.border,
-                              }}
-                            >
-                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.sm, marginBottom: 2 }}>
-                                <Text
-                                  style={{
-                                    fontFamily: Fonts.bodyBold,
-                                    fontSize: 10,
-                                    color: isParent ? 'rgba(255,255,255,0.85)' : Colors.accentPrimary,
-                                  }}
-                                >
-                                  {isParent ? 'You (Parent)' : `${msg.sender_name || 'Teacher'}`}
-                                </Text>
-                                <Text
-                                  style={{
-                                    fontFamily: Fonts.body,
-                                    fontSize: 9,
-                                    color: isParent ? 'rgba(255,255,255,0.7)' : Colors.textMuted,
-                                  }}
-                                >
-                                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </Text>
-                              </View>
-                              <Text
-                                style={{
-                                  fontFamily: Fonts.body,
-                                  fontSize: FontSizes.xs,
-                                  color: isParent ? '#FFFFFF' : Colors.textMain,
-                                  lineHeight: 18,
-                                }}
-                              >
-                                {msg.message_body}
-                              </Text>
-                            </View>
-                          );
-                        })
-                      )}
-                    </ScrollView>
-                  </View>
-
-                  {/* Chat Input & Send */}
-                  <View style={{ flexDirection: 'row', gap: Spacing.xs, marginTop: Spacing.sm, alignItems: 'center' }}>
-                    <View style={{ flex: 1 }}>
-                      <ThemedTextInput
-                        placeholder="Type a message or consultation question..."
-                        value={chatInput}
-                        onChangeText={setChatInput}
-                      />
-                    </View>
-                    <TouchableOpacity
-                      onPress={handleSendChat}
-                      disabled={isSendingChat || !chatInput.trim()}
-                      style={{
-                        backgroundColor: chatInput.trim() ? Colors.accentPrimary : Colors.border,
-                        borderRadius: Radius.md,
-                        paddingHorizontal: Spacing.md,
-                        height: 48,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                    >
-                      {isSendingChat ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                      ) : (
-                        <Send size={18} color="#FFFFFF" />
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </GlassCard>
-              )}
-
               {parentSubTab === 'milestones' && (
                 <GlassCard style={styles.section}>
                   <SectionHeader
@@ -1405,7 +1293,183 @@ export function ParentDashboard({ navigation }: Props) {
       </ScrollView>
     </View>
 
-      {/* ── Tab 2: Local Device & Portal Settings ── */}
+      {/* ── Tab 2: Teacher Consultation Chat ── */}
+      <View style={activeTab === 'chat' ? { flex: 1 } : { display: 'none', height: 0, flex: 0 }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
+          {/* Teacher Consultation Header Card */}
+          <View style={{ paddingHorizontal: Spacing.lg, paddingTop: Spacing.md }}>
+            <GlassCard padding={Spacing.md} style={styles.chatTeacherCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                  <View style={styles.teacherAvatarCircle}>
+                    <MessageCircle size={20} color={Colors.accentPrimary} />
+                  </View>
+                  <View>
+                    <Text style={styles.chatTeacherName}>
+                      {activeTeacherName || 'Classroom Teacher'}
+                    </Text>
+                    <Text style={styles.chatTeacherSubtitle}>
+                      Direct Consultation Line
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  onPress={() => fetchChatMessages()}
+                  style={styles.chatRefreshBtn}
+                  disabled={loadingChat}
+                  accessibilityRole="button"
+                  accessibilityLabel="Refresh messages"
+                >
+                  <RefreshCw size={14} color={loadingChat ? Colors.textMuted : Colors.accentPrimary} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.consultationHoursBadge}>
+                <Clock size={13} color={Colors.accentPrimary} />
+                <Text style={styles.consultationHoursText}>
+                  {activeConsultationHours || 'Monday – Friday: 3:00 PM – 5:00 PM (DepEd Consultation Window)'}
+                </Text>
+              </View>
+            </GlassCard>
+
+            {chatError && chatMessages.length > 0 && (
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: Spacing.md,
+                paddingVertical: Spacing.xs,
+                backgroundColor: 'rgba(239,68,68,0.08)',
+                borderRadius: Radius.md,
+                borderWidth: 1,
+                borderColor: 'rgba(239,68,68,0.2)',
+                marginBottom: Spacing.xs,
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                  <AlertCircle size={14} color={Colors.dangerText} />
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.dangerText }}>
+                    Connection error. Messages may be outdated.
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => fetchChatMessages()} disabled={loadingChat}>
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                    Retry
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* Messages Scroll Area */}
+          <ScrollView
+            ref={chatScrollRef}
+            contentContainerStyle={styles.chatScrollContent}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() => chatScrollRef.current?.scrollToEnd({ animated: true })}
+          >
+            {loadingChat && chatMessages.length === 0 ? (
+              <View style={styles.chatEmptyContainer}>
+                <ActivityIndicator size="small" color={Colors.accentPrimary} />
+                <Text style={styles.chatEmptySub}>Loading consultation messages...</Text>
+              </View>
+            ) : chatError && chatMessages.length === 0 ? (
+              <View style={styles.chatEmptyContainer}>
+                <View style={[styles.chatEmptyIconWrap, { backgroundColor: 'rgba(239,68,68,0.08)' }]}>
+                  <AlertCircle size={32} color={Colors.dangerText} />
+                </View>
+                <Text style={styles.chatEmptyTitle}>Connection Problem</Text>
+                <Text style={styles.chatEmptySub}>{chatError}</Text>
+                <TouchableOpacity
+                  onPress={() => fetchChatMessages()}
+                  style={{
+                    marginTop: Spacing.sm,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: Radius.md,
+                    backgroundColor: Colors.accentPrimary,
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry Connection"
+                >
+                  <RefreshCw size={14} color="#FFFFFF" />
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#FFFFFF' }}>
+                    Retry Connection
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : chatMessages.length === 0 ? (
+              <View style={styles.chatEmptyContainer}>
+                <View style={styles.chatEmptyIconWrap}>
+                  <MessageCircle size={32} color={Colors.accentPrimary} />
+                </View>
+                <Text style={styles.chatEmptyTitle}>No Consultation Messages</Text>
+                <Text style={styles.chatEmptySub}>
+                  Have questions about your child's lessons, homework, or progress? Send a direct message to their teacher below.
+                </Text>
+              </View>
+            ) : (
+              chatMessages.map((msg) => {
+                const isParent = msg.sender_role === 'parent';
+                return (
+                  <View
+                    key={msg.id}
+                    style={isParent ? styles.chatBubbleParent : styles.chatBubbleTeacher}
+                  >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.sm, marginBottom: 2 }}>
+                      <Text style={isParent ? styles.chatSenderParent : styles.chatSenderTeacher}>
+                        {isParent ? 'You (Parent)' : `${msg.sender_name || 'Teacher'}`}
+                      </Text>
+                      <Text style={isParent ? styles.chatTimestampParent : styles.chatTimestampTeacher}>
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </Text>
+                    </View>
+                    <Text style={isParent ? styles.chatTextParent : styles.chatTextTeacher}>
+                      {msg.message_body}
+                    </Text>
+                  </View>
+                );
+              })
+            )}
+          </ScrollView>
+
+          {/* Sticky Input Bar at Bottom */}
+          <View style={styles.chatInputContainer}>
+            <View style={{ flex: 1 }}>
+              <ThemedTextInput
+                placeholder="Type your question or message to teacher..."
+                value={chatInput}
+                onChangeText={setChatInput}
+              />
+            </View>
+            <TouchableOpacity
+              onPress={handleSendChat}
+              disabled={isSendingChat || !chatInput.trim()}
+              accessibilityRole="button"
+              accessibilityLabel="Send message"
+              style={[
+                styles.chatSendBtn,
+                {
+                  backgroundColor: chatInput.trim() ? Colors.accentPrimary : Colors.border,
+                },
+              ]}
+            >
+              {isSendingChat ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Send size={18} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+
+      {/* ── Tab 3: Local Device & Portal Settings ── */}
       <View style={activeTab === 'settings' ? { flex: 1 } : { display: 'none', height: 0, flex: 0 }}>
         <ScrollView
           style={{ flex: 1 }}
@@ -1764,6 +1828,28 @@ export function ParentDashboard({ navigation }: Props) {
             ]}
           >
             Child Progress
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.tabButton}
+          onPress={() => setActiveTab('chat')}
+          activeOpacity={0.7}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'chat' }}
+          accessibilityLabel="Teacher Chat"
+        >
+          <MessageCircle
+            size={22}
+            color={activeTab === 'chat' ? Colors.accentPrimary : Colors.textDark}
+          />
+          <Text
+            style={[
+              styles.tabLabel,
+              activeTab === 'chat' ? styles.tabLabelActive : styles.tabLabelInactive,
+            ]}
+          >
+            Teacher Chat
           </Text>
         </TouchableOpacity>
 

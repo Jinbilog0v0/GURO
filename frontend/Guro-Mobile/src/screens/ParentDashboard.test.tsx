@@ -158,7 +158,7 @@ describe('ParentDashboard', () => {
     });
   });
 
-  test('should switch tabs between Child Progress and Device Settings via bottom navigation bar', async () => {
+  test('should switch tabs between Child Progress, Teacher Chat, and Device Settings via bottom navigation bar', async () => {
     let root: any;
     await act(async () => {
       root = renderer.create(<ParentDashboard navigation={mockNavigation as any} route={{} as any} />);
@@ -168,11 +168,23 @@ describe('ParentDashboard', () => {
     });
 
     const progressTabBtn = root.root.findByProps({ accessibilityLabel: 'Child Progress' });
+    const chatTabBtn = root.root.findByProps({ accessibilityLabel: 'Teacher Chat' });
     const settingsTabBtn = root.root.findByProps({ accessibilityLabel: 'Device Settings' });
 
     expect(progressTabBtn).toBeDefined();
+    expect(chatTabBtn).toBeDefined();
     expect(settingsTabBtn).toBeDefined();
     expect(progressTabBtn.props.accessibilityState.selected).toBe(true);
+    expect(chatTabBtn.props.accessibilityState.selected).toBe(false);
+    expect(settingsTabBtn.props.accessibilityState.selected).toBe(false);
+
+    // Switch to chat
+    act(() => {
+      chatTabBtn.props.onPress();
+    });
+
+    expect(progressTabBtn.props.accessibilityState.selected).toBe(false);
+    expect(chatTabBtn.props.accessibilityState.selected).toBe(true);
     expect(settingsTabBtn.props.accessibilityState.selected).toBe(false);
 
     // Switch to settings
@@ -181,6 +193,7 @@ describe('ParentDashboard', () => {
     });
 
     expect(progressTabBtn.props.accessibilityState.selected).toBe(false);
+    expect(chatTabBtn.props.accessibilityState.selected).toBe(false);
     expect(settingsTabBtn.props.accessibilityState.selected).toBe(true);
 
     act(() => {
