@@ -10,6 +10,58 @@ use Illuminate\Http\Request;
 class ChatController extends Controller
 {
     /**
+     * GET /api/chat/threads
+     * Query params: classroomId
+     * Returns student threads in the classroom with latest message and unread count
+     */
+    public function getThreads(Request $request)
+    {
+        $request->validate([
+            'classroomId' => 'required|string',
+        ]);
+
+        $classroomId = strtoupper(trim($request->query('classroomId')));
+
+        $classroom = Classroom::where('classroom_id', $classroomId)->first();
+        if (!$classroom) {
+            return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        $messages = ParentTeacherMessage::where('classroom_id', $classroomId)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $threads = [];
+        $grouped = $messages->groupBy('student_id');
+
+        foreach ($grouped as $studentId => $msgs) {
+            $latest = $msgs->first();
+            $unreadCount = $msgs->where('sender_role', 'parent')->whereNull('read_at')->count();
+
+            $student = User::where('user_id', $studentId)->first();
+            $studentName = $student ? $student->name : (string) $studentId;
+
+            $threads[] = [
+                'studentId' => (string) $studentId,
+                'studentName' => $studentName,
+                'latestMessage' => $latest->message_body,
+                'latestSenderRole' => $latest->sender_role,
+                'latestSenderName' => $latest->sender_name,
+                'latestTimestamp' => $latest->created_at ? $latest->created_at->toISOString() : null,
+                'unreadCount' => $unreadCount,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'classroomId' => $classroomId,
+            'teacherName' => $classroom->teacher_name,
+            'consultationHours' => $classroom->consultation_hours,
+            'threads' => $threads,
+        ]);
+    }
+
+    /**
      * GET /api/chat/messages
      * Query params: classroomId, studentId
      */

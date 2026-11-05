@@ -28,6 +28,7 @@ Route::post('/sync', [SyncController::class, 'syncTelemetry']);
 Route::get('/progress', [SyncController::class, 'getProgress']);
 
 // Parent-Teacher Chat Suite
+Route::get('/chat/threads', [ChatController::class, 'getThreads']);
 Route::get('/chat/messages', [ChatController::class, 'getMessages']);
 Route::post('/chat/send', [ChatController::class, 'sendMessage']);
 Route::post('/chat/mark-read', [ChatController::class, 'markRead']);
