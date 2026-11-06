@@ -388,4 +388,62 @@ describe('ParentDashboard', () => {
       root.unmount();
     });
   });
+
+  test('should omit Edit Message option from options modal if message is older than 30 minutes', async () => {
+    (global.fetch as jest.Mock).mockImplementation((url?: string) => {
+      if (url && typeof url === 'string' && url.includes('/api/chat/messages')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            messages: [
+              {
+                id: 99,
+                sender_role: 'parent',
+                sender_name: 'Maria Dela Cruz',
+                message_body: 'Old message from 1 hour ago',
+                created_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+              },
+            ],
+            teacherName: 'Teacher Santos',
+            consultationHours: '3:00 PM - 5:00 PM',
+          }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(mockState.studentProgress),
+      });
+    });
+
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<ParentDashboard navigation={mockNavigation as any} route={{} as any} />);
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    const chatTabBtn = root.root.findByProps({ accessibilityLabel: 'Teacher Chat' });
+    await act(async () => {
+      chatTabBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    const optionsBtn = root.root.findByProps({ accessibilityLabel: 'Options for message 99' });
+    expect(optionsBtn).toBeDefined();
+
+    await act(async () => {
+      optionsBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    const optionsJson = JSON.stringify(root.toJSON());
+    expect(optionsJson).toContain('Message Actions');
+    expect(optionsJson).not.toContain('Edit Message');
+    expect(optionsJson).toContain('Unsend Message');
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });

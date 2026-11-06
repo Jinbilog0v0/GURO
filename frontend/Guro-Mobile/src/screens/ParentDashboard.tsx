@@ -1774,46 +1774,20 @@ export function ParentDashboard({ navigation }: Props) {
                       gap: 4,
                     }}
                   >
-                    {/* Action buttons OUTSIDE the text bubble (for sender: Parent) */}
+                    {/* Single 3-Dot Action button OUTSIDE the text bubble (for sender: Parent) */}
                     {isParent && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                        <TouchableOpacity
-                          onPress={() => handleStartEditFromOptions(msg)}
-                          accessibilityLabel="Edit message"
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          style={{
-                            padding: 5,
-                            borderRadius: 12,
-                            backgroundColor: 'rgba(0,0,0,0.04)',
-                          }}
-                        >
-                          <Edit2 size={12} color={Colors.textMuted} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => setUnsendConfirmMessage(msg)}
-                          accessibilityLabel="Unsend message"
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          style={{
-                            padding: 5,
-                            borderRadius: 12,
-                            backgroundColor: 'rgba(239,68,68,0.06)',
-                          }}
-                        >
-                          <Trash2 size={12} color={Colors.danger} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => handleOpenMessageOptions(msg)}
-                          accessibilityLabel={`Options for message ${msg.id}`}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          style={{
-                            padding: 5,
-                            borderRadius: 12,
-                            backgroundColor: 'rgba(0,0,0,0.04)',
-                          }}
-                        >
-                          <MoreVertical size={12} color={Colors.textMuted} />
-                        </TouchableOpacity>
-                      </View>
+                      <TouchableOpacity
+                        onPress={() => handleOpenMessageOptions(msg)}
+                        accessibilityLabel={`Options for message ${msg.id}`}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        style={{
+                          padding: 6,
+                          borderRadius: 14,
+                          backgroundColor: 'rgba(0,0,0,0.04)',
+                        }}
+                      >
+                        <MoreVertical size={14} color={Colors.textMuted} />
+                      </TouchableOpacity>
                     )}
 
                     <View
@@ -2438,25 +2412,27 @@ export function ParentDashboard({ navigation }: Props) {
               </View>
 
               <View style={{ gap: 8 }}>
-                <TouchableOpacity
-                  onPress={() => selectedActionMessage && handleStartEditFromOptions(selectedActionMessage)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 12,
-                    paddingVertical: 12,
-                    paddingHorizontal: 14,
-                    borderRadius: 12,
-                    backgroundColor: 'rgba(17,66,142,0.06)',
-                  }}
-                  accessibilityLabel="Edit message"
-                >
-                  <Edit2 size={16} color={Colors.accentPrimary} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.textMain }}>Edit Message</Text>
-                    <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>Within 30 minutes of sending</Text>
-                  </View>
-                </TouchableOpacity>
+                {selectedActionMessage && (Date.now() - new Date(selectedActionMessage.created_at).getTime() <= 30 * 60 * 1000) && (
+                  <TouchableOpacity
+                    onPress={() => selectedActionMessage && handleStartEditFromOptions(selectedActionMessage)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 12,
+                      paddingVertical: 12,
+                      paddingHorizontal: 14,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(17,66,142,0.06)',
+                    }}
+                    accessibilityLabel="Edit message"
+                  >
+                    <Edit2 size={16} color={Colors.accentPrimary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.textMain }}>Edit Message</Text>
+                      <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>Within 30 minutes of sending</Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
 
                 <TouchableOpacity
                   onPress={() => {
