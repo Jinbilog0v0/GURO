@@ -1765,47 +1765,93 @@ export function ParentDashboard({ navigation }: Props) {
                 return (
                   <View
                     key={msg.id}
-                    style={isParent ? styles.chatBubbleParent : styles.chatBubbleTeacher}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      alignSelf: isParent ? 'flex-end' : 'flex-start',
+                      maxWidth: '92%',
+                      marginVertical: 4,
+                      gap: 4,
+                    }}
                   >
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.sm, marginBottom: 2 }}>
-                      <Text style={isParent ? styles.chatSenderParent : styles.chatSenderTeacher}>
-                        {isParent ? parentLabel : `${msg.sender_name || 'Teacher'}`}
-                      </Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={isParent ? styles.chatTimestampParent : styles.chatTimestampTeacher}>
-                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </Text>
-                        {isEdited && (
-                          <TouchableOpacity
-                            onPress={() => setViewHistoryMessage(msg)}
-                            accessibilityLabel="View edit history"
-                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                          >
-                            <Text style={{
-                              fontFamily: Fonts.bodyBold,
-                              fontSize: 10,
-                              color: isParent ? 'rgba(255,255,255,0.85)' : Colors.accentPrimary,
-                              textDecorationLine: 'underline',
-                            }}>
-                              (edited)
-                            </Text>
-                          </TouchableOpacity>
-                        )}
-                        {isParent && (
-                          <TouchableOpacity
-                            onPress={() => handleOpenMessageOptions(msg)}
-                            accessibilityLabel={`Options for message ${msg.id}`}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            style={{ paddingLeft: 2 }}
-                          >
-                            <MoreVertical size={13} color="rgba(255,255,255,0.8)" />
-                          </TouchableOpacity>
-                        )}
+                    {/* Action buttons OUTSIDE the text bubble (for sender: Parent) */}
+                    {isParent && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <TouchableOpacity
+                          onPress={() => handleStartEditFromOptions(msg)}
+                          accessibilityLabel="Edit message"
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          style={{
+                            padding: 5,
+                            borderRadius: 12,
+                            backgroundColor: 'rgba(0,0,0,0.04)',
+                          }}
+                        >
+                          <Edit2 size={12} color={Colors.textMuted} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => setUnsendConfirmMessage(msg)}
+                          accessibilityLabel="Unsend message"
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          style={{
+                            padding: 5,
+                            borderRadius: 12,
+                            backgroundColor: 'rgba(239,68,68,0.06)',
+                          }}
+                        >
+                          <Trash2 size={12} color={Colors.danger} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleOpenMessageOptions(msg)}
+                          accessibilityLabel={`Options for message ${msg.id}`}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          style={{
+                            padding: 5,
+                            borderRadius: 12,
+                            backgroundColor: 'rgba(0,0,0,0.04)',
+                          }}
+                        >
+                          <MoreVertical size={12} color={Colors.textMuted} />
+                        </TouchableOpacity>
                       </View>
+                    )}
+
+                    <View
+                      style={[
+                        isParent ? styles.chatBubbleParent : styles.chatBubbleTeacher,
+                        { marginVertical: 0, flexShrink: 1 },
+                      ]}
+                    >
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.sm, marginBottom: 2 }}>
+                        <Text style={isParent ? styles.chatSenderParent : styles.chatSenderTeacher}>
+                          {isParent ? parentLabel : `${msg.sender_name || 'Teacher'}`}
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Text style={isParent ? styles.chatTimestampParent : styles.chatTimestampTeacher}>
+                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </Text>
+                          {isEdited && (
+                            <TouchableOpacity
+                              onPress={() => setViewHistoryMessage(msg)}
+                              accessibilityLabel="View edit history"
+                              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                            >
+                              <Text style={{
+                                fontFamily: Fonts.bodyBold,
+                                fontSize: 10,
+                                color: isParent ? 'rgba(255,255,255,0.85)' : Colors.accentPrimary,
+                                textDecorationLine: 'underline',
+                              }}>
+                                (edited)
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                      <Text style={isParent ? styles.chatTextParent : styles.chatTextTeacher}>
+                        {msg.message_body}
+                      </Text>
                     </View>
-                    <Text style={isParent ? styles.chatTextParent : styles.chatTextTeacher}>
-                      {msg.message_body}
-                    </Text>
                   </View>
                 );
               })
