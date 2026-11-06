@@ -612,24 +612,9 @@ export function TeacherSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-      {/* ── Header (Sticky, Full-Width Edge-to-Edge) ── */}
-      <View style={styles.header}>
-        <View style={styles.headerAccentLine} />
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.screenTitle}>Settings & Diagnostics</Text>
-            <Text style={styles.screenSubtitle}>Configure endpoints and file reports</Text>
-          </View>
-          <View style={styles.headerRight}>
-            <Badge label="Teacher" variant="indigo" style={styles.roleBadge} />
-            <SyncBadge />
-          </View>
-        </View>
-      </View>
-
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.lg }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

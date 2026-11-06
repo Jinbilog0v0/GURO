@@ -34,10 +34,13 @@ import {
   AlertTriangle,
   Info,
   Check,
+  Calendar,
 } from 'lucide-react-native';
 
 export function TeacherIngestionScreen({ route }: any) {
   const currentUser = useAppStore((state) => state.currentUser);
+  const activeSchoolYear = useAppStore((state) => state.activeSchoolYear || '2026-2027');
+  const activeTerm = useAppStore((state) => state.activeTerm || 'Quarter 1');
   const serverUrlFromStore = useAppStore((state) => state.serverUrl);
   const serverUrl = serverUrlFromStore || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
 
@@ -208,7 +211,25 @@ export function TeacherIngestionScreen({ route }: any) {
         <View style={styles.headerAccentLine} />
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
           <View style={styles.headerLeft}>
-            <Text style={styles.screenTitle}>AI Lesson Ingestor</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <Text style={styles.screenTitle}>AI Lesson Ingestor</Text>
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                backgroundColor: 'rgba(17,66,142,0.08)',
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: 'rgba(17,66,142,0.15)',
+              }}>
+                <Calendar size={11} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                  S.Y. {activeSchoolYear} • {activeTerm}
+                </Text>
+              </View>
+            </View>
             <Text style={styles.screenSubtitle}>Smart Document &amp; Curriculum Parser</Text>
           </View>
           <View style={styles.headerRight}>
