@@ -225,29 +225,56 @@ export function ParentDashboard({ navigation }: Props) {
 
   const handleSaveMobileEdit = async () => {
     if (!editingChatModalMessage || !editingChatText.trim()) return;
+    const msgId = editingChatModalMessage.id;
+    const newText = editingChatText.trim();
+    const prevMsg = chatMessages.find((m) => m.id === msgId);
+    const previousBody = prevMsg?.message_body || editingChatModalMessage.message_body;
+
+    // 1. Optimistic UI update: instantly update bubble and dismiss modal with 0ms delay
+    setChatMessages((prev) =>
+      prev.map((m) =>
+        m.id === msgId
+          ? {
+              ...m,
+              message_body: newText,
+              edited_at: m.edited_at || new Date().toISOString(),
+              original_message_body: m.original_message_body || previousBody,
+            }
+          : m
+      )
+    );
+    setEditingChatModalMessage(null);
+    setEditingChatText('');
     setIsSavingChatEdit(true);
+
     try {
       const resolvedUrl = resolveServerUrl(serverUrl);
       const res = await fetch(`${resolvedUrl}/api/chat/edit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messageId: editingChatModalMessage.id,
-          messageBody: editingChatText.trim(),
+          messageId: msgId,
+          messageBody: newText,
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
         setChatMessages((prev) =>
-          prev.map((m) => (m.id === editingChatModalMessage.id ? { ...m, ...data.message } : m))
+          prev.map((m) => (m.id === msgId ? { ...m, ...data.message } : m))
         );
-        setEditingChatModalMessage(null);
-        setEditingChatText('');
         toast.success('Message updated.');
       } else {
+        // Rollback on rejection (e.g., >30m expired)
+        setChatMessages((prev) =>
+          prev.map((m) => (m.id === msgId ? { ...m, message_body: previousBody } : m))
+        );
         toast.error(data.error || 'Failed to edit message.');
       }
     } catch {
+      // Rollback on network failure
+      setChatMessages((prev) =>
+        prev.map((m) => (m.id === msgId ? { ...m, message_body: previousBody } : m))
+      );
       toast.error('Network error updating message.');
     } finally {
       setIsSavingChatEdit(false);
@@ -255,6 +282,14 @@ export function ParentDashboard({ navigation }: Props) {
   };
 
   const handleUnsendMobile = async (msg: any) => {
+    const prevUnsent = msg.is_unsent;
+    // 1. Optimistic UI update: instantly mark as unsent and dismiss dialogs
+    setChatMessages((prev) =>
+      prev.map((m) => (m.id === msg.id ? { ...m, is_unsent: true } : m))
+    );
+    setSelectedActionMessage(null);
+    setUnsendConfirmMessage(null);
+
     try {
       const resolvedUrl = resolveServerUrl(serverUrl);
       const res = await fetch(`${resolvedUrl}/api/chat/unsend`, {
@@ -267,13 +302,19 @@ export function ParentDashboard({ navigation }: Props) {
         setChatMessages((prev) =>
           prev.map((m) => (m.id === msg.id ? { ...m, is_unsent: true, ...data.message } : m))
         );
-        setSelectedActionMessage(null);
-        setUnsendConfirmMessage(null);
         toast.success('Message unsent.');
       } else {
+        // Rollback
+        setChatMessages((prev) =>
+          prev.map((m) => (m.id === msg.id ? { ...m, is_unsent: prevUnsent } : m))
+        );
         toast.error(data.error || 'Failed to unsend message.');
       }
     } catch {
+      // Rollback
+      setChatMessages((prev) =>
+        prev.map((m) => (m.id === msg.id ? { ...m, is_unsent: prevUnsent } : m))
+      );
       toast.error('Network error unsending message.');
     }
   };

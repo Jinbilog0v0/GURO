@@ -279,34 +279,52 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
   };
 
   const handleSaveEdit = async (messageId: number) => {
-    if (!editingText.trim()) return;
+    const textToSave = editingText.trim();
+    if (!textToSave) return;
+
+    const targetMsg = messages.find(m => m.id === messageId);
+    const previousBody = targetMsg ? targetMsg.message_body : '';
+
+    // 1. Optimistic UI update: instantly update bubble and dismiss inline input
+    setMessages(prev => prev.map(m => m.id === messageId ? {
+      ...m,
+      message_body: textToSave,
+      edited_at: m.edited_at || new Date().toISOString(),
+      original_message_body: m.original_message_body || previousBody,
+    } : m));
+
+    setThreads(prev => prev.map(t => {
+      if (t.studentId === activeStudentId) {
+        return { ...t, latestMessage: textToSave };
+      }
+      return t;
+    }));
+
+    setEditingMessageId(null);
+    setEditingText('');
     setIsSubmittingEdit(true);
+
     try {
       const res = await apiFetch('/api/chat/edit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messageId,
-          messageBody: editingText.trim(),
+          messageBody: textToSave,
         }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setMessages(prev => prev.map(m => m.id === messageId ? { ...m, ...data.message } : m));
-        // Update thread preview if it was latest
-        setThreads(prev => prev.map(t => {
-          if (t.studentId === activeStudentId) {
-            return { ...t, latestMessage: editingText.trim() };
-          }
-          return t;
-        }));
-        setEditingMessageId(null);
-        setEditingText('');
         toast.success('Message updated.');
       } else {
+        // Rollback on rejection
+        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, message_body: previousBody } : m));
         toast.error(data.error || 'Failed to edit message.');
       }
     } catch {
+      // Rollback on network failure
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, message_body: previousBody } : m));
       toast.error('Network error while updating message.');
     } finally {
       setIsSubmittingEdit(false);
@@ -314,6 +332,19 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
   };
 
   const handleUnsend = async (messageId: number) => {
+    const targetMsg = messages.find(m => m.id === messageId);
+    if (!targetMsg) return;
+
+    // 1. Optimistic UI update: instantly show unsent state
+    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, is_unsent: true } : m));
+    setThreads(prev => prev.map(t => {
+      if (t.studentId === activeStudentId) {
+        return { ...t, latestMessage: 'This message was unsent' };
+      }
+      return t;
+    }));
+    setActiveMenuMessageId(null);
+
     try {
       const res = await apiFetch('/api/chat/unsend', {
         method: 'POST',
@@ -323,18 +354,15 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
       const data = await res.json();
       if (res.ok && data.success) {
         setMessages(prev => prev.map(m => m.id === messageId ? { ...m, ...data.message, is_unsent: true } : m));
-        setThreads(prev => prev.map(t => {
-          if (t.studentId === activeStudentId) {
-            return { ...t, latestMessage: 'This message was unsent' };
-          }
-          return t;
-        }));
-        setActiveMenuMessageId(null);
         toast.success('Message unsent.');
       } else {
+        // Rollback
+        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, is_unsent: false } : m));
         toast.error(data.error || 'Failed to unsend message.');
       }
     } catch {
+      // Rollback
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, is_unsent: false } : m));
       toast.error('Network error while unsending message.');
     }
   };
