@@ -72,6 +72,10 @@ import {
   Plus,
   Link as LinkIcon,
   X,
+  MoreVertical,
+  Edit2,
+  History,
+  Ban,
 } from 'lucide-react-native';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ParentDashboard'>;
@@ -176,13 +180,103 @@ export function ParentDashboard({ navigation }: Props) {
   const [isChangingPin, setIsChangingPin] = useState(false);
   const [parentSubTab, setParentSubTab] = useState<'overview' | 'report' | 'milestones'>('overview');
   const chatScrollRef = useRef<ScrollView>(null);
-  const [chatMessages, setChatMessages] = useState<Array<{ id: number; sender_name: string; sender_role: string; message_body: string; created_at: string }>>([]);
+  const [chatMessages, setChatMessages] = useState<Array<{
+    id: number;
+    sender_name: string;
+    sender_role: string;
+    message_body: string;
+    created_at: string;
+    is_unsent?: boolean;
+    unsent_at?: string | null;
+    original_message_body?: string | null;
+    edited_at?: string | null;
+    edit_history?: Array<{ previous_body: string; edited_at: string }> | null;
+  }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [loadingChat, setLoadingChat] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [activeTeacherName, setActiveTeacherName] = useState<string | null>(null);
   const [activeConsultationHours, setActiveConsultationHours] = useState<string | null>(null);
+
+  // Chat message forgiveness state
+  const [selectedActionMessage, setSelectedActionMessage] = useState<any | null>(null);
+  const [editingChatModalMessage, setEditingChatModalMessage] = useState<any | null>(null);
+  const [editingChatText, setEditingChatText] = useState('');
+  const [isSavingChatEdit, setIsSavingChatEdit] = useState(false);
+  const [viewHistoryMessage, setViewHistoryMessage] = useState<any | null>(null);
+  const [unsendConfirmMessage, setUnsendConfirmMessage] = useState<any | null>(null);
+
+  const handleOpenMessageOptions = (msg: any) => {
+    setSelectedActionMessage(msg);
+  };
+
+  const handleStartEditFromOptions = (msg: any) => {
+    const isWithin30Mins = Date.now() - new Date(msg.created_at).getTime() <= 30 * 60 * 1000;
+    if (!isWithin30Mins) {
+      toast.error('Messages can only be edited within 30 minutes of sending.');
+      setSelectedActionMessage(null);
+      return;
+    }
+    setEditingChatModalMessage(msg);
+    setEditingChatText(msg.message_body);
+    setSelectedActionMessage(null);
+  };
+
+  const handleSaveMobileEdit = async () => {
+    if (!editingChatModalMessage || !editingChatText.trim()) return;
+    setIsSavingChatEdit(true);
+    try {
+      const resolvedUrl = resolveServerUrl(serverUrl);
+      const res = await fetch(`${resolvedUrl}/api/chat/edit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messageId: editingChatModalMessage.id,
+          messageBody: editingChatText.trim(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setChatMessages((prev) =>
+          prev.map((m) => (m.id === editingChatModalMessage.id ? { ...m, ...data.message } : m))
+        );
+        setEditingChatModalMessage(null);
+        setEditingChatText('');
+        toast.success('Message updated.');
+      } else {
+        toast.error(data.error || 'Failed to edit message.');
+      }
+    } catch {
+      toast.error('Network error updating message.');
+    } finally {
+      setIsSavingChatEdit(false);
+    }
+  };
+
+  const handleUnsendMobile = async (msg: any) => {
+    try {
+      const resolvedUrl = resolveServerUrl(serverUrl);
+      const res = await fetch(`${resolvedUrl}/api/chat/unsend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId: msg.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setChatMessages((prev) =>
+          prev.map((m) => (m.id === msg.id ? { ...m, is_unsent: true, ...data.message } : m))
+        );
+        setSelectedActionMessage(null);
+        setUnsendConfirmMessage(null);
+        toast.success('Message unsent.');
+      } else {
+        toast.error(data.error || 'Failed to unsend message.');
+      }
+    } catch {
+      toast.error('Network error unsending message.');
+    }
+  };
   const [currentPinInput, setCurrentPinInput] = useState('');
   const [newPinInput, setNewPinInput] = useState('');
   const [confirmPinInput, setConfirmPinInput] = useState('');
@@ -1635,8 +1729,39 @@ export function ParentDashboard({ navigation }: Props) {
             ) : (
               chatMessages.map((msg) => {
                 const isParent = msg.sender_role === 'parent';
+                const isUnsent = msg.is_unsent;
+                const isEdited = Boolean(msg.edited_at);
                 const parentRegisteredName = currentUser?.name || (msg.sender_name && msg.sender_name !== 'Parent/Guardian' && msg.sender_name !== 'Parent' ? msg.sender_name : null);
                 const parentLabel = parentRegisteredName ? `${parentRegisteredName} (Parent)` : 'Parent';
+
+                if (isUnsent) {
+                  return (
+                    <View
+                      key={msg.id}
+                      style={{
+                        alignSelf: isParent ? 'flex-end' : 'flex-start',
+                        maxWidth: '85%',
+                        marginVertical: 4,
+                        paddingHorizontal: Spacing.md,
+                        paddingVertical: Spacing.sm,
+                        borderRadius: Radius.md,
+                        borderWidth: 1,
+                        borderColor: 'rgba(0,0,0,0.1)',
+                        borderStyle: 'dashed',
+                        backgroundColor: 'rgba(0,0,0,0.03)',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <Ban size={12} color={Colors.textMuted} />
+                      <Text style={{ fontFamily: Fonts.body, fontSize: 12, fontStyle: 'italic', color: Colors.textMuted }}>
+                        {isParent ? 'You unsent a message' : 'This message was unsent'}
+                      </Text>
+                    </View>
+                  );
+                }
+
                 return (
                   <View
                     key={msg.id}
@@ -1646,9 +1771,37 @@ export function ParentDashboard({ navigation }: Props) {
                       <Text style={isParent ? styles.chatSenderParent : styles.chatSenderTeacher}>
                         {isParent ? parentLabel : `${msg.sender_name || 'Teacher'}`}
                       </Text>
-                      <Text style={isParent ? styles.chatTimestampParent : styles.chatTimestampTeacher}>
-                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={isParent ? styles.chatTimestampParent : styles.chatTimestampTeacher}>
+                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </Text>
+                        {isEdited && (
+                          <TouchableOpacity
+                            onPress={() => setViewHistoryMessage(msg)}
+                            accessibilityLabel="View edit history"
+                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                          >
+                            <Text style={{
+                              fontFamily: Fonts.bodyBold,
+                              fontSize: 10,
+                              color: isParent ? 'rgba(255,255,255,0.85)' : Colors.accentPrimary,
+                              textDecorationLine: 'underline',
+                            }}>
+                              (edited)
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                        {isParent && (
+                          <TouchableOpacity
+                            onPress={() => handleOpenMessageOptions(msg)}
+                            accessibilityLabel={`Options for message ${msg.id}`}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={{ paddingLeft: 2 }}
+                          >
+                            <MoreVertical size={13} color="rgba(255,255,255,0.8)" />
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     </View>
                     <Text style={isParent ? styles.chatTextParent : styles.chatTextTeacher}>
                       {msg.message_body}
@@ -2216,6 +2369,201 @@ export function ParentDashboard({ navigation }: Props) {
           </GlassCard>
         </View>
       </Modal>
+
+      {/* ── Message Options Modal ── */}
+      <Modal
+        visible={!!selectedActionMessage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedActionMessage(null)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setSelectedActionMessage(null)}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: Spacing.lg }}
+        >
+          <TouchableOpacity activeOpacity={1} style={{ width: '100%', maxWidth: 360 }}>
+            <GlassCard style={{ padding: Spacing.lg, gap: Spacing.md }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>Message Actions</Text>
+                <TouchableOpacity onPress={() => setSelectedActionMessage(null)} style={{ padding: 4 }}>
+                  <X size={18} color={Colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ gap: 8 }}>
+                <TouchableOpacity
+                  onPress={() => selectedActionMessage && handleStartEditFromOptions(selectedActionMessage)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                    borderRadius: 12,
+                    backgroundColor: 'rgba(17,66,142,0.06)',
+                  }}
+                  accessibilityLabel="Edit message"
+                >
+                  <Edit2 size={16} color={Colors.accentPrimary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.textMain }}>Edit Message</Text>
+                    <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>Within 30 minutes of sending</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    const target = selectedActionMessage;
+                    setSelectedActionMessage(null);
+                    setUnsendConfirmMessage(target);
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                    borderRadius: 12,
+                    backgroundColor: 'rgba(239,68,68,0.06)',
+                  }}
+                  accessibilityLabel="Unsend message"
+                >
+                  <Trash2 size={16} color={Colors.danger} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.danger }}>Unsend Message</Text>
+                    <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>Remove for everyone in chat</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </GlassCard>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── Edit Message Modal ── */}
+      <Modal
+        visible={!!editingChatModalMessage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditingChatModalMessage(null)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: Spacing.lg }}
+        >
+          <GlassCard style={{ width: '100%', maxWidth: 400, padding: Spacing.lg, gap: Spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Edit2 size={18} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>Edit Message</Text>
+              </View>
+              <TouchableOpacity onPress={() => setEditingChatModalMessage(null)} style={{ padding: 4 }}>
+                <X size={18} color={Colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+              Messages can be edited within 30 minutes. Original text is preserved in edit history.
+            </Text>
+
+            <ThemedTextInput
+              value={editingChatText}
+              onChangeText={setEditingChatText}
+              multiline
+              numberOfLines={3}
+              placeholder="Edit your message..."
+              containerStyle={{ minHeight: 80 }}
+            />
+
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <SecondaryButton
+                label="Cancel"
+                onPress={() => setEditingChatModalMessage(null)}
+                style={{ flex: 1 }}
+              />
+              <PrimaryButton
+                label={isSavingChatEdit ? "Saving..." : "Save Changes"}
+                onPress={handleSaveMobileEdit}
+                loading={isSavingChatEdit}
+                disabled={!editingChatText.trim()}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </GlassCard>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── View Edit History Modal (Messenger style) ── */}
+      <Modal
+        visible={!!viewHistoryMessage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewHistoryMessage(null)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: Spacing.lg }}>
+          <GlassCard style={{ width: '100%', maxWidth: 380, padding: Spacing.lg, gap: Spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)', paddingBottom: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <History size={18} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>Edit History</Text>
+              </View>
+              <TouchableOpacity onPress={() => setViewHistoryMessage(null)} style={{ padding: 4 }}>
+                <X size={18} color={Colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {viewHistoryMessage && (
+              <View style={{ gap: 10 }}>
+                {/* Original */}
+                <View style={{ padding: Spacing.sm, borderRadius: Radius.md, backgroundColor: 'rgba(0,0,0,0.03)', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.textMuted, textTransform: 'uppercase' }}>Original Message</Text>
+                    <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted }}>
+                      {viewHistoryMessage.created_at ? new Date(viewHistoryMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                    </Text>
+                  </View>
+                  <Text style={{ fontFamily: Fonts.body, fontSize: 13, color: Colors.textMain }}>
+                    {viewHistoryMessage.original_message_body || viewHistoryMessage.message_body}
+                  </Text>
+                </View>
+
+                {/* Edited */}
+                <View style={{ padding: Spacing.sm, borderRadius: Radius.md, backgroundColor: 'rgba(17,66,142,0.06)', borderWidth: 1, borderColor: 'rgba(17,66,142,0.15)' }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary, textTransform: 'uppercase' }}>Edited Version</Text>
+                    <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.accentPrimary }}>
+                      {viewHistoryMessage.edited_at ? new Date(viewHistoryMessage.edited_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                    </Text>
+                  </View>
+                  <Text style={{ fontFamily: Fonts.body, fontSize: 13, color: Colors.textMain }}>
+                    {viewHistoryMessage.message_body}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            <PrimaryButton
+              label="Close"
+              onPress={() => setViewHistoryMessage(null)}
+              style={{ marginTop: Spacing.xs }}
+            />
+          </GlassCard>
+        </View>
+      </Modal>
+
+      {/* ── Unsend Confirm Dialog ── */}
+      <ConfirmDialog
+        visible={!!unsendConfirmMessage}
+        title="Unsend Message?"
+        message="This message will be removed for everyone in the consultation chat."
+        confirmText="Unsend"
+        cancelText="Cancel"
+        variant="danger"
+        icon={Trash2}
+        onConfirm={() => unsendConfirmMessage && handleUnsendMobile(unsendConfirmMessage)}
+        onCancel={() => setUnsendConfirmMessage(null)}
+      />
     </SafeAreaView>
   );
 }

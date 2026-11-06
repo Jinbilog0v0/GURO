@@ -47,9 +47,9 @@ const mockState = {
   dailyMinutesUsed: 12,
   resetDailyMinutes: jest.fn(),
   appMode: 'offline',
-  token: null,
-  myChildren: [],
-  activeChildId: null,
+  token: null as string | null,
+  myChildren: [] as any[],
+  activeChildId: null as string | null,
   setActiveChildId: jest.fn(),
   fetchMyChildren: jest.fn(),
   claimChild: jest.fn(),
@@ -79,6 +79,32 @@ describe('ParentDashboard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     global.fetch = jest.fn().mockImplementation((url?: string) => {
+      if (url && typeof url === 'string' && url.includes('/api/chat/edit')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            success: true,
+            message: {
+              id: 1,
+              message_body: 'Hello teacher, updated question',
+              original_message_body: 'Hello teacher, qustion about homework',
+              edited_at: new Date().toISOString(),
+            },
+          }),
+        });
+      }
+      if (url && typeof url === 'string' && url.includes('/api/chat/unsend')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            success: true,
+            message: {
+              id: 1,
+              is_unsent: true,
+            },
+          }),
+        });
+      }
       if (url && typeof url === 'string' && url.includes('/api/chat/messages')) {
         return Promise.resolve({
           ok: true,
@@ -88,7 +114,9 @@ describe('ParentDashboard', () => {
                 id: 1,
                 sender_role: 'parent',
                 sender_name: 'Maria Dela Cruz',
-                message_body: 'Hello teacher',
+                message_body: 'Hello teacher, question about homework',
+                original_message_body: 'Hello teacher, qustion about homework',
+                edited_at: new Date().toISOString(),
                 created_at: new Date().toISOString(),
               },
             ],
@@ -289,6 +317,75 @@ describe('ParentDashboard', () => {
       mockState.currentUser = null;
       mockState.myChildren = [];
       mockState.activeChildId = null;
+    });
+  });
+
+  test('should display (edited) label and open edit history modal on mobile', async () => {
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<ParentDashboard navigation={mockNavigation as any} route={{} as any} />);
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    const chatTabBtn = root.root.findByProps({ accessibilityLabel: 'Teacher Chat' });
+    await act(async () => {
+      chatTabBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    const json = JSON.stringify(root.toJSON());
+    expect(json).toContain('(edited)');
+
+    const editHistoryBtn = root.root.findByProps({ accessibilityLabel: 'View edit history' });
+    expect(editHistoryBtn).toBeDefined();
+
+    await act(async () => {
+      editHistoryBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    const historyJson = JSON.stringify(root.toJSON());
+    expect(historyJson).toContain('Edit History');
+    expect(historyJson).toContain('Original Message');
+    expect(historyJson).toContain('Hello teacher, qustion about homework');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test('should allow opening message options to edit and unsend message on mobile', async () => {
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<ParentDashboard navigation={mockNavigation as any} route={{} as any} />);
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    const chatTabBtn = root.root.findByProps({ accessibilityLabel: 'Teacher Chat' });
+    await act(async () => {
+      chatTabBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    const optionsBtn = root.root.findByProps({ accessibilityLabel: 'Options for message 1' });
+    expect(optionsBtn).toBeDefined();
+
+    await act(async () => {
+      optionsBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    const optionsJson = JSON.stringify(root.toJSON());
+    expect(optionsJson).toContain('Message Actions');
+    expect(optionsJson).toContain('Edit Message');
+    expect(optionsJson).toContain('Unsend Message');
+
+    act(() => {
+      root.unmount();
     });
   });
 });
