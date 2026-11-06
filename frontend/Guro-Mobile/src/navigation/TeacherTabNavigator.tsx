@@ -1,23 +1,81 @@
 import React, { useEffect } from 'react';
-import { BackHandler } from 'react-native';
+import { BackHandler, View, Text, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BarChart2, Zap, Settings, PenLine } from 'lucide-react-native';
+import { BarChart2, Zap, Settings, PenLine, MessageSquare } from 'lucide-react-native';
 import { TeacherDashboardScreen } from '../screens/TeacherDashboardScreen';
 import { TeacherIngestionScreen } from '../screens/TeacherIngestionScreen';
-import { TeacherSettingsScreen } from '../screens/TeacherSettingsScreen';
+import { TeacherChatScreen } from '../screens/TeacherChatScreen';
 import { TeacherLessonBuilderScreen } from '../screens/TeacherLessonBuilderScreen';
+import { TeacherSettingsScreen } from '../screens/TeacherSettingsScreen';
 import { Colors } from '../theme/colors';
 import { Fonts, FontSizes } from '../theme/typography';
 
 export type TeacherTabParamList = {
   Dashboard: undefined;
   Ingestion: undefined;
+  Chat: undefined;
   Builder: undefined;
   Settings: undefined;
 };
 
 const Tab = createBottomTabNavigator<TeacherTabParamList>();
+
+interface CustomGCashTabButtonProps {
+  children?: React.ReactNode;
+  onPress?: (e: any) => void;
+  accessibilityState?: { selected?: boolean };
+}
+
+function CustomGCashChatButton({ onPress, accessibilityState }: CustomGCashTabButtonProps) {
+  const isSelected = Boolean(accessibilityState?.selected);
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.88}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Parent Consultation Chat"
+      accessibilityState={accessibilityState}
+      style={{
+        top: -18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        flex: 1,
+      }}
+    >
+      <View
+        style={{
+          width: 54,
+          height: 54,
+          borderRadius: 27,
+          backgroundColor: isSelected ? Colors.accentPrimary : '#0D3470',
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderWidth: 3.5,
+          borderColor: Colors.bgSidebar,
+          shadowColor: '#11428E',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.35,
+          shadowRadius: 6,
+          elevation: 7,
+        }}
+      >
+        <MessageSquare size={22} color="#FFFFFF" strokeWidth={2.2} />
+      </View>
+      <Text
+        style={{
+          fontFamily: Fonts.bodyBold,
+          fontSize: 10,
+          color: isSelected ? Colors.accentPrimary : Colors.textDark,
+          marginTop: 2,
+        }}
+      >
+        Chat
+      </Text>
+    </TouchableOpacity>
+  );
+}
 
 export function TeacherTabNavigator() {
   const insets = useSafeAreaInsets();
@@ -43,6 +101,7 @@ export function TeacherTabNavigator() {
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.08,
           shadowRadius: 8,
+          overflow: 'visible',
         },
         tabBarActiveTintColor: Colors.accentPrimary,
         tabBarInactiveTintColor: Colors.textDark,
@@ -67,6 +126,13 @@ export function TeacherTabNavigator() {
         options={{
           tabBarLabel: 'AI Ingest',
           tabBarIcon: ({ color, size }) => <Zap size={size - 2} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Chat"
+        component={TeacherChatScreen}
+        options={{
+          tabBarButton: (props) => <CustomGCashChatButton {...props} />,
         }}
       />
       <Tab.Screen
