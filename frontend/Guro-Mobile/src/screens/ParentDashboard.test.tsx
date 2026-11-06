@@ -446,4 +446,48 @@ describe('ParentDashboard', () => {
       root.unmount();
     });
   });
+
+  test('successfully unsends message when parent confirms unsend inline', async () => {
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<ParentDashboard navigation={mockNavigation as any} route={{} as any} />);
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    const chatTabBtn = root.root.findByProps({ accessibilityLabel: 'Teacher Chat' });
+    await act(async () => {
+      chatTabBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    const optionsBtn = root.root.findByProps({ accessibilityLabel: 'Options for message 1' });
+    await act(async () => {
+      optionsBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    const unsendOption = root.root.findByProps({ accessibilityLabel: 'Unsend message' });
+    await act(async () => {
+      unsendOption.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    let json = JSON.stringify(root.toJSON());
+    expect(json).toContain('Unsend Message?');
+
+    const confirmBtn = root.root.findByProps({ accessibilityLabel: 'Confirm unsend' });
+    await act(async () => {
+      confirmBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+
+    json = JSON.stringify(root.toJSON());
+    expect(json).toContain('You unsent a message');
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });

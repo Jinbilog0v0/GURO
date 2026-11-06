@@ -207,9 +207,10 @@ export function ParentDashboard({ navigation }: Props) {
   const [editingChatText, setEditingChatText] = useState('');
   const [isSavingChatEdit, setIsSavingChatEdit] = useState(false);
   const [viewHistoryMessage, setViewHistoryMessage] = useState<any | null>(null);
-  const [unsendConfirmMessage, setUnsendConfirmMessage] = useState<any | null>(null);
+  const [isConfirmingUnsend, setIsConfirmingUnsend] = useState(false);
 
   const handleOpenMessageOptions = (msg: any) => {
+    setIsConfirmingUnsend(false);
     setSelectedActionMessage(msg);
   };
 
@@ -218,11 +219,13 @@ export function ParentDashboard({ navigation }: Props) {
     if (!isWithin30Mins) {
       toast.error('Messages can only be edited within 30 minutes of sending.');
       setSelectedActionMessage(null);
+      setIsConfirmingUnsend(false);
       return;
     }
     setEditingChatModalMessage(msg);
     setEditingChatText(msg.message_body);
     setSelectedActionMessage(null);
+    setIsConfirmingUnsend(false);
   };
 
   const handleSaveMobileEdit = async () => {
@@ -285,37 +288,38 @@ export function ParentDashboard({ navigation }: Props) {
 
   const handleUnsendMobile = async (msg: any) => {
     const prevUnsent = msg.is_unsent;
-    // 1. Optimistic UI update: instantly mark as unsent and dismiss dialogs
+    const msgId = Number(msg.id);
+    // 1. Optimistic UI update: instantly mark as unsent and dismiss modal
     setChatMessages((prev) =>
-      prev.map((m) => (m.id === msg.id ? { ...m, is_unsent: true } : m))
+      prev.map((m) => (Number(m.id) === msgId || m.id === msg.id ? { ...m, is_unsent: true } : m))
     );
     setSelectedActionMessage(null);
-    setUnsendConfirmMessage(null);
+    setIsConfirmingUnsend(false);
 
     try {
       const resolvedUrl = resolveServerUrl(serverUrl);
       const res = await fetch(`${resolvedUrl}/api/chat/unsend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messageId: msg.id }),
+        body: JSON.stringify({ messageId: msgId }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
         setChatMessages((prev) =>
-          prev.map((m) => (m.id === msg.id ? { ...m, is_unsent: true, ...data.message } : m))
+          prev.map((m) => (Number(m.id) === msgId || m.id === msg.id ? { ...m, is_unsent: true, ...data.message } : m))
         );
         toast.success('Message unsent.');
       } else {
         // Rollback
         setChatMessages((prev) =>
-          prev.map((m) => (m.id === msg.id ? { ...m, is_unsent: prevUnsent } : m))
+          prev.map((m) => (Number(m.id) === msgId || m.id === msg.id ? { ...m, is_unsent: prevUnsent } : m))
         );
         toast.error(data.error || 'Failed to unsend message.');
       }
     } catch {
       // Rollback
       setChatMessages((prev) =>
-        prev.map((m) => (m.id === msg.id ? { ...m, is_unsent: prevUnsent } : m))
+        prev.map((m) => (Number(m.id) === msgId || m.id === msg.id ? { ...m, is_unsent: prevUnsent } : m))
       );
       toast.error('Network error unsending message.');
     }
@@ -2460,69 +2464,121 @@ export function ParentDashboard({ navigation }: Props) {
         visible={!!selectedActionMessage}
         transparent
         animationType="fade"
-        onRequestClose={() => setSelectedActionMessage(null)}
+        onRequestClose={() => {
+          setSelectedActionMessage(null);
+          setIsConfirmingUnsend(false);
+        }}
       >
         <TouchableOpacity
           activeOpacity={1}
-          onPress={() => setSelectedActionMessage(null)}
+          onPress={() => {
+            setSelectedActionMessage(null);
+            setIsConfirmingUnsend(false);
+          }}
           style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: Spacing.lg }}
         >
           <TouchableOpacity activeOpacity={1} style={{ width: '100%', maxWidth: 360 }}>
             <GlassCard style={{ padding: Spacing.lg, gap: Spacing.md }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>Message Actions</Text>
-                <TouchableOpacity onPress={() => setSelectedActionMessage(null)} style={{ padding: 4 }}>
-                  <X size={18} color={Colors.textMuted} />
-                </TouchableOpacity>
-              </View>
-
-              <View style={{ gap: 8 }}>
-                {selectedActionMessage && (Date.now() - new Date(selectedActionMessage.created_at).getTime() <= 30 * 60 * 1000) && (
-                  <TouchableOpacity
-                    onPress={() => selectedActionMessage && handleStartEditFromOptions(selectedActionMessage)}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 12,
-                      paddingVertical: 12,
-                      paddingHorizontal: 14,
-                      borderRadius: 12,
-                      backgroundColor: 'rgba(17,66,142,0.06)',
-                    }}
-                    accessibilityLabel="Edit message"
-                  >
-                    <Edit2 size={16} color={Colors.accentPrimary} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.textMain }}>Edit Message</Text>
-                      <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>Within 30 minutes of sending</Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
-
-                <TouchableOpacity
-                  onPress={() => {
-                    const target = selectedActionMessage;
-                    setSelectedActionMessage(null);
-                    setUnsendConfirmMessage(target);
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 12,
-                    paddingVertical: 12,
-                    paddingHorizontal: 14,
-                    borderRadius: 12,
-                    backgroundColor: 'rgba(239,68,68,0.06)',
-                  }}
-                  accessibilityLabel="Unsend message"
-                >
-                  <Trash2 size={16} color={Colors.danger} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.danger }}>Unsend Message</Text>
-                    <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>Remove for everyone in chat</Text>
+              {!isConfirmingUnsend ? (
+                <>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>Message Actions</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSelectedActionMessage(null);
+                        setIsConfirmingUnsend(false);
+                      }}
+                      style={{ padding: 4 }}
+                    >
+                      <X size={18} color={Colors.textMuted} />
+                    </TouchableOpacity>
                   </View>
-                </TouchableOpacity>
-              </View>
+
+                  <View style={{ gap: 8 }}>
+                    {selectedActionMessage && (Date.now() - new Date(selectedActionMessage.created_at).getTime() <= 30 * 60 * 1000) && (
+                      <TouchableOpacity
+                        onPress={() => selectedActionMessage && handleStartEditFromOptions(selectedActionMessage)}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 12,
+                          paddingVertical: 12,
+                          paddingHorizontal: 14,
+                          borderRadius: 12,
+                          backgroundColor: 'rgba(17,66,142,0.06)',
+                        }}
+                        accessibilityLabel="Edit message"
+                      >
+                        <Edit2 size={16} color={Colors.accentPrimary} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.textMain }}>Edit Message</Text>
+                          <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>Within 30 minutes of sending</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+
+                    <TouchableOpacity
+                      onPress={() => setIsConfirmingUnsend(true)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 12,
+                        paddingVertical: 12,
+                        paddingHorizontal: 14,
+                        borderRadius: 12,
+                        backgroundColor: 'rgba(239,68,68,0.06)',
+                      }}
+                      accessibilityLabel="Unsend message"
+                    >
+                      <Trash2 size={16} color={Colors.danger} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.danger }}>Unsend Message</Text>
+                        <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>Remove for everyone in chat</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(239,68,68,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                      <Trash2 size={18} color={Colors.danger} />
+                    </View>
+                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.danger }}>Unsend Message?</Text>
+                  </View>
+
+                  <Text style={{ fontFamily: Fonts.body, fontSize: 13, color: Colors.textMuted, lineHeight: 18 }}>
+                    This message will be removed for everyone in the consultation chat.
+                  </Text>
+
+                  <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs }}>
+                    <SecondaryButton
+                      label="Cancel"
+                      onPress={() => setIsConfirmingUnsend(false)}
+                      style={{ flex: 1 }}
+                    />
+                    <TouchableOpacity
+                      onPress={() => {
+                        const target = selectedActionMessage;
+                        if (target) {
+                          handleUnsendMobile(target);
+                        }
+                      }}
+                      accessibilityLabel="Confirm unsend"
+                      style={{
+                        flex: 1,
+                        backgroundColor: Colors.danger,
+                        paddingVertical: 12,
+                        borderRadius: Radius.md,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: '#FFFFFF' }}>Unsend</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
             </GlassCard>
           </TouchableOpacity>
         </TouchableOpacity>
@@ -2639,18 +2695,6 @@ export function ParentDashboard({ navigation }: Props) {
         </View>
       </Modal>
 
-      {/* ── Unsend Confirm Dialog ── */}
-      <ConfirmDialog
-        visible={!!unsendConfirmMessage}
-        title="Unsend Message?"
-        message="This message will be removed for everyone in the consultation chat."
-        confirmText="Unsend"
-        cancelText="Cancel"
-        variant="danger"
-        icon={Trash2}
-        onConfirm={() => unsendConfirmMessage && handleUnsendMobile(unsendConfirmMessage)}
-        onCancel={() => setUnsendConfirmMessage(null)}
-      />
     </SafeAreaView>
   );
 }

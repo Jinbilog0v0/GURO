@@ -334,4 +334,45 @@ describe('TeacherChatScreen', () => {
       root.unmount();
     });
   });
+
+  test('successfully unsends message when tapping unsend and confirming inline', async () => {
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<TeacherChatScreen />);
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
+    const optionsBtn = root.root.findByProps({ accessibilityLabel: 'Options for message 2' });
+    await act(async () => {
+      optionsBtn.props.onPress();
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
+    const unsendOption = root.root.findByProps({ accessibilityLabel: 'Unsend message' });
+    await act(async () => {
+      unsendOption.props.onPress();
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
+    // Check inline confirmation appears
+    let json = JSON.stringify(root.toJSON());
+    expect(json).toContain('Unsend Message?');
+    expect(json).toContain('This message will be removed for everyone in the consultation chat.');
+
+    // Confirm unsend
+    const confirmBtn = root.root.findByProps({ accessibilityLabel: 'Confirm unsend' });
+    await act(async () => {
+      confirmBtn.props.onPress();
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    json = JSON.stringify(root.toJSON());
+    expect(json).toContain('You unsent a message');
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });
