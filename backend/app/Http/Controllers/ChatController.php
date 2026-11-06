@@ -127,8 +127,8 @@ class ChatController extends Controller
         } else {
             // Find parent user linked to student
             $student = User::where('user_id', $studentId)->first();
-            if ($student && $student->parent_access_token) {
-                $receiverId = $student->parent_access_token;
+            if ($student) {
+                $receiverId = $student->parent_user_id ?? $student->parent_access_token;
             }
         }
 

@@ -150,18 +150,48 @@ class SyncController extends Controller
 
         $targetStudentIds = [];
 
-        // If studentId is provided, we MUST validate the accessCode
+        // If studentId is provided, check if requested by an authenticated parent
         if ($hasStudent) {
-            if (empty($accessToken)) {
-                return response()->json(['error' => 'Missing required accessCode for student query.'], 400);
-            }
+            $user = $request->user('sanctum');
+            if ($user && $user->role === 'parent') {
+                $parentUserId = $user->user_id ?? (string) $user->id;
+                $searchResolution = $this->resolveStudentSearch($rawStudentId);
+                $targetStudentIds = $searchResolution['targetIds'];
 
-            $searchResolution = $this->resolveStudentSearch($rawStudentId);
-            $targetStudentIds = $searchResolution['targetIds'];
-            $validAccessCodes = $searchResolution['validAccessCodes'];
+                // Direct parent ownership check
+                $isMyChild = User::whereIn('user_id', $targetStudentIds)
+                    ->where(function ($q) use ($parentUserId, $user) {
+                        $q->where('parent_user_id', $parentUserId);
+                        if (! empty($user->parent_access_token)) {
+                            $q->orWhere('parent_access_token', $user->parent_access_token);
+                        }
+                    })
+                    ->exists();
 
-            if (! in_array(trim($accessToken), $validAccessCodes)) {
-                return response()->json(['error' => 'Invalid parent access code.'], 403);
+                if (! $isMyChild) {
+                    // Fallback to access code check if provided
+                    if (! empty($accessToken)) {
+                        $validAccessCodes = $searchResolution['validAccessCodes'];
+                        if (! in_array(trim($accessToken), $validAccessCodes)) {
+                            return response()->json(['error' => 'Forbidden. You are not linked to this student record.'], 403);
+                        }
+                    } else {
+                        return response()->json(['error' => 'Forbidden. You are not linked to this student record.'], 403);
+                    }
+                }
+            } else {
+                // Anonymous or student query: require accessCode
+                if (empty($accessToken)) {
+                    return response()->json(['error' => 'Missing required accessCode for student query.'], 400);
+                }
+
+                $searchResolution = $this->resolveStudentSearch($rawStudentId);
+                $targetStudentIds = $searchResolution['targetIds'];
+                $validAccessCodes = $searchResolution['validAccessCodes'];
+
+                if (! in_array(trim($accessToken), $validAccessCodes)) {
+                    return response()->json(['error' => 'Invalid parent access code.'], 403);
+                }
             }
         } else {
             // Classroom-only query: must be authenticated as the teacher of this classroom (or admin/developer)

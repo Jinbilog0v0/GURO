@@ -888,6 +888,8 @@ class AuthController extends Controller
         }
         $accessCode = (string) (100000 + ($sum % 900000));
 
+        $parentUserId = $request->user()->user_id ?? (string) $request->user()->id;
+
         $student = User::create([
             'user_id' => $newStudentId,
             'email' => $email,
@@ -899,6 +901,7 @@ class AuthController extends Controller
             'role' => 'student',
             'classroom_id' => null,
             'parent_access_token' => $accessCode,
+            'parent_user_id' => $parentUserId,
         ]);
 
         return response()->json([
@@ -913,6 +916,122 @@ class AuthController extends Controller
                 'role' => $student->role,
                 'studentId' => $student->user_id,
                 'accessCode' => $student->parent_access_token,
+                'parentUserId' => $student->parent_user_id,
+            ],
+        ]);
+    }
+
+    /**
+     * GET /api/parent/children
+     * Returns all student accounts bound to the authenticated parent
+     */
+    public function getMyChildren(Request $request)
+    {
+        $user = $request->user();
+        if (! $user || $user->role !== 'parent') {
+            return response()->json(['error' => 'Unauthorized. Only parents can access linked children.'], 403);
+        }
+
+        $parentUserId = $user->user_id ?? (string) $user->id;
+
+        $children = User::where('role', 'student')
+            ->where(function ($q) use ($parentUserId, $user) {
+                $q->where('parent_user_id', $parentUserId);
+                if (! empty($user->parent_access_token)) {
+                    $q->orWhere('parent_access_token', $user->parent_access_token);
+                }
+            })
+            ->get();
+
+        $classroomIds = $children->pluck('classroom_id')->filter()->unique()->toArray();
+        $classrooms = Classroom::whereIn('classroom_id', $classroomIds)->get()->keyBy('classroom_id');
+
+        $result = $children->map(function ($c) use ($classrooms) {
+            $classroom = $c->classroom_id ? $classrooms->get($c->classroom_id) : null;
+
+            return [
+                'userId' => $c->user_id,
+                'studentId' => $c->user_id,
+                'name' => $c->name,
+                'firstName' => $c->first_name,
+                'middleName' => $c->middle_name,
+                'lastName' => $c->last_name,
+                'email' => $c->email,
+                'classroomId' => $c->classroom_id,
+                'gradeLevel' => $classroom ? $classroom->grade_level : null,
+                'sectionName' => $classroom ? $classroom->section_name : null,
+                'subject' => $classroom ? $classroom->subject : null,
+                'teacherName' => $classroom ? $classroom->teacher_name : null,
+                'teacherUserId' => $classroom ? $classroom->teacher_user_id : null,
+                'consultationHours' => $classroom ? $classroom->consultation_hours : null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'children' => $result,
+        ]);
+    }
+
+    /**
+     * POST /api/parent/claim-child
+     * Binds an existing student account to the authenticated parent via 1-time verification
+     */
+    public function claimChild(Request $request)
+    {
+        $user = $request->user();
+        if (! $user || $user->role !== 'parent') {
+            return response()->json(['error' => 'Unauthorized. Only parents can claim student accounts.'], 403);
+        }
+
+        $request->validate([
+            'studentId' => 'required|string',
+            'accessCode' => 'required|string',
+        ]);
+
+        $studentId = trim($request->input('studentId'));
+        $accessCode = trim($request->input('accessCode'));
+
+        $student = User::where('role', 'student')
+            ->where(function ($q) use ($studentId) {
+                $q->where('user_id', $studentId)
+                    ->orWhere('name', 'like', "%{$studentId}%");
+            })
+            ->first();
+
+        if (! $student) {
+            return response()->json(['error' => 'Student account not found.'], 404);
+        }
+
+        $expectedCode = $student->parent_access_token;
+        if (! $expectedCode) {
+            $normalized = strtoupper(preg_replace('/\s+/', '-', trim($student->user_id)));
+            $salt = 'GURO_PARENT_SALT';
+            $combined = $normalized.$salt;
+            $sum = 0;
+            $len = strlen($combined);
+            for ($i = 0; $i < $len; $i++) {
+                $sum += ord($combined[$i]) * ($i + 1);
+            }
+            $expectedCode = (string) (100000 + ($sum % 900000));
+        }
+
+        if ($accessCode !== $expectedCode) {
+            return response()->json(['error' => 'Invalid student access verification code.'], 403);
+        }
+
+        $parentUserId = $user->user_id ?? (string) $user->id;
+        $student->parent_user_id = $parentUserId;
+        $student->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Successfully linked {$student->name} to your parent account.",
+            'child' => [
+                'userId' => $student->user_id,
+                'studentId' => $student->user_id,
+                'name' => $student->name,
+                'classroomId' => $student->classroom_id,
             ],
         ]);
     }

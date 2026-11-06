@@ -53,8 +53,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/classroom/promote', [ClassroomController::class, 'promoteStudents']);
     Route::get('/student/academic-history', [ClassroomController::class, 'getStudentAcademicHistory']);
 
-    // Parent Student Creation
+    // Parent Student Management
     Route::post('/parent/create-student', [AuthController::class, 'createStudent']);
+    Route::get('/parent/children', [AuthController::class, 'getMyChildren']);
+    Route::post('/parent/claim-child', [AuthController::class, 'claimChild']);
 
     // User Management
     Route::post('/user/update-profile', [AuthController::class, 'updateProfile']);

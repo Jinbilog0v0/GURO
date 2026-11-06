@@ -10,7 +10,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['user_id', 'email', 'password_hash', 'name', 'role', 'classroom_id', 'parent_access_token', 'first_name', 'middle_name', 'last_name', 'verification_status', 'school_name', 'school_id_number', 'id_document_path', 'rejection_reason', 'verified_at', 'verified_by', 'email_verified_at'])]
+#[Fillable(['user_id', 'email', 'password_hash', 'name', 'role', 'classroom_id', 'parent_access_token', 'parent_user_id', 'first_name', 'middle_name', 'last_name', 'verification_status', 'school_name', 'school_id_number', 'id_document_path', 'rejection_reason', 'verified_at', 'verified_by', 'email_verified_at'])]
 #[Hidden(['password_hash'])]
 class User extends Authenticatable
 {
@@ -28,5 +28,21 @@ class User extends Authenticatable
     public function getAuthPassword(): string
     {
         return $this->password_hash;
+    }
+
+    /**
+     * Children linked to this parent.
+     */
+    public function children()
+    {
+        return $this->hasMany(User::class, 'parent_user_id', 'user_id');
+    }
+
+    /**
+     * Parent linked to this student.
+     */
+    public function parent()
+    {
+        return $this->belongsTo(User::class, 'parent_user_id', 'user_id');
     }
 }
