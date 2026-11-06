@@ -652,53 +652,83 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
                           </div>
                         ) : (
                           <div className="flex items-center gap-1.5 group/bubble">
-                            {/* 3-dot Action Menu for sender (Teacher) */}
+                            {/* Action Buttons OUTSIDE the text bubble (for sender: Teacher) */}
                             {isTeacher && (
-                              <div className="relative order-first">
+                              <div className="relative order-first flex items-center gap-1 opacity-80 group-hover/bubble:opacity-100 transition-opacity">
+                                {/* Button 1: Edit outside bubble */}
                                 <button
                                   type="button"
-                                  onClick={() => setActiveMenuMessageId(isMenuOpen ? null : msg.id)}
-                                  className="opacity-0 group-hover/bubble:opacity-100 focus:opacity-100 p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-opacity cursor-pointer"
-                                  aria-label="Message options"
-                                  title="Message options"
+                                  onClick={() => handleStartEdit(msg)}
+                                  disabled={!isWithin30Mins}
+                                  className={`p-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] transition-colors cursor-pointer shadow-2xs ${
+                                    isWithin30Mins
+                                      ? 'text-[var(--text-muted)] hover:text-[#11428E] dark:hover:text-blue-300 hover:border-[#11428E]/40'
+                                      : 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
+                                  }`}
+                                  aria-label="Edit message"
+                                  title={isWithin30Mins ? 'Edit message (within 30 mins)' : 'Edit period expired (30 mins)'}
                                 >
-                                  <MoreVertical size={14} />
+                                  <Edit2 size={13} />
                                 </button>
 
-                                {isMenuOpen && (
-                                  <>
-                                    <div
-                                      className="fixed inset-0 z-20"
-                                      onClick={() => setActiveMenuMessageId(null)}
-                                    />
-                                    <div
-                                      className="absolute right-0 top-full mt-1 z-30 w-36 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-lg p-1 animate-in fade-in zoom-in-95 duration-100 flex flex-col text-xs"
-                                    >
-                                      <button
-                                        type="button"
-                                        onClick={() => handleStartEdit(msg)}
-                                        disabled={!isWithin30Mins}
-                                        className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer transition-colors ${
-                                          isWithin30Mins
-                                            ? 'hover:bg-[var(--bg-main)] text-[var(--text-main)]'
-                                            : 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
-                                        }`}
-                                        title={isWithin30Mins ? 'Edit message' : 'Edit period expired (30 mins)'}
+                                {/* Button 2: Unsend outside bubble */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleUnsend(msg.id)}
+                                  className="p-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-rose-500 hover:border-rose-500/40 transition-colors cursor-pointer shadow-2xs"
+                                  aria-label="Unsend message"
+                                  title="Unsend message"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+
+                                {/* Button 3: 3-dot options menu outside bubble */}
+                                <div className="relative">
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveMenuMessageId(isMenuOpen ? null : msg.id)}
+                                    className="p-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer shadow-2xs"
+                                    aria-label="Message options"
+                                    title="Message options"
+                                  >
+                                    <MoreVertical size={13} />
+                                  </button>
+
+                                  {isMenuOpen && (
+                                    <>
+                                      <div
+                                        className="fixed inset-0 z-20"
+                                        onClick={() => setActiveMenuMessageId(null)}
+                                      />
+                                      <div
+                                        className="absolute right-0 top-full mt-1 z-30 w-36 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-lg p-1 animate-in fade-in zoom-in-95 duration-100 flex flex-col text-xs"
                                       >
-                                        <Edit2 size={12} />
-                                        <span>Edit message</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleUnsend(msg.id)}
-                                        className="w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors font-medium"
-                                      >
-                                        <Trash2 size={12} />
-                                        <span>Unsend</span>
-                                      </button>
-                                    </div>
-                                  </>
-                                )}
+                                        <button
+                                          type="button"
+                                          onClick={() => handleStartEdit(msg)}
+                                          disabled={!isWithin30Mins}
+                                          className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer transition-colors ${
+                                            isWithin30Mins
+                                              ? 'hover:bg-[var(--bg-main)] text-[var(--text-main)]'
+                                              : 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
+                                          }`}
+                                          title={isWithin30Mins ? 'Edit message' : 'Edit period expired (30 mins)'}
+                                        >
+                                          <Edit2 size={12} />
+                                          <span>Edit message</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleUnsend(msg.id)}
+                                          className="w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors font-medium"
+                                        >
+                                          <Trash2 size={12} />
+                                          <span>Unsend</span>
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
                               </div>
                             )}
 
