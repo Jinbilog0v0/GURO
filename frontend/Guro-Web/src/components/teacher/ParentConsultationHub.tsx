@@ -313,7 +313,7 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
           messageBody: textToSave,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
         setMessages(prev => prev.map(m => m.id === messageId ? { ...m, ...data.message } : m));
         toast.success('Message updated.');
@@ -351,7 +351,7 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageId }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
         setMessages(prev => prev.map(m => m.id === messageId ? { ...m, ...data.message, is_unsent: true } : m));
         toast.success('Message unsent.');
