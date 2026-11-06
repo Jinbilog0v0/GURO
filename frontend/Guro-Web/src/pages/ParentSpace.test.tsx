@@ -50,9 +50,9 @@ describe('ParentSpace Page', () => {
     expect(screen.getByText(/Parent Progress Explorer/)).toBeInTheDocument();
   });
 
-  test('prompts to search when no student is searched', () => {
+  test('prompts to select a child when no student is selected', () => {
     render(<ParentSpace progressLogs={mockProgressLogs} lastUpdatedCell={null} />);
-    expect(screen.getByText(/Search for your child by Name/i)).toBeInTheDocument();
+    expect(screen.getByText(/Select a child above to view reports/i)).toBeInTheDocument();
   });
 
   test('searches for a student and displays their stats', async () => {

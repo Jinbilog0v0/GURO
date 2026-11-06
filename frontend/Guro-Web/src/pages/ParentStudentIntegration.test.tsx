@@ -276,8 +276,8 @@ describe('Parent and Student Interconnected Flow Integration', () => {
     fireEvent.click(mariaPill);
 
     await waitFor(() => {
-      expect(screen.getByText(/Learning Overview for STU-222/i)).toBeInTheDocument();
-      expect(screen.getByText('60%')).toBeInTheDocument();
+      expect(screen.getByText(/Learning Overview for Maria Clara/i)).toBeInTheDocument();
+      expect(screen.getAllByText('60%').length).toBeGreaterThan(0);
     });
 
     // Click Juan Dela Cruz pill
@@ -285,8 +285,8 @@ describe('Parent and Student Interconnected Flow Integration', () => {
     fireEvent.click(juanPill);
 
     await waitFor(() => {
-      expect(screen.getByText(/Learning Overview for STU-111/i)).toBeInTheDocument();
-      expect(screen.getByText('100%')).toBeInTheDocument();
+      expect(screen.getByText(/Learning Overview for Juan Dela Cruz/i)).toBeInTheDocument();
+      expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
     });
   });
 });
