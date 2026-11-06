@@ -314,4 +314,60 @@ describe('ParentConsultationHub', () => {
       );
     });
   });
+
+  test('omits edit option in 3-dot menu if message is older than 30 minutes', async () => {
+    const expiredMessagesResponse = {
+      ...mockMessagesResponse,
+      messages: [
+        {
+          id: 4,
+          classroom_id: 'MTH-G4-ROSE',
+          student_id: 'STU-001',
+          sender_id: 'teacher-101',
+          sender_name: 'Teacher Maria',
+          sender_role: 'teacher',
+          message_body: 'Old message sent an hour ago',
+          created_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+          read_at: null,
+        },
+      ],
+    };
+
+    (apiFetch as jest.Mock).mockImplementation((url: string) => {
+      if (url.includes('/api/chat/messages')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(expiredMessagesResponse),
+        });
+      }
+      if (url.includes('/api/chat/threads')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockThreadsResponse),
+        });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
+    });
+
+    await act(async () => {
+      render(
+        <ParentConsultationHub
+          currentUser={mockUser}
+          classroomHistory={mockClassrooms}
+        />
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Old message sent an hour ago')).toBeInTheDocument();
+    });
+
+    const optionsBtn = screen.getByRole('button', { name: /Message options/i });
+    await act(async () => {
+      fireEvent.click(optionsBtn);
+    });
+
+    expect(screen.queryByText('Edit message')).not.toBeInTheDocument();
+    expect(screen.getByText('Unsend')).toBeInTheDocument();
+  });
 });
