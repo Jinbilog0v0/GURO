@@ -279,29 +279,27 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
           </div>
         </div>
 
-        {/* Classroom Switcher Dropdown */}
+        {/* Search Student or ID + Refresh Messages */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-[var(--bg-main)] px-3 py-1.5 rounded-xl border border-[var(--border-color)]">
-            <School size={16} className="text-[#11428E] dark:text-blue-400 shrink-0" />
-            <select
-              value={selectedClassroomId}
-              onChange={(e) => {
-                setSelectedClassroomId(e.target.value);
-                setActiveStudentId(null);
-              }}
-              className="bg-transparent text-xs font-bold text-[var(--text-main)] outline-none cursor-pointer pr-2"
-              aria-label="Select Classroom"
-            >
-              {classrooms.length === 0 ? (
-                <option value="">No classrooms found</option>
-              ) : (
-                classrooms.map((c) => (
-                  <option key={c.id} value={c.id} className="bg-[var(--bg-card)] text-[var(--text-main)]">
-                    {c.sectionName ? `${c.sectionName} (${c.id})` : c.id} — Gr. {c.gradeLevel} {c.subject}
-                  </option>
-                ))
-              )}
-            </select>
+          <div className="flex items-center gap-2 bg-[var(--bg-main)] px-3 py-1.5 rounded-xl border border-[var(--border-color)] w-56 sm:w-64 md:w-72 focus-within:border-[#11428E] focus-within:ring-2 focus-within:ring-[#11428E]/10 transition-all">
+            <Search size={14} className="text-[var(--text-muted)] shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search student or ID..."
+              className="bg-transparent text-xs text-[var(--text-main)] placeholder-[var(--text-muted)] outline-none w-full"
+              aria-label="Search student or ID"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                aria-label="Clear search"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
           <button
@@ -327,25 +325,29 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
         {/* Left Column: Student Inquiries Directory (Width 340px) */}
         <div className="w-80 md:w-96 border-r border-[var(--border-color)] flex flex-col bg-[var(--bg-sidebar)] shrink-0">
           
-          {/* Search Bar */}
+          {/* Classroom / Section Filter */}
           <div className="p-3 border-b border-[var(--border-color)]">
-            <div className="flex items-center gap-2 bg-[var(--bg-main)] px-3 py-2 rounded-xl border border-[var(--border-color)]">
-              <Search size={14} className="text-[var(--text-muted)] shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search student or ID..."
-                className="bg-transparent text-xs text-[var(--text-main)] placeholder-[var(--text-muted)] outline-none w-full"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)]"
-                >
-                  ✕
-                </button>
-              )}
+            <div className="flex items-center gap-2 bg-[var(--bg-main)] px-3 py-2 rounded-xl border border-[var(--border-color)] focus-within:border-[#11428E] focus-within:ring-2 focus-within:ring-[#11428E]/10 transition-all">
+              <School size={16} className="text-[#11428E] dark:text-blue-400 shrink-0" />
+              <select
+                value={selectedClassroomId}
+                onChange={(e) => {
+                  setSelectedClassroomId(e.target.value);
+                  setActiveStudentId(null);
+                }}
+                className="bg-transparent text-xs font-bold text-[var(--text-main)] outline-none cursor-pointer w-full pr-2"
+                aria-label="Select Classroom"
+              >
+                {classrooms.length === 0 ? (
+                  <option value="">No classrooms found</option>
+                ) : (
+                  classrooms.map((c) => (
+                    <option key={c.id} value={c.id} className="bg-[var(--bg-card)] text-[var(--text-main)]">
+                      {c.sectionName ? `${c.sectionName} (${c.id})` : c.id} — Gr. {c.gradeLevel} {c.subject}
+                    </option>
+                  ))
+                )}
+              </select>
             </div>
           </div>
 
