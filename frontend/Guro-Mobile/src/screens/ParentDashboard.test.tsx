@@ -23,8 +23,9 @@ const mockSyncProgressNow = jest.fn();
 
 const mockState = {
   studentProgress: [
-    { eventId: 'EVT-001', subject: 'Mathematics', gradeLevel: 4, topic: 'Fractions', score: 8, totalQuestions: 10, synced: false }
+    { eventId: 'EVT-001', subject: 'Mathematics', gradeLevel: 4, topic: 'Fractions', score: 8, totalQuestions: 10, classroomId: 'CLS-101', synced: false }
   ],
+  classroomId: 'CLS-101',
   parentPin: '1234',
   setParentPin: jest.fn(),
   clearProgress: mockClearProgress,
@@ -46,6 +47,12 @@ const mockState = {
   dailyMinutesUsed: 12,
   resetDailyMinutes: jest.fn(),
   appMode: 'offline',
+  token: null,
+  myChildren: [],
+  activeChildId: null,
+  setActiveChildId: jest.fn(),
+  fetchMyChildren: jest.fn(),
+  claimChild: jest.fn(),
 };
 
 jest.mock('../store/useAppStore', () => {
@@ -53,6 +60,7 @@ jest.mock('../store/useAppStore', () => {
   (hook as any).getState = () => mockState;
   return {
     useAppStore: hook,
+    resolveServerUrl: (url: string) => url || 'https://neoguro.app',
   };
 });
 
@@ -70,12 +78,30 @@ jest.mock('react-native-safe-area-context', () => ({
 describe('ParentDashboard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    global.fetch = jest.fn().mockImplementation(() =>
-      Promise.resolve({
+    global.fetch = jest.fn().mockImplementation((url?: string) => {
+      if (url && typeof url === 'string' && url.includes('/api/chat/messages')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            messages: [
+              {
+                id: 1,
+                sender_role: 'parent',
+                sender_name: 'Maria Dela Cruz',
+                message_body: 'Hello teacher',
+                created_at: new Date().toISOString(),
+              },
+            ],
+            teacherName: 'Teacher Santos',
+            consultationHours: '3:00 PM - 5:00 PM',
+          }),
+        });
+      }
+      return Promise.resolve({
         ok: true,
         json: () => Promise.resolve(mockState.studentProgress),
-      })
-    ) as jest.Mock;
+      });
+    }) as jest.Mock;
   });
 
   test('should render parental controls and statistics correctly', async () => {
@@ -198,6 +224,71 @@ describe('ParentDashboard', () => {
 
     act(() => {
       root.unmount();
+    });
+  });
+
+  test('should display registered parent name with (Parent) in chat messages', async () => {
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<ParentDashboard navigation={mockNavigation as any} route={{} as any} />);
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    const chatTabBtn = root.root.findByProps({ accessibilityLabel: 'Teacher Chat' });
+    await act(async () => {
+      chatTabBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    const json = JSON.stringify(root.toJSON());
+    expect(json).toContain('Maria Dela Cruz (Parent)');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test('should display registered children chips and allow switching children when user is parent', async () => {
+    mockState.currentUser = { role: 'parent', name: 'Maria Dela Cruz', email: 'maria@parent.ph', userId: 'PAR-123' } as any;
+    mockState.myChildren = [
+      { studentId: 'STU-001', name: 'Jose Rizal', section: 'Grade 4 - Mabini', classroomId: 'CLS-101' },
+      { studentId: 'STU-002', name: 'Andres Bonifacio', section: 'Grade 5 - Bonifacio', classroomId: 'CLS-102' },
+    ] as any;
+    mockState.activeChildId = 'STU-001';
+
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<ParentDashboard navigation={mockNavigation as any} route={{} as any} />);
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    const json = JSON.stringify(root.toJSON());
+    expect(json).toContain('My Registered Children');
+    expect(json).toContain('Jose Rizal');
+    expect(json).toContain('Andres Bonifacio');
+
+    const andresChip = root.root.findByProps({ accessibilityLabel: 'Select child Andres Bonifacio' });
+    expect(andresChip).toBeDefined();
+
+    await act(async () => {
+      andresChip.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    expect(mockState.setActiveChildId).toHaveBeenCalledWith('STU-002');
+
+    act(() => {
+      root.unmount();
+      mockState.currentUser = null;
+      mockState.myChildren = [];
+      mockState.activeChildId = null;
     });
   });
 });

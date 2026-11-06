@@ -12,6 +12,7 @@ import {
   Share,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -68,6 +69,9 @@ import {
   CheckCircle,
   Clock,
   Send,
+  Plus,
+  Link as LinkIcon,
+  X,
 } from 'lucide-react-native';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ParentDashboard'>;
@@ -90,6 +94,12 @@ export function ParentDashboard({ navigation }: Props) {
   const appMode = useAppStore((state) => state.appMode);
   const activeSchoolYear = useAppStore((state) => state.activeSchoolYear || '2026-2027');
   const activeTerm = useAppStore((state) => state.activeTerm || 'Quarter 1');
+  const token = useAppStore((state) => state.token);
+  const myChildren = useAppStore((state) => state.myChildren);
+  const activeChildId = useAppStore((state) => state.activeChildId);
+  const setActiveChildId = useAppStore((state) => state.setActiveChildId);
+  const fetchMyChildren = useAppStore((state) => state.fetchMyChildren);
+  const claimChild = useAppStore((state) => state.claimChild);
 
   const isPinMode = appMode === 'offline' || currentUser?.role === 'student';
 
@@ -133,7 +143,22 @@ export function ParentDashboard({ navigation }: Props) {
   const [isStorageLoaded, setIsStorageLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [showManualSearch, setShowManualSearch] = useState(false);
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [claimStudentId, setClaimStudentId] = useState('');
+  const [claimAccessCode, setClaimAccessCode] = useState('');
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
+
+  const selectedChild = (myChildren || []).find((c) => c.studentId === activeChildId) || myChildren?.[0] || null;
+
   const handleRefresh = async () => {
+    if (selectedChild) {
+      setRefreshing(true);
+      await loadChildProgress(selectedChild.studentId, selectedChild.accessCode);
+      setRefreshing(false);
+      return;
+    }
     if (!searchStudentId.trim() || !searchAccessCode.trim()) return;
     setRefreshing(true);
     await handleSearchOnMount(searchStudentId.trim(), searchAccessCode.trim());
@@ -224,6 +249,86 @@ export function ParentDashboard({ navigation }: Props) {
   };
 
   // ── Search Explorer Handlers ───────────────────────────────────────────────
+  const loadChildProgress = async (cId: string, code?: string) => {
+    if (!cId) return;
+    setSearchStudentId(cId);
+    if (code) setSearchAccessCode(code);
+    setLoadingSearch(true);
+    setSearched(true);
+    setSearchError(null);
+    try {
+      const resolvedUrl = resolveServerUrl(serverUrl);
+      const codeParam = code ? `&accessCode=${encodeURIComponent(code)}` : (searchAccessCode ? `&accessCode=${encodeURIComponent(searchAccessCode)}` : '');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const url = `${resolvedUrl}/api/progress?studentId=${encodeURIComponent(cId)}${codeParam}`;
+      const response = await fetch(url, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        setSearchedLogs(data);
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        setSearchError(errData.error || 'Failed to retrieve logs for this student.');
+        setSearchedLogs([]);
+      }
+    } catch {
+      setSearchError('A network error occurred. Please try again.');
+      setSearchedLogs([]);
+    } finally {
+      setLoadingSearch(false);
+    }
+  };
+
+  const handleSelectChild = (child: any) => {
+    setActiveChildId(child.studentId);
+    loadChildProgress(child.studentId, child.accessCode);
+    if (child.classroomId) {
+      fetchChatMessages(child.classroomId, child.studentId);
+    }
+  };
+
+  const handleClaimChild = async () => {
+    if (!claimStudentId.trim() || !claimAccessCode.trim()) {
+      setClaimError('Please enter both Student ID and Access Code.');
+      return;
+    }
+    setIsClaiming(true);
+    setClaimError(null);
+    try {
+      const res = await claimChild(claimStudentId.trim(), claimAccessCode.trim(), serverUrl);
+      if (res.success) {
+        toast.success(res.message);
+        setShowClaimModal(false);
+        setClaimStudentId('');
+        setClaimAccessCode('');
+        loadChildProgress(claimStudentId.trim(), claimAccessCode.trim());
+      } else {
+        setClaimError(res.message);
+      }
+    } catch {
+      setClaimError('Failed to link child. Check network connection.');
+    } finally {
+      setIsClaiming(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser?.role === 'parent') {
+      fetchMyChildren();
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (myChildren && myChildren.length > 0 && !searched && !searchStudentId) {
+      const child = myChildren.find((c) => c.studentId === activeChildId) || myChildren[0];
+      if (child) {
+        handleSelectChild(child);
+      }
+    }
+  }, [myChildren]);
+
   const handleSearch = async () => {
     if (!searchStudentId.trim() || !searchAccessCode.trim()) {
       setSearchError('Please enter both Student ID and Access Code.');
@@ -235,7 +340,11 @@ export function ParentDashboard({ navigation }: Props) {
     try {
       const resolvedUrl = resolveServerUrl(serverUrl);
       const url = `${resolvedUrl}/api/progress?studentId=${encodeURIComponent(searchStudentId.trim())}&accessCode=${encodeURIComponent(searchAccessCode.trim())}`;
-      const response = await fetch(url);
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(url, { headers });
       if (response.ok) {
         const data = await response.json();
         setSearchedLogs(data);
@@ -268,8 +377,8 @@ export function ParentDashboard({ navigation }: Props) {
   };
 
   const fetchChatMessages = async (classroomIdToUse?: string, studentIdToUse?: string) => {
-    const cId = classroomIdToUse || searchedLogs[0]?.classroomId || useAppStore.getState().classroomId;
-    const sId = studentIdToUse || searchStudentId.trim() || studentId;
+    const cId = classroomIdToUse || selectedChild?.classroomId || searchedLogs[0]?.classroomId || useAppStore.getState().classroomId;
+    const sId = studentIdToUse || selectedChild?.studentId || searchStudentId.trim() || studentId;
     if (!cId || !sId) return;
     setLoadingChat(true);
     setChatError(null);
@@ -296,8 +405,8 @@ export function ParentDashboard({ navigation }: Props) {
   const handleSendChat = async () => {
     const body = chatInput.trim();
     if (!body) return;
-    const cId = searchedLogs[0]?.classroomId || useAppStore.getState().classroomId;
-    const sId = searchStudentId.trim() || studentId;
+    const cId = selectedChild?.classroomId || searchedLogs[0]?.classroomId || useAppStore.getState().classroomId;
+    const sId = selectedChild?.studentId || searchStudentId.trim() || studentId;
     if (!cId) {
       toast.error('No classroom associated with this student profile.');
       return;
@@ -689,48 +798,46 @@ export function ParentDashboard({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      {/* ── Sticky Full-Width Header Bar (Edge-to-Edge) ── */}
-      <View style={styles.header}>
-        <View style={styles.headerAccentLine} />
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <Text style={styles.headerTitle}>GURO Parent Explorer</Text>
-            </View>
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 4,
-              backgroundColor: 'rgba(17,66,142,0.08)',
-              paddingHorizontal: 8,
-              paddingVertical: 3,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: 'rgba(17,66,142,0.15)',
-              alignSelf: 'flex-start',
-              marginTop: 4,
-              marginBottom: 2,
-            }}>
-              <Calendar size={11} color={Colors.accentPrimary} />
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
-                S.Y. {activeSchoolYear} • {activeTerm}
+      {/* ── Sticky Full-Width Header Bar (Edge-to-Edge) — Main Screen / Child Progress Only ── */}
+      {activeTab === 'progress' && (
+        <View style={styles.header}>
+          <View style={styles.headerAccentLine} />
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <Text style={styles.headerTitle}>GURO Parent Explorer</Text>
+              </View>
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                backgroundColor: 'rgba(17,66,142,0.08)',
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: 'rgba(17,66,142,0.15)',
+                alignSelf: 'flex-start',
+                marginTop: 4,
+                marginBottom: 2,
+              }}>
+                <Calendar size={11} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                  S.Y. {activeSchoolYear} • {activeTerm}
+                </Text>
+              </View>
+              <Text style={styles.headerSub}>
+                Child Progress & Parental Controls
               </Text>
             </View>
-            <Text style={styles.headerSub}>
-              {activeTab === 'progress'
-                ? 'Child Progress & Parental Controls'
-                : activeTab === 'chat'
-                ? 'Teacher Consultation & Messages'
-                : 'Device Configuration & Security'}
-            </Text>
-          </View>
 
-          <View style={styles.headerRight}>
-            <Badge label="Parent" variant="indigo" style={styles.roleBadge} />
-            <SyncBadge />
+            <View style={styles.headerRight}>
+              <Badge label="Parent" variant="indigo" style={styles.roleBadge} />
+              <SyncBadge />
+            </View>
           </View>
         </View>
-      </View>
+      )}
 
       {/* ── Tab 1: Child Progress & Learning ── */}
       <View style={activeTab === 'progress' ? { flex: 1 } : { display: 'none', height: 0, flex: 0 }}>
@@ -747,62 +854,174 @@ export function ParentDashboard({ navigation }: Props) {
             />
           }
         >
-          {/* ── Parent Progress Explorer ── */}
-        <GlassCard style={styles.section}>
-          <SectionHeader
-            title={
+          {/* ── Direct Bound Children Selector (Cloud Parent Mode) ── */}
+        {myChildren && myChildren.length > 0 && (
+          <GlassCard style={styles.section}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <User size={18} color={Colors.accentSecondary} />
-                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Parent Progress Explorer</Text>
+                <Users size={18} color={Colors.accentSecondary} />
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>My Registered Children</Text>
               </View>
-            }
-            subtitle="Query child performance history from server"
-          />
-
-          <ThemedTextInput
-            label="Child's Name (Last Name, First Name) or Student ID"
-            placeholder="e.g. Cruz, Juan or Student ID"
-            value={searchStudentId}
-            onChangeText={setSearchStudentId}
-            autoCapitalize="words"
-            containerStyle={{ marginBottom: Spacing.md }}
-          />
-
-          <ThemedTextInput
-            label="6-Digit Parent Access Code"
-            placeholder="e.g. 123456"
-            value={searchAccessCode}
-            onChangeText={setSearchAccessCode}
-            maxLength={6}
-            keyboardType="numeric"
-            containerStyle={{ marginBottom: Spacing.md }}
-          />
-
-          <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-            <PrimaryButton
-              label={loadingSearch ? "Searching..." : "Search Reports"}
-              icon={<Search size={16} color={Colors.white} style={{ marginRight: 6 }} />}
-              onPress={handleSearch}
-              loading={loadingSearch}
-              style={{ flex: 1 }}
-            />
-            {(searchStudentId || searchAccessCode) && (
-              <DangerButton
-                label=""
-                icon={<Trash2 size={16} color={Colors.dangerText} />}
-                onPress={handleClearSearch}
-                style={{ width: 48, paddingHorizontal: 0, justifyContent: 'center', alignItems: 'center' }}
-              />
-            )}
-          </View>
-
-          {searchError && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.md }}>
-              <AlertCircle size={16} color={Colors.danger} />
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.danger, flex: 1 }}>{searchError}</Text>
+              <TouchableOpacity
+                onPress={() => setShowClaimModal(true)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: 'rgba(236,72,153,0.1)',
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 8,
+                }}
+                accessibilityLabel="Link Existing Child"
+              >
+                <Plus size={12} color="#ec4899" />
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: '#ec4899' }}>Link Child</Text>
+              </TouchableOpacity>
             </View>
-          )}
-        </GlassCard>
+
+            {/* Child Chips ScrollView */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+              {myChildren.map((child) => {
+                const isSelected = selectedChild?.studentId === child.studentId;
+                return (
+                  <TouchableOpacity
+                    key={child.studentId}
+                    onPress={() => handleSelectChild(child)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 14,
+                      backgroundColor: isSelected ? Colors.accentPrimary : 'rgba(0,0,0,0.03)',
+                      borderWidth: 1,
+                      borderColor: isSelected ? Colors.accentPrimary : 'rgba(0,0,0,0.08)',
+                    }}
+                    accessibilityLabel={`Select child ${child.name}`}
+                  >
+                    <View
+                      style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: 13,
+                        backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(17,66,142,0.1)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontFamily: Fonts.display, fontSize: 11, color: isSelected ? Colors.white : Colors.accentPrimary }}>
+                        {(child.name || 'C').charAt(0)}
+                      </Text>
+                    </View>
+                    <View>
+                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: isSelected ? Colors.white : Colors.textMain }}>
+                        {child.name}
+                      </Text>
+                      {child.section && (
+                        <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: isSelected ? 'rgba(255,255,255,0.8)' : Colors.textMuted }}>
+                          {child.section}
+                        </Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {selectedChild && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)' }}>
+                <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
+                  Active: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{selectedChild.name}</Text> ({selectedChild.studentId})
+                </Text>
+                <TouchableOpacity onPress={() => setShowManualSearch(!showManualSearch)}>
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary }}>
+                    {showManualSearch ? 'Hide Search' : 'Manual Code Search'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </GlassCard>
+        )}
+
+        {/* Empty Children State for Authenticated Parent */}
+        {currentUser?.role === 'parent' && (!myChildren || myChildren.length === 0) && (
+          <GlassCard style={[styles.section, { alignItems: 'center', paddingVertical: Spacing.xl }]}>
+            <Users size={36} color={Colors.accentSecondary} style={{ marginBottom: 6, opacity: 0.7 }} />
+            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, textAlign: 'center' }}>
+              No Children Linked Yet
+            </Text>
+            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted, textAlign: 'center', marginVertical: Spacing.xs, paddingHorizontal: Spacing.md }}>
+              Link your child's student account to view their quiz accuracy, topic mastery, and message their classroom teacher directly.
+            </Text>
+            <PrimaryButton
+              label="Link Child Account"
+              icon={<LinkIcon size={14} color={Colors.white} style={{ marginRight: 6 }} />}
+              onPress={() => setShowClaimModal(true)}
+              style={{ marginTop: Spacing.sm }}
+            />
+          </GlassCard>
+        )}
+
+        {/* ── Parent Progress Explorer (Search Form) ── */}
+        {(showManualSearch || (!myChildren || myChildren.length === 0) || currentUser?.role !== 'parent') && (
+          <GlassCard style={styles.section}>
+            <SectionHeader
+              title={
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <User size={18} color={Colors.accentSecondary} />
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>Parent Progress Explorer</Text>
+                </View>
+              }
+              subtitle="Query child performance history from server"
+            />
+
+            <ThemedTextInput
+              label="Child's Name (Last Name, First Name) or Student ID"
+              placeholder="e.g. Cruz, Juan or Student ID"
+              value={searchStudentId}
+              onChangeText={setSearchStudentId}
+              autoCapitalize="words"
+              containerStyle={{ marginBottom: Spacing.md }}
+            />
+
+            <ThemedTextInput
+              label="6-Digit Parent Access Code"
+              placeholder="e.g. 123456"
+              value={searchAccessCode}
+              onChangeText={setSearchAccessCode}
+              maxLength={6}
+              keyboardType="numeric"
+              containerStyle={{ marginBottom: Spacing.md }}
+            />
+
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <PrimaryButton
+                label={loadingSearch ? "Searching..." : "Search Reports"}
+                icon={<Search size={16} color={Colors.white} style={{ marginRight: 6 }} />}
+                onPress={handleSearch}
+                loading={loadingSearch}
+                style={{ flex: 1 }}
+              />
+              {(searchStudentId || searchAccessCode) && (
+                <DangerButton
+                  label=""
+                  icon={<Trash2 size={16} color={Colors.dangerText} />}
+                  onPress={handleClearSearch}
+                  style={{ width: 48, paddingHorizontal: 0, justifyContent: 'center', alignItems: 'center' }}
+                />
+              )}
+            </View>
+
+            {searchError && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing.md }}>
+                <AlertCircle size={16} color={Colors.danger} />
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.danger, flex: 1 }}>{searchError}</Text>
+              </View>
+            )}
+          </GlassCard>
+        )}
 
         {/* ── Explorer Results or Prompt ── */}
         {loadingSearch ? (
@@ -1416,6 +1635,8 @@ export function ParentDashboard({ navigation }: Props) {
             ) : (
               chatMessages.map((msg) => {
                 const isParent = msg.sender_role === 'parent';
+                const parentRegisteredName = currentUser?.name || (msg.sender_name && msg.sender_name !== 'Parent/Guardian' && msg.sender_name !== 'Parent' ? msg.sender_name : null);
+                const parentLabel = parentRegisteredName ? `${parentRegisteredName} (Parent)` : 'Parent';
                 return (
                   <View
                     key={msg.id}
@@ -1423,7 +1644,7 @@ export function ParentDashboard({ navigation }: Props) {
                   >
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.sm, marginBottom: 2 }}>
                       <Text style={isParent ? styles.chatSenderParent : styles.chatSenderTeacher}>
-                        {isParent ? 'You (Parent)' : `${msg.sender_name || 'Teacher'}`}
+                        {isParent ? parentLabel : `${msg.sender_name || 'Teacher'}`}
                       </Text>
                       <Text style={isParent ? styles.chatTimestampParent : styles.chatTimestampTeacher}>
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -1930,6 +2151,71 @@ export function ParentDashboard({ navigation }: Props) {
         }}
         onCancel={() => setShowExitPortalConfirm(false)}
       />
+      {/* ── Link Existing Child Modal ── */}
+      <Modal
+        visible={showClaimModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowClaimModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: Spacing.lg }}>
+          <GlassCard style={{ width: '100%', maxWidth: 400, padding: Spacing.lg }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <LinkIcon size={18} color="#ec4899" />
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>Link Existing Child</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowClaimModal(false)} style={{ padding: 4 }}>
+                <X size={18} color={Colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted, marginBottom: Spacing.md }}>
+              Enter your child's Student ID and 6-digit access code once to bind them permanently to your parent account.
+            </Text>
+
+            <ThemedTextInput
+              label="Student ID"
+              placeholder="e.g. STU-2026-001"
+              value={claimStudentId}
+              onChangeText={setClaimStudentId}
+              autoCapitalize="characters"
+              containerStyle={{ marginBottom: Spacing.sm }}
+            />
+
+            <ThemedTextInput
+              label="6-Digit Access Code"
+              placeholder="e.g. 123456"
+              value={claimAccessCode}
+              onChangeText={setClaimAccessCode}
+              maxLength={6}
+              keyboardType="numeric"
+              containerStyle={{ marginBottom: Spacing.md }}
+            />
+
+            {claimError && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.md }}>
+                <AlertCircle size={16} color={Colors.danger} />
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.danger, flex: 1 }}>{claimError}</Text>
+              </View>
+            )}
+
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <SecondaryButton
+                label="Cancel"
+                onPress={() => setShowClaimModal(false)}
+                style={{ flex: 1 }}
+              />
+              <PrimaryButton
+                label={isClaiming ? "Linking..." : "Link Child"}
+                onPress={handleClaimChild}
+                loading={isClaiming}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </GlassCard>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

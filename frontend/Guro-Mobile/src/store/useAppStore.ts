@@ -77,6 +77,21 @@ export interface ProgressEvent {
   classroomId?: string;
 }
 
+export interface LinkedChild {
+  id: number;
+  userId: string;
+  studentId: string;
+  name: string;
+  email?: string;
+  accessCode?: string;
+  classroomId?: string;
+  section?: string;
+  gradeLevel?: number;
+  subject?: string;
+  teacherName?: string;
+  createdAt?: string;
+}
+
 interface AppState {
   itemBank: ItemBank | null;
   logs: string[];
@@ -88,6 +103,11 @@ interface AppState {
   teacherName: string | null;
   showQuizAnswers: boolean;
   consultationHours: string | null;
+  myChildren: LinkedChild[];
+  activeChildId: string | null;
+  setActiveChildId: (id: string | null) => void;
+  fetchMyChildren: (serverUrl?: string) => Promise<void>;
+  claimChild: (studentId: string, accessCode: string, serverUrl?: string) => Promise<{ success: boolean; message: string }>;
   activeSubjects: string[];
   activeSchoolYear: string;
   activeTerm: string;
@@ -204,6 +224,8 @@ export const useAppStore = create<AppState>()(
       teacherName: null,
       showQuizAnswers: true,
       consultationHours: null,
+      myChildren: [],
+      activeChildId: null,
       activeSubjects: ['Mathematics', 'English'],
       activeSchoolYear: '2026-2027',
       activeTerm: 'Quarter 1',
@@ -237,6 +259,55 @@ export const useAppStore = create<AppState>()(
       serverUrl: process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app',
       adaptiveTiers: {},
       consecutiveFailures: {},
+      setActiveChildId: (id) => set({ activeChildId: id }),
+      fetchMyChildren: async (serverUrl?: string) => {
+        const token = get().token;
+        if (!token) return;
+        const rawUrl = serverUrl || get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+        const resolvedUrl = resolveServerUrl(rawUrl);
+        try {
+          const res = await fetch(`${resolvedUrl}/api/parent/children`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const children = data.children || [];
+            const currentActive = get().activeChildId;
+            const nextActive = children.some((c: LinkedChild) => c.studentId === currentActive)
+              ? currentActive
+              : (children[0]?.studentId || null);
+            set({ myChildren: children, activeChildId: nextActive });
+          }
+        } catch (e: any) {
+          console.warn('[Store] fetchMyChildren error:', e);
+        }
+      },
+      claimChild: async (studentId: string, accessCode: string, serverUrl?: string) => {
+        const token = get().token;
+        if (!token) return { success: false, message: 'Authentication required' };
+        const rawUrl = serverUrl || get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+        const resolvedUrl = resolveServerUrl(rawUrl);
+        try {
+          const res = await fetch(`${resolvedUrl}/api/parent/claim-child`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ studentId, accessCode }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.success) {
+            await get().fetchMyChildren(serverUrl);
+            return { success: true, message: data.message || 'Child linked successfully!' };
+          }
+          return { success: false, message: data.error || 'Failed to link child.' };
+        } catch (e: any) {
+          return { success: false, message: e.message || 'Network error' };
+        }
+      },
       setActiveSchoolYear: (sy) => set({ activeSchoolYear: sy }),
       setActiveTerm: (term) => set({ activeTerm: term }),
       setServerUrl: (url) => set({ serverUrl: url }),
@@ -352,6 +423,9 @@ export const useAppStore = create<AppState>()(
               ...(serverTeacherName ? { teacherName: serverTeacherName } : {}),
             });
             get().addLog(`Logged in as: ${data.user.email}`);
+            if (data.user?.role === 'parent') {
+              get().fetchMyChildren().catch(console.warn);
+            }
             return { success: true, message: `Successfully logged in as ${data.user.name}` };
           } else {
             const err = await res.json().catch(() => ({}));
@@ -378,6 +452,8 @@ export const useAppStore = create<AppState>()(
           currentUser: null,
           token: null,
           studentId: 'GURO-STUDENT-LOCAL',
+          myChildren: [],
+          activeChildId: null,
           appMode: 'offline',
           guestName: null,
           // NOTE: Preserve classroomId on logout so classroom access is not revoked
@@ -727,6 +803,8 @@ export const useAppStore = create<AppState>()(
         streakCount: state.streakCount,
         unlockedBadges: state.unlockedBadges,
         parentalControls: state.parentalControls,
+        myChildren: state.myChildren,
+        activeChildId: state.activeChildId,
         currentUser: state.currentUser,
         token: state.token,
         appMode: state.appMode,
