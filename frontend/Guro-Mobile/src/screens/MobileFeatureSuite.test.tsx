@@ -244,7 +244,7 @@ describe('Mobile Comprehensive Feature Test Suite', () => {
   describe('EAS OTA Update Service Flow', () => {
     it('retrieves update metadata matching runtimeVersion and channel', () => {
       const meta = updateService.getUpdateMetadata();
-      expect(meta.runtimeVersion).toBe('1.0.2');
+      expect(meta.runtimeVersion).toBe('1.0.3');
       expect(meta.channel).toBe('production');
       expect(meta.updateId).toBe('mock-update-id-001');
     });

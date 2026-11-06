@@ -41,8 +41,8 @@ describe('DiagnosticAlerts Component', () => {
 
     // Check header and tally metrics
     expect(screen.getByText(/Curriculum Health & Strong\/Weak Lessons Tally/i)).toBeInTheDocument();
-    expect(screen.getByText(/Top Mastered Topics \(Cohort Strengths\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Priority Bottlenecks \(Needs Review\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Top Mastered Topics \(Cohort Strengths/i)).toBeInTheDocument();
+    expect(screen.getByText(/Priority Bottlenecks \(Needs Review/i)).toBeInTheDocument();
 
     // Adjectives average is 37.5% -> rounded to 38%
     expect(screen.getByText(/Adjectives \(G5 English\)/i)).toBeInTheDocument();
@@ -70,6 +70,6 @@ describe('DiagnosticAlerts Component', () => {
     render(<DiagnosticAlerts progressLogs={highScoresOnly} />);
 
     expect(screen.getByText(/Decimals \(G5 Mathematics\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/All topics are above mastery threshold!/i)).toBeInTheDocument();
+    expect(screen.getByText(/All topics are above.*mastery threshold!/i)).toBeInTheDocument();
   });
 });

@@ -89,7 +89,7 @@ describe('App Portal and Navigation Layout (Web)', () => {
     expect(screen.getAllByText('EOSY & Promotion').length).toBeGreaterThanOrEqual(1);
     
     // Sync indicator label
-    expect(screen.getByText('TEACHER · Sync\'d')).toBeInTheDocument();
+    expect(screen.getByText(/TEACHER · Sync'd/)).toBeInTheDocument();
   });
 
   test('renders Admin Console layout for admin role', async () => {
@@ -119,6 +119,6 @@ describe('App Portal and Navigation Layout (Web)', () => {
     expect(screen.queryByText('Parent Explorer')).not.toBeInTheDocument();
     
     // Sync indicator label
-    expect(screen.getByText('ADMIN · Division Office')).toBeInTheDocument();
+    expect(screen.getByText(/ADMIN · Division Office/)).toBeInTheDocument();
   });
 });

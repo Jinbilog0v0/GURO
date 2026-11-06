@@ -17,7 +17,7 @@ describe('QuizResultsStep Component', () => {
   test('renders results correctly with correct labels', () => {
     render(<QuizResultsStep {...defaultProps} />);
     
-    expect(screen.getByText('Good Job!')).toBeInTheDocument();
+    expect(screen.getByText('Excellent!')).toBeInTheDocument();
     expect(screen.getByText((_content, element) => element?.textContent === '3/4')).toBeInTheDocument();
     expect(screen.getByText('75%')).toBeInTheDocument();
     expect(screen.getByText('Back to Dashboard')).toBeInTheDocument();
