@@ -18,6 +18,7 @@ import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { Badge } from '../components/ui/Badge';
 import { SyncBadge } from '../components/shared/SyncBadge';
 import { toast } from '../components';
+import { EducationalImagePicker } from '../components/ui/EducationalImagePicker';
 import { styles } from '../styles/TeacherDashboard.styles';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -504,27 +505,55 @@ export function TeacherIngestionScreen({ route }: any) {
                     <Text style={{ fontFamily: Fonts.body, color: Colors.textMuted, lineHeight: 18 }}>
                       {stagedStudyContent.introduction}
                     </Text>
-                    
-                    {stagedStudyContent.vocabulary && stagedStudyContent.vocabulary.length > 0 && (
-                      <>
-                        <Text style={{ fontFamily: Fonts.bodySemiBold, color: Colors.textMain, marginTop: Spacing.xs }}>Vocabulary Terms:</Text>
-                        {stagedStudyContent.vocabulary.map((vocab: any, i: number) => (
-                          <View key={i} style={{ paddingLeft: Spacing.sm, borderLeftWidth: 2, borderLeftColor: Colors.accentPrimary }}>
-                            <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>
-                              {vocab.term}
-                            </Text>
-                            <Text style={{ fontFamily: Fonts.body, color: Colors.textMuted, fontSize: FontSizes.sm }}>
-                              {vocab.definition}
-                            </Text>
-                            {vocab.example && (
-                              <Text style={{ fontFamily: Fonts.body, color: Colors.textDark, fontSize: FontSizes.xs, fontStyle: 'italic' }}>
-                                Example: {vocab.example}
+
+                    <EducationalImagePicker
+                      label="Introduction Visual Aid"
+                      value={stagedStudyContent.imageUrl || ''}
+                      onChange={(val) => setStagedStudyContent({ ...stagedStudyContent, imageUrl: val })}
+                      defaultPrompt={topic}
+                      subject={subject}
+                      grade={grade}
+                      context="intro"
+                    />
+
+                    {(() => {
+                      const defs = stagedStudyContent.definitions || stagedStudyContent.vocabulary;
+                      if (!defs || defs.length === 0) return null;
+                      const defKey = stagedStudyContent.definitions ? 'definitions' : 'vocabulary';
+                      return (
+                        <View style={{ marginTop: Spacing.xs, gap: Spacing.sm }}>
+                          <Text style={{ fontFamily: Fonts.bodySemiBold, color: Colors.textMain }}>Key Concepts &amp; Visual Aids:</Text>
+                          {defs.map((vocab: any, i: number) => (
+                            <View key={i} style={{ paddingLeft: Spacing.sm, borderLeftWidth: 2, borderLeftColor: Colors.accentPrimary, gap: 4, marginVertical: 4 }}>
+                              <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>
+                                {vocab.term}
                               </Text>
-                            )}
-                          </View>
-                        ))}
-                      </>
-                    )}
+                              <Text style={{ fontFamily: Fonts.body, color: Colors.textMuted, fontSize: FontSizes.sm }}>
+                                {vocab.definition}
+                              </Text>
+                              {vocab.examples && vocab.examples.length > 0 && (
+                                <Text style={{ fontFamily: Fonts.body, color: Colors.textDark, fontSize: FontSizes.xs, fontStyle: 'italic' }}>
+                                  Examples: {Array.isArray(vocab.examples) ? vocab.examples.join(', ') : vocab.examples}
+                                </Text>
+                              )}
+                              <EducationalImagePicker
+                                label={`Visual Aid: ${vocab.term || 'Concept'}`}
+                                value={vocab.imageUrl || ''}
+                                onChange={(val) => {
+                                  const updated = [...(stagedStudyContent[defKey] || [])];
+                                  updated[i] = { ...updated[i], imageUrl: val };
+                                  setStagedStudyContent({ ...stagedStudyContent, [defKey]: updated });
+                                }}
+                                defaultPrompt={`${vocab.term}: ${vocab.definition}`}
+                                subject={subject}
+                                grade={grade}
+                                context={vocab.term}
+                              />
+                            </View>
+                          ))}
+                        </View>
+                      );
+                    })()}
 
                     {stagedStudyContent.summary && stagedStudyContent.summary.length > 0 && (
                       <>
@@ -586,6 +615,20 @@ export function TeacherIngestionScreen({ route }: any) {
                               Feedback: {q.feedback.en}
                             </Text>
                           )}
+
+                          <EducationalImagePicker
+                            label="Question Visual Aid (Optional)"
+                            value={q.imageUrl || ''}
+                            onChange={(val) => {
+                              const updated = [...stagedQuestions];
+                              updated[i] = { ...updated[i], imageUrl: val };
+                              setStagedQuestions(updated);
+                            }}
+                            defaultPrompt={`${topic}: ${q.questionText}`}
+                            subject={subject}
+                            grade={grade}
+                            context="question"
+                          />
                         </View>
                       );
                     })}

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { toast } from '../utils/toast';
 import { apiFetch } from '../utils/api';
 import { BookOpenText, Wrench, FolderOpen, Folder, FileText, Star, BookOpen, FileCheck, Loader2, X, Zap, Briefcase, Check, Sparkles, Hourglass, Languages, Lightbulb } from 'lucide-react';
+import { EducationalImagePicker } from '../components/shared/EducationalImagePicker';
 
 export interface Question {
   id: string;
@@ -13,6 +14,7 @@ export interface Question {
   options: string[];
   correctAnswer: string;
   matchingPairs?: Record<string, string>;
+  imageUrl?: string;
   feedback: {
     en: string;
     fil: string;
@@ -796,14 +798,15 @@ export function LessonSpace({
                               style={{ width: '100%', minHeight: '80px', resize: 'vertical' }}
                             />
                           </div>
-                          <div className="form-group" style={{ margin: '12px 0 0 0' }}>
-                            <label style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Introduction Image URL (Optional)</label>
-                            <input
-                              type="text"
+                          <div style={{ margin: '14px 0 0 0' }}>
+                            <EducationalImagePicker
+                              label="Lesson Introduction Visual Aid"
                               value={stagedStudyContent.imageUrl || ''}
-                              onChange={(e) => updateIntroImageUrl(e.target.value)}
-                              placeholder="https://images.unsplash.com/photo-..."
-                              style={{ width: '100%', marginTop: '4px', padding: '8px 12px' }}
+                              onChange={updateIntroImageUrl}
+                              defaultPrompt={topic}
+                              subject={subject}
+                              grade={grade}
+                              context="intro"
                             />
                           </div>
                         </div>
@@ -835,14 +838,16 @@ export function LessonSpace({
                                       style={{ width: '100%', marginTop: '4px', padding: '8px 12px' }}
                                     />
                                   </div>
-                                  <div className="form-group md:col-span-2" style={{ margin: 0 }}>
-                                    <label style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Visual Aid Image URL (Optional)</label>
-                                    <input
-                                      type="text"
+                                  <div className="md:col-span-2" style={{ margin: 0 }}>
+                                    <EducationalImagePicker
+                                      label={`Visual Aid for "${def.term || 'Term'}"`}
                                       value={def.imageUrl || ''}
-                                      onChange={(e) => updateDefinitionImageUrl(defIdx, e.target.value)}
-                                      placeholder="https://images.unsplash.com/photo-..."
-                                      style={{ width: '100%', marginTop: '4px', padding: '8px 12px' }}
+                                      onChange={(val) => updateDefinitionImageUrl(defIdx, val)}
+                                      defaultPrompt={`${def.term}: ${def.definition}`}
+                                      subject={subject}
+                                      grade={grade}
+                                      context={def.term}
+                                      compact
                                     />
                                   </div>
                                 </div>
@@ -1227,6 +1232,23 @@ export function LessonSpace({
                               </div>
                             </div>
                           )}
+
+                          <div style={{ marginTop: '12px' }}>
+                            <EducationalImagePicker
+                              label="Question Visualization / Diagram (Optional)"
+                              value={q.imageUrl || ''}
+                              onChange={(val) => {
+                                const updated = [...stagedQuestions];
+                                updated[idx] = { ...updated[idx], imageUrl: val };
+                                setStagedQuestions(updated);
+                              }}
+                              defaultPrompt={`${topic}: ${q.questionText}`}
+                              subject={subject}
+                              grade={grade}
+                              context="question"
+                              compact
+                            />
+                          </div>
 
                           <div className="form-group mt-3">
                             <label className="flex items-center gap-1.5">

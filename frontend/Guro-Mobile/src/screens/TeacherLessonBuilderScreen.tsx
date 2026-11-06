@@ -19,6 +19,7 @@ import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { Badge } from '../components/ui/Badge';
 import { SyncBadge } from '../components/shared/SyncBadge';
 import { toast } from '../components';
+import { EducationalImagePicker } from '../components/ui/EducationalImagePicker';
 import { styles } from '../styles/TeacherDashboard.styles';
 import {
   BookOpen,
@@ -37,6 +38,7 @@ interface QuestionDraft {
   options: [string, string, string, string];
   correctIndex: number;
   feedback: string;
+  imageUrl?: string;
 }
 
 function emptyQuestion(): QuestionDraft {
@@ -46,6 +48,7 @@ function emptyQuestion(): QuestionDraft {
     options: ['', '', '', ''],
     correctIndex: 0,
     feedback: '',
+    imageUrl: '',
   };
 }
 
@@ -60,6 +63,7 @@ export function TeacherLessonBuilderScreen() {
   const [grade, setGrade] = useState<number>(4);
   const [topic, setTopic] = useState('');
   const [studyIntro, setStudyIntro] = useState('');
+  const [lessonImage, setLessonImage] = useState('');
   const [questions, setQuestions] = useState<QuestionDraft[]>([emptyQuestion()]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -130,9 +134,10 @@ export function TeacherLessonBuilderScreen() {
       subject,
       grade,
       topic: topic.trim(),
-      studyContent: studyIntro.trim()
+      studyContent: (studyIntro.trim() || lessonImage.trim())
         ? {
             introduction: studyIntro.trim(),
+            imageUrl: lessonImage.trim() || undefined,
             vocabulary: [],
             summary: [],
           }
@@ -147,6 +152,7 @@ export function TeacherLessonBuilderScreen() {
           difficulty: 'Average',
           category: 'Figures of Speech',
           type: isFIB ? 'fill-in-the-blank' : 'multiple-choice',
+          imageUrl: q.imageUrl?.trim() || undefined,
           feedback: { en: q.feedback.trim() || 'Review the lesson content and try again.', fil: '' },
         };
       }),
@@ -168,6 +174,7 @@ export function TeacherLessonBuilderScreen() {
         toast.success(`"${topic.trim()}" lesson saved to classroom bank!`);
         setTopic('');
         setStudyIntro('');
+        setLessonImage('');
         setQuestions([emptyQuestion()]);
       } else {
         const err = await res.json().catch(() => ({}));
@@ -328,6 +335,16 @@ export function TeacherLessonBuilderScreen() {
               style={styles.textArea}
               containerStyle={styles.inputSpacing}
             />
+
+            <EducationalImagePicker
+              label="Lesson Summary Visualization"
+              value={lessonImage}
+              onChange={setLessonImage}
+              defaultPrompt={topic || 'Lesson Visual'}
+              subject={subject}
+              grade={grade}
+              context="intro"
+            />
           </GlassCard>
 
           {/* Questions */}
@@ -399,7 +416,17 @@ export function TeacherLessonBuilderScreen() {
                 placeholder="Hint or explanation shown after answering…"
                 value={q.feedback}
                 onChangeText={(v) => updateQuestion(q.id, { feedback: v })}
-                containerStyle={{ marginTop: Spacing.sm }}
+                containerStyle={{ marginTop: Spacing.sm, marginBottom: Spacing.sm }}
+              />
+
+              <EducationalImagePicker
+                label="Question Visualization / Diagram (Optional)"
+                value={q.imageUrl || ''}
+                onChange={(v) => updateQuestion(q.id, { imageUrl: v })}
+                defaultPrompt={`${topic}: ${q.questionText || 'Question visual'}`}
+                subject={subject}
+                grade={grade}
+                context="question"
               />
             </GlassCard>
           ))}

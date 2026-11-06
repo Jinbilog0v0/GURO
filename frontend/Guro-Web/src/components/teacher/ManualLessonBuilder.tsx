@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Save, BookOpen, Languages, X, Lightbulb, UploadCloud, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
+import { Plus, Trash2, Save, BookOpen, Languages, X, Lightbulb, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 import { toast } from '../../utils/toast';
+import { EducationalImagePicker } from '../shared/EducationalImagePicker';
 
 interface Question {
   id: string;
@@ -17,97 +18,6 @@ interface Question {
   };
   imageUrl?: string;
 }
-
-const ImageUploadInput: React.FC<{
-  label: string;
-  value: string;
-  onChange: (val: string) => void;
-}> = ({ label, value, onChange }) => {
-  const [mode, setMode] = useState<'upload' | 'url'>(value && !value.startsWith('data:') ? 'url' : 'upload');
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onChange(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  return (
-    <div className="flex flex-col gap-2 p-3 bg-[var(--bg-main)] border border-dashed border-[var(--border-color)] rounded-xl mt-2 w-full min-w-0">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{label}</span>
-        <div className="flex items-center bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg p-0.5 text-[10px] font-semibold">
-          <button
-            type="button"
-            onClick={() => setMode('upload')}
-            className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
-              mode === 'upload' 
-                ? 'bg-[#11428E] text-white shadow-xs' 
-                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-            }`}
-          >
-            Upload
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('url')}
-            className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
-              mode === 'url' 
-                ? 'bg-[#11428E] text-white shadow-xs' 
-                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-            }`}
-          >
-            Paste URL
-          </button>
-        </div>
-      </div>
-
-      <div className="w-full min-w-0">
-        {mode === 'upload' ? (
-          <label className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border border-dashed border-[var(--border-color)] bg-[var(--bg-card)] hover:border-[#11428E] transition-all cursor-pointer text-center group">
-            <UploadCloud size={16} className="text-[var(--text-muted)] group-hover:text-[#11428E] transition-colors" />
-            <span className="text-xs font-semibold text-[var(--text-main)]">
-              {value && value.startsWith('data:') ? 'Change uploaded image' : 'Click to choose an image file'}
-            </span>
-            <span className="text-[10px] text-[var(--text-muted)]">PNG, JPG, or GIF</span>
-            <input 
-              type="file" 
-              accept="image/*" 
-              onChange={handleFileChange} 
-              className="hidden" 
-            />
-          </label>
-        ) : (
-          <input 
-            type="url" 
-            placeholder="Paste HTTPS image link (e.g. https://...)" 
-            value={value.startsWith('data:') ? '' : value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full py-2 px-3 border border-[var(--border-color)] rounded-lg text-xs bg-[var(--bg-card)] text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#11428E]" 
-          />
-        )}
-      </div>
-
-      {value && (
-        <div className="mt-1 relative group w-fit">
-          <img src={value} alt="Preview" className="max-h-24 object-contain rounded-lg border border-[var(--border-color)] shadow-xs" />
-          <button 
-            type="button" 
-            onClick={() => onChange('')} 
-            className="absolute -top-1.5 -right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full size-4.5 flex items-center justify-center cursor-pointer shadow-xs transition-transform hover:scale-110"
-            aria-label="Remove image"
-          >
-            <X size={11} strokeWidth={3} />
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
 
 interface ManualLessonBuilderProps {
   classroomId?: string | null;
@@ -496,10 +406,14 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
             />
           </div>
 
-          <ImageUploadInput
+          <EducationalImagePicker
             label="Lesson Summary Visualization"
             value={lessonImage}
             onChange={setLessonImage}
+            defaultPrompt={topic || 'Lesson Summary'}
+            subject={subject}
+            grade={grade}
+            context="intro"
           />
 
           <div className="border-t border-[var(--border-color)] pt-4 mt-2.5 flex flex-col gap-3">
@@ -789,10 +703,15 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
                     />
                   </div>
 
-                  <ImageUploadInput
-                    label="Question Image / Visualization"
+                  <EducationalImagePicker
+                    label="Question Visualization / Diagram (Optional)"
                     value={q.imageUrl || ''}
                     onChange={(val) => handleUpdateField(idx, 'imageUrl', val)}
+                    defaultPrompt={`${topic}: ${q.questionText || 'Question visual'}`}
+                    subject={subject}
+                    grade={grade}
+                    context="question"
+                    compact
                   />
 
                   <div className="form-group mt-3">

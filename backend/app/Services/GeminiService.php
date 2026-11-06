@@ -336,7 +336,11 @@ class GeminiService
 
     public static function resolveEducationalVisual(?string $url, string $subject, int $grade, string $topic, string $context = ''): ?string
     {
-        // Verified Unsplash high-res educational photo bank for primary school curriculum
+        $subKey = strtolower($subject);
+        $topKey = strtolower(trim($topic));
+        $contextKey = strtolower(trim($context));
+
+        // 1. Comprehensive curated Unsplash high-res educational photo bank for primary school curriculum
         $visualCatalog = [
             'mathematics' => [
                 'fractions' => 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=600&q=80',
@@ -345,8 +349,30 @@ class GeminiService
                 'equations' => 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&w=600&q=80',
                 'geometry' => 'https://images.unsplash.com/photo-1583912267550-d44d7a125e7e?auto=format&fit=crop&w=600&q=80',
                 'shapes' => 'https://images.unsplash.com/photo-1583912267550-d44d7a125e7e?auto=format&fit=crop&w=600&q=80',
+                'angles' => 'https://images.unsplash.com/photo-1583912267550-d44d7a125e7e?auto=format&fit=crop&w=600&q=80',
                 'numbers' => 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&w=600&q=80',
-                'default' => 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=600&q=80',
+                'addition' => 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&w=600&q=80',
+                'subtraction' => 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&w=600&q=80',
+                'multiplication' => 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=600&q=80',
+                'division' => 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=600&q=80',
+                'measurement' => 'https://images.unsplash.com/photo-1583912267550-d44d7a125e7e?auto=format&fit=crop&w=600&q=80',
+                'statistics' => 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80',
+                'graph' => 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80',
+                'money' => 'https://images.unsplash.com/photo-1580519542036-c47de6196ba5?auto=format&fit=crop&w=600&q=80',
+            ],
+            'science' => [
+                'solar system' => 'https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=600&q=80',
+                'planets' => 'https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=600&q=80',
+                'space' => 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80',
+                'water cycle' => 'https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&w=600&q=80',
+                'weather' => 'https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&w=600&q=80',
+                'photosynthesis' => 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=600&q=80',
+                'plants' => 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=600&q=80',
+                'animals' => 'https://images.unsplash.com/photo-1474511320723-9a56873867b5?auto=format&fit=crop&w=600&q=80',
+                'ecosystem' => 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=600&q=80',
+                'human body' => 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&w=600&q=80',
+                'matter' => 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=600&q=80',
+                'energy' => 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=600&q=80',
             ],
             'english' => [
                 'figures of speech' => 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
@@ -356,21 +382,57 @@ class GeminiService
                 'vocabulary' => 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=600&q=80',
                 'grammar' => 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
                 'story' => 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80',
-                'default' => 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
+                'writing' => 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=600&q=80',
+                'poetry' => 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80',
+            ],
+            'filipino' => [
+                'panitikan' => 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
+                'tula' => 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80',
+                'pabula' => 'https://images.unsplash.com/photo-1474511320723-9a56873867b5?auto=format&fit=crop&w=600&q=80',
+                'balarila' => 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=600&q=80',
             ],
         ];
 
-        $subKey = strtolower($subject) === 'mathematics' ? 'mathematics' : 'english';
-        $topKey = strtolower($topic);
-        $contextKey = strtolower($context);
+        // 2. Check catalog match
+        $catKey = 'english';
+        if (str_contains($subKey, 'math')) {
+            $catKey = 'mathematics';
+        } elseif (str_contains($subKey, 'scien')) {
+            $catKey = 'science';
+        } elseif (str_contains($subKey, 'filip') || str_contains($subKey, 'tagalog')) {
+            $catKey = 'filipino';
+        }
 
-        // Check if topic or context matches any specific category in our curated catalog
-        foreach ($visualCatalog[$subKey] as $key => $verifiedUrl) {
-            if ($key !== 'default' && (str_contains($topKey, $key) || str_contains($contextKey, $key))) {
-                return $verifiedUrl;
+        if (isset($visualCatalog[$catKey])) {
+            foreach ($visualCatalog[$catKey] as $key => $verifiedUrl) {
+                if (str_contains($topKey, $key) || ($contextKey !== '' && $contextKey !== 'intro' && str_contains($contextKey, $key))) {
+                    return $verifiedUrl;
+                }
             }
         }
 
-        return $visualCatalog[$subKey]['default'] ?? null;
+        // Check cross-category catalog matches
+        foreach ($visualCatalog as $cName => $cList) {
+            foreach ($cList as $k => $verifiedUrl) {
+                if (str_contains($topKey, $k) || ($contextKey !== '' && $contextKey !== 'intro' && str_contains($contextKey, $k))) {
+                    return $verifiedUrl;
+                }
+            }
+        }
+
+        // 3. Dynamic Educational AI Visual Generator via Pollinations
+        // Construct a safe, clean, child-friendly illustration prompt based on the target term/topic
+        $targetTerm = ($contextKey !== '' && $contextKey !== 'intro') ? $context : $topic;
+        $cleanTerm = preg_replace('/[^a-zA-Z0-9\s]/', '', $targetTerm);
+        $cleanTerm = trim(preg_replace('/\s+/', ' ', $cleanTerm));
+        if (empty($cleanTerm)) {
+            $cleanTerm = preg_replace('/[^a-zA-Z0-9\s]/', '', $topic);
+        }
+
+        $dimension = ($contextKey !== '' && $contextKey !== 'intro') ? 'width=600&height=400' : 'width=800&height=500';
+        $promptStr = "educational diagram illustration of {$cleanTerm} for grade {$grade} elementary school {$subject}, clear simple colorful textbook style graphics, high quality educational visual aid, white clean background";
+        $encodedPrompt = urlencode($promptStr);
+
+        return "https://image.pollinations.ai/prompt/{$encodedPrompt}?{$dimension}&nologo=true";
     }
 }

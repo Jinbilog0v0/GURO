@@ -158,6 +158,30 @@ class ClassroomController extends Controller
         }
     }
 
+    // POST /api/lesson/generate-image
+    public function generateLessonImage(Request $request)
+    {
+        $request->validate([
+            'prompt' => 'required|string',
+            'subject' => 'nullable|string',
+            'grade' => 'nullable|integer',
+            'context' => 'nullable|string',
+        ]);
+
+        $prompt = $request->input('prompt');
+        $subject = $request->input('subject', 'General');
+        $grade = (int) $request->input('grade', 4);
+        $context = $request->input('context', '');
+
+        $url = \App\Services\GeminiService::resolveEducationalVisual('', $subject, $grade, $prompt, $context);
+
+        return response()->json([
+            'success' => true,
+            'imageUrl' => $url,
+            'prompt' => $prompt,
+        ]);
+    }
+
     // POST /api/save
     public function saveToItemBank(Request $request)
     {

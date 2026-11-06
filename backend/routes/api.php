@@ -35,6 +35,9 @@ Route::post('/chat/edit', [ChatController::class, 'editMessage']);
 Route::post('/chat/unsend', [ChatController::class, 'unsendMessage']);
 Route::post('/chat/mark-read', [ChatController::class, 'markRead']);
 
+// Educational visuals generator
+Route::post('/lesson/generate-image', [ClassroomController::class, 'generateLessonImage']);
+
 // Protected — valid Sanctum token required for Teachers & Admins
 Route::middleware('auth:sanctum')->group(function () {
     // Item Bank & Generation
