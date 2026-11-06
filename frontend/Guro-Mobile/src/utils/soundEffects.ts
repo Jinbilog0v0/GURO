@@ -2,14 +2,8 @@ import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useAppStore } from '../store/useAppStore';
 
-// Safely require expo-av if present in runtime
-let Audio: any = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  Audio = require('expo-av').Audio;
-} catch {
-  Audio = null;
-}
+// expo-av removed to prevent New Architecture (RN 0.85) native startup crashes
+const Audio: any = null;
 
 // Sound asset references matching web synthesizer frequencies
 let chimeAsset: any = null;
