@@ -680,13 +680,15 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
                           </div>
                         ) : (
                           <div className="flex items-center gap-1.5 group/bubble">
-                            {/* Single 3-Dot Action Menu OUTSIDE the text bubble (for sender: Teacher) */}
+                            {/* Single 3-Dot Action Menu OUTSIDE the text bubble (for sender: Teacher) - appears on hover */}
                             {isTeacher && (
-                              <div className="relative order-first">
+                              <div className={`relative order-first transition-opacity duration-150 ${
+                                isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none group-hover/bubble:opacity-100 group-hover/bubble:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto'
+                              }`}>
                                 <button
                                   type="button"
                                   onClick={() => setActiveMenuMessageId(isMenuOpen ? null : msg.id)}
-                                  className="p-1.5 rounded-lg border border-transparent hover:border-[var(--border-color)] bg-transparent hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer shadow-2xs"
+                                  className="p-1.5 rounded-lg border border-transparent hover:border-[var(--border-color)] bg-transparent hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer shadow-2xs focus-visible:ring-2 focus-visible:ring-[#11428E] focus-visible:outline-none"
                                   aria-label="Message options"
                                   title="Message options"
                                 >

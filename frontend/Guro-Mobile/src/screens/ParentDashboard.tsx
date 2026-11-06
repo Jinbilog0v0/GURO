@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -201,6 +202,7 @@ export function ParentDashboard({ navigation }: Props) {
 
   // Chat message forgiveness state
   const [selectedActionMessage, setSelectedActionMessage] = useState<any | null>(null);
+  const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
   const [editingChatModalMessage, setEditingChatModalMessage] = useState<any | null>(null);
   const [editingChatText, setEditingChatText] = useState('');
   const [isSavingChatEdit, setIsSavingChatEdit] = useState(false);
@@ -1803,9 +1805,24 @@ export function ParentDashboard({ navigation }: Props) {
                   );
                 }
 
+                const isHovered = hoveredMessageId === msg.id || selectedActionMessage?.id === msg.id;
+
                 return (
-                  <View
+                  <Pressable
                     key={msg.id}
+                    onHoverIn={() => setHoveredMessageId(msg.id)}
+                    onHoverOut={() => setHoveredMessageId((cur) => (cur === msg.id ? null : cur))}
+                    onPress={() => {
+                      if (isParent) {
+                        setHoveredMessageId((cur) => (cur === msg.id ? null : msg.id));
+                      }
+                    }}
+                    onLongPress={() => {
+                      if (isParent) {
+                        handleOpenMessageOptions(msg);
+                      }
+                    }}
+                    delayLongPress={350}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
@@ -1815,20 +1832,27 @@ export function ParentDashboard({ navigation }: Props) {
                       gap: 4,
                     }}
                   >
-                    {/* Single 3-Dot Action button OUTSIDE the text bubble (for sender: Parent) */}
+                    {/* Single 3-Dot Action button OUTSIDE the text bubble (for sender: Parent) - appears on hover/tap */}
                     {isParent && (
-                      <TouchableOpacity
-                        onPress={() => handleOpenMessageOptions(msg)}
-                        accessibilityLabel={`Options for message ${msg.id}`}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      <View
                         style={{
-                          padding: 6,
-                          borderRadius: 14,
-                          backgroundColor: 'rgba(0,0,0,0.04)',
+                          opacity: isHovered ? 1 : 0,
+                          pointerEvents: isHovered ? 'auto' : 'none',
                         }}
                       >
-                        <MoreVertical size={14} color={Colors.textMuted} />
-                      </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleOpenMessageOptions(msg)}
+                          accessibilityLabel={`Options for message ${msg.id}`}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          style={{
+                            padding: 6,
+                            borderRadius: 14,
+                            backgroundColor: 'rgba(0,0,0,0.05)',
+                          }}
+                        >
+                          <MoreVertical size={14} color={Colors.textMuted} />
+                        </TouchableOpacity>
+                      </View>
                     )}
 
                     <View
@@ -1867,7 +1891,7 @@ export function ParentDashboard({ navigation }: Props) {
                         {msg.message_body}
                       </Text>
                     </View>
-                  </View>
+                  </Pressable>
                 );
               })
             )}
