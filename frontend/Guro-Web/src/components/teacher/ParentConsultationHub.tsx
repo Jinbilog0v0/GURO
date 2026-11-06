@@ -8,7 +8,13 @@ import {
   User, 
   School, 
   CheckCircle2,
-  Users
+  Users,
+  MoreVertical,
+  Edit2,
+  Trash2,
+  History,
+  X,
+  Ban
 } from 'lucide-react';
 import { apiFetch } from '../../utils/api';
 import { toast } from '../../utils/toast';
@@ -23,6 +29,11 @@ interface Message {
   message_body: string;
   created_at: string;
   read_at: string | null;
+  is_unsent?: boolean;
+  unsent_at?: string | null;
+  original_message_body?: string | null;
+  edit_history?: Array<{ previous_body: string; edited_at: string }> | null;
+  edited_at?: string | null;
 }
 
 interface Thread {
@@ -246,6 +257,85 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendReply();
+    }
+  };
+
+  // Message edit & forgiveness states
+  const [activeMenuMessageId, setActiveMenuMessageId] = useState<number | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState<string>('');
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState<boolean>(false);
+  const [historyModalMessage, setHistoryModalMessage] = useState<Message | null>(null);
+
+  const handleStartEdit = (msg: Message) => {
+    const isWithin30Mins = Date.now() - new Date(msg.created_at).getTime() <= 30 * 60 * 1000;
+    if (!isWithin30Mins) {
+      toast.error('Messages can only be edited within 30 minutes of sending.');
+      return;
+    }
+    setEditingMessageId(msg.id);
+    setEditingText(msg.message_body);
+    setActiveMenuMessageId(null);
+  };
+
+  const handleSaveEdit = async (messageId: number) => {
+    if (!editingText.trim()) return;
+    setIsSubmittingEdit(true);
+    try {
+      const res = await apiFetch('/api/chat/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messageId,
+          messageBody: editingText.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, ...data.message } : m));
+        // Update thread preview if it was latest
+        setThreads(prev => prev.map(t => {
+          if (t.studentId === activeStudentId) {
+            return { ...t, latestMessage: editingText.trim() };
+          }
+          return t;
+        }));
+        setEditingMessageId(null);
+        setEditingText('');
+        toast.success('Message updated.');
+      } else {
+        toast.error(data.error || 'Failed to edit message.');
+      }
+    } catch {
+      toast.error('Network error while updating message.');
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
+
+  const handleUnsend = async (messageId: number) => {
+    try {
+      const res = await apiFetch('/api/chat/unsend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, ...data.message, is_unsent: true } : m));
+        setThreads(prev => prev.map(t => {
+          if (t.studentId === activeStudentId) {
+            return { ...t, latestMessage: 'This message was unsent' };
+          }
+          return t;
+        }));
+        setActiveMenuMessageId(null);
+        toast.success('Message unsent.');
+      } else {
+        toast.error(data.error || 'Failed to unsend message.');
+      }
+    } catch {
+      toast.error('Network error while unsending message.');
     }
   };
 
@@ -487,14 +577,19 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
                 ) : (
                   messages.map((msg) => {
                     const isTeacher = msg.sender_role === 'teacher';
+                    const isEditing = editingMessageId === msg.id;
+                    const isMenuOpen = activeMenuMessageId === msg.id;
+                    const isUnsent = msg.is_unsent;
+                    const isEdited = Boolean(msg.edited_at);
                     const timeStr = msg.created_at
                       ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                       : '';
+                    const isWithin30Mins = Date.now() - new Date(msg.created_at).getTime() <= 30 * 60 * 1000;
 
                     return (
                       <div
                         key={msg.id}
-                        className={`flex flex-col max-w-[75%] md:max-w-[65%] ${
+                        className={`group relative flex flex-col max-w-[75%] md:max-w-[65%] ${
                           isTeacher ? 'self-end items-end' : 'self-start items-start'
                         }`}
                       >
@@ -507,16 +602,117 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
                           <span className="text-[10px] text-[var(--text-muted)] tabular-nums">
                             {timeStr}
                           </span>
+                          {isEdited && !isUnsent && (
+                            <button
+                              type="button"
+                              onClick={() => setHistoryModalMessage(msg)}
+                              className="text-[10px] font-bold text-[var(--text-muted)] hover:text-[#11428E] dark:hover:text-blue-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                              title="Click to view original message"
+                              aria-label="View edit history"
+                            >
+                              <span>(edited)</span>
+                            </button>
+                          )}
                         </div>
-                        <div
-                          className={`px-4 py-2.5 rounded-2xl text-xs leading-relaxed shadow-xs ${
-                            isTeacher
-                              ? 'bg-[#11428E] text-white rounded-tr-xs'
-                              : 'bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] rounded-tl-xs'
-                          }`}
-                        >
-                          <p className="whitespace-pre-wrap break-words">{msg.message_body}</p>
-                        </div>
+
+                        {isUnsent ? (
+                          <div className="italic text-xs text-[var(--text-muted)] bg-[var(--bg-main)] border border-dashed border-[var(--border-color)] px-3.5 py-2 rounded-2xl flex items-center gap-1.5 opacity-80">
+                            <Ban size={12} className="opacity-50" />
+                            <span>{isTeacher ? 'You unsent a message' : 'This message was unsent'}</span>
+                          </div>
+                        ) : isEditing ? (
+                          <div className="w-full bg-[var(--bg-card)] border-2 border-[#11428E] rounded-2xl p-3 shadow-lg flex flex-col gap-2">
+                            <textarea
+                              value={editingText}
+                              onChange={(e) => setEditingText(e.target.value)}
+                              rows={2}
+                              className="w-full bg-transparent text-xs text-[var(--text-main)] outline-none resize-none leading-relaxed"
+                              autoFocus
+                            />
+                            <div className="flex items-center justify-between pt-1 border-t border-[var(--border-color)]">
+                              <span className="text-[10px] text-[var(--text-muted)]">30m edit window • Original kept</span>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingMessageId(null)}
+                                  className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveEdit(msg.id)}
+                                  disabled={!editingText.trim() || isSubmittingEdit}
+                                  className="px-3 py-1 rounded-lg text-[11px] font-bold bg-[#11428E] text-white hover:bg-[#0d3470] cursor-pointer disabled:opacity-50"
+                                >
+                                  {isSubmittingEdit ? 'Saving...' : 'Save'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 group/bubble">
+                            {/* 3-dot Action Menu for sender (Teacher) */}
+                            {isTeacher && (
+                              <div className="relative order-first">
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveMenuMessageId(isMenuOpen ? null : msg.id)}
+                                  className="opacity-0 group-hover/bubble:opacity-100 focus:opacity-100 p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-opacity cursor-pointer"
+                                  aria-label="Message options"
+                                  title="Message options"
+                                >
+                                  <MoreVertical size={14} />
+                                </button>
+
+                                {isMenuOpen && (
+                                  <>
+                                    <div
+                                      className="fixed inset-0 z-20"
+                                      onClick={() => setActiveMenuMessageId(null)}
+                                    />
+                                    <div
+                                      className="absolute right-0 top-full mt-1 z-30 w-36 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-lg p-1 animate-in fade-in zoom-in-95 duration-100 flex flex-col text-xs"
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={() => handleStartEdit(msg)}
+                                        disabled={!isWithin30Mins}
+                                        className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer transition-colors ${
+                                          isWithin30Mins
+                                            ? 'hover:bg-[var(--bg-main)] text-[var(--text-main)]'
+                                            : 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
+                                        }`}
+                                        title={isWithin30Mins ? 'Edit message' : 'Edit period expired (30 mins)'}
+                                      >
+                                        <Edit2 size={12} />
+                                        <span>Edit message</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUnsend(msg.id)}
+                                        className="w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors font-medium"
+                                      >
+                                        <Trash2 size={12} />
+                                        <span>Unsend</span>
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            )}
+
+                            <div
+                              className={`px-4 py-2.5 rounded-2xl text-xs leading-relaxed shadow-xs ${
+                                isTeacher
+                                  ? 'bg-[#11428E] text-white rounded-tr-xs'
+                                  : 'bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-color)] rounded-tl-xs'
+                              }`}
+                            >
+                              <p className="whitespace-pre-wrap break-words">{msg.message_body}</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -563,6 +759,66 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
         </div>
 
       </div>
+
+      {/* Edit History Modal (Messenger style) */}
+      {historyModalMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
+              <div className="flex items-center gap-2 text-sm font-bold text-[var(--text-main)]">
+                <History size={16} className="text-[#11428E] dark:text-blue-400" />
+                <span>Edit History</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHistoryModalMessage(null)}
+                className="text-[var(--text-muted)] hover:text-[var(--text-main)] p-1 rounded-lg cursor-pointer"
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {/* Original Message */}
+              <div className="flex flex-col gap-1 p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)]">
+                <div className="flex items-center justify-between text-[10px] font-bold text-[var(--text-muted)] uppercase">
+                  <span>Original Message</span>
+                  <span className="tabular-nums font-mono">
+                    {historyModalMessage.created_at ? new Date(historyModalMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                  </span>
+                </div>
+                <p className="text-xs text-[var(--text-main)] whitespace-pre-wrap mt-1">
+                  {historyModalMessage.original_message_body || historyModalMessage.message_body}
+                </p>
+              </div>
+
+              {/* Current Edited Message */}
+              <div className="flex flex-col gap-1 p-3 rounded-xl bg-[#11428E]/10 border border-[#11428E]/20">
+                <div className="flex items-center justify-between text-[10px] font-bold text-[#11428E] dark:text-blue-400 uppercase">
+                  <span>Edited Version</span>
+                  <span className="tabular-nums font-mono">
+                    {historyModalMessage.edited_at ? new Date(historyModalMessage.edited_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                  </span>
+                </div>
+                <p className="text-xs text-[var(--text-main)] whitespace-pre-wrap mt-1">
+                  {historyModalMessage.message_body}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setHistoryModalMessage(null)}
+                className="px-4 py-2 rounded-xl bg-[var(--bg-main)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-bold text-[var(--text-main)] cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

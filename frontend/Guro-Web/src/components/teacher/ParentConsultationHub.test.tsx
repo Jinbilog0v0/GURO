@@ -75,6 +75,19 @@ describe('ParentConsultationHub', () => {
         created_at: '2026-11-05T08:00:00Z',
         read_at: null,
       },
+      {
+        id: 3,
+        classroom_id: 'MTH-G4-ROSE',
+        student_id: 'STU-001',
+        sender_id: 'teacher-101',
+        sender_name: 'Teacher Maria',
+        sender_role: 'teacher',
+        message_body: 'Yes, it is now ready.',
+        original_message_body: 'Yes, it is redy.',
+        created_at: new Date().toISOString(),
+        edited_at: new Date().toISOString(),
+        read_at: null,
+      },
     ],
   };
 
@@ -97,6 +110,47 @@ describe('ParentConsultationHub', () => {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({ success: true }),
+        });
+      }
+      if (url.includes('/api/chat/edit')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            success: true,
+            message: {
+              id: 2,
+              classroom_id: 'MTH-G4-ROSE',
+              student_id: 'STU-001',
+              sender_id: 'teacher-101',
+              sender_name: 'Teacher Maria',
+              sender_role: 'teacher',
+              message_body: 'Updated text by teacher',
+              original_message_body: 'Yes, it is redy.',
+              edited_at: new Date().toISOString(),
+              created_at: new Date().toISOString(),
+              read_at: null,
+            },
+          }),
+        });
+      }
+      if (url.includes('/api/chat/unsend')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            success: true,
+            message: {
+              id: 2,
+              classroom_id: 'MTH-G4-ROSE',
+              student_id: 'STU-001',
+              sender_id: 'teacher-101',
+              sender_name: 'Teacher Maria',
+              sender_role: 'teacher',
+              message_body: 'Yes, it is now ready.',
+              is_unsent: true,
+              created_at: new Date().toISOString(),
+              read_at: null,
+            },
+          }),
         });
       }
       if (url.includes('/api/chat/send')) {
@@ -192,6 +246,70 @@ describe('ParentConsultationHub', () => {
         '/api/chat/send',
         expect.objectContaining({
           method: 'POST',
+        })
+      );
+    });
+  });
+
+  test('allows viewing edit history when clicking (edited)', async () => {
+    await act(async () => {
+      render(
+        <ParentConsultationHub
+          currentUser={mockUser}
+          classroomHistory={mockClassrooms}
+        />
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('(edited)')).toBeInTheDocument();
+    });
+
+    const editedBtn = screen.getByText('(edited)');
+    await act(async () => {
+      fireEvent.click(editedBtn);
+    });
+
+    expect(screen.getByText('Edit History')).toBeInTheDocument();
+    expect(screen.getByText('Original Message')).toBeInTheDocument();
+    expect(screen.getByText('Yes, it is redy.')).toBeInTheDocument();
+  });
+
+  test('allows editing and unsending a message via 3-dot options menu', async () => {
+    await act(async () => {
+      render(
+        <ParentConsultationHub
+          currentUser={mockUser}
+          classroomHistory={mockClassrooms}
+        />
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Yes, it is now ready.')).toBeInTheDocument();
+    });
+
+    const optionsBtn = screen.getByRole('button', { name: /Message options/i });
+    expect(optionsBtn).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(optionsBtn);
+    });
+
+    expect(screen.getByText('Edit message')).toBeInTheDocument();
+    const unsendBtn = screen.getByText('Unsend');
+    expect(unsendBtn).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(unsendBtn);
+    });
+
+    await waitFor(() => {
+      expect(apiFetch).toHaveBeenCalledWith(
+        '/api/chat/unsend',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ messageId: 3 }),
         })
       );
     });
