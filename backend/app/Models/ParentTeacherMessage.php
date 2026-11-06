@@ -17,9 +17,18 @@ class ParentTeacherMessage extends Model
         'receiver_id',
         'message_body',
         'read_at',
+        'is_unsent',
+        'unsent_at',
+        'original_message_body',
+        'edit_history',
+        'edited_at',
     ];
 
     protected $casts = [
         'read_at' => 'datetime',
+        'is_unsent' => 'boolean',
+        'unsent_at' => 'datetime',
+        'edited_at' => 'datetime',
+        'edit_history' => 'array',
     ];
 }

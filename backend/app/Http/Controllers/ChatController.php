@@ -44,10 +44,12 @@ class ChatController extends Controller
             $threads[] = [
                 'studentId' => (string) $studentId,
                 'studentName' => $studentName,
-                'latestMessage' => $latest->message_body,
+                'latestMessage' => $latest->is_unsent ? 'This message was unsent' : $latest->message_body,
                 'latestSenderRole' => $latest->sender_role,
                 'latestSenderName' => $latest->sender_name,
                 'latestTimestamp' => $latest->created_at ? $latest->created_at->toISOString() : null,
+                'latestIsUnsent' => (bool) $latest->is_unsent,
+                'latestEditedAt' => $latest->edited_at ? $latest->edited_at->toISOString() : null,
                 'unreadCount' => $unreadCount,
             ];
         }
@@ -141,6 +143,88 @@ class ChatController extends Controller
             'receiver_id' => (string) $receiverId,
             'message_body' => $messageBody,
         ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => $msg,
+        ]);
+    }
+
+    /**
+     * POST /api/chat/edit
+     * Body: messageId, messageBody
+     */
+    public function editMessage(Request $request)
+    {
+        $request->validate([
+            'messageId' => 'required|integer',
+            'messageBody' => 'required|string|max:1000',
+        ]);
+
+        $messageId = $request->input('messageId');
+        $newBody = trim($request->input('messageBody'));
+
+        $msg = ParentTeacherMessage::find($messageId);
+        if (!$msg) {
+            return response()->json(['error' => 'Message not found.'], 404);
+        }
+
+        if ($msg->is_unsent) {
+            return response()->json(['error' => 'Cannot edit an unsent message.'], 422);
+        }
+
+        // Validate 30-minute edit window
+        $diffMinutes = $msg->created_at->diffInMinutes(now(), false);
+        if ($diffMinutes > 30) {
+            return response()->json([
+                'error' => 'Messages can only be edited within 30 minutes of sending.',
+                'minutesElapsed' => $diffMinutes,
+            ], 422);
+        }
+
+        // Preserve original text on first edit
+        if ($msg->original_message_body === null) {
+            $msg->original_message_body = $msg->message_body;
+        }
+
+        // Maintain edit history
+        $history = $msg->edit_history ?? [];
+        $history[] = [
+            'previous_body' => $msg->message_body,
+            'edited_at' => now()->toISOString(),
+        ];
+
+        $msg->message_body = $newBody;
+        $msg->edit_history = $history;
+        $msg->edited_at = now();
+        $msg->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => $msg,
+        ]);
+    }
+
+    /**
+     * POST /api/chat/unsend
+     * Body: messageId
+     */
+    public function unsendMessage(Request $request)
+    {
+        $request->validate([
+            'messageId' => 'required|integer',
+        ]);
+
+        $messageId = $request->input('messageId');
+
+        $msg = ParentTeacherMessage::find($messageId);
+        if (!$msg) {
+            return response()->json(['error' => 'Message not found.'], 404);
+        }
+
+        $msg->is_unsent = true;
+        $msg->unsent_at = now();
+        $msg->save();
 
         return response()->json([
             'success' => true,

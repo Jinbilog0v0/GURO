@@ -31,6 +31,8 @@ Route::get('/progress', [SyncController::class, 'getProgress']);
 Route::get('/chat/threads', [ChatController::class, 'getThreads']);
 Route::get('/chat/messages', [ChatController::class, 'getMessages']);
 Route::post('/chat/send', [ChatController::class, 'sendMessage']);
+Route::post('/chat/edit', [ChatController::class, 'editMessage']);
+Route::post('/chat/unsend', [ChatController::class, 'unsendMessage']);
 Route::post('/chat/mark-read', [ChatController::class, 'markRead']);
 
 // Protected — valid Sanctum token required for Teachers & Admins
