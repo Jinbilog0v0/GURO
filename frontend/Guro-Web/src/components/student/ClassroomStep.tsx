@@ -1,171 +1,203 @@
-import React, { useState } from 'react';
-import { GraduationCap, ArrowRight, CheckCircle2, Info, RefreshCw, BarChart2, Calendar } from 'lucide-react';
-
-interface ClassroomStepProps {
-    classroomCode: string;
-    teacherName: string;
-    sectionName?: string;
-    schoolYear?: string;
-    term?: string;
-    onJoinClassroom: (code: string) => Promise<boolean>;
-    onLeaveClassroom: () => void;
-}
-
-export const ClassroomStep: React.FC<ClassroomStepProps> = ({
-    classroomCode,
-    teacherName,
-    sectionName = '',
-    schoolYear = '2026-2027',
-    term = 'Quarter 1',
-    onJoinClassroom,
-    onLeaveClassroom,
-}) => {
-    const [joinCodeInput, setJoinCodeInput] = useState('');
-    const [isJoining, setIsJoining] = useState(false);
-
-    const handleJoinSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const trimmed = joinCodeInput.trim().toUpperCase();
-        if (!trimmed) return;
-
-        setIsJoining(true);
-        const success = await onJoinClassroom(trimmed);
-        setIsJoining(false);
-
-        if (success) {
-            setJoinCodeInput('');
-        }
-    };
-
-    return (
-        <div className="min-h-[calc(100vh-56px)] w-full flex flex-col items-center p-6 md:p-10 relative overflow-hidden select-none" style={{ background: 'var(--bg-main)' }}>
-            {/* Background ambient glow matching theme */}
-            <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 bg-[var(--accent-primary-glow)] rounded-full blur-[160px]" />
-            <div className="absolute -top-48 right-1/4 size-80 rounded-full blur-[140px]" style={{ background: 'rgba(160,19,34,0.08)' }} />
-
-            <div className="flex w-full max-w-2xl flex-col gap-8 relative z-10 pt-4">
-                {/* Header */}
-                <div className="flex flex-col items-center text-center w-full">
-                    <div className="size-14 rounded-2xl bg-gradient-to-br from-[#11428E] to-[#A01322] flex items-center justify-center shadow-lg mb-4">
-                        <GraduationCap className="size-8 text-white" />
-                    </div>
-                    <h1 className="text-2xl md:text-3xl font-extrabold text-[var(--text-main)] tracking-tight">
-                        Classroom Connection
-                    </h1>
-                    <p className="text-sm font-medium text-[var(--text-muted)] mt-1.5 max-w-md">
-                        Connect with your teacher to sync customized learning material, diagnostic activities, and practice exercises.
-                    </p>
-                </div>
-
-                {classroomCode ? (
-                    /* Connected State Card */
-                    <div className="glass-panel rounded-3xl p-8 border border-[var(--border-color)] flex flex-col gap-6 shadow-xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 bg-emerald-500/10 text-emerald-500 rounded-bl-3xl flex items-center gap-1.5 text-xs font-black uppercase tracking-wider">
-                            <CheckCircle2 className="size-4 animate-pulse" />
-                            <span>Connected</span>
-                        </div>
-
-                        <div className="flex flex-col gap-1 mt-2">
-                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">ACTIVE CLASSROOM</span>
-                            <h2 className="text-3xl font-black text-[var(--text-main)] tracking-tight">{classroomCode}</h2>
-                            <div className="flex items-center gap-2 flex-wrap mt-1">
-                                {teacherName && (
-                                    <span className="text-sm font-semibold text-[var(--text-muted)]">
-                                        Teacher: <strong className="text-[var(--text-main)]">{teacherName}</strong>
-                                    </span>
-                                )}
-                                {sectionName && (
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-bold text-xs border border-emerald-500/20">
-                                        Section: {sectionName}
-                                    </span>
-                                )}
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold text-xs border border-sky-500/20">
-                                    <Calendar className="size-3 text-sky-500 shrink-0" />
-                                    <span>S.Y. {schoolYear} • {term}</span>
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="h-px bg-[var(--border-color)] w-full" />
-
-                        <div className="flex flex-col gap-3">
-                            <div className="flex items-start gap-3">
-                                <div className="size-6 rounded-lg bg-[#11428E]/10 flex items-center justify-center shrink-0 mt-0.5">
-                                    <RefreshCw className="size-3.5 text-[#11428E]" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="text-sm font-bold text-[var(--text-main)]">Auto-Synced Lessons</h4>
-                                    <p className="text-xs text-[var(--text-muted)] mt-0.5">Your Lessons tab will dynamically fetch diagnostic exercises generated by your teacher.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3">
-                                <div className="size-6 rounded-lg bg-[#11428E]/10 flex items-center justify-center shrink-0 mt-0.5">
-                                    <BarChart2 className="size-3.5 text-[#11428E]" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="text-sm font-bold text-[var(--text-main)]">Telemetry Reports</h4>
-                                    <p className="text-xs text-[var(--text-muted)] mt-0.5">Quiz performance is automatically logged to the teacher dashboard for personalized guidance.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row gap-4 mt-2">
-                            <button
-                                onClick={onLeaveClassroom}
-                                className="w-full py-3.5 bg-red-950/20 hover:bg-red-900/30 border border-red-500/20 hover:border-red-500/40 text-red-400 font-extrabold text-sm rounded-2xl shadow-sm transition-all duration-300 hover:scale-[1.01] cursor-pointer flex items-center justify-center gap-2"
-                            >
-                                Leave Classroom
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    /* Join Form Card */
-                    <div className="glass-panel rounded-3xl p-8 border border-[var(--border-color)] flex flex-col gap-6 shadow-xl">
-                        <div className="flex flex-col gap-1">
-                            <h2 className="text-lg font-black text-[var(--text-main)]">Join Classroom</h2>
-                            <p className="text-xs font-semibold text-[var(--text-muted)]">
-                                Enter the classroom code provided by your teacher to link your account.
-                            </p>
-                        </div>
-
-                        <form onSubmit={handleJoinSubmit} className="flex flex-col gap-4">
-                            <div className="flex flex-col gap-2">
-                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider">
-                                    Classroom Code
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. MAT-G4-RIZAL"
-                                    value={joinCodeInput}
-                                    onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
-                                    disabled={isJoining}
-                                    className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-main)] font-extrabold tracking-widest text-center text-lg uppercase py-4 rounded-2xl focus:border-[#11428E] focus:outline-none transition-all placeholder:tracking-normal placeholder:font-medium placeholder:text-sm"
-                                    required
-                                />
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={isJoining || !joinCodeInput.trim()}
-                                className="w-full py-4 bg-gradient-to-r from-[#11428E] to-[#1c5bc0] text-white font-extrabold text-sm rounded-2xl shadow-md transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <span>{isJoining ? 'Verifying Code...' : 'Connect to Classroom'}</span>
-                                <ArrowRight className="size-4 shrink-0" />
-                            </button>
-                        </form>
-
-                        <div className="flex items-start gap-3 p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
-                            <Info className="size-4.5 text-[#11428E] shrink-0 mt-0.5" />
-                            <div className="flex flex-col gap-0.5">
-                                <h4 className="text-xs font-bold text-[var(--text-main)]">Where is my classroom code?</h4>
-                                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                                    Your teacher can find the classroom code in their workspace dashboard header. The code is usually a short combination of alphanumeric characters.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
+import React, { useState } from 'react';
+import { GraduationCap, ArrowRight, CheckCircle2, Info, RefreshCw, BarChart2, Calendar } from 'lucide-react';
+
+interface ClassroomStepProps {
+    classroomCode: string;
+    teacherName: string;
+    sectionName?: string;
+    schoolYear?: string;
+    term?: string;
+    onJoinClassroom: (code: string) => Promise<boolean>;
+    onLeaveClassroom: () => void;
+}
+
+export const ClassroomStep: React.FC<ClassroomStepProps> = ({
+    classroomCode,
+    teacherName,
+    sectionName = '',
+    schoolYear = '2026-2027',
+    term = 'Quarter 1',
+    onJoinClassroom,
+    onLeaveClassroom,
+}) => {
+    const [joinCodeInput, setJoinCodeInput] = useState('');
+    const [isJoining, setIsJoining] = useState(false);
+    const [joinError, setJoinError] = useState<string | null>(null);
+
+    const handleJoinSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const trimmed = joinCodeInput.trim().toUpperCase();
+        if (!trimmed) return;
+
+        setIsJoining(true);
+        setJoinError(null);
+        const success = await onJoinClassroom(trimmed);
+        setIsJoining(false);
+
+        if (success) {
+            setJoinCodeInput('');
+            setJoinError(null);
+        } else {
+            setJoinError(`Could not find active classroom with code "${trimmed}". Please check the code or contact your teacher.`);
+        }
+    };
+
+    return (
+        <div className="min-h-[calc(100vh-56px)] w-full flex flex-col items-center p-6 md:p-10 relative overflow-hidden select-none" style={{ background: 'var(--bg-main)' }}>
+            {/* Background ambient glow matching theme */}
+            <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 size-96 bg-[var(--accent-primary-glow)] rounded-full blur-[160px]" />
+            <div className="absolute -top-48 right-1/4 size-80 rounded-full blur-[140px]" style={{ background: 'rgba(160,19,34,0.08)' }} />
+
+            <div className="flex w-full max-w-2xl flex-col gap-8 relative z-10 pt-4">
+                {/* Header */}
+                <div className="flex flex-col items-center text-center w-full">
+                    <div className="size-14 rounded-2xl bg-gradient-to-br from-[#11428E] to-[#A01322] flex items-center justify-center shadow-lg mb-4">
+                        <GraduationCap className="size-8 text-white" />
+                    </div>
+                    <h1 className="text-2xl md:text-3xl font-extrabold text-[var(--text-main)] tracking-tight">
+                        Classroom Connection
+                    </h1>
+                    <p className="text-sm font-medium text-[var(--text-muted)] mt-1.5 max-w-md">
+                        Connect with your teacher to sync customized learning material, diagnostic activities, and practice exercises.
+                    </p>
+                </div>
+
+                {classroomCode ? (
+                    /* Connected State Card */
+                    <div className="glass-panel rounded-3xl p-8 border border-[var(--border-color)] flex flex-col gap-6 shadow-xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 bg-emerald-500/10 text-emerald-500 rounded-bl-3xl flex items-center gap-1.5 text-xs font-black uppercase tracking-wider">
+                            <CheckCircle2 className="size-4 animate-pulse" />
+                            <span>Connected</span>
+                        </div>
+
+                        <div className="flex flex-col gap-1 mt-2">
+                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">ACTIVE CLASSROOM</span>
+                            <h2 className="text-3xl font-black text-[var(--text-main)] tracking-tight">{classroomCode}</h2>
+                            <div className="flex items-center gap-2 flex-wrap mt-1">
+                                {teacherName && (
+                                    <span className="text-sm font-semibold text-[var(--text-muted)]">
+                                        Teacher: <strong className="text-[var(--text-main)]">{teacherName}</strong>
+                                    </span>
+                                )}
+                                {sectionName && (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-bold text-xs border border-emerald-500/20">
+                                        Section: {sectionName}
+                                    </span>
+                                )}
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold text-xs border border-sky-500/20">
+                                    <Calendar className="size-3 text-sky-500 shrink-0" />
+                                    <span>S.Y. {schoolYear} • {term}</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="h-px bg-[var(--border-color)] w-full" />
+
+                        <div className="flex flex-col gap-3">
+                            <div className="flex items-start gap-3">
+                                <div className="size-6 rounded-lg bg-[#11428E]/10 flex items-center justify-center shrink-0 mt-0.5">
+                                    <RefreshCw className="size-3.5 text-[#11428E]" />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-sm font-bold text-[var(--text-main)]">Auto-Synced Lessons</h4>
+                                    <p className="text-xs text-[var(--text-muted)] mt-0.5">Your Lessons tab will dynamically fetch diagnostic exercises generated by your teacher.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                                <div className="size-6 rounded-lg bg-[#11428E]/10 flex items-center justify-center shrink-0 mt-0.5">
+                                    <BarChart2 className="size-3.5 text-[#11428E]" />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-sm font-bold text-[var(--text-main)]">Telemetry Reports</h4>
+                                    <p className="text-xs text-[var(--text-muted)] mt-0.5">Quiz performance is automatically logged to the teacher dashboard for personalized guidance.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-4 mt-2">
+                            <button
+                                onClick={onLeaveClassroom}
+                                className="w-full py-3.5 bg-red-950/20 hover:bg-red-900/30 border border-red-500/20 hover:border-red-500/40 text-red-400 font-extrabold text-sm rounded-2xl shadow-sm transition-all duration-300 hover:scale-[1.01] cursor-pointer flex items-center justify-center gap-2"
+                            >
+                                Leave Classroom
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    /* Join Form Card */
+                    <div className="glass-panel rounded-3xl p-8 border border-[var(--border-color)] flex flex-col gap-6 shadow-xl">
+                        <div className="flex flex-col gap-1">
+                            <h2 className="text-lg font-black text-[var(--text-main)]">Join Classroom</h2>
+                            <p className="text-xs font-semibold text-[var(--text-muted)]">
+                                Enter the classroom code provided by your teacher to link your account.
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleJoinSubmit} className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-2">
+                                <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider">
+                                    Classroom Code
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. GURO-4RIZAL or MATH4Q1"
+                                    value={joinCodeInput}
+                                    onChange={(e) => {
+                                        setJoinCodeInput(e.target.value.toUpperCase());
+                                        if (joinError) setJoinError(null);
+                                    }}
+                                    disabled={isJoining}
+                                    className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-main)] font-extrabold tracking-widest text-center text-lg uppercase py-4 rounded-2xl focus:border-[#11428E] focus:outline-none transition-all placeholder:tracking-normal placeholder:font-medium placeholder:text-sm"
+                                    required
+                                />
+                                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                    <span className="text-[10px] text-[var(--text-muted)] font-semibold">Demo shortcuts:</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setJoinCodeInput('GURO-4RIZAL'); setJoinError(null); }}
+                                        className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#11428E]/10 text-[#11428E] hover:bg-[#11428E]/20 cursor-pointer font-bold"
+                                    >
+                                        GURO-4RIZAL
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setJoinCodeInput('MATH4Q1'); setJoinError(null); }}
+                                        className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-300 hover:bg-purple-500/20 cursor-pointer font-bold"
+                                    >
+                                        MATH4Q1
+                                    </button>
+                                </div>
+                            </div>
+
+                            {joinError && (
+                                <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-semibold flex items-start gap-2 animate-in fade-in">
+                                    <Info className="size-4 shrink-0 mt-0.5" />
+                                    <span>{joinError}</span>
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={isJoining || !joinCodeInput.trim()}
+                                className="w-full py-4 bg-gradient-to-r from-[#11428E] to-[#1c5bc0] text-white font-extrabold text-sm rounded-2xl shadow-md transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span>{isJoining ? 'Verifying Code...' : 'Connect to Classroom'}</span>
+                                <ArrowRight className="size-4 shrink-0" />
+                            </button>
+                        </form>
+
+                        <div className="flex items-start gap-3 p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
+                            <Info className="size-4.5 text-[#11428E] shrink-0 mt-0.5" />
+                            <div className="flex flex-col gap-0.5">
+                                <h4 className="text-xs font-bold text-[var(--text-main)]">Where is my classroom code?</h4>
+                                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                                    Your teacher can find the classroom code in their workspace dashboard header. The code is usually a short combination of alphanumeric characters.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
