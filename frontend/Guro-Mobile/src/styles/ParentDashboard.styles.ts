@@ -528,11 +528,13 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.sm,
+    backgroundColor: Colors.bgSidebar,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+    minHeight: 58,
   },
 
   // Bottom Tab Bar

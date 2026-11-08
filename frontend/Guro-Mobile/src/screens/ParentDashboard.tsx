@@ -14,6 +14,7 @@ import {
   Platform,
   Modal,
   Pressable,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -117,6 +118,31 @@ export function ParentDashboard({ navigation }: Props) {
   }
   const bottomInset = Math.max(insets.bottom || 0, 24);
   const [activeTab, setActiveTab] = useState<'progress' | 'chat' | 'settings'>('progress');
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard?.addListener
+      ? Keyboard.addListener(
+          Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+          () => {
+            setIsKeyboardVisible(true);
+            if (activeTab === 'chat') {
+              setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
+            }
+          }
+        )
+      : undefined;
+    const hideSub = Keyboard?.addListener
+      ? Keyboard.addListener(
+          Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+          () => setIsKeyboardVisible(false)
+        )
+      : undefined;
+    return () => {
+      showSub?.remove?.();
+      hideSub?.remove?.();
+    };
+  }, [activeTab]);
 
   // ── Intercept Android hardware back button ────────────────────────────────
   useEffect(() => {
@@ -1656,7 +1682,8 @@ export function ParentDashboard({ navigation }: Props) {
       {/* ── Tab 2: Teacher Consultation Chat ── */}
       <View style={activeTab === 'chat' ? { flex: 1 } : { display: 'none', height: 0, flex: 0 }}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 70 : 0}
           style={{ flex: 1 }}
         >
           {/* Teacher Consultation Header Card */}
@@ -1902,12 +1929,25 @@ export function ParentDashboard({ navigation }: Props) {
           </ScrollView>
 
           {/* Sticky Input Bar at Bottom */}
-          <View style={styles.chatInputContainer}>
+          <View
+            style={[
+              styles.chatInputContainer,
+              {
+                paddingBottom: insets.bottom > 0 && !isKeyboardVisible ? insets.bottom : Spacing.sm,
+              },
+            ]}
+          >
             <View style={{ flex: 1 }}>
               <ThemedTextInput
                 placeholder="Type your question or message to teacher..."
                 value={chatInput}
                 onChangeText={setChatInput}
+                containerStyle={{ marginBottom: 0 }}
+                onFocus={() => {
+                  setTimeout(() => {
+                    chatScrollRef.current?.scrollToEnd({ animated: true });
+                  }, 120);
+                }}
               />
             </View>
             <TouchableOpacity
@@ -2261,17 +2301,18 @@ export function ParentDashboard({ navigation }: Props) {
       </ScrollView>
     </View>
 
-      {/* ── Bottom Navigation Bar ── */}
-      <View
-        style={[
-          styles.bottomTabBar,
-          {
-            height: 60 + insets.bottom,
-            paddingTop: 8,
-            paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-          },
-        ]}
-      >
+      {/* ── Bottom Navigation Bar (Auto-hides during active chat typing to avoid clipping) ── */}
+      {!(activeTab === 'chat' && isKeyboardVisible) && (
+        <View
+          style={[
+            styles.bottomTabBar,
+            {
+              height: 60 + insets.bottom,
+              paddingTop: 8,
+              paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+            },
+          ]}
+        >
         <TouchableOpacity
           style={styles.tabButton}
           onPress={() => setActiveTab('progress')}
@@ -2338,6 +2379,7 @@ export function ParentDashboard({ navigation }: Props) {
           </Text>
         </TouchableOpacity>
       </View>
+      )}
 
       {/* Clear Practice History Dialog */}
       <ConfirmDialog
