@@ -1,1485 +1,1535 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  BackHandler,
-  Modal,
-  TextInput,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
-import { useAppStore, resolveServerUrl } from '../store/useAppStore';
-import { getParentAccessCode } from '../utils/security';
-import * as Speech from 'expo-speech';
-
-// ── Icons ───────────────────────────────────────────────────────────────────
-import {
-  User,
-  Image,
-  Volume2,
-  Palette,
-  Clock,
-  Lock,
-  Database,
-  LogOut,
-  ChevronLeft,
-  Sparkles,
-  Trophy,
-  Award,
-  Star,
-  BarChart2,
-  Globe,
-  RotateCw,
-  Smartphone,
-  Mail,
-  CheckCircle2,
-  ShieldCheck,
-  AlertCircle,
-} from 'lucide-react-native';
-
-// ── Update Service ──────────────────────────────────────────────────────────
-import {
-  checkForAppUpdate,
-  fetchAndApplyAppUpdate,
-  getUpdateMetadata,
-} from '../services/updateService';
-
-// ── Design System & UI ────────────────────────────────────────────────────────
-import { Colors } from '../theme/colors';
-import { Fonts, FontSizes } from '../theme/typography';
-import { Spacing, Radius } from '../theme/spacing';
-import { GlassCard } from '../components/ui/GlassCard';
-import { ThemedTextInput } from '../components/ui/ThemedTextInput';
-import { PrimaryButton, SecondaryButton, DangerButton } from '../components/ui/Buttons';
-import { ConfirmDialog } from '../components/ui/ConfirmDialog';
-import { toast } from '../components';
-import { styles } from '../styles/SettingsScreen.styles';
-import { getFormattedAppVersion, getAppVersionFooter } from '../constants/appVersion';
-
-type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
-
-type Category = 'profile' | 'mascot' | 'audio' | 'theme' | 'time' | 'rules' | 'database';
-
-export function SettingsScreen({ navigation }: Props) {
-  // ── Zustand Store Hooks ──────────────────────────────────────────────────
-  const guestName = useAppStore((state) => state.guestName);
-  const setGuestName = useAppStore((state) => state.setGuestName);
-  const currentUser = useAppStore((state) => state.currentUser);
-  const studentProgress = useAppStore((state) => state.studentProgress);
-  const streakCount = useAppStore((state) => state.streakCount);
-  const appMode = useAppStore((state) => state.appMode);
-  const studentId = useAppStore((state) => state.studentId);
-  const avatarEmoji = useAppStore((state) => state.avatarEmoji);
-  const setAvatarEmoji = useAppStore((state) => state.setAvatarEmoji);
-  const soundEffectsEnabled = useAppStore((state) => state.soundEffectsEnabled);
-  const setSoundEffectsEnabled = useAppStore((state) => state.setSoundEffectsEnabled);
-  const speechRate = useAppStore((state) => state.speechRate);
-  const setSpeechRate = useAppStore((state) => state.setSpeechRate);
-  const colorTheme = useAppStore((state) => state.colorTheme);
-  const setColorTheme = useAppStore((state) => state.setColorTheme);
-  const logs = useAppStore((state) => state.logs);
-  const logoutFromCloud = useAppStore((state) => state.logoutFromCloud);
-  const parentalControls = useAppStore((state) => state.parentalControls);
-  const dailyMinutesUsed = useAppStore((state) => state.dailyMinutesUsed);
-
-  // Gamification properties from Store
-  const xpPoints = useAppStore((state) => state.xpPoints);
-  const virtualStars = useAppStore((state) => state.virtualStars);
-  const mascotOutfit = useAppStore((state) => state.mascotOutfit);
-  const ownedOutfits = useAppStore((state) => state.ownedOutfits);
-  const voiceGuideTheme = useAppStore((state) => state.voiceGuideTheme);
-  const correctSoundTheme = useAppStore((state) => state.correctSoundTheme);
-  const purchaseOutfit = useAppStore((state) => state.purchaseOutfit);
-  const setMascotOutfit = useAppStore((state) => state.setMascotOutfit);
-  const setVoiceGuideTheme = useAppStore((state) => state.setVoiceGuideTheme);
-  const setCorrectSoundTheme = useAppStore((state) => state.setCorrectSoundTheme);
-  const syncProgressNow = useAppStore((state) => state.syncProgressNow);
-
-  // ── Local Screen State ────────────────────────────────────────────────────
-  const [activeCategory, setActiveCategory] = useState<Category>('profile');
-
-  // Account promotion (Go Online) form states
-  const [promoteFirstName, setPromoteFirstName] = useState('');
-  const [promoteMiddleName, setPromoteMiddleName] = useState('');
-  const [promoteLastName, setPromoteLastName] = useState('');
-  const [promoteEmail, setPromoteEmail] = useState('');
-  const [promotePassword, setPromotePassword] = useState('');
-  const [promoteConfirmPassword, setPromoteConfirmPassword] = useState('');
-  const [isPromoting, setIsPromoting] = useState(false);
-
-  // Edit Profile form states
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileFirstName, setProfileFirstName] = useState('');
-  const [profileMiddleName, setProfileMiddleName] = useState('');
-  const [profileLastName, setProfileLastName] = useState('');
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-
-  // Dialog states
-  const [purchasingOutfit, setPurchasingOutfit] = useState<any | null>(null);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-
-  // Email verification modal states
-  const [showEmailVerifyModal, setShowEmailVerifyModal] = useState(false);
-  const [verifyOtpDigits, setVerifyOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
-  const [isSendingVerifyCode, setIsSendingVerifyCode] = useState(false);
-  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
-  const [verifyCooldown, setVerifyCooldown] = useState(0);
-  const verifyInputRefs = useRef<Array<TextInput | null>>([]);
-
-  useEffect(() => {
-    if (verifyCooldown <= 0) return;
-    const timer = setInterval(() => {
-      setVerifyCooldown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [verifyCooldown]);
-
-  const handleOpenEmailVerifyModal = async () => {
-    if (!currentUser?.email) {
-      toast.error('No email address associated with this account.');
-      return;
-    }
-    setIsSendingVerifyCode(true);
-    try {
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Text,
+  View,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  BackHandler,
+  Modal,
+  TextInput,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
+import { useAppStore, resolveServerUrl } from '../store/useAppStore';
+import { getParentAccessCode } from '../utils/security';
+import * as Speech from 'expo-speech';
+
+// ── Icons ───────────────────────────────────────────────────────────────────
+import {
+  KeyRound,
+  User,
+  Image,
+  Volume2,
+  Palette,
+  Clock,
+  Lock,
+  Database,
+  LogOut,
+  ChevronLeft,
+  Sparkles,
+  Trophy,
+  Award,
+  Star,
+  BarChart2,
+  Globe,
+  RotateCw,
+  Smartphone,
+  Mail,
+  CheckCircle2,
+  ShieldCheck,
+  AlertCircle,
+} from 'lucide-react-native';
+
+// ── Update Service ──────────────────────────────────────────────────────────
+import {
+  checkForAppUpdate,
+  fetchAndApplyAppUpdate,
+  getUpdateMetadata,
+} from '../services/updateService';
+
+// ── Design System & UI ────────────────────────────────────────────────────────
+import { Colors } from '../theme/colors';
+import { Fonts, FontSizes } from '../theme/typography';
+import { Spacing, Radius } from '../theme/spacing';
+import { GlassCard } from '../components/ui/GlassCard';
+import { ThemedTextInput } from '../components/ui/ThemedTextInput';
+import { PrimaryButton, SecondaryButton, DangerButton } from '../components/ui/Buttons';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { toast } from '../components';
+import { styles } from '../styles/SettingsScreen.styles';
+import { getFormattedAppVersion, getAppVersionFooter } from '../constants/appVersion';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
+
+type Category = 'profile' | 'mascot' | 'audio' | 'theme' | 'time' | 'rules' | 'database';
+
+export function SettingsScreen({ navigation }: Props) {
+  // ── Zustand Store Hooks ──────────────────────────────────────────────────
+  const guestName = useAppStore((state) => state.guestName);
+  const setGuestName = useAppStore((state) => state.setGuestName);
+  const currentUser = useAppStore((state) => state.currentUser);
+  const studentProgress = useAppStore((state) => state.studentProgress);
+  const streakCount = useAppStore((state) => state.streakCount);
+  const appMode = useAppStore((state) => state.appMode);
+  const studentId = useAppStore((state) => state.studentId);
+  const avatarEmoji = useAppStore((state) => state.avatarEmoji);
+  const setAvatarEmoji = useAppStore((state) => state.setAvatarEmoji);
+  const soundEffectsEnabled = useAppStore((state) => state.soundEffectsEnabled);
+  const setSoundEffectsEnabled = useAppStore((state) => state.setSoundEffectsEnabled);
+  const speechRate = useAppStore((state) => state.speechRate);
+  const setSpeechRate = useAppStore((state) => state.setSpeechRate);
+  const colorTheme = useAppStore((state) => state.colorTheme);
+  const setColorTheme = useAppStore((state) => state.setColorTheme);
+  const logs = useAppStore((state) => state.logs);
+  const logoutFromCloud = useAppStore((state) => state.logoutFromCloud);
+  const parentalControls = useAppStore((state) => state.parentalControls);
+  const dailyMinutesUsed = useAppStore((state) => state.dailyMinutesUsed);
+
+  // Gamification properties from Store
+  const xpPoints = useAppStore((state) => state.xpPoints);
+  const virtualStars = useAppStore((state) => state.virtualStars);
+  const mascotOutfit = useAppStore((state) => state.mascotOutfit);
+  const ownedOutfits = useAppStore((state) => state.ownedOutfits);
+  const voiceGuideTheme = useAppStore((state) => state.voiceGuideTheme);
+  const correctSoundTheme = useAppStore((state) => state.correctSoundTheme);
+  const purchaseOutfit = useAppStore((state) => state.purchaseOutfit);
+  const setMascotOutfit = useAppStore((state) => state.setMascotOutfit);
+  const setVoiceGuideTheme = useAppStore((state) => state.setVoiceGuideTheme);
+  const setCorrectSoundTheme = useAppStore((state) => state.setCorrectSoundTheme);
+  const syncProgressNow = useAppStore((state) => state.syncProgressNow);
+
+  // ── Local Screen State ────────────────────────────────────────────────────
+  const [activeCategory, setActiveCategory] = useState<Category>('profile');
+
+  // Account promotion (Go Online) form states
+  const [promoteFirstName, setPromoteFirstName] = useState('');
+  const [promoteMiddleName, setPromoteMiddleName] = useState('');
+  const [promoteLastName, setPromoteLastName] = useState('');
+  const [promoteEmail, setPromoteEmail] = useState('');
+  const [promotePassword, setPromotePassword] = useState('');
+  const [promoteConfirmPassword, setPromoteConfirmPassword] = useState('');
+  const [isPromoting, setIsPromoting] = useState(false);
+
+  // Edit Profile form states
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileFirstName, setProfileFirstName] = useState('');
+  const [profileMiddleName, setProfileMiddleName] = useState('');
+  const [profileLastName, setProfileLastName] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // Dialog states
+  const [purchasingOutfit, setPurchasingOutfit] = useState<any | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // Email verification modal states
+  const [showEmailVerifyModal, setShowEmailVerifyModal] = useState(false);
+  const [verifyOtpDigits, setVerifyOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [isSendingVerifyCode, setIsSendingVerifyCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [verifyCooldown, setVerifyCooldown] = useState(0);
+  const verifyInputRefs = useRef<Array<TextInput | null>>([]);
+
+  useEffect(() => {
+    if (verifyCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setVerifyCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [verifyCooldown]);
+
+  const handleOpenEmailVerifyModal = async () => {
+    if (!currentUser?.email) {
+      toast.error('No email address associated with this account.');
+      return;
+    }
+    setIsSendingVerifyCode(true);
+    try {
+      const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+      const resolvedUrl = resolveServerUrl(rawUrl);
+      const res = await fetch(`${resolvedUrl}/api/auth/email/send-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentUser.email }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setVerifyCooldown(60);
+        setVerifyOtpDigits(['', '', '', '', '', '']);
+        setShowEmailVerifyModal(true);
+        toast.success(`Verification code sent to ${currentUser.email}`);
+      } else {
+        toast.error(data.error || data.message || 'Failed to send verification code.');
+      }
+    } catch {
+      toast.error('Unable to send code. Please check your network connection.');
+    } finally {
+      setIsSendingVerifyCode(false);
+    }
+  };
+
+  const handleResendEmailVerifyCode = async () => {
+    if (verifyCooldown > 0 || isSendingVerifyCode) return;
+    setIsSendingVerifyCode(true);
+    try {
+      const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+      const resolvedUrl = resolveServerUrl(rawUrl);
+      const res = await fetch(`${resolvedUrl}/api/auth/email/send-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentUser?.email }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setVerifyCooldown(60);
+        toast.success(`New code sent to ${currentUser?.email}`);
+      } else {
+        toast.error(data.error || data.message || 'Failed to resend code.');
+      }
+    } catch {
+      toast.error('Unable to resend verification code.');
+    } finally {
+      setIsSendingVerifyCode(false);
+    }
+  };
+
+  const handleVerifyOtpChange = (index: number, val: string) => {
+    const cleaned = val.replace(/[^0-9]/g, '');
+    if (!cleaned) {
+      const next = [...verifyOtpDigits];
+      next[index] = '';
+      setVerifyOtpDigits(next);
+      return;
+    }
+    if (cleaned.length > 1) {
+      const next = [...verifyOtpDigits];
+      const digits = cleaned.slice(0, 6).split('');
+      digits.forEach((d, i) => {
+        if (index + i < 6) next[index + i] = d;
+      });
+      setVerifyOtpDigits(next);
+      const nextFocus = Math.min(index + digits.length, 5);
+      verifyInputRefs.current[nextFocus]?.focus();
+      return;
+    }
+    const next = [...verifyOtpDigits];
+    next[index] = cleaned;
+    setVerifyOtpDigits(next);
+    if (index < 5) verifyInputRefs.current[index + 1]?.focus();
+  };
+
+  const handleVerifyOtpKeyPress = (index: number, key: string) => {
+    if (key === 'Backspace' && !verifyOtpDigits[index] && index > 0) {
+      const next = [...verifyOtpDigits];
+      next[index - 1] = '';
+      setVerifyOtpDigits(next);
+      verifyInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleConfirmEmailVerification = async () => {
+    const code = verifyOtpDigits.join('');
+    if (code.length !== 6) {
+      toast.error('Please enter the 6-digit code.');
+      return;
+    }
+    setIsVerifyingCode(true);
+    try {
+      const token = useAppStore.getState().token;
+      const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+      const resolvedUrl = resolveServerUrl(rawUrl);
+      const res = await fetch(`${resolvedUrl}/api/auth/email/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          code,
+          email: currentUser?.email,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (currentUser) {
+          useAppStore.setState({
+            currentUser: {
+              ...currentUser,
+              emailVerifiedAt: data.emailVerifiedAt || new Date().toISOString(),
+            },
+          });
+        }
+        setShowEmailVerifyModal(false);
+        toast.success('Email verified successfully!');
+      } else {
+        toast.error(data.error || 'Invalid or expired verification code.');
+      }
+    } catch {
+      toast.error('Connection error. Could not reach server.');
+    } finally {
+      setIsVerifyingCode(false);
+    }
+  };
+
+  // OTA Updates State
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [updateStatusText, setUpdateStatusText] = useState<string | null>(null);
+
+  const handleCheckForUpdates = async () => {
+    setIsCheckingUpdate(true);
+    setUpdateStatusText('Checking EAS server for updates...');
+    try {
+      const result = await checkForAppUpdate();
+      if (result.isAvailable) {
+        setUpdateStatusText('New update found! Downloading bundle...');
+        toast.info('New update found! Downloading bundle...');
+        const applyRes = await fetchAndApplyAppUpdate();
+        if (applyRes.success) {
+          toast.success('Update ready! Restarting runtime...');
+        } else {
+          setUpdateStatusText(`Update error: ${applyRes.error}`);
+          toast.error(`Update failed: ${applyRes.error}`);
+        }
+      } else {
+        const msg = result.reason || 'App is up to date!';
+        setUpdateStatusText(msg);
+        toast.success(msg);
+      }
+    } catch (e: any) {
+      setUpdateStatusText('Error checking updates');
+      toast.error('Could not check for updates');
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
+
+  const handleConfirmPurchaseOutfit = () => {
+    if (!purchasingOutfit) return;
+    const success = purchaseOutfit(purchasingOutfit.id, purchasingOutfit.cost);
+    if (success) {
+      toast.success(`You purchased the ${purchasingOutfit.label}!`);
+    }
+    setPurchasingOutfit(null);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutConfirm(false);
+    logoutFromCloud();
+    navigation.replace((appMode as string) === 'offline' ? 'StudentDashboard' : 'Login');
+  };
+
+  // Prefill name if guestName changes
+  useEffect(() => {
+    if (guestName) {
+      const parts = guestName.split(' ');
+      if (parts.length === 1) {
+        setPromoteFirstName(parts[0]);
+        setPromoteLastName('');
+        setPromoteMiddleName('');
+      } else if (parts.length === 2) {
+        setPromoteFirstName(parts[0]);
+        setPromoteLastName(parts[1]);
+        setPromoteMiddleName('');
+      } else {
+        setPromoteFirstName(parts[0]);
+        setPromoteLastName(parts[parts.length - 1]);
+        setPromoteMiddleName(parts.slice(1, -1).join(' '));
+      }
+    }
+  }, [guestName]);
+
+  // ── Intercept Back Press ──────────────────────────────────────────────────
+  useEffect(() => {
+    const onBackPress = () => {
+      navigation.navigate('StudentDashboard');
+      return true;
+    };
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress
+    );
+    return () => backHandler.remove();
+  }, [navigation]);
+
+  // ── Submit Account promotion ──────────────────────────────────────────────
+  const handlePromoteAccount = async () => {
+    const fName = promoteFirstName.trim();
+    const mName = promoteMiddleName.trim();
+    const lName = promoteLastName.trim();
+    const email = promoteEmail.trim();
+    const password = promotePassword;
+    const confirm = promoteConfirmPassword;
+
+    if (!fName || !lName || !email || !password || !confirm) {
+      toast.error('Please fill in all fields to register.');
+      return;
+    }
+
+    if (password !== confirm) {
+      toast.error('Password and Confirm Password do not match.');
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters.');
+      return;
+    }
+
+    const fullName = (fName + (mName !== '' ? ' ' + mName : '') + ' ' + lName).trim();
+
+    setIsPromoting(true);
+    try {
+      const registerAndPromoteAction = useAppStore.getState().registerAndPromote;
+      const setAppModeAction = useAppStore.getState().setAppMode;
+      const result = await registerAndPromoteAction(email, password, fullName, fName, mName, lName);
+      if (result.success) {
+        setAppModeAction('online');
+        toast.success('Your account has been created and synced online!');
+        setPromoteEmail('');
+        setPromotePassword('');
+        setPromoteConfirmPassword('');
+      } else {
+        toast.error(result.message ?? 'An error occurred during registration.');
+      }
+    } catch (e: any) {
+      toast.error(e.message ?? 'Failed to connect to server.');
+    } finally {
+      setIsPromoting(false);
+    }
+  };
+
+  const handleSendForgotCodeFromSettings = async () => {
+    if (!currentUser?.email) {
+      toast.error('No registered email found.');
+      return;
+    }
+    try {
       const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-      const resolvedUrl = resolveServerUrl(rawUrl);
-      const res = await fetch(`${resolvedUrl}/api/auth/email/send-verification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: currentUser.email }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setVerifyCooldown(60);
-        setVerifyOtpDigits(['', '', '', '', '', '']);
-        setShowEmailVerifyModal(true);
-        toast.success(`Verification code sent to ${currentUser.email}`);
-      } else {
-        toast.error(data.error || data.message || 'Failed to send verification code.');
-      }
-    } catch {
-      toast.error('Unable to send code. Please check your network connection.');
-    } finally {
-      setIsSendingVerifyCode(false);
-    }
-  };
-
-  const handleResendEmailVerifyCode = async () => {
-    if (verifyCooldown > 0 || isSendingVerifyCode) return;
-    setIsSendingVerifyCode(true);
-    try {
-      const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-      const resolvedUrl = resolveServerUrl(rawUrl);
-      const res = await fetch(`${resolvedUrl}/api/auth/email/send-verification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: currentUser?.email }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setVerifyCooldown(60);
-        toast.success(`New code sent to ${currentUser?.email}`);
-      } else {
-        toast.error(data.error || data.message || 'Failed to resend code.');
-      }
-    } catch {
-      toast.error('Unable to resend verification code.');
-    } finally {
-      setIsSendingVerifyCode(false);
-    }
-  };
-
-  const handleVerifyOtpChange = (index: number, val: string) => {
-    const cleaned = val.replace(/[^0-9]/g, '');
-    if (!cleaned) {
-      const next = [...verifyOtpDigits];
-      next[index] = '';
-      setVerifyOtpDigits(next);
-      return;
-    }
-    if (cleaned.length > 1) {
-      const next = [...verifyOtpDigits];
-      const digits = cleaned.slice(0, 6).split('');
-      digits.forEach((d, i) => {
-        if (index + i < 6) next[index + i] = d;
-      });
-      setVerifyOtpDigits(next);
-      const nextFocus = Math.min(index + digits.length, 5);
-      verifyInputRefs.current[nextFocus]?.focus();
-      return;
-    }
-    const next = [...verifyOtpDigits];
-    next[index] = cleaned;
-    setVerifyOtpDigits(next);
-    if (index < 5) verifyInputRefs.current[index + 1]?.focus();
-  };
-
-  const handleVerifyOtpKeyPress = (index: number, key: string) => {
-    if (key === 'Backspace' && !verifyOtpDigits[index] && index > 0) {
-      const next = [...verifyOtpDigits];
-      next[index - 1] = '';
-      setVerifyOtpDigits(next);
-      verifyInputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleConfirmEmailVerification = async () => {
-    const code = verifyOtpDigits.join('');
-    if (code.length !== 6) {
-      toast.error('Please enter the 6-digit code.');
-      return;
-    }
-    setIsVerifyingCode(true);
-    try {
-      const token = useAppStore.getState().token;
-      const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-      const resolvedUrl = resolveServerUrl(rawUrl);
-      const res = await fetch(`${resolvedUrl}/api/auth/email/verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          code,
-          email: currentUser?.email,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        if (currentUser) {
-          useAppStore.setState({
-            currentUser: {
-              ...currentUser,
-              emailVerifiedAt: data.emailVerifiedAt || new Date().toISOString(),
-            },
-          });
-        }
-        setShowEmailVerifyModal(false);
-        toast.success('Email verified successfully!');
-      } else {
-        toast.error(data.error || 'Invalid or expired verification code.');
-      }
-    } catch {
-      toast.error('Connection error. Could not reach server.');
-    } finally {
-      setIsVerifyingCode(false);
-    }
-  };
-
-  // OTA Updates State
-  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
-  const [updateStatusText, setUpdateStatusText] = useState<string | null>(null);
-
-  const handleCheckForUpdates = async () => {
-    setIsCheckingUpdate(true);
-    setUpdateStatusText('Checking EAS server for updates...');
-    try {
-      const result = await checkForAppUpdate();
-      if (result.isAvailable) {
-        setUpdateStatusText('New update found! Downloading bundle...');
-        toast.info('New update found! Downloading bundle...');
-        const applyRes = await fetchAndApplyAppUpdate();
-        if (applyRes.success) {
-          toast.success('Update ready! Restarting runtime...');
-        } else {
-          setUpdateStatusText(`Update error: ${applyRes.error}`);
-          toast.error(`Update failed: ${applyRes.error}`);
-        }
-      } else {
-        const msg = result.reason || 'App is up to date!';
-        setUpdateStatusText(msg);
-        toast.success(msg);
-      }
-    } catch (e: any) {
-      setUpdateStatusText('Error checking updates');
-      toast.error('Could not check for updates');
-    } finally {
-      setIsCheckingUpdate(false);
-    }
-  };
-
-  const handleConfirmPurchaseOutfit = () => {
-    if (!purchasingOutfit) return;
-    const success = purchaseOutfit(purchasingOutfit.id, purchasingOutfit.cost);
-    if (success) {
-      toast.success(`You purchased the ${purchasingOutfit.label}!`);
-    }
-    setPurchasingOutfit(null);
-  };
-
-  const handleConfirmLogout = () => {
-    setShowLogoutConfirm(false);
-    logoutFromCloud();
-    navigation.replace((appMode as string) === 'offline' ? 'StudentDashboard' : 'Login');
-  };
-
-  // Prefill name if guestName changes
-  useEffect(() => {
-    if (guestName) {
-      const parts = guestName.split(' ');
-      if (parts.length === 1) {
-        setPromoteFirstName(parts[0]);
-        setPromoteLastName('');
-        setPromoteMiddleName('');
-      } else if (parts.length === 2) {
-        setPromoteFirstName(parts[0]);
-        setPromoteLastName(parts[1]);
-        setPromoteMiddleName('');
-      } else {
-        setPromoteFirstName(parts[0]);
-        setPromoteLastName(parts[parts.length - 1]);
-        setPromoteMiddleName(parts.slice(1, -1).join(' '));
-      }
-    }
-  }, [guestName]);
-
-  // ── Intercept Back Press ──────────────────────────────────────────────────
-  useEffect(() => {
-    const onBackPress = () => {
-      navigation.navigate('StudentDashboard');
-      return true;
-    };
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      onBackPress
-    );
-    return () => backHandler.remove();
-  }, [navigation]);
-
-  // ── Submit Account promotion ──────────────────────────────────────────────
-  const handlePromoteAccount = async () => {
-    const fName = promoteFirstName.trim();
-    const mName = promoteMiddleName.trim();
-    const lName = promoteLastName.trim();
-    const email = promoteEmail.trim();
-    const password = promotePassword;
-    const confirm = promoteConfirmPassword;
-
-    if (!fName || !lName || !email || !password || !confirm) {
-      toast.error('Please fill in all fields to register.');
-      return;
-    }
-
-    if (password !== confirm) {
-      toast.error('Password and Confirm Password do not match.');
-      return;
-    }
-
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters.');
-      return;
-    }
-
-    const fullName = (fName + (mName !== '' ? ' ' + mName : '') + ' ' + lName).trim();
-
-    setIsPromoting(true);
-    try {
-      const registerAndPromoteAction = useAppStore.getState().registerAndPromote;
-      const setAppModeAction = useAppStore.getState().setAppMode;
-      const result = await registerAndPromoteAction(email, password, fullName, fName, mName, lName);
-      if (result.success) {
-        setAppModeAction('online');
-        toast.success('Your account has been created and synced online!');
-        setPromoteEmail('');
-        setPromotePassword('');
-        setPromoteConfirmPassword('');
-      } else {
-        toast.error(result.message ?? 'An error occurred during registration.');
-      }
-    } catch (e: any) {
-      toast.error(e.message ?? 'Failed to connect to server.');
-    } finally {
-      setIsPromoting(false);
-    }
-  };
-
-  const handleStartEditProfile = () => {
-    const currentName = guestName || currentUser?.name || '';
-    let fName = (currentUser as any)?.firstName || '';
-    let mName = (currentUser as any)?.middleName || '';
-    let lName = (currentUser as any)?.lastName || '';
-
-    if (!fName && !lName && currentName) {
-      const parts = currentName.split(' ');
-      if (parts.length === 1) {
-        fName = parts[0];
-      } else if (parts.length === 2) {
-        fName = parts[0];
-        lName = parts[1];
-      } else {
-        fName = parts[0];
-        lName = parts[parts.length - 1];
-        mName = parts.slice(1, -1).join(' ');
-      }
-    }
-    
-    setProfileFirstName(fName);
-    setProfileMiddleName(mName);
-    setProfileLastName(lName);
-    setIsEditingProfile(true);
-  };
-
-  const handleSaveProfile = async () => {
-    const fName = profileFirstName.trim();
-    const mName = profileMiddleName.trim();
-    const lName = profileLastName.trim();
-    
-    if (!fName || !lName) {
-      toast.error('First and Last names are required.');
-      return;
-    }
-    
-    const fullName = (fName + (mName !== '' ? ' ' + mName : '') + ' ' + lName).trim();
-    
-    setIsSavingProfile(true);
-    try {
-      if (appMode === 'offline') {
-        const setGuestNameAction = useAppStore.getState().setGuestName;
-        setGuestNameAction(fullName);
-        const setStudentIdAction = useAppStore.getState().setStudentId;
-        const trimmedOfflineEmail = currentUser?.email || '';
-        const primaryId = trimmedOfflineEmail || fullName;
-        setStudentIdAction(primaryId.replace(/\s+/g, '-').toUpperCase() + '-GUEST');
-        
-        toast.success('Offline guest profile name updated!');
-        setIsEditingProfile(false);
-      } else {
-        const token = useAppStore.getState().token;
-        const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-        const resolvedUrl = resolveServerUrl(rawUrl);
-        
-        const response = await fetch(`${resolvedUrl}/api/user/update-profile`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            first_name: fName,
-            middle_name: mName,
-            last_name: lName
-          })
-        });
-        
-        const data = await response.json();
-        if (response.ok && data.success) {
-          useAppStore.setState({ currentUser: data.user });
-          toast.success('Online profile updated successfully!');
-          setIsEditingProfile(false);
-        } else {
-          toast.error(data.error || 'Failed to update profile.');
-        }
-      }
-    } catch {
-      toast.error('Connection error: Failed to update profile.');
-    } finally {
-      setIsSavingProfile(false);
-    }
-  };
-
-  // ── Settings categories navigation tabs definitions ───────────────────────
-  const categories: Array<{ id: Category; label: string; icon: any }> = [
-    { id: 'profile', label: 'My Profile', icon: User },
-    { id: 'mascot', label: 'Mascot Closet', icon: Sparkles },
-    { id: 'audio', label: 'Sound & Voice', icon: Volume2 },
-    { id: 'theme', label: 'Themes Skin', icon: Palette },
-    { id: 'time', label: 'Screen Time', icon: Clock },
-    { id: 'rules', label: 'Parent Rules', icon: Lock },
-    { id: 'database', label: 'Treasure Chest', icon: Database },
-  ];
-
-  // Helper to trigger guide speech pitch preview
-  const playVoicePreview = (theme: string) => {
-    Speech.stop();
-    let text = "Hello! I am your astronaut learning buddy.";
-    let rate = speechRate;
-    let pitch = 1.0;
-    if (theme === 'robot') {
-      text = "Greetings human! I am your robot study partner. Beep boop!";
-      pitch = 0.65;
-    } else if (theme === 'owl') {
-      text = "Welcome back! I am your wise owl coach. Hoot hoot!";
-      pitch = 1.25;
-    }
-    Speech.speak(text, { rate, pitch });
-  };
-
-  // Helper to trigger sound effect theme preview
-  const playSoundEffectPreview = (theme: string) => {
-    try {
-      const AudioContextClass = typeof window !== 'undefined' && (window.AudioContext || (window as any).webkitAudioContext);
-      if (AudioContextClass) {
-        const ctx = new AudioContextClass();
-        if (ctx.state === 'suspended') {
-          ctx.resume();
-        }
-        setTimeout(() => ctx.close(), 1500);
-
-        const now = ctx.currentTime;
-        if (theme === 'ding') {
-          // Classic E5 -> A5 -> C6 triangle wave
-          const playNote = (freq: number, start: number, dur: number) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, start);
-            gain.gain.setValueAtTime(0, start);
-            gain.gain.linearRampToValueAtTime(0.12, start + 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(start);
-            osc.stop(start + dur);
-          };
-          playNote(659.25, now, 0.3);
-          playNote(880.00, now + 0.08, 0.4);
-          playNote(1046.50, now + 0.16, 0.5);
-        } else if (theme === 'arcade') {
-          // Retro coin sound
-          const playNote = (freq: number, start: number, dur: number) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(freq, start);
-            gain.gain.setValueAtTime(0, start);
-            gain.gain.linearRampToValueAtTime(0.08, start + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(start);
-            osc.stop(start + dur);
-          };
-          playNote(987.77, now, 0.08);
-          playNote(1318.51, now + 0.08, 0.25);
-        } else if (theme === 'laser') {
-          // Sci-fi sweep up
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(880, now);
-          osc.frequency.exponentialRampToValueAtTime(1760, now + 0.15);
-          gain.gain.setValueAtTime(0, now);
-          gain.gain.linearRampToValueAtTime(0.12, now + 0.03);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(now);
-          osc.stop(now + 0.15);
-        }
-      }
-    } catch (e) {
-      console.error('AudioContext failed:', e);
-    }
-  };
-
-  const outfitList = [
-    { id: 'default', label: 'Casual Mascot', emoji: '🦉', cost: 0 },
-    { id: 'graduation_cap', label: 'Scholar Cap', emoji: '🎓', cost: 20 },
-    { id: 'detective_hat', label: 'Detective Hat', emoji: '🕵️‍♂️', cost: 35 },
-    { id: 'space_visor', label: 'Space Visor', emoji: '🧑‍🚀', cost: 50 },
-    { id: 'wizard_cape', label: 'Wizard Cape', emoji: '🧙‍♂️', cost: 65 },
-    { id: 'crown', label: 'Royal Crown', emoji: '👑', cost: 80 },
-    { id: 'superhero_cape', label: 'Super Hero', emoji: '🦸', cost: 100 },
-    { id: 'party_hat', label: 'Party Hat', emoji: '🥳', cost: 120 },
-    { id: 'artist_beret', label: 'Artist Beret', emoji: '🎨', cost: 150 },
-    { id: 'scientist_goggles', label: 'Lab Goggles', emoji: '🔬', cost: 180 },
-  ];
-
-  // ── Dynamic Settings Box Content Render ──────────────────────────────────
-  const renderSettingsBox = () => {
-    const studentLevel = Math.floor(xpPoints / 100) + 1;
-    const progressToNextLevel = xpPoints % 100;
-    const currentOutfitObj = outfitList.find(o => o.id === mascotOutfit);
-
-    switch (activeCategory) {
-      case 'profile':
-        return (
-          <View style={styles.githubBox}>
-            <View style={styles.githubBoxHeader}>
-              <Text style={styles.githubBoxTitle}>My Explorer Profile</Text>
-              <Text style={styles.githubBoxSubtitle}>Track your learning level and sync progress.</Text>
-            </View>
-            <View style={styles.githubBoxBody}>
-              <View style={{ backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border }}>
-                
-                {/* Visual Level indicator */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.xs }}>
-                  <Text style={{ fontSize: 32 }}>{avatarEmoji}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
-                      Level {studentLevel} Study Explorer
-                    </Text>
-                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                      {xpPoints} XP Cumulative
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Progress bar to Level Up */}
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary, letterSpacing: 0.8 }}>
-                  LEVEL PROGRESS: {progressToNextLevel}/100 XP
-                </Text>
-                <View style={styles.xpBarContainer}>
-                  <View style={[styles.xpBarFill, { width: `${progressToNextLevel}%` }]} />
-                </View>
-
-                <View style={{ height: 1, backgroundColor: Colors.border, marginVertical: Spacing.sm }} />
-
-                <Text style={{ fontFamily: Fonts.display, fontSize: 9, color: Colors.accentPrimary, letterSpacing: 1.2, marginBottom: 4 }}>
-                  STUDENT ID & ACCESS
-                </Text>
-                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
-                  {guestName ?? currentUser?.name ?? 'Explorer'}
-                </Text>
-                {currentUser && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
-                      Email: {currentUser.email}
-                    </Text>
-                    {currentUser.emailVerifiedAt ? (
-                      <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', borderWidth: 1, borderColor: '#10B981', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                        <CheckCircle2 size={10} color="#10B981" />
-                        <Text style={{ color: '#10B981', fontSize: 10, fontFamily: Fonts.bodyBold }}>Verified</Text>
-                      </View>
-                    ) : (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', borderWidth: 1, borderColor: '#F59E0B', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                          <AlertCircle size={10} color="#F59E0B" />
-                          <Text style={{ color: '#F59E0B', fontSize: 10, fontFamily: Fonts.bodyBold }}>Unverified</Text>
-                        </View>
-                        <TouchableOpacity
-                          onPress={handleOpenEmailVerifyModal}
-                          disabled={isSendingVerifyCode}
-                          style={{ paddingHorizontal: 6, paddingVertical: 2, backgroundColor: 'rgba(17, 66, 142, 0.1)', borderRadius: 6 }}
-                        >
-                          <Text style={{ color: Colors.accentPrimary, fontSize: 10, fontFamily: Fonts.bodyBold }}>
-                            {isSendingVerifyCode ? 'Sending...' : 'Verify Now'}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                )}
-                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: 4 }}>
-                  Student ID: <Text style={{ fontFamily: Fonts.bodyBold }}>{studentId}</Text>
-                </Text>
-                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: 4 }}>
-                  Device Access Code: <Text style={{ fontFamily: Fonts.bodyBold }}>{getParentAccessCode(studentId)}</Text>
-                </Text>
-
-                {!isEditingProfile ? (
-                  <TouchableOpacity
-                    onPress={handleStartEditProfile}
-                    style={{
-                      marginTop: Spacing.md,
-                      paddingVertical: Spacing.xs,
-                      paddingHorizontal: Spacing.sm,
-                      borderWidth: 1,
-                      borderColor: Colors.border,
-                      borderRadius: Radius.sm,
-                      backgroundColor: 'transparent',
-                      alignItems: 'center',
-                      flexDirection: 'row',
-                      justifyContent: 'center',
-                      gap: 4
-                    }}
-                  >
-                    <User size={13} color={Colors.textMuted} />
-                    <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                      Edit Name Settings
-                    </Text>
-                  </TouchableOpacity>
-                ) : (
-                  <View style={{ marginTop: Spacing.md, gap: Spacing.xs }}>
-                    <Text style={{ fontFamily: Fonts.display, fontSize: 9, color: Colors.accentSecondary, letterSpacing: 1 }}>
-                      EDIT NAME FIELDS
-                    </Text>
-                    
-                    <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-                      <View style={{ flex: 1 }}>
-                        <ThemedTextInput
-                          label="First Name"
-                          value={profileFirstName}
-                          onChangeText={setProfileFirstName}
-                          placeholder="First name..."
-                          autoCapitalize="words"
-                        />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <ThemedTextInput
-                          label="Last Name"
-                          value={profileLastName}
-                          onChangeText={setProfileLastName}
-                          placeholder="Last name..."
-                          autoCapitalize="words"
-                        />
-                      </View>
-                    </View>
-                    
-                    <ThemedTextInput
-                      label="Middle Name (Optional)"
-                      value={profileMiddleName}
-                      onChangeText={setProfileMiddleName}
-                      placeholder="Middle name..."
-                      autoCapitalize="words"
-                    />
-                    
-                    <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs }}>
-                      <TouchableOpacity
-                        onPress={() => setIsEditingProfile(false)}
-                        style={{
-                          flex: 1,
-                          paddingVertical: Spacing.sm,
-                          borderWidth: 1,
-                          borderColor: Colors.border,
-                          borderRadius: Radius.sm,
-                          backgroundColor: Colors.bgInput,
-                          alignItems: 'center'
-                        }}
-                      >
-                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                          Cancel
-                        </Text>
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity
-                        onPress={handleSaveProfile}
-                        disabled={isSavingProfile}
-                        style={{
-                          flex: 1,
-                          paddingVertical: Spacing.sm,
-                          borderRadius: Radius.sm,
-                          backgroundColor: Colors.accentPrimary,
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#fff' }}>
-                          {isSavingProfile ? 'Saving...' : 'Save'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-              </View>
-
-              {appMode === 'offline' && (
-                <View style={{ gap: Spacing.xs, marginTop: Spacing.sm, padding: Spacing.md, borderWidth: 1, borderColor: '#d0d7de', borderRadius: Radius.md, backgroundColor: '#f6f8fa' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Globe size={18} color={Colors.accentSecondary} />
-                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.accentSecondary }}>
-                      Go Online
-                    </Text>
-                  </View>
-                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: Spacing.xs }}>
-                    Register a cloud account to sync lessons progress across all your devices.
-                  </Text>
-
-                  <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-                    <View style={{ flex: 1 }}>
-                      <ThemedTextInput
-                        label="First Name"
-                        value={promoteFirstName}
-                        onChangeText={setPromoteFirstName}
-                        placeholder="e.g. Juan"
-                        autoCapitalize="words"
-                        autoCorrect={false}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <ThemedTextInput
-                        label="Last Name"
-                        value={promoteLastName}
-                        onChangeText={setPromoteLastName}
-                        placeholder="e.g. Cruz"
-                        autoCapitalize="words"
-                        autoCorrect={false}
-                      />
-                    </View>
-                  </View>
-
-                  <ThemedTextInput
-                    label="Middle Name (Optional)"
-                    value={promoteMiddleName}
-                    onChangeText={setPromoteMiddleName}
-                    placeholder="e.g. Dela"
-                    autoCapitalize="words"
-                    autoCorrect={false}
-                  />
-
-                  <ThemedTextInput
-                    label="Email Address"
-                    value={promoteEmail}
-                    onChangeText={setPromoteEmail}
-                    placeholder="student@school.guro.app"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    keyboardType="email-address"
-                  />
-
-                  <PrivatePasswordInput
-                    label="Password"
-                    value={promotePassword}
-                    onChangeText={setPromotePassword}
-                    placeholder="Minimum 6 characters"
-                  />
-
-                  <PrivatePasswordInput
-                    label="Confirm Password"
-                    value={promoteConfirmPassword}
-                    onChangeText={setPromoteConfirmPassword}
-                    placeholder="Repeat password"
-                  />
-
-                  <PrimaryButton
-                    label="Create Online Account"
-                    onPress={handlePromoteAccount}
-                    loading={isPromoting}
-                    style={styles.formBtn}
-                  />
-                </View>
-              )}
-            </View>
-          </View>
-        );
-
-      case 'mascot':
-        return (
-          <View style={styles.githubBox}>
-            <View style={styles.githubBoxHeader}>
-              <Text style={styles.githubBoxTitle}>Mascot Dressing Closet</Text>
-              <Text style={styles.githubBoxSubtitle}>Use your Study Stars to buy accessories and customize your buddy!</Text>
-            </View>
-            <View style={styles.githubBoxBody}>
-              
-              {/* Mascot Status */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border }}>
-                <View style={{ position: 'relative' }}>
-                  <Text style={{ fontSize: 56 }}>{avatarEmoji}</Text>
-                  {currentOutfitObj && currentOutfitObj.emoji ? (
-                    <Text style={{ fontSize: 28, position: 'absolute', top: -14, right: -10 }}>{currentOutfitObj.emoji}</Text>
-                  ) : null}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
-                    {guestName ?? currentUser?.name ?? 'Explorer'}'s Buddy
-                  </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                    <Star size={12} color="#D97706" fill="#D97706" />
-                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#D97706' }}>
-                      {virtualStars} Study Stars Available
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Closet Catalog */}
-              <Text style={styles.formLabel}>Outfit Accessories Closet:</Text>
-              <View style={styles.closetContainer}>
-                {outfitList.map((item) => {
-                  const isOwned = ownedOutfits.includes(item.id);
-                  const isActive = mascotOutfit === item.id;
-                  
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      activeOpacity={0.7}
-                      style={[styles.closetItem, isActive && styles.closetItemActive]}
-                      onPress={() => {
-                        if (isOwned) {
-                          setMascotOutfit(item.id);
-                        } else {
-                          // Try purchase
-                          if (virtualStars >= item.cost) {
-                            setPurchasingOutfit(item);
-                          } else {
-                            toast.warning(`This accessory costs ${item.cost} Stars. Finish more quizzes to earn stars!`);
-                          }
-                        }
-                      }}
-                    >
-                      <Text style={styles.closetItemEmoji}>{item.emoji || '👕'}</Text>
-                      <Text style={styles.closetItemTitle}>{item.label}</Text>
-                      {isOwned ? (
-                        <Text style={styles.closetItemOwned}>{isActive ? '• Equipped •' : 'Owned'}</Text>
-                      ) : (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, justifyContent: 'center', marginTop: 4 }}>
-                          <Star size={10} color="#D97706" fill="#D97706" />
-                          <Text style={styles.closetItemPrice}>{item.cost} Stars</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          </View>
-        );
-
-      case 'audio':
-        return (
-          <View style={styles.githubBox}>
-            <View style={styles.githubBoxHeader}>
-              <Text style={styles.githubBoxTitle}>Audio & Voice Options</Text>
-              <Text style={styles.githubBoxSubtitle}>Tweak narration speech parameters and dynamic alert audio effects.</Text>
-            </View>
-            <View style={styles.githubBoxBody}>
-              
-              {/* Correct / Wrong sound toggle */}
-              <TouchableOpacity
-                onPress={() => setSoundEffectsEnabled(!soundEffectsEnabled)}
-                style={styles.switchRow}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.switchLabel}>Correct / Wrong Ding SFX</Text>
-                <View style={[styles.switchTrack, { backgroundColor: soundEffectsEnabled ? Colors.success : Colors.textDark }]}>
-                  <View style={[styles.switchThumb, { alignSelf: soundEffectsEnabled ? 'flex-end' : 'flex-start' }]} />
-                </View>
-              </TouchableOpacity>
-
-              {/* TTS Guide voice theme selection */}
-              <View style={{ marginTop: Spacing.xs }}>
-                <Text style={styles.formLabel}>Narrator Guide Companion Voice:</Text>
-                <View style={styles.segmentRow}>
-                  {[
-                    { key: 'astronaut', label: '👨‍🚀 Astronaut' },
-                    { key: 'robot', label: '🤖 Robot' },
-                    { key: 'owl', label: '🦉 Wise Owl' }
-                  ].map((item) => {
-                    const active = voiceGuideTheme === item.key;
-                    return (
-                      <TouchableOpacity
-                        key={item.key}
-                        onPress={() => {
-                          setVoiceGuideTheme(item.key);
-                          playVoicePreview(item.key);
-                        }}
-                        style={[styles.segmentBtn, active && styles.segmentBtnActive]}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
-                          {item.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Sound Theme Selection */}
-              <View style={{ marginTop: Spacing.xs }}>
-                <Text style={styles.formLabel}>Ding Victory Sounds Style:</Text>
-                <View style={styles.segmentRow}>
-                  {[
-                    { key: 'ding', label: 'Classic' },
-                    { key: 'arcade', label: 'Arcade' },
-                    { key: 'laser', label: 'Laser' },
-                  ].map((item) => {
-                    const active = correctSoundTheme === item.key;
-                    return (
-                      <TouchableOpacity
-                        key={item.key}
-                        onPress={() => {
-                          setCorrectSoundTheme(item.key);
-                          playSoundEffectPreview(item.key);
-                        }}
-                        style={[styles.segmentBtn, active && styles.segmentBtnActive]}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
-                          {item.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Speech rate control */}
-              <View style={{ marginTop: Spacing.xs }}>
-                <Text style={styles.formLabel}>Narrator Speech Speed (TTS):</Text>
-                <View style={styles.segmentRow}>
-                  {[
-                    { label: 'Slow', rate: 0.75 },
-                    { label: 'Normal', rate: 1.0 },
-                    { label: 'Fast', rate: 1.25 }
-                  ].map((item) => {
-                    const active = speechRate === item.rate;
-                    return (
-                      <TouchableOpacity
-                        key={item.rate}
-                        onPress={() => setSpeechRate(item.rate)}
-                        style={[styles.segmentBtn, active && styles.segmentBtnActive]}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
-                          {item.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-            </View>
-          </View>
-        );
-
-      case 'theme':
-        return (
-          <View style={styles.githubBox}>
-            <View style={styles.githubBoxHeader}>
-              <Text style={styles.githubBoxTitle}>Themes & Mascot Customization</Text>
-              <Text style={styles.githubBoxSubtitle}>Select dashboard color skins and customize profile icons.</Text>
-            </View>
-            <View style={styles.githubBoxBody}>
-              {/* Mascot selection grid */}
-              <View>
-                <Text style={styles.formLabel}>Choose Mascot Emoji Base:</Text>
-                <View style={styles.avatarGrid}>
-                  {['🦉', '🦊', '🐼', '🦁', '🦄', '🚀', '🐬', '🐝', '🐯', '🐶', '🐱', '🤖', '👾', '🦖', '🐸', '🎓'].map((emoji) => {
-                    const active = emoji === avatarEmoji;
-                    return (
-                      <TouchableOpacity
-                        key={emoji}
-                        onPress={() => setAvatarEmoji(emoji)}
-                        style={[styles.avatarItem, active && styles.avatarItemActive]}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.avatarEmoji}>{emoji}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Color Skins selector */}
-              <View style={{ marginTop: Spacing.sm }}>
-                <Text style={styles.formLabel}>Active Color Theme Skin:</Text>
-                <View style={styles.themeRow}>
-                  {[
-                    { key: 'blue', label: 'Blue Galaxy', color: Colors.accentPrimary },
-                    { key: 'teal', label: 'Ocean Teal', color: '#0F766E' },
-                    { key: 'yellow', label: 'Sunny Desert', color: '#D97706' },
-                    { key: 'purple', label: 'Space Nebula', color: '#6D28D9' }
-                  ].map((theme) => {
-                    const active = colorTheme === theme.key;
-                    return (
-                      <TouchableOpacity
-                        key={theme.key}
-                        onPress={() => {
-                          setColorTheme(theme.key);
-                          toast.success(`Applied ${theme.label} successfully!`);
-                        }}
-                        style={[styles.themeBtn, active && [styles.themeBtnActive, { borderColor: theme.color }]]}
-                        activeOpacity={0.7}
-                      >
-                        <View style={[styles.themeDot, { backgroundColor: theme.color }]} />
-                        <Text style={styles.themeText}>{theme.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            </View>
-          </View>
-        );
-
-      case 'time':
-        return (
-          <View style={styles.githubBox}>
-            <View style={styles.githubBoxHeader}>
-              <Text style={styles.githubBoxTitle}>Screen Time Tracker</Text>
-              <Text style={styles.githubBoxSubtitle}>Track studied minutes and check active daily rules.</Text>
-            </View>
-            <View style={styles.githubBoxBody}>
-              <View style={styles.timeBox}>
-                <Text style={styles.timeLabel}>
-                  Time limits are set by parent controls to encourage balance:
-                </Text>
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain, marginTop: 4 }}>
-                  Time used today: {Math.round(dailyMinutesUsed)} min {parentalControls.dailyTimeLimit > 0 ? ` / ${parentalControls.dailyTimeLimit} min maximum` : ''}
-                </Text>
-                
-                {parentalControls.dailyTimeLimit > 0 ? (
-                  <View style={styles.timeProgressContainer}>
-                    <View style={[styles.timeProgressBar, {
-                      width: `${Math.min(100, (dailyMinutesUsed / parentalControls.dailyTimeLimit) * 100)}%`,
-                      backgroundColor: dailyMinutesUsed >= parentalControls.dailyTimeLimit ? Colors.danger : Colors.success,
-                    }]} />
-                  </View>
-                ) : (
-                  <Text style={styles.timeInfoItalic}>
-                    No maximum study limits configured for today. Keep exploring!
-                  </Text>
-                )}
-              </View>
-            </View>
-          </View>
-        );
-
-      case 'rules':
-        return (
-          <View style={styles.githubBox}>
-            <View style={styles.githubBoxHeader}>
-              <Text style={styles.githubBoxTitle}>Active Parental Rules</Text>
-              <Text style={styles.githubBoxSubtitle}>Review constraints configured to protect study pathways.</Text>
-            </View>
-            <View style={styles.githubBoxBody}>
-              <View style={styles.statsBox}>
-                <Text style={styles.statsText}>
-                  • Math Before English Gate: <Text style={{ fontFamily: Fonts.bodyBold }}>{parentalControls.mathBeforeEnglish ? 'Required' : 'Unlocked'}</Text>
-                </Text>
-                <Text style={styles.statsText}>
-                  • Forced Bilingual Mode: <Text style={{ fontFamily: Fonts.bodyBold }}>{parentalControls.forcedBilingual ? 'Active' : 'Disabled'}</Text>
-                </Text>
-                {parentalControls.priorityTopic && (
-                  <Text style={styles.statsText}>
-                    • Focused Priority Topic: <Text style={{ fontFamily: Fonts.bodyBold }}>{parentalControls.priorityTopic}</Text>
-                  </Text>
-                )}
-              </View>
-
-              <View style={{ marginTop: Spacing.md }}>
-                <PrimaryButton
-                  label="View Progress Report"
-                  icon={<BarChart2 size={16} color={Colors.white} style={{ marginRight: 6 }} />}
-                  onPress={() => navigation.navigate('StudentProgressReport')}
-                />
-              </View>
-            </View>
-          </View>
-        );
-
-      case 'database':
-        const unsyncedCount = studentProgress.filter((e) => !e.synced).length;
-        const syncedCount = studentProgress.filter((e) => e.synced).length;
-
-        return (
-          <View style={styles.githubBox}>
-            <View style={styles.githubBoxHeader}>
-              <Text style={styles.githubBoxTitle}>Data Storage</Text>
-              <Text style={styles.githubBoxSubtitle}>Review exercises completed offline and upload them to your teacher's dashboard!</Text>
-            </View>
-            <View style={styles.githubBoxBody}>
-              <View style={styles.statsBox}>
-                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.sm, color: Colors.accentPrimary, marginBottom: 4 }}>
-                  My Local Safe Chest
-                </Text>
-                <Text style={styles.statsText}>
-                  • Total Exercises Saved: <Text style={{ fontFamily: Fonts.bodyBold }}>{studentProgress.length}</Text>
-                </Text>
-                <Text style={styles.statsText}>
-                  • Unsynced Data: <Text style={{ fontFamily: Fonts.bodyBold, color: unsyncedCount > 0 ? Colors.warning : Colors.textMuted }}>{unsyncedCount}</Text>
-                </Text>
-                <Text style={styles.statsText}>
-                  • Synced Progress: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.success }}>{syncedCount}</Text>
-                </Text>
-                
-                {unsyncedCount > 0 && appMode === 'online' ? (
-                  <View style={{ marginTop: Spacing.sm }}>
-                    <PrimaryButton
-                      label="Launch Data Sync"
-                      icon={<Database size={16} color={Colors.white} style={{ marginRight: 6 }} />}
-                      onPress={async () => {
-                        const serverUrl = process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-                        const result = await syncProgressNow(serverUrl);
-                        if (result.success) {
-                          toast.success('Sync Successful!');
-                        } else {
-                          toast.error(`Sync Failed: ${result.message}`);
-                        }
-                      }}
-                    />
-                  </View>
-                ) : unsyncedCount > 0 ? (
-                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, fontStyle: 'italic', marginTop: Spacing.xs }}>
-                    Connect to the internet and log in to launch your data jewels to the cloud rocket!
-                  </Text>
-                ) : (
-                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.success, fontStyle: 'italic', marginTop: Spacing.xs }}>
-                    All your study jewels are safely synced to the sky! Amazing job!
-                  </Text>
-                )}
-
-                <Text style={styles.logsHeading}>Offline Sync Telemetry Logs (Last 2):</Text>
-                {logs.slice(0, 2).map((log, index) => (
-                  <Text key={index} numberOfLines={1} style={styles.logLine}>
-                    {log}
-                  </Text>
-                ))}
-
-                {/* ── EAS Over-The-Air (OTA) Updates Panel ── */}
-                <View style={{ marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.border }}>
-                  <Text style={[styles.logsHeading, { marginBottom: Spacing.xs }]}>EAS Over-The-Air (OTA) Updates:</Text>
-                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: Spacing.sm }}>
-                    App: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getFormattedAppVersion()}</Text> • Runtime: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getUpdateMetadata().runtimeVersion}</Text> • Channel: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getUpdateMetadata().channel || 'production'}</Text>
-                  </Text>
-
-                  {updateStatusText && (
-                    <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.xs, color: Colors.accentPrimary, marginBottom: Spacing.xs }}>
-                      {updateStatusText}
-                    </Text>
-                  )}
-
-                  <TouchableOpacity
-                    testID="check-updates-btn"
-                    onPress={handleCheckForUpdates}
-                    disabled={isCheckingUpdate}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8,
-                      paddingVertical: Spacing.sm,
-                      paddingHorizontal: Spacing.md,
-                      backgroundColor: Colors.bgInput,
-                      borderRadius: Radius.md,
-                      borderWidth: 1,
-                      borderColor: Colors.border,
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <RotateCw size={14} color={Colors.accentPrimary} />
-                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
-                      {isCheckingUpdate ? 'Checking EAS Server...' : 'Check for Updates Now'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </View>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  // ── Render ────────────────────────────────────────────────────────────────
-  return (
-    <SafeAreaView style={styles.screen}>
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <View style={styles.headerBar}>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('StudentDashboard')}
-          style={styles.backBtn}
-          activeOpacity={0.75}
-        >
-          <Text style={styles.backBtnText}>← Return</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>GURO System Settings</Text>
-
-        <View style={styles.headerSubtitleBadge}>
-          <Text style={styles.headerSubtitleText}>
-            {appMode === 'online' ? 'Connected' : 'Offline Mode'}
-          </Text>
-        </View>
-      </View>
-
-      {/* ── Scrollable top menu categories selectors (GitHub tab row) ───────── */}
-      <View style={styles.tabBar}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabBarContent}
-        >
-          {categories.map((cat) => {
-            const active = cat.id === activeCategory;
-            const IconComp = cat.icon;
-            return (
-              <TouchableOpacity
-                key={cat.id}
-                testID={`tab-${cat.id}`}
-                onPress={() => setActiveCategory(cat.id)}
-                style={[styles.tabItem, active && styles.tabItemActive]}
-                activeOpacity={0.75}
-              >
-                <IconComp size={14} color={active ? Colors.accentPrimary : Colors.textMuted} />
-                <Text style={[styles.tabItemText, active && styles.tabItemTextActive]}>
-                  {cat.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {/* ── Settings content detailing panels (Rendered at the bottom scroll) ──── */}
-      <ScrollView
-        style={styles.contentScroll}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {renderSettingsBox()}
-        <View style={{ alignItems: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xs }}>
-          <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-            {getAppVersionFooter()}
-          </Text>
-        </View>
-      </ScrollView>
-
-      {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      {appMode !== 'offline' && (
-        <View style={styles.footerContainer}>
-          <DangerButton
-            label="Sign Out of Cloud Session"
-            icon={<LogOut size={16} color={Colors.dangerText} style={{ marginRight: 6 }} />}
-            onPress={() => setShowLogoutConfirm(true)}
-          />
-        </View>
-      )}
-
-      {/* Outfit Purchase Confirmation */}
-      <ConfirmDialog
-        visible={!!purchasingOutfit}
-        variant="primary"
-        title="Unlock Accessory"
-        description={`Unlock ${purchasingOutfit?.label} for ${purchasingOutfit?.cost} Stars?`}
-        confirmLabel="Buy Now!"
-        cancelLabel="Cancel"
-        onConfirm={handleConfirmPurchaseOutfit}
-        onCancel={() => setPurchasingOutfit(null)}
-      />
-
-      {/* ── 6-Square Email Verification Modal ── */}
-      <Modal
-        visible={showEmailVerifyModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowEmailVerifyModal(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.75)', justifyContent: 'center', alignItems: 'center', padding: Spacing.md }}>
-          <GlassCard style={{ width: '100%', maxWidth: 420, padding: Spacing.lg, borderRadius: Radius.xl }}>
-            <View style={{ alignItems: 'center', marginBottom: Spacing.md }}>
-              <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(17, 66, 142, 0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs }}>
-                <Mail size={24} color={Colors.accentPrimary} />
-              </View>
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, textAlign: 'center' }}>
-                Verify Email Address
-              </Text>
-              <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, textAlign: 'center', marginTop: 4 }}>
-                Enter the 6-digit verification code sent to {currentUser?.email} to verify your account.
-              </Text>
-            </View>
-
-            <View style={{ marginBottom: Spacing.md }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs }}>
-                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMain }}>
-                  6-Digit Verification Code
-                </Text>
-                <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted }}>
-                  Valid for 10 mins
-                </Text>
-              </View>
-
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 6, marginVertical: Spacing.xs }}>
-                {verifyOtpDigits.map((digit, index) => (
-                  <TextInput
-                    key={index}
-                    ref={(ref) => { verifyInputRefs.current[index] = ref; }}
-                    value={digit}
-                    onChangeText={(text) => handleVerifyOtpChange(index, text)}
-                    onKeyPress={({ nativeEvent }) => handleVerifyOtpKeyPress(index, nativeEvent.key)}
-                    keyboardType="number-pad"
-                    maxLength={1}
-                    selectTextOnFocus
-                    style={{
-                      flex: 1,
-                      height: 52,
-                      borderRadius: 14,
-                      borderWidth: 1.5,
-                      borderColor: digit ? Colors.accentPrimary : '#E2E8F0',
-                      backgroundColor: '#F8FAFC',
-                      textAlign: 'center',
-                      fontFamily: Fonts.bodyBold,
-                      fontSize: 22,
-                      color: Colors.textMain,
-                    }}
-                    accessibilityLabel={`Verification digit ${index + 1}`}
-                  />
-                ))}
-              </View>
-
-              {/* Live Resend Countdown */}
-              <View style={{ alignItems: 'center', marginTop: Spacing.xs }}>
-                {verifyCooldown > 0 ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Clock size={12} color={Colors.textMuted} />
-                    <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
-                      Resend code in{' '}
-                      <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>
-                        0:{verifyCooldown < 10 ? `0${verifyCooldown}` : verifyCooldown}
-                      </Text>
-                    </Text>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    onPress={handleResendEmailVerifyCode}
-                    disabled={isSendingVerifyCode}
-                  >
-                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary }}>
-                      Didn't receive the code? Resend now
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-
-            <View style={{ gap: Spacing.sm }}>
-              <PrimaryButton
-                label="Verify & Confirm"
-                onPress={handleConfirmEmailVerification}
-                loading={isVerifyingCode}
-              />
-              <SecondaryButton
-                label="Cancel"
-                onPress={() => setShowEmailVerifyModal(false)}
-              />
-            </View>
-          </GlassCard>
-        </View>
-      </Modal>
-
-      {/* Logout Confirmation */}
-      <ConfirmDialog
-        visible={showLogoutConfirm}
-        variant="danger"
-        title="Confirm Logout"
-        description="Are you sure you want to sign out? Your credentials will be cleared, returning you to the offline guest state."
-        confirmLabel="Logout"
-        cancelLabel="Cancel"
-        onConfirm={handleConfirmLogout}
-        onCancel={() => setShowLogoutConfirm(false)}
-      />
-    </SafeAreaView>
-  );
-}
-
-// ── Private Helper Component to display secure text input ──────────────────
-interface PrivateInputProps {
-  label: string;
-  value: string;
-  onChangeText: (t: string) => void;
-  placeholder: string;
-}
-
-function PrivatePasswordInput({ label, value, onChangeText, placeholder }: PrivateInputProps) {
-  return (
-    <ThemedTextInput
-      label={label}
-      value={value}
-      onChangeText={onChangeText}
-      placeholder={placeholder}
-      autoCapitalize="none"
-      autoCorrect={false}
-      secureTextEntry
-    />
-  );
-}
+      const resolved = resolveServerUrl(rawUrl);
+      const res = await fetch(`${resolved}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentUser.email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        toast.success(`Recovery OTP sent to ${currentUser.email}! Check your inbox.`);
+      } else {
+        toast.error(data.message || data.error || 'Failed to send recovery OTP.');
+      }
+    } catch {
+      toast.error('Network connection error.');
+    }
+  };
+
+  const handleStartEditProfile = () => {
+    const currentName = guestName || currentUser?.name || '';
+    let fName = (currentUser as any)?.firstName || '';
+    let mName = (currentUser as any)?.middleName || '';
+    let lName = (currentUser as any)?.lastName || '';
+
+    if (!fName && !lName && currentName) {
+      const parts = currentName.split(' ');
+      if (parts.length === 1) {
+        fName = parts[0];
+      } else if (parts.length === 2) {
+        fName = parts[0];
+        lName = parts[1];
+      } else {
+        fName = parts[0];
+        lName = parts[parts.length - 1];
+        mName = parts.slice(1, -1).join(' ');
+      }
+    }
+    
+    setProfileFirstName(fName);
+    setProfileMiddleName(mName);
+    setProfileLastName(lName);
+    setIsEditingProfile(true);
+  };
+
+  const handleSaveProfile = async () => {
+    const fName = profileFirstName.trim();
+    const mName = profileMiddleName.trim();
+    const lName = profileLastName.trim();
+    
+    if (!fName || !lName) {
+      toast.error('First and Last names are required.');
+      return;
+    }
+    
+    const fullName = (fName + (mName !== '' ? ' ' + mName : '') + ' ' + lName).trim();
+    
+    setIsSavingProfile(true);
+    try {
+      if (appMode === 'offline') {
+        const setGuestNameAction = useAppStore.getState().setGuestName;
+        setGuestNameAction(fullName);
+        const setStudentIdAction = useAppStore.getState().setStudentId;
+        const trimmedOfflineEmail = currentUser?.email || '';
+        const primaryId = trimmedOfflineEmail || fullName;
+        setStudentIdAction(primaryId.replace(/\s+/g, '-').toUpperCase() + '-GUEST');
+        
+        toast.success('Offline guest profile name updated!');
+        setIsEditingProfile(false);
+      } else {
+        const token = useAppStore.getState().token;
+        const rawUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+        const resolvedUrl = resolveServerUrl(rawUrl);
+        
+        const response = await fetch(`${resolvedUrl}/api/user/update-profile`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            first_name: fName,
+            middle_name: mName,
+            last_name: lName
+          })
+        });
+        
+        const data = await response.json();
+        if (response.ok && data.success) {
+          useAppStore.setState({ currentUser: data.user });
+          toast.success('Online profile updated successfully!');
+          setIsEditingProfile(false);
+        } else {
+          toast.error(data.error || 'Failed to update profile.');
+        }
+      }
+    } catch {
+      toast.error('Connection error: Failed to update profile.');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  // ── Settings categories navigation tabs definitions ───────────────────────
+  const categories: Array<{ id: Category; label: string; icon: any }> = [
+    { id: 'profile', label: 'My Profile', icon: User },
+    { id: 'mascot', label: 'Mascot Closet', icon: Sparkles },
+    { id: 'audio', label: 'Sound & Voice', icon: Volume2 },
+    { id: 'theme', label: 'Themes Skin', icon: Palette },
+    { id: 'time', label: 'Screen Time', icon: Clock },
+    { id: 'rules', label: 'Parent Rules', icon: Lock },
+    { id: 'database', label: 'Treasure Chest', icon: Database },
+  ];
+
+  // Helper to trigger guide speech pitch preview
+  const playVoicePreview = (theme: string) => {
+    Speech.stop();
+    let text = "Hello! I am your astronaut learning buddy.";
+    let rate = speechRate;
+    let pitch = 1.0;
+    if (theme === 'robot') {
+      text = "Greetings human! I am your robot study partner. Beep boop!";
+      pitch = 0.65;
+    } else if (theme === 'owl') {
+      text = "Welcome back! I am your wise owl coach. Hoot hoot!";
+      pitch = 1.25;
+    }
+    Speech.speak(text, { rate, pitch });
+  };
+
+  // Helper to trigger sound effect theme preview
+  const playSoundEffectPreview = (theme: string) => {
+    try {
+      const AudioContextClass = typeof window !== 'undefined' && (window.AudioContext || (window as any).webkitAudioContext);
+      if (AudioContextClass) {
+        const ctx = new AudioContextClass();
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+        setTimeout(() => ctx.close(), 1500);
+
+        const now = ctx.currentTime;
+        if (theme === 'ding') {
+          // Classic E5 -> A5 -> C6 triangle wave
+          const playNote = (freq: number, start: number, dur: number) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, start);
+            gain.gain.setValueAtTime(0, start);
+            gain.gain.linearRampToValueAtTime(0.12, start + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(start);
+            osc.stop(start + dur);
+          };
+          playNote(659.25, now, 0.3);
+          playNote(880.00, now + 0.08, 0.4);
+          playNote(1046.50, now + 0.16, 0.5);
+        } else if (theme === 'arcade') {
+          // Retro coin sound
+          const playNote = (freq: number, start: number, dur: number) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(freq, start);
+            gain.gain.setValueAtTime(0, start);
+            gain.gain.linearRampToValueAtTime(0.08, start + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(start);
+            osc.stop(start + dur);
+          };
+          playNote(987.77, now, 0.08);
+          playNote(1318.51, now + 0.08, 0.25);
+        } else if (theme === 'laser') {
+          // Sci-fi sweep up
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.exponentialRampToValueAtTime(1760, now + 0.15);
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(0.12, now + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        }
+      }
+    } catch (e) {
+      console.error('AudioContext failed:', e);
+    }
+  };
+
+  const outfitList = [
+    { id: 'default', label: 'Casual Mascot', emoji: '🦉', cost: 0 },
+    { id: 'graduation_cap', label: 'Scholar Cap', emoji: '🎓', cost: 20 },
+    { id: 'detective_hat', label: 'Detective Hat', emoji: '🕵️‍♂️', cost: 35 },
+    { id: 'space_visor', label: 'Space Visor', emoji: '🧑‍🚀', cost: 50 },
+    { id: 'wizard_cape', label: 'Wizard Cape', emoji: '🧙‍♂️', cost: 65 },
+    { id: 'crown', label: 'Royal Crown', emoji: '👑', cost: 80 },
+    { id: 'superhero_cape', label: 'Super Hero', emoji: '🦸', cost: 100 },
+    { id: 'party_hat', label: 'Party Hat', emoji: '🥳', cost: 120 },
+    { id: 'artist_beret', label: 'Artist Beret', emoji: '🎨', cost: 150 },
+    { id: 'scientist_goggles', label: 'Lab Goggles', emoji: '🔬', cost: 180 },
+  ];
+
+  // ── Dynamic Settings Box Content Render ──────────────────────────────────
+  const renderSettingsBox = () => {
+    const studentLevel = Math.floor(xpPoints / 100) + 1;
+    const progressToNextLevel = xpPoints % 100;
+    const currentOutfitObj = outfitList.find(o => o.id === mascotOutfit);
+
+    switch (activeCategory) {
+      case 'profile':
+        return (
+          <View style={styles.githubBox}>
+            <View style={styles.githubBoxHeader}>
+              <Text style={styles.githubBoxTitle}>My Explorer Profile</Text>
+              <Text style={styles.githubBoxSubtitle}>Track your learning level and sync progress.</Text>
+            </View>
+            <View style={styles.githubBoxBody}>
+              <View style={{ backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border }}>
+                
+                {/* Visual Level indicator */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.xs }}>
+                  <Text style={{ fontSize: 32 }}>{avatarEmoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
+                      Level {studentLevel} Study Explorer
+                    </Text>
+                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                      {xpPoints} XP Cumulative
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Progress bar to Level Up */}
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary, letterSpacing: 0.8 }}>
+                  LEVEL PROGRESS: {progressToNextLevel}/100 XP
+                </Text>
+                <View style={styles.xpBarContainer}>
+                  <View style={[styles.xpBarFill, { width: `${progressToNextLevel}%` }]} />
+                </View>
+
+                <View style={{ height: 1, backgroundColor: Colors.border, marginVertical: Spacing.sm }} />
+
+                <Text style={{ fontFamily: Fonts.display, fontSize: 9, color: Colors.accentPrimary, letterSpacing: 1.2, marginBottom: 4 }}>
+                  STUDENT ID & ACCESS
+                </Text>
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
+                  {guestName ?? currentUser?.name ?? 'Explorer'}
+                </Text>
+                {currentUser && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
+                      Email: {currentUser.email}
+                    </Text>
+                    {currentUser.emailVerifiedAt ? (
+                      <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', borderWidth: 1, borderColor: '#10B981', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <CheckCircle2 size={10} color="#10B981" />
+                        <Text style={{ color: '#10B981', fontSize: 10, fontFamily: Fonts.bodyBold }}>Verified</Text>
+                      </View>
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', borderWidth: 1, borderColor: '#F59E0B', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                          <AlertCircle size={10} color="#F59E0B" />
+                          <Text style={{ color: '#F59E0B', fontSize: 10, fontFamily: Fonts.bodyBold }}>Unverified</Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={handleOpenEmailVerifyModal}
+                          disabled={isSendingVerifyCode}
+                          style={{ paddingHorizontal: 6, paddingVertical: 2, backgroundColor: 'rgba(17, 66, 142, 0.1)', borderRadius: 6 }}
+                        >
+                          <Text style={{ color: Colors.accentPrimary, fontSize: 10, fontFamily: Fonts.bodyBold }}>
+                            {isSendingVerifyCode ? 'Sending...' : 'Verify Now'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                )}
+                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: 4 }}>
+                  Student ID: <Text style={{ fontFamily: Fonts.bodyBold }}>{studentId}</Text>
+                </Text>
+                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: 4 }}>
+                  Device Access Code: <Text style={{ fontFamily: Fonts.bodyBold }}>{getParentAccessCode(studentId)}</Text>
+                </Text>
+
+                {Boolean(currentUser?.email) && (
+                  <TouchableOpacity
+                    onPress={handleSendForgotCodeFromSettings}
+                    activeOpacity={0.75}
+                    style={{
+                      marginTop: Spacing.sm,
+                      paddingVertical: Spacing.xs,
+                      paddingHorizontal: Spacing.sm,
+                      borderWidth: 1,
+                      borderColor: 'rgba(17,66,142,0.2)',
+                      borderRadius: Radius.sm,
+                      backgroundColor: 'rgba(17,66,142,0.06)',
+                      alignItems: 'center',
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <KeyRound size={13} color={Colors.accentPrimary} />
+                    <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                      Forgot Password? Send Recovery OTP
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {!isEditingProfile ? (
+                  <TouchableOpacity
+                    onPress={handleStartEditProfile}
+                    style={{
+                      marginTop: Spacing.md,
+                      paddingVertical: Spacing.xs,
+                      paddingHorizontal: Spacing.sm,
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                      borderRadius: Radius.sm,
+                      backgroundColor: 'transparent',
+                      alignItems: 'center',
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      gap: 4
+                    }}
+                  >
+                    <User size={13} color={Colors.textMuted} />
+                    <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                      Edit Name Settings
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={{ marginTop: Spacing.md, gap: Spacing.xs }}>
+                    <Text style={{ fontFamily: Fonts.display, fontSize: 9, color: Colors.accentSecondary, letterSpacing: 1 }}>
+                      EDIT NAME FIELDS
+                    </Text>
+                    
+                    <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                      <View style={{ flex: 1 }}>
+                        <ThemedTextInput
+                          label="First Name"
+                          value={profileFirstName}
+                          onChangeText={setProfileFirstName}
+                          placeholder="First name..."
+                          autoCapitalize="words"
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedTextInput
+                          label="Last Name"
+                          value={profileLastName}
+                          onChangeText={setProfileLastName}
+                          placeholder="Last name..."
+                          autoCapitalize="words"
+                        />
+                      </View>
+                    </View>
+                    
+                    <ThemedTextInput
+                      label="Middle Name (Optional)"
+                      value={profileMiddleName}
+                      onChangeText={setProfileMiddleName}
+                      placeholder="Middle name..."
+                      autoCapitalize="words"
+                    />
+                    
+                    <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs }}>
+                      <TouchableOpacity
+                        onPress={() => setIsEditingProfile(false)}
+                        style={{
+                          flex: 1,
+                          paddingVertical: Spacing.sm,
+                          borderWidth: 1,
+                          borderColor: Colors.border,
+                          borderRadius: Radius.sm,
+                          backgroundColor: Colors.bgInput,
+                          alignItems: 'center'
+                        }}
+                      >
+                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                          Cancel
+                        </Text>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity
+                        onPress={handleSaveProfile}
+                        disabled={isSavingProfile}
+                        style={{
+                          flex: 1,
+                          paddingVertical: Spacing.sm,
+                          borderRadius: Radius.sm,
+                          backgroundColor: Colors.accentPrimary,
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#fff' }}>
+                          {isSavingProfile ? 'Saving...' : 'Save'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              {appMode === 'offline' && (
+                <View style={{ gap: Spacing.xs, marginTop: Spacing.sm, padding: Spacing.md, borderWidth: 1, borderColor: '#d0d7de', borderRadius: Radius.md, backgroundColor: '#f6f8fa' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Globe size={18} color={Colors.accentSecondary} />
+                    <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.accentSecondary }}>
+                      Go Online
+                    </Text>
+                  </View>
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: Spacing.xs }}>
+                    Register a cloud account to sync lessons progress across all your devices.
+                  </Text>
+
+                  <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                    <View style={{ flex: 1 }}>
+                      <ThemedTextInput
+                        label="First Name"
+                        value={promoteFirstName}
+                        onChangeText={setPromoteFirstName}
+                        placeholder="e.g. Juan"
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <ThemedTextInput
+                        label="Last Name"
+                        value={promoteLastName}
+                        onChangeText={setPromoteLastName}
+                        placeholder="e.g. Cruz"
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                      />
+                    </View>
+                  </View>
+
+                  <ThemedTextInput
+                    label="Middle Name (Optional)"
+                    value={promoteMiddleName}
+                    onChangeText={setPromoteMiddleName}
+                    placeholder="e.g. Dela"
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                  />
+
+                  <ThemedTextInput
+                    label="Email Address"
+                    value={promoteEmail}
+                    onChangeText={setPromoteEmail}
+                    placeholder="student@school.guro.app"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="email-address"
+                  />
+
+                  <PrivatePasswordInput
+                    label="Password"
+                    value={promotePassword}
+                    onChangeText={setPromotePassword}
+                    placeholder="Minimum 6 characters"
+                  />
+
+                  <PrivatePasswordInput
+                    label="Confirm Password"
+                    value={promoteConfirmPassword}
+                    onChangeText={setPromoteConfirmPassword}
+                    placeholder="Repeat password"
+                  />
+
+                  <PrimaryButton
+                    label="Create Online Account"
+                    onPress={handlePromoteAccount}
+                    loading={isPromoting}
+                    style={styles.formBtn}
+                  />
+                </View>
+              )}
+            </View>
+          </View>
+        );
+
+      case 'mascot':
+        return (
+          <View style={styles.githubBox}>
+            <View style={styles.githubBoxHeader}>
+              <Text style={styles.githubBoxTitle}>Mascot Dressing Closet</Text>
+              <Text style={styles.githubBoxSubtitle}>Use your Study Stars to buy accessories and customize your buddy!</Text>
+            </View>
+            <View style={styles.githubBoxBody}>
+              
+              {/* Mascot Status */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border }}>
+                <View style={{ position: 'relative' }}>
+                  <Text style={{ fontSize: 56 }}>{avatarEmoji}</Text>
+                  {currentOutfitObj && currentOutfitObj.emoji ? (
+                    <Text style={{ fontSize: 28, position: 'absolute', top: -14, right: -10 }}>{currentOutfitObj.emoji}</Text>
+                  ) : null}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
+                    {guestName ?? currentUser?.name ?? 'Explorer'}'s Buddy
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                    <Star size={12} color="#D97706" fill="#D97706" />
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: '#D97706' }}>
+                      {virtualStars} Study Stars Available
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Closet Catalog */}
+              <Text style={styles.formLabel}>Outfit Accessories Closet:</Text>
+              <View style={styles.closetContainer}>
+                {outfitList.map((item) => {
+                  const isOwned = ownedOutfits.includes(item.id);
+                  const isActive = mascotOutfit === item.id;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      activeOpacity={0.7}
+                      style={[styles.closetItem, isActive && styles.closetItemActive]}
+                      onPress={() => {
+                        if (isOwned) {
+                          setMascotOutfit(item.id);
+                        } else {
+                          // Try purchase
+                          if (virtualStars >= item.cost) {
+                            setPurchasingOutfit(item);
+                          } else {
+                            toast.warning(`This accessory costs ${item.cost} Stars. Finish more quizzes to earn stars!`);
+                          }
+                        }
+                      }}
+                    >
+                      <Text style={styles.closetItemEmoji}>{item.emoji || '👕'}</Text>
+                      <Text style={styles.closetItemTitle}>{item.label}</Text>
+                      {isOwned ? (
+                        <Text style={styles.closetItemOwned}>{isActive ? '• Equipped •' : 'Owned'}</Text>
+                      ) : (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, justifyContent: 'center', marginTop: 4 }}>
+                          <Star size={10} color="#D97706" fill="#D97706" />
+                          <Text style={styles.closetItemPrice}>{item.cost} Stars</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        );
+
+      case 'audio':
+        return (
+          <View style={styles.githubBox}>
+            <View style={styles.githubBoxHeader}>
+              <Text style={styles.githubBoxTitle}>Audio & Voice Options</Text>
+              <Text style={styles.githubBoxSubtitle}>Tweak narration speech parameters and dynamic alert audio effects.</Text>
+            </View>
+            <View style={styles.githubBoxBody}>
+              
+              {/* Correct / Wrong sound toggle */}
+              <TouchableOpacity
+                onPress={() => setSoundEffectsEnabled(!soundEffectsEnabled)}
+                style={styles.switchRow}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.switchLabel}>Correct / Wrong Ding SFX</Text>
+                <View style={[styles.switchTrack, { backgroundColor: soundEffectsEnabled ? Colors.success : Colors.textDark }]}>
+                  <View style={[styles.switchThumb, { alignSelf: soundEffectsEnabled ? 'flex-end' : 'flex-start' }]} />
+                </View>
+              </TouchableOpacity>
+
+              {/* TTS Guide voice theme selection */}
+              <View style={{ marginTop: Spacing.xs }}>
+                <Text style={styles.formLabel}>Narrator Guide Companion Voice:</Text>
+                <View style={styles.segmentRow}>
+                  {[
+                    { key: 'astronaut', label: '👨‍🚀 Astronaut' },
+                    { key: 'robot', label: '🤖 Robot' },
+                    { key: 'owl', label: '🦉 Wise Owl' }
+                  ].map((item) => {
+                    const active = voiceGuideTheme === item.key;
+                    return (
+                      <TouchableOpacity
+                        key={item.key}
+                        onPress={() => {
+                          setVoiceGuideTheme(item.key);
+                          playVoicePreview(item.key);
+                        }}
+                        style={[styles.segmentBtn, active && styles.segmentBtnActive]}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
+                          {item.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Sound Theme Selection */}
+              <View style={{ marginTop: Spacing.xs }}>
+                <Text style={styles.formLabel}>Ding Victory Sounds Style:</Text>
+                <View style={styles.segmentRow}>
+                  {[
+                    { key: 'ding', label: 'Classic' },
+                    { key: 'arcade', label: 'Arcade' },
+                    { key: 'laser', label: 'Laser' },
+                  ].map((item) => {
+                    const active = correctSoundTheme === item.key;
+                    return (
+                      <TouchableOpacity
+                        key={item.key}
+                        onPress={() => {
+                          setCorrectSoundTheme(item.key);
+                          playSoundEffectPreview(item.key);
+                        }}
+                        style={[styles.segmentBtn, active && styles.segmentBtnActive]}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
+                          {item.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Speech rate control */}
+              <View style={{ marginTop: Spacing.xs }}>
+                <Text style={styles.formLabel}>Narrator Speech Speed (TTS):</Text>
+                <View style={styles.segmentRow}>
+                  {[
+                    { label: 'Slow', rate: 0.75 },
+                    { label: 'Normal', rate: 1.0 },
+                    { label: 'Fast', rate: 1.25 }
+                  ].map((item) => {
+                    const active = speechRate === item.rate;
+                    return (
+                      <TouchableOpacity
+                        key={item.rate}
+                        onPress={() => setSpeechRate(item.rate)}
+                        style={[styles.segmentBtn, active && styles.segmentBtnActive]}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
+                          {item.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+            </View>
+          </View>
+        );
+
+      case 'theme':
+        return (
+          <View style={styles.githubBox}>
+            <View style={styles.githubBoxHeader}>
+              <Text style={styles.githubBoxTitle}>Themes & Mascot Customization</Text>
+              <Text style={styles.githubBoxSubtitle}>Select dashboard color skins and customize profile icons.</Text>
+            </View>
+            <View style={styles.githubBoxBody}>
+              {/* Mascot selection grid */}
+              <View>
+                <Text style={styles.formLabel}>Choose Mascot Emoji Base:</Text>
+                <View style={styles.avatarGrid}>
+                  {['🦉', '🦊', '🐼', '🦁', '🦄', '🚀', '🐬', '🐝', '🐯', '🐶', '🐱', '🤖', '👾', '🦖', '🐸', '🎓'].map((emoji) => {
+                    const active = emoji === avatarEmoji;
+                    return (
+                      <TouchableOpacity
+                        key={emoji}
+                        onPress={() => setAvatarEmoji(emoji)}
+                        style={[styles.avatarItem, active && styles.avatarItemActive]}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.avatarEmoji}>{emoji}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Color Skins selector */}
+              <View style={{ marginTop: Spacing.sm }}>
+                <Text style={styles.formLabel}>Active Color Theme Skin:</Text>
+                <View style={styles.themeRow}>
+                  {[
+                    { key: 'blue', label: 'Blue Galaxy', color: Colors.accentPrimary },
+                    { key: 'teal', label: 'Ocean Teal', color: '#0F766E' },
+                    { key: 'yellow', label: 'Sunny Desert', color: '#D97706' },
+                    { key: 'purple', label: 'Space Nebula', color: '#6D28D9' }
+                  ].map((theme) => {
+                    const active = colorTheme === theme.key;
+                    return (
+                      <TouchableOpacity
+                        key={theme.key}
+                        onPress={() => {
+                          setColorTheme(theme.key);
+                          toast.success(`Applied ${theme.label} successfully!`);
+                        }}
+                        style={[styles.themeBtn, active && [styles.themeBtnActive, { borderColor: theme.color }]]}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.themeDot, { backgroundColor: theme.color }]} />
+                        <Text style={styles.themeText}>{theme.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            </View>
+          </View>
+        );
+
+      case 'time':
+        return (
+          <View style={styles.githubBox}>
+            <View style={styles.githubBoxHeader}>
+              <Text style={styles.githubBoxTitle}>Screen Time Tracker</Text>
+              <Text style={styles.githubBoxSubtitle}>Track studied minutes and check active daily rules.</Text>
+            </View>
+            <View style={styles.githubBoxBody}>
+              <View style={styles.timeBox}>
+                <Text style={styles.timeLabel}>
+                  Time limits are set by parent controls to encourage balance:
+                </Text>
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain, marginTop: 4 }}>
+                  Time used today: {Math.round(dailyMinutesUsed)} min {parentalControls.dailyTimeLimit > 0 ? ` / ${parentalControls.dailyTimeLimit} min maximum` : ''}
+                </Text>
+                
+                {parentalControls.dailyTimeLimit > 0 ? (
+                  <View style={styles.timeProgressContainer}>
+                    <View style={[styles.timeProgressBar, {
+                      width: `${Math.min(100, (dailyMinutesUsed / parentalControls.dailyTimeLimit) * 100)}%`,
+                      backgroundColor: dailyMinutesUsed >= parentalControls.dailyTimeLimit ? Colors.danger : Colors.success,
+                    }]} />
+                  </View>
+                ) : (
+                  <Text style={styles.timeInfoItalic}>
+                    No maximum study limits configured for today. Keep exploring!
+                  </Text>
+                )}
+              </View>
+            </View>
+          </View>
+        );
+
+      case 'rules':
+        return (
+          <View style={styles.githubBox}>
+            <View style={styles.githubBoxHeader}>
+              <Text style={styles.githubBoxTitle}>Active Parental Rules</Text>
+              <Text style={styles.githubBoxSubtitle}>Review constraints configured to protect study pathways.</Text>
+            </View>
+            <View style={styles.githubBoxBody}>
+              <View style={styles.statsBox}>
+                <Text style={styles.statsText}>
+                  • Math Before English Gate: <Text style={{ fontFamily: Fonts.bodyBold }}>{parentalControls.mathBeforeEnglish ? 'Required' : 'Unlocked'}</Text>
+                </Text>
+                <Text style={styles.statsText}>
+                  • Forced Bilingual Mode: <Text style={{ fontFamily: Fonts.bodyBold }}>{parentalControls.forcedBilingual ? 'Active' : 'Disabled'}</Text>
+                </Text>
+                {parentalControls.priorityTopic && (
+                  <Text style={styles.statsText}>
+                    • Focused Priority Topic: <Text style={{ fontFamily: Fonts.bodyBold }}>{parentalControls.priorityTopic}</Text>
+                  </Text>
+                )}
+              </View>
+
+              <View style={{ marginTop: Spacing.md }}>
+                <PrimaryButton
+                  label="View Progress Report"
+                  icon={<BarChart2 size={16} color={Colors.white} style={{ marginRight: 6 }} />}
+                  onPress={() => navigation.navigate('StudentProgressReport')}
+                />
+              </View>
+            </View>
+          </View>
+        );
+
+      case 'database':
+        const unsyncedCount = studentProgress.filter((e) => !e.synced).length;
+        const syncedCount = studentProgress.filter((e) => e.synced).length;
+
+        return (
+          <View style={styles.githubBox}>
+            <View style={styles.githubBoxHeader}>
+              <Text style={styles.githubBoxTitle}>Data Storage</Text>
+              <Text style={styles.githubBoxSubtitle}>Review exercises completed offline and upload them to your teacher's dashboard!</Text>
+            </View>
+            <View style={styles.githubBoxBody}>
+              <View style={styles.statsBox}>
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.sm, color: Colors.accentPrimary, marginBottom: 4 }}>
+                  My Local Safe Chest
+                </Text>
+                <Text style={styles.statsText}>
+                  • Total Exercises Saved: <Text style={{ fontFamily: Fonts.bodyBold }}>{studentProgress.length}</Text>
+                </Text>
+                <Text style={styles.statsText}>
+                  • Unsynced Data: <Text style={{ fontFamily: Fonts.bodyBold, color: unsyncedCount > 0 ? Colors.warning : Colors.textMuted }}>{unsyncedCount}</Text>
+                </Text>
+                <Text style={styles.statsText}>
+                  • Synced Progress: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.success }}>{syncedCount}</Text>
+                </Text>
+                
+                {unsyncedCount > 0 && appMode === 'online' ? (
+                  <View style={{ marginTop: Spacing.sm }}>
+                    <PrimaryButton
+                      label="Launch Data Sync"
+                      icon={<Database size={16} color={Colors.white} style={{ marginRight: 6 }} />}
+                      onPress={async () => {
+                        const serverUrl = process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+                        const result = await syncProgressNow(serverUrl);
+                        if (result.success) {
+                          toast.success('Sync Successful!');
+                        } else {
+                          toast.error(`Sync Failed: ${result.message}`);
+                        }
+                      }}
+                    />
+                  </View>
+                ) : unsyncedCount > 0 ? (
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, fontStyle: 'italic', marginTop: Spacing.xs }}>
+                    Connect to the internet and log in to launch your data jewels to the cloud rocket!
+                  </Text>
+                ) : (
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.success, fontStyle: 'italic', marginTop: Spacing.xs }}>
+                    All your study jewels are safely synced to the sky! Amazing job!
+                  </Text>
+                )}
+
+                <Text style={styles.logsHeading}>Offline Sync Telemetry Logs (Last 2):</Text>
+                {logs.slice(0, 2).map((log, index) => (
+                  <Text key={index} numberOfLines={1} style={styles.logLine}>
+                    {log}
+                  </Text>
+                ))}
+
+                {/* ── EAS Over-The-Air (OTA) Updates Panel ── */}
+                <View style={{ marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.border }}>
+                  <Text style={[styles.logsHeading, { marginBottom: Spacing.xs }]}>EAS Over-The-Air (OTA) Updates:</Text>
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: Spacing.sm }}>
+                    App: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getFormattedAppVersion()}</Text> • Runtime: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getUpdateMetadata().runtimeVersion}</Text> • Channel: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getUpdateMetadata().channel || 'production'}</Text>
+                  </Text>
+
+                  {updateStatusText && (
+                    <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.xs, color: Colors.accentPrimary, marginBottom: Spacing.xs }}>
+                      {updateStatusText}
+                    </Text>
+                  )}
+
+                  <TouchableOpacity
+                    testID="check-updates-btn"
+                    onPress={handleCheckForUpdates}
+                    disabled={isCheckingUpdate}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      paddingVertical: Spacing.sm,
+                      paddingHorizontal: Spacing.md,
+                      backgroundColor: Colors.bgInput,
+                      borderRadius: Radius.md,
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <RotateCw size={14} color={Colors.accentPrimary} />
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                      {isCheckingUpdate ? 'Checking EAS Server...' : 'Check for Updates Now'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  return (
+    <SafeAreaView style={styles.screen}>
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <View style={styles.headerBar}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('StudentDashboard')}
+          style={styles.backBtn}
+          activeOpacity={0.75}
+        >
+          <Text style={styles.backBtnText}>← Return</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.headerTitle}>GURO System Settings</Text>
+
+        <View style={styles.headerSubtitleBadge}>
+          <Text style={styles.headerSubtitleText}>
+            {appMode === 'online' ? 'Connected' : 'Offline Mode'}
+          </Text>
+        </View>
+      </View>
+
+      {/* ── Scrollable top menu categories selectors (GitHub tab row) ───────── */}
+      <View style={styles.tabBar}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabBarContent}
+        >
+          {categories.map((cat) => {
+            const active = cat.id === activeCategory;
+            const IconComp = cat.icon;
+            return (
+              <TouchableOpacity
+                key={cat.id}
+                testID={`tab-${cat.id}`}
+                onPress={() => setActiveCategory(cat.id)}
+                style={[styles.tabItem, active && styles.tabItemActive]}
+                activeOpacity={0.75}
+              >
+                <IconComp size={14} color={active ? Colors.accentPrimary : Colors.textMuted} />
+                <Text style={[styles.tabItemText, active && styles.tabItemTextActive]}>
+                  {cat.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      {/* ── Settings content detailing panels (Rendered at the bottom scroll) ──── */}
+      <ScrollView
+        style={styles.contentScroll}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {renderSettingsBox()}
+        <View style={{ alignItems: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xs }}>
+          <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+            {getAppVersionFooter()}
+          </Text>
+        </View>
+      </ScrollView>
+
+      {/* ── Footer ─────────────────────────────────────────────────────────── */}
+      {appMode !== 'offline' && (
+        <View style={styles.footerContainer}>
+          <DangerButton
+            label="Sign Out of Cloud Session"
+            icon={<LogOut size={16} color={Colors.dangerText} style={{ marginRight: 6 }} />}
+            onPress={() => setShowLogoutConfirm(true)}
+          />
+        </View>
+      )}
+
+      {/* Outfit Purchase Confirmation */}
+      <ConfirmDialog
+        visible={!!purchasingOutfit}
+        variant="primary"
+        title="Unlock Accessory"
+        description={`Unlock ${purchasingOutfit?.label} for ${purchasingOutfit?.cost} Stars?`}
+        confirmLabel="Buy Now!"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmPurchaseOutfit}
+        onCancel={() => setPurchasingOutfit(null)}
+      />
+
+      {/* ── 6-Square Email Verification Modal ── */}
+      <Modal
+        visible={showEmailVerifyModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEmailVerifyModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.75)', justifyContent: 'center', alignItems: 'center', padding: Spacing.md }}>
+          <GlassCard style={{ width: '100%', maxWidth: 420, padding: Spacing.lg, borderRadius: Radius.xl }}>
+            <View style={{ alignItems: 'center', marginBottom: Spacing.md }}>
+              <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(17, 66, 142, 0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs }}>
+                <Mail size={24} color={Colors.accentPrimary} />
+              </View>
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, textAlign: 'center' }}>
+                Verify Email Address
+              </Text>
+              <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, textAlign: 'center', marginTop: 4 }}>
+                Enter the 6-digit verification code sent to {currentUser?.email} to verify your account.
+              </Text>
+            </View>
+
+            <View style={{ marginBottom: Spacing.md }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs }}>
+                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMain }}>
+                  6-Digit Verification Code
+                </Text>
+                <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.textMuted }}>
+                  Valid for 10 mins
+                </Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 6, marginVertical: Spacing.xs }}>
+                {verifyOtpDigits.map((digit, index) => (
+                  <TextInput
+                    key={index}
+                    ref={(ref) => { verifyInputRefs.current[index] = ref; }}
+                    value={digit}
+                    onChangeText={(text) => handleVerifyOtpChange(index, text)}
+                    onKeyPress={({ nativeEvent }) => handleVerifyOtpKeyPress(index, nativeEvent.key)}
+                    keyboardType="number-pad"
+                    maxLength={1}
+                    selectTextOnFocus
+                    style={{
+                      flex: 1,
+                      height: 52,
+                      borderRadius: 14,
+                      borderWidth: 1.5,
+                      borderColor: digit ? Colors.accentPrimary : '#E2E8F0',
+                      backgroundColor: '#F8FAFC',
+                      textAlign: 'center',
+                      fontFamily: Fonts.bodyBold,
+                      fontSize: 22,
+                      color: Colors.textMain,
+                    }}
+                    accessibilityLabel={`Verification digit ${index + 1}`}
+                  />
+                ))}
+              </View>
+
+              {/* Live Resend Countdown */}
+              <View style={{ alignItems: 'center', marginTop: Spacing.xs }}>
+                {verifyCooldown > 0 ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Clock size={12} color={Colors.textMuted} />
+                    <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
+                      Resend code in{' '}
+                      <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>
+                        0:{verifyCooldown < 10 ? `0${verifyCooldown}` : verifyCooldown}
+                      </Text>
+                    </Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    onPress={handleResendEmailVerifyCode}
+                    disabled={isSendingVerifyCode}
+                  >
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary }}>
+                      Didn't receive the code? Resend now
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            <View style={{ gap: Spacing.sm }}>
+              <PrimaryButton
+                label="Verify & Confirm"
+                onPress={handleConfirmEmailVerification}
+                loading={isVerifyingCode}
+              />
+              <SecondaryButton
+                label="Cancel"
+                onPress={() => setShowEmailVerifyModal(false)}
+              />
+            </View>
+          </GlassCard>
+        </View>
+      </Modal>
+
+      {/* Logout Confirmation */}
+      <ConfirmDialog
+        visible={showLogoutConfirm}
+        variant="danger"
+        title="Confirm Logout"
+        description="Are you sure you want to sign out? Your credentials will be cleared, returning you to the offline guest state."
+        confirmLabel="Logout"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
+    </SafeAreaView>
+  );
+}
+
+// ── Private Helper Component to display secure text input ──────────────────
+interface PrivateInputProps {
+  label: string;
+  value: string;
+  onChangeText: (t: string) => void;
+  placeholder: string;
+}
+
+function PrivatePasswordInput({ label, value, onChangeText, placeholder }: PrivateInputProps) {
+  return (
+    <ThemedTextInput
+      label={label}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      autoCapitalize="none"
+      autoCorrect={false}
+      secureTextEntry
+    />
+  );
+}

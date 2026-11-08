@@ -148,7 +148,8 @@ export const ParentStudentRegistration: React.FC<ParentStudentRegistrationProps>
                   type="text"
                   placeholder="e.g. Juan"
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  onChange={(e) => setFirstName(e.target.value.replace(/[^a-zA-Z0-9\s.\-]/g, '').slice(0, 50))}
+                  maxLength={50}
                   className="w-full px-3.5 py-2.5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-xs text-[var(--text-main)] focus:outline-none focus:border-pink-500 transition-colors"
                   required
                 />
@@ -162,7 +163,8 @@ export const ParentStudentRegistration: React.FC<ParentStudentRegistrationProps>
                   type="text"
                   placeholder="e.g. Dela Cruz"
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  onChange={(e) => setLastName(e.target.value.replace(/[^a-zA-Z0-9\s.\-]/g, '').slice(0, 50))}
+                  maxLength={50}
                   className="w-full px-3.5 py-2.5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-xs text-[var(--text-main)] focus:outline-none focus:border-pink-500 transition-colors"
                   required
                 />
@@ -178,7 +180,8 @@ export const ParentStudentRegistration: React.FC<ParentStudentRegistrationProps>
                   type="text"
                   placeholder="e.g. Santos"
                   value={middleName}
-                  onChange={(e) => setMiddleName(e.target.value)}
+                  onChange={(e) => setMiddleName(e.target.value.replace(/[^a-zA-Z0-9\s.\-]/g, '').slice(0, 50))}
+                  maxLength={50}
                   className="w-full px-3.5 py-2.5 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-xs text-[var(--text-main)] focus:outline-none focus:border-pink-500 transition-colors"
                 />
               </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap, Eye, EyeOff, Shield, ShieldCheck, KeyRound, Terminal, Sun, Moon, Upload, CheckCircle2, Clock, X, Download } from 'lucide-react';
+import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap, Eye, EyeOff, Shield, ShieldCheck, KeyRound, Terminal, Sun, Moon, Upload, CheckCircle2, Clock, X, Download, MoreVertical } from 'lucide-react';
 import { RoleCard, type RoleCardProps } from '../components/landing/RoleCard';
 import { FeatureCard, type FeatureCardProps } from '../components/landing/FeatureCard';
 import { setAuthToken } from '../utils/api';
@@ -128,7 +128,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const handleLogoClick = () => {
         if (logoTimerRef.current) clearTimeout(logoTimerRef.current);
         clickCountRef.current += 1;
-        if (clickCountRef.current >= 5) {
+        if (clickCountRef.current >= 3) {
             clickCountRef.current = 0;
             setIsAdminMode((prev) => {
                 const nextMode = !prev;
@@ -693,6 +693,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         <div className="px-2.5 sm:px-3 py-1.5 bg-[#11428E]/10 border border-[#11428E]/20 rounded-full text-[#3b82f6] font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
                             <Sparkles className="size-3" /> Guest session
                         </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsAdminMode((prev) => {
+                                    const nextMode = !prev;
+                                    if (nextMode) toast.success('Staff & IT Console unlocked.');
+                                    else toast('Returned to standard portal.');
+                                    return nextMode;
+                                });
+                            }}
+                            className="p-2 sm:p-2.5 rounded-2xl glass-panel border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all shadow-md cursor-pointer hover:scale-105 active:scale-95"
+                            title="Staff & IT Console Gateway"
+                            aria-label="Staff and IT Console Gateway"
+                        >
+                            <MoreVertical size={17} />
+                        </button>
+
                         {onToggleTheme && (
                             <button
                                 type="button"
@@ -732,6 +749,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             <span className="hidden sm:inline">Download APK</span>
                             <span className="sm:hidden">APK</span>
                         </a>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsAdminMode((prev) => {
+                                    const nextMode = !prev;
+                                    if (nextMode) toast.success('Staff & IT Console unlocked.');
+                                    else toast('Returned to standard portal.');
+                                    return nextMode;
+                                });
+                            }}
+                            className="p-2 sm:p-2.5 rounded-2xl glass-panel border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all shadow-md cursor-pointer hover:scale-105 active:scale-95"
+                            title="Staff & IT Console Gateway"
+                            aria-label="Staff and IT Console Gateway"
+                        >
+                            <MoreVertical size={17} />
+                        </button>
 
                         {onToggleTheme && (
                             <button
@@ -1007,7 +1041,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                             placeholder="e.g. Maria"
                                             className={fieldErrors.firstName ? inputErrCls : inputCls}
                                             value={firstName}
-                                            onChange={(e) => { setFirstName(e.target.value); setFieldErrors((p) => ({ ...p, firstName: '' })); }}
+                                            onChange={(e) => { const sanitized = e.target.value.replace(/[^a-zA-Z0-9\s.\-]/g, '').slice(0, 50); setFirstName(sanitized); setFieldErrors((p) => ({ ...p, firstName: '' })); }}
                                             onBlur={(e) => handleFieldBlur('firstName', e.target.value)}
                                             required
                                             aria-describedby={fieldErrors.firstName ? 'reg-first-name-err' : undefined}
@@ -1026,7 +1060,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                                             placeholder="e.g. Santos"
                                             className={fieldErrors.lastName ? inputErrCls : inputCls}
                                             value={lastName}
-                                            onChange={(e) => { setLastName(e.target.value); setFieldErrors((p) => ({ ...p, lastName: '' })); }}
+                                            onChange={(e) => { const sanitized = e.target.value.replace(/[^a-zA-Z0-9\s.\-]/g, '').slice(0, 50); setLastName(sanitized); setFieldErrors((p) => ({ ...p, lastName: '' })); }}
                                             onBlur={(e) => handleFieldBlur('lastName', e.target.value)}
                                             required
                                             aria-describedby={fieldErrors.lastName ? 'reg-last-name-err' : undefined}

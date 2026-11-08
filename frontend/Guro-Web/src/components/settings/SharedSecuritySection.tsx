@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Lock, Eye, EyeOff, ShieldCheck, CheckCircle2, Mail, AlertCircle, Clock, X } from 'lucide-react';
+import { Lock, Eye, EyeOff, ShieldCheck, CheckCircle2, Mail, AlertCircle, Clock, X, KeyRound } from 'lucide-react';
 import { toast } from '../../utils/toast';
 import { apiFetch } from '../../utils/api';
 
@@ -24,6 +24,32 @@ export const SharedSecuritySection: React.FC<SharedSecuritySectionProps> = ({
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isSendingForgotOtp, setIsSendingForgotOtp] = useState(false);
+
+  const handleSendForgotCode = async () => {
+    if (!currentUser?.email) {
+      toast.error('No registered email found for this account.');
+      return;
+    }
+    setIsSendingForgotOtp(true);
+    try {
+      const res = await apiFetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentUser.email }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(`Recovery OTP sent to ${currentUser.email}! Check your inbox.`);
+      } else {
+        toast.error(data.message || data.error || 'Failed to send recovery OTP.');
+      }
+    } catch {
+      toast.error('Network error sending recovery code.');
+    } finally {
+      setIsSendingForgotOtp(false);
+    }
+  };
 
   // Email verification state
   const [isVerified, setIsVerified] = useState(!!currentUser?.emailVerifiedAt);
@@ -393,13 +419,25 @@ export const SharedSecuritySection: React.FC<SharedSecuritySectionProps> = ({
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={isUpdating}
-            className="mt-2 py-2.5 px-5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-xs w-fit cursor-pointer active:scale-95"
-          >
-            {isUpdating ? 'Updating Password...' : 'Update Password'}
-          </button>
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-3 pt-3 border-t border-[var(--border-color)]">
+            <button
+              type="submit"
+              disabled={isUpdating}
+              className="py-2.5 px-5 bg-[#11428E] hover:bg-[#0d3470] disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+            >
+              {isUpdating ? 'Updating Password...' : 'Update Password'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSendForgotCode}
+              disabled={isSendingForgotOtp}
+              className="text-xs font-semibold text-[var(--accent-primary-text)] hover:underline flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <KeyRound size={13} />
+              <span>{isSendingForgotOtp ? 'Sending OTP...' : 'Forgot Current Password? Send Recovery Code'}</span>
+            </button>
+          </div>
         </form>
       </div>
 
