@@ -1,418 +1,794 @@
-import * as SQLite from 'expo-sqlite';
-import { ProgressEvent, Question, ItemBank } from '../store/useAppStore';
-
-let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
-
-// Initialize SQLite connection and create tables
-export async function getLocalDb(): Promise<SQLite.SQLiteDatabase> {
-  if (dbInitPromise) return dbInitPromise;
-  
-  dbInitPromise = (async () => {
-    const db = await SQLite.openDatabaseAsync('guro_local.db');
-    
-    // Enable Write-Ahead Logging (WAL) for better concurrent performance, with graceful fallback
-    try {
-      await db.execAsync('PRAGMA journal_mode = WAL;');
-    } catch (walErr) {
-      console.warn('[SQLite] WAL journal mode not supported in current environment/sandbox. Using default mode.', walErr);
-    }
-    
-    // Create tables
-    await db.execAsync(`
-      CREATE TABLE IF NOT EXISTS student_progress (
-        event_id TEXT PRIMARY KEY,
-        subject TEXT NOT NULL,
-        grade_level INTEGER NOT NULL,
-        topic TEXT NOT NULL,
-        score INTEGER NOT NULL,
-        total_questions INTEGER NOT NULL,
-        difficulty TEXT DEFAULT 'Average',
-        assessment_type TEXT DEFAULT 'practice',
-        school_year TEXT DEFAULT '2026-2027',
-        term TEXT DEFAULT 'Quarter 1',
-        timestamp TEXT NOT NULL,
-        synced INTEGER DEFAULT 0
-      );
-
-      CREATE TABLE IF NOT EXISTS local_item_bank (
-        id TEXT PRIMARY KEY,
-        subject TEXT NOT NULL,
-        grade_level INTEGER NOT NULL,
-        topic TEXT NOT NULL,
-        difficulty TEXT NOT NULL,
-        category TEXT NOT NULL,
-        question_text TEXT NOT NULL,
-        options TEXT NOT NULL, -- JSON string array
-        correct_answer TEXT NOT NULL,
-        feedback_en TEXT NOT NULL,
-        feedback_fil TEXT NOT NULL,
-        type TEXT DEFAULT 'multiple-choice',
-        matching_pairs TEXT -- JSON string (optional)
-      );
-
-      CREATE TABLE IF NOT EXISTS local_study_content (
-        subject TEXT NOT NULL,
-        grade_level INTEGER NOT NULL,
-        topic TEXT NOT NULL,
-        introduction TEXT NOT NULL,
-        definitions TEXT NOT NULL, -- JSON string array
-        summary TEXT NOT NULL, -- JSON string array
-        order_index INTEGER,
-        PRIMARY KEY (subject, grade_level, topic)
-      );
-
-      CREATE TABLE IF NOT EXISTS parent_settings (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_student_progress_synced ON student_progress (synced);
-      CREATE INDEX IF NOT EXISTS idx_local_item_bank_search ON local_item_bank (subject, grade_level, topic);
-    `);
-
-    try {
-      await db.execAsync('ALTER TABLE local_study_content ADD COLUMN order_index INTEGER;');
-    } catch (e) {
-      // Ignore error if column already exists
-    }
-
-    // Run dynamic migrations for assessment_type, school_year, term in student_progress
-    try {
-      await db.execAsync("ALTER TABLE student_progress ADD COLUMN difficulty TEXT DEFAULT 'Average';");
-    } catch (e) {
-      // Column already exists
-    }
-    try {
-      await db.execAsync("ALTER TABLE student_progress ADD COLUMN assessment_type TEXT DEFAULT 'practice';");
-    } catch (e) {
-      // Column already exists
-    }
-    try {
-      await db.execAsync("ALTER TABLE student_progress ADD COLUMN school_year TEXT DEFAULT '2026-2027';");
-    } catch (e) {
-      // Column already exists
-    }
-    try {
-      await db.execAsync("ALTER TABLE student_progress ADD COLUMN term TEXT DEFAULT 'Quarter 1';");
-    } catch (e) {
-      // Column already exists
-    }
-
-    // Run dynamic migrations for gamified question columns if they don't exist
-    try {
-      await db.execAsync("ALTER TABLE local_item_bank ADD COLUMN type TEXT DEFAULT 'multiple-choice';");
-    } catch (e) {
-      // Column already exists
-    }
-    try {
-      await db.execAsync("ALTER TABLE local_item_bank ADD COLUMN matching_pairs TEXT;");
-    } catch (e) {
-      // Column already exists
-    }
-
-    return db;
-  })();
-
-  return dbInitPromise;
-}
-
-// --- STUDENT PROGRESS EVENTS METHODS ---
-
-export async function saveLocalProgress(event: ProgressEvent): Promise<void> {
-  const db = await getLocalDb();
-  await db.runAsync(
-    `INSERT INTO student_progress (event_id, subject, grade_level, topic, score, total_questions, difficulty, assessment_type, school_year, term, timestamp, synced)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      event.eventId,
-      event.subject,
-      event.gradeLevel,
-      event.topic,
-      event.score,
-      event.totalQuestions,
-      event.difficulty || 'Average',
-      event.assessmentType || 'practice',
-      event.schoolYear || '2026-2027',
-      event.term || 'Quarter 1',
-      event.timestamp,
-      event.synced ? 1 : 0
-    ]
-  );
-}
-
-export async function getLocalProgress(): Promise<ProgressEvent[]> {
-  const db = await getLocalDb();
-  const rows = await db.getAllAsync<{
-    event_id: string;
-    subject: string;
-    grade_level: number;
-    topic: string;
-    score: number;
-    total_questions: number;
-    difficulty: string | null;
-    assessment_type: string | null;
-    school_year: string | null;
-    term: string | null;
-    timestamp: string;
-    synced: number;
-  }>('SELECT * FROM student_progress ORDER BY timestamp DESC');
-
-  return rows.map((row) => ({
-    eventId: row.event_id,
-    subject: row.subject,
-    gradeLevel: row.grade_level,
-    topic: row.topic,
-    score: row.score,
-    totalQuestions: row.total_questions,
-    difficulty: row.difficulty || 'Average',
-    assessmentType: (row.assessment_type as any) || 'practice',
-    schoolYear: row.school_year || '2026-2027',
-    term: row.term || 'Quarter 1',
-    timestamp: row.timestamp,
-    synced: row.synced === 1,
-  }));
-}
-
-export async function getUnsyncedProgress(): Promise<ProgressEvent[]> {
-  const db = await getLocalDb();
-  const rows = await db.getAllAsync<{
-    event_id: string;
-    subject: string;
-    grade_level: number;
-    topic: string;
-    score: number;
-    total_questions: number;
-    difficulty: string | null;
-    assessment_type: string | null;
-    school_year: string | null;
-    term: string | null;
-    timestamp: string;
-    synced: number;
-  }>('SELECT * FROM student_progress WHERE synced = 0');
-
-  return rows.map((row) => ({
-    eventId: row.event_id,
-    subject: row.subject,
-    gradeLevel: row.grade_level,
-    topic: row.topic,
-    score: row.score,
-    totalQuestions: row.total_questions,
-    difficulty: row.difficulty || 'Average',
-    assessmentType: (row.assessment_type as any) || 'practice',
-    schoolYear: row.school_year || '2026-2027',
-    term: row.term || 'Quarter 1',
-    timestamp: row.timestamp,
-    synced: false,
-  }));
-}
-
-export async function markEventsAsSynced(eventIds: string[]): Promise<void> {
-  if (eventIds.length === 0) return;
-  const db = await getLocalDb();
-  const placeholders = eventIds.map(() => '?').join(',');
-  await db.runAsync(
-    `UPDATE student_progress SET synced = 1 WHERE event_id IN (${placeholders})`,
-    eventIds
-  );
-}
-
-export async function clearLocalProgress(): Promise<void> {
-  const db = await getLocalDb();
-  await db.runAsync('DELETE FROM student_progress');
-}
-
-// --- LOCAL ITEM BANK METHODS ---
-
-export async function saveLocalItemBank(itemBank: ItemBank): Promise<void> {
-  const db = await getLocalDb();
-  
-  const runOperations = async () => {
-    // Clear old cached data first
-    await db.runAsync('DELETE FROM local_item_bank');
-    await db.runAsync('DELETE FROM local_study_content');
-
-    // Insert new questions and study content
-    for (const subject of Object.keys(itemBank)) {
-      const subjectData = itemBank[subject];
-      for (const grade of Object.keys(subjectData)) {
-        const gradeData = subjectData[grade];
-        for (const topic of Object.keys(gradeData)) {
-          const topicData = gradeData[topic];
-
-          // Save study content if present
-          if (topicData.studyContent) {
-            const sc = topicData.studyContent;
-            await db.runAsync(
-              `INSERT INTO local_study_content 
-               (subject, grade_level, topic, introduction, definitions, summary, order_index)
-               VALUES (?, ?, ?, ?, ?, ?, ?)`,
-              [
-                subject,
-                parseInt(grade, 10),
-                topic,
-                sc.introduction,
-                JSON.stringify(sc.definitions),
-                JSON.stringify(sc.summary),
-                sc.orderIndex !== undefined ? sc.orderIndex : null
-              ]
-            );
-          }
-
-          // Save questions
-          for (const difficulty of Object.keys(topicData)) {
-            if (difficulty === 'studyContent') continue;
-            const diffData = topicData[difficulty] as Record<string, Question[]> | undefined;
-            if (!diffData || typeof diffData !== 'object') continue;
-            for (const category of Object.keys(diffData)) {
-              const questions = diffData[category];
-              if (Array.isArray(questions)) {
-                for (const q of questions) {
-                  await db.runAsync(
-                    `INSERT INTO local_item_bank 
-                     (id, subject, grade_level, topic, difficulty, category, question_text, options, correct_answer, feedback_en, feedback_fil, type, matching_pairs)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [
-                      q.id,
-                      subject,
-                      parseInt(grade, 10),
-                      topic,
-                      difficulty,
-                      category,
-                      q.questionText,
-                      JSON.stringify(q.options),
-                      q.correctAnswer,
-                      q.feedback.en,
-                      q.feedback.fil,
-                      (q as any).type || 'multiple-choice',
-                      (q as any).matchingPairs ? JSON.stringify((q as any).matchingPairs) : null
-                    ]
-                  );
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  };
-
-  if (typeof db.withTransactionAsync === 'function') {
-    await db.withTransactionAsync(runOperations);
-  } else {
-    await runOperations();
-  }
-}
-
-export async function getLocalItemBank(): Promise<ItemBank | null> {
-  const db = await getLocalDb();
-  const rows = await db.getAllAsync<{
-    id: string;
-    subject: string;
-    grade_level: number;
-    topic: string;
-    difficulty: string;
-    category: string;
-    question_text: string;
-    options: string;
-    correct_answer: string;
-    feedback_en: string;
-    feedback_fil: string;
-    type: string | null;
-    matching_pairs: string | null;
-  }>('SELECT * FROM local_item_bank');
-
-  const studyRows = await db.getAllAsync<{
-    subject: string;
-    grade_level: number;
-    topic: string;
-    introduction: string;
-    definitions: string;
-    summary: string;
-    order_index: number | null;
-  }>('SELECT * FROM local_study_content');
-
-  if (rows.length === 0 && studyRows.length === 0) return null;
-
-  const itemBank: ItemBank = {};
-
-  // Rebuild questions
-  rows.forEach((row) => {
-    const { subject, grade_level, topic, difficulty, category } = row;
-    const gradeStr = grade_level.toString();
-
-    if (!itemBank[subject]) itemBank[subject] = {};
-    if (!itemBank[subject][gradeStr]) itemBank[subject][gradeStr] = {};
-    if (!itemBank[subject][gradeStr][topic]) itemBank[subject][gradeStr][topic] = {};
-    const topicEntry = itemBank[subject][gradeStr][topic] as Record<string, Record<string, Question[]>>;
-    if (!topicEntry[difficulty]) topicEntry[difficulty] = {};
-    if (!topicEntry[difficulty][category]) topicEntry[difficulty][category] = [];
-
-    const parsedOptions = JSON.parse(row.options) as string[];
-    const parsedMatchingPairs = row.matching_pairs ? JSON.parse(row.matching_pairs) : undefined;
-    let detectedType = row.type;
-    if (!detectedType || detectedType === 'multiple-choice') {
-      if (parsedMatchingPairs && Object.keys(parsedMatchingPairs).length > 0) {
-        detectedType = 'drag-drop-matching';
-      } else if (row.question_text.includes('[[blank]]') || row.question_text.includes('____') || row.question_text.includes('______')) {
-        detectedType = 'fill-in-the-blank';
-      } else if (parsedOptions && parsedOptions.length === 2 && ((parsedOptions[0] === 'True' && parsedOptions[1] === 'False') || (parsedOptions[0] === 'False' && parsedOptions[1] === 'True'))) {
-        detectedType = 'true-false';
-      } else {
-        detectedType = 'multiple-choice';
-      }
-    }
-
-    const q: Question = {
-      id: row.id,
-      questionText: row.question_text,
-      options: parsedOptions,
-      correctAnswer: row.correct_answer,
-      feedback: {
-        en: row.feedback_en,
-        fil: row.feedback_fil,
-      },
-      type: detectedType as any,
-      matchingPairs: parsedMatchingPairs,
-    } as any;
-
-    topicEntry[difficulty][category].push(q);
-  });
-
-  // Rebuild study content
-  studyRows.forEach((row) => {
-    const { subject, grade_level, topic } = row;
-    const gradeStr = grade_level.toString();
-
-    if (!itemBank[subject]) itemBank[subject] = {};
-    if (!itemBank[subject][gradeStr]) itemBank[subject][gradeStr] = {};
-    if (!itemBank[subject][gradeStr][topic]) itemBank[subject][gradeStr][topic] = {};
-
-    itemBank[subject][gradeStr][topic].studyContent = {
-      introduction: row.introduction,
-      definitions: JSON.parse(row.definitions),
-      summary: JSON.parse(row.summary),
-      orderIndex: row.order_index !== null ? row.order_index : undefined
-    };
-  });
-
-  return itemBank;
-}
-
-// --- PARENT SETTINGS METHODS ---
-
-export async function saveParentSetting(key: string, value: string): Promise<void> {
-  const db = await getLocalDb();
-  await db.runAsync(
-    'INSERT OR REPLACE INTO parent_settings (key, value) VALUES (?, ?)',
-    [key, value]
-  );
-}
-
-export async function getParentSetting(key: string): Promise<string | null> {
-  const db = await getLocalDb();
-  const row = await db.getFirstAsync<{ value: string }>(
-    'SELECT value FROM parent_settings WHERE key = ?',
-    [key]
-  );
-  return row ? row.value : null;
-}
+import * as SQLite from 'expo-sqlite';
+
+import { ProgressEvent, Question, ItemBank } from '../store/useAppStore';
+
+let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+
+// Initialize SQLite connection and create tables
+
+export async function getLocalDb(): Promise<SQLite.SQLiteDatabase> {
+
+  if (dbInitPromise) return dbInitPromise;
+
+  dbInitPromise = (async () => {
+
+    const db = await SQLite.openDatabaseAsync('guro_local.db');
+
+    // Enable Write-Ahead Logging (WAL) for better concurrent performance, with graceful fallback
+
+    try {
+
+      await db.execAsync('PRAGMA journal_mode = WAL;');
+
+    } catch (walErr) {
+
+      console.warn('[SQLite] WAL journal mode not supported in current environment/sandbox. Using default mode.', walErr);
+
+    }
+
+    // Create tables
+
+    await db.execAsync(`
+
+      CREATE TABLE IF NOT EXISTS student_progress (
+
+        event_id TEXT PRIMARY KEY,
+
+        student_id TEXT,
+
+        subject TEXT NOT NULL,
+
+        grade_level INTEGER NOT NULL,
+
+        topic TEXT NOT NULL,
+
+        score INTEGER NOT NULL,
+
+        total_questions INTEGER NOT NULL,
+
+        difficulty TEXT DEFAULT 'Average',
+
+        assessment_type TEXT DEFAULT 'practice',
+
+        school_year TEXT DEFAULT '2026-2027',
+
+        term TEXT DEFAULT 'Quarter 1',
+
+        timestamp TEXT NOT NULL,
+
+        synced INTEGER DEFAULT 0
+
+      );
+
+      CREATE TABLE IF NOT EXISTS local_item_bank (
+
+        id TEXT PRIMARY KEY,
+
+        subject TEXT NOT NULL,
+
+        grade_level INTEGER NOT NULL,
+
+        topic TEXT NOT NULL,
+
+        difficulty TEXT NOT NULL,
+
+        category TEXT NOT NULL,
+
+        question_text TEXT NOT NULL,
+
+        options TEXT NOT NULL, -- JSON string array
+
+        correct_answer TEXT NOT NULL,
+
+        feedback_en TEXT NOT NULL,
+
+        feedback_fil TEXT NOT NULL,
+
+        type TEXT DEFAULT 'multiple-choice',
+
+        matching_pairs TEXT -- JSON string (optional)
+
+      );
+
+      CREATE TABLE IF NOT EXISTS local_study_content (
+
+        subject TEXT NOT NULL,
+
+        grade_level INTEGER NOT NULL,
+
+        topic TEXT NOT NULL,
+
+        introduction TEXT NOT NULL,
+
+        definitions TEXT NOT NULL, -- JSON string array
+
+        summary TEXT NOT NULL, -- JSON string array
+
+        order_index INTEGER,
+
+        PRIMARY KEY (subject, grade_level, topic)
+
+      );
+
+      CREATE TABLE IF NOT EXISTS parent_settings (
+
+        key TEXT PRIMARY KEY,
+
+        value TEXT NOT NULL
+
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_student_progress_synced ON student_progress (synced);
+
+      CREATE INDEX IF NOT EXISTS idx_local_item_bank_search ON local_item_bank (subject, grade_level, topic);
+
+    `);
+
+    try {
+
+      await db.execAsync('ALTER TABLE local_study_content ADD COLUMN order_index INTEGER;');
+
+    } catch (e) {
+
+      // Ignore error if column already exists
+
+    }
+
+    // Run dynamic migrations for student_id, assessment_type, school_year, term in student_progress
+
+    try {
+
+      await db.execAsync('ALTER TABLE student_progress ADD COLUMN student_id TEXT;');
+
+    } catch (e) {
+
+      // Column already exists
+
+    }
+
+    try {
+
+      await db.execAsync("ALTER TABLE student_progress ADD COLUMN difficulty TEXT DEFAULT 'Average';");
+
+    } catch (e) {
+
+      // Column already exists
+
+    }
+
+    try {
+
+      await db.execAsync("ALTER TABLE student_progress ADD COLUMN assessment_type TEXT DEFAULT 'practice';");
+
+    } catch (e) {
+
+      // Column already exists
+
+    }
+
+    try {
+
+      await db.execAsync("ALTER TABLE student_progress ADD COLUMN school_year TEXT DEFAULT '2026-2027';");
+
+    } catch (e) {
+
+      // Column already exists
+
+    }
+
+    try {
+
+      await db.execAsync("ALTER TABLE student_progress ADD COLUMN term TEXT DEFAULT 'Quarter 1';");
+
+    } catch (e) {
+
+      // Column already exists
+
+    }
+
+    // Run dynamic migrations for gamified question columns if they don't exist
+
+    try {
+
+      await db.execAsync("ALTER TABLE local_item_bank ADD COLUMN type TEXT DEFAULT 'multiple-choice';");
+
+    } catch (e) {
+
+      // Column already exists
+
+    }
+
+    try {
+
+      await db.execAsync("ALTER TABLE local_item_bank ADD COLUMN matching_pairs TEXT;");
+
+    } catch (e) {
+
+      // Column already exists
+
+    }
+
+    return db;
+
+  })();
+
+  return dbInitPromise;
+
+}
+
+// --- STUDENT PROGRESS EVENTS METHODS ---
+
+export async function saveLocalProgress(event: ProgressEvent, studentId?: string): Promise<void> {
+  const db = await getLocalDb();
+  const effectiveStudentId = studentId || event.studentId || null;
+  await db.runAsync(
+    `INSERT INTO student_progress (event_id, student_id, subject, grade_level, topic, score, total_questions, difficulty, assessment_type, school_year, term, timestamp, synced)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      event.eventId,
+      effectiveStudentId,
+      event.subject,
+      event.gradeLevel,
+      event.topic,
+      event.score,
+      event.totalQuestions,
+      event.difficulty || 'Average',
+      event.assessmentType || 'practice',
+      event.schoolYear || '2026-2027',
+      event.term || 'Quarter 1',
+      event.timestamp,
+      event.synced ? 1 : 0
+    ]
+  );
+}
+
+export async function getLocalProgress(studentId?: string): Promise<ProgressEvent[]> {
+
+  const db = await getLocalDb();
+
+  let query = 'SELECT * FROM student_progress';
+
+  const params: any[] = [];
+
+  if (studentId) {
+
+    query += ' WHERE student_id = ? OR student_id IS NULL';
+
+    params.push(studentId);
+
+  }
+
+  query += ' ORDER BY timestamp DESC';
+
+  const rows = await db.getAllAsync<{
+
+    event_id: string;
+
+    student_id?: string | null;
+
+    subject: string;
+
+    grade_level: number;
+
+    topic: string;
+
+    score: number;
+
+    total_questions: number;
+
+    difficulty: string | null;
+
+    assessment_type: string | null;
+
+    school_year: string | null;
+
+    term: string | null;
+
+    timestamp: string;
+
+    synced: number;
+
+  }>(query, params);
+
+  return rows.map((row) => ({
+
+    eventId: row.event_id,
+
+    studentId: row.student_id || undefined,
+
+    subject: row.subject,
+
+    gradeLevel: row.grade_level,
+
+    topic: row.topic,
+
+    score: row.score,
+
+    totalQuestions: row.total_questions,
+
+    difficulty: row.difficulty || 'Average',
+
+    assessmentType: (row.assessment_type as any) || 'practice',
+
+    schoolYear: row.school_year || '2026-2027',
+
+    term: row.term || 'Quarter 1',
+
+    timestamp: row.timestamp,
+
+    synced: row.synced === 1,
+
+  }));
+
+}
+
+export async function getUnsyncedProgress(): Promise<ProgressEvent[]> {
+
+  const db = await getLocalDb();
+
+  const rows = await db.getAllAsync<{
+
+    event_id: string;
+
+    subject: string;
+
+    grade_level: number;
+
+    topic: string;
+
+    score: number;
+
+    total_questions: number;
+
+    difficulty: string | null;
+
+    assessment_type: string | null;
+
+    school_year: string | null;
+
+    term: string | null;
+
+    timestamp: string;
+
+    synced: number;
+
+  }>('SELECT * FROM student_progress WHERE synced = 0');
+
+  return rows.map((row) => ({
+
+    eventId: row.event_id,
+
+    subject: row.subject,
+
+    gradeLevel: row.grade_level,
+
+    topic: row.topic,
+
+    score: row.score,
+
+    totalQuestions: row.total_questions,
+
+    difficulty: row.difficulty || 'Average',
+
+    assessmentType: (row.assessment_type as any) || 'practice',
+
+    schoolYear: row.school_year || '2026-2027',
+
+    term: row.term || 'Quarter 1',
+
+    timestamp: row.timestamp,
+
+    synced: false,
+
+  }));
+
+}
+
+export async function markEventsAsSynced(eventIds: string[]): Promise<void> {
+
+  if (eventIds.length === 0) return;
+
+  const db = await getLocalDb();
+
+  const placeholders = eventIds.map(() => '?').join(',');
+
+  await db.runAsync(
+
+    `UPDATE student_progress SET synced = 1 WHERE event_id IN (${placeholders})`,
+
+    eventIds
+
+  );
+
+}
+
+export async function clearLocalProgress(studentId?: string): Promise<void> {
+
+  const db = await getLocalDb();
+
+  if (studentId) {
+
+    await db.runAsync('DELETE FROM student_progress WHERE student_id = ?', [studentId]);
+
+  } else {
+
+    await db.runAsync('DELETE FROM student_progress');
+
+  }
+
+}
+
+// --- LOCAL ITEM BANK METHODS ---
+
+export async function saveLocalItemBank(itemBank: ItemBank): Promise<void> {
+
+  const db = await getLocalDb();
+
+  const runOperations = async () => {
+
+    // Clear old cached data first
+
+    await db.runAsync('DELETE FROM local_item_bank');
+
+    await db.runAsync('DELETE FROM local_study_content');
+
+    // Insert new questions and study content
+
+    for (const subject of Object.keys(itemBank)) {
+
+      const subjectData = itemBank[subject];
+
+      for (const grade of Object.keys(subjectData)) {
+
+        const gradeData = subjectData[grade];
+
+        for (const topic of Object.keys(gradeData)) {
+
+          const topicData = gradeData[topic];
+
+          // Save study content if present
+
+          if (topicData.studyContent) {
+
+            const sc = topicData.studyContent;
+
+            await db.runAsync(
+
+              `INSERT INTO local_study_content 
+
+               (subject, grade_level, topic, introduction, definitions, summary, order_index)
+
+               VALUES (?, ?, ?, ?, ?, ?, ?)`,
+
+              [
+
+                subject,
+
+                parseInt(grade, 10),
+
+                topic,
+
+                sc.introduction,
+
+                JSON.stringify(sc.definitions),
+
+                JSON.stringify(sc.summary),
+
+                sc.orderIndex !== undefined ? sc.orderIndex : null
+
+              ]
+
+            );
+
+          }
+
+          // Save questions
+
+          for (const difficulty of Object.keys(topicData)) {
+
+            if (difficulty === 'studyContent') continue;
+
+            const diffData = topicData[difficulty] as Record<string, Question[]> | undefined;
+
+            if (!diffData || typeof diffData !== 'object') continue;
+
+            for (const category of Object.keys(diffData)) {
+
+              const questions = diffData[category];
+
+              if (Array.isArray(questions)) {
+
+                for (const q of questions) {
+
+                  await db.runAsync(
+
+                    `INSERT INTO local_item_bank 
+
+                     (id, subject, grade_level, topic, difficulty, category, question_text, options, correct_answer, feedback_en, feedback_fil, type, matching_pairs)
+
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+
+                    [
+
+                      q.id,
+
+                      subject,
+
+                      parseInt(grade, 10),
+
+                      topic,
+
+                      difficulty,
+
+                      category,
+
+                      q.questionText,
+
+                      JSON.stringify(q.options),
+
+                      q.correctAnswer,
+
+                      q.feedback.en,
+
+                      q.feedback.fil,
+
+                      (q as any).type || 'multiple-choice',
+
+                      (q as any).matchingPairs ? JSON.stringify((q as any).matchingPairs) : null
+
+                    ]
+
+                  );
+
+                }
+
+              }
+
+            }
+
+          }
+
+        }
+
+      }
+
+    }
+
+  };
+
+  if (typeof db.withTransactionAsync === 'function') {
+
+    await db.withTransactionAsync(runOperations);
+
+  } else {
+
+    await runOperations();
+
+  }
+
+}
+
+export async function getLocalItemBank(): Promise<ItemBank | null> {
+
+  const db = await getLocalDb();
+
+  const rows = await db.getAllAsync<{
+
+    id: string;
+
+    subject: string;
+
+    grade_level: number;
+
+    topic: string;
+
+    difficulty: string;
+
+    category: string;
+
+    question_text: string;
+
+    options: string;
+
+    correct_answer: string;
+
+    feedback_en: string;
+
+    feedback_fil: string;
+
+    type: string | null;
+
+    matching_pairs: string | null;
+
+  }>('SELECT * FROM local_item_bank');
+
+  const studyRows = await db.getAllAsync<{
+
+    subject: string;
+
+    grade_level: number;
+
+    topic: string;
+
+    introduction: string;
+
+    definitions: string;
+
+    summary: string;
+
+    order_index: number | null;
+
+  }>('SELECT * FROM local_study_content');
+
+  if (rows.length === 0 && studyRows.length === 0) return null;
+
+  const itemBank: ItemBank = {};
+
+  // Rebuild questions
+
+  rows.forEach((row) => {
+
+    const { subject, grade_level, topic, difficulty, category } = row;
+
+    const gradeStr = grade_level.toString();
+
+    if (!itemBank[subject]) itemBank[subject] = {};
+
+    if (!itemBank[subject][gradeStr]) itemBank[subject][gradeStr] = {};
+
+    if (!itemBank[subject][gradeStr][topic]) itemBank[subject][gradeStr][topic] = {};
+
+    const topicEntry = itemBank[subject][gradeStr][topic] as Record<string, Record<string, Question[]>>;
+
+    if (!topicEntry[difficulty]) topicEntry[difficulty] = {};
+
+    if (!topicEntry[difficulty][category]) topicEntry[difficulty][category] = [];
+
+    const parsedOptions = JSON.parse(row.options) as string[];
+
+    const parsedMatchingPairs = row.matching_pairs ? JSON.parse(row.matching_pairs) : undefined;
+
+    let detectedType = row.type;
+
+    if (!detectedType || detectedType === 'multiple-choice') {
+
+      if (parsedMatchingPairs && Object.keys(parsedMatchingPairs).length > 0) {
+
+        detectedType = 'drag-drop-matching';
+
+      } else if (row.question_text.includes('[[blank]]') || row.question_text.includes('____') || row.question_text.includes('______')) {
+
+        detectedType = 'fill-in-the-blank';
+
+      } else if (parsedOptions && parsedOptions.length === 2 && ((parsedOptions[0] === 'True' && parsedOptions[1] === 'False') || (parsedOptions[0] === 'False' && parsedOptions[1] === 'True'))) {
+
+        detectedType = 'true-false';
+
+      } else {
+
+        detectedType = 'multiple-choice';
+
+      }
+
+    }
+
+    const q: Question = {
+
+      id: row.id,
+
+      questionText: row.question_text,
+
+      options: parsedOptions,
+
+      correctAnswer: row.correct_answer,
+
+      feedback: {
+
+        en: row.feedback_en,
+
+        fil: row.feedback_fil,
+
+      },
+
+      type: detectedType as any,
+
+      matchingPairs: parsedMatchingPairs,
+
+    } as any;
+
+    topicEntry[difficulty][category].push(q);
+
+  });
+
+  // Rebuild study content
+
+  studyRows.forEach((row) => {
+
+    const { subject, grade_level, topic } = row;
+
+    const gradeStr = grade_level.toString();
+
+    if (!itemBank[subject]) itemBank[subject] = {};
+
+    if (!itemBank[subject][gradeStr]) itemBank[subject][gradeStr] = {};
+
+    if (!itemBank[subject][gradeStr][topic]) itemBank[subject][gradeStr][topic] = {};
+
+    itemBank[subject][gradeStr][topic].studyContent = {
+
+      introduction: row.introduction,
+
+      definitions: JSON.parse(row.definitions),
+
+      summary: JSON.parse(row.summary),
+
+      orderIndex: row.order_index !== null ? row.order_index : undefined
+
+    };
+
+  });
+
+  return itemBank;
+
+}
+
+// --- PARENT SETTINGS METHODS ---
+
+export async function saveParentSetting(key: string, value: string, studentId?: string): Promise<void> {
+
+  const db = await getLocalDb();
+
+  const scopedKey = studentId ? (studentId + '_' + key) : key;
+
+  await db.runAsync(
+
+    'INSERT OR REPLACE INTO parent_settings (key, value) VALUES (?, ?)',
+
+    [scopedKey, value]
+
+  );
+
+  if (studentId) {
+
+    await db.runAsync(
+
+      'INSERT OR REPLACE INTO parent_settings (key, value) VALUES (?, ?)',
+
+      [key, value]
+
+    );
+
+  }
+
+}
+
+export async function getParentSetting(key: string, studentId?: string): Promise<string | null> {
+
+  const db = await getLocalDb();
+
+  if (studentId) {
+
+    const scopedRow = await db.getFirstAsync<{ value: string }>(
+
+      'SELECT value FROM parent_settings WHERE key = ?',
+
+      [(studentId + '_' + key)]
+
+    );
+
+    if (scopedRow) return scopedRow.value;
+
+  }
+
+  const row = await db.getFirstAsync<{ value: string }>(
+
+    'SELECT value FROM parent_settings WHERE key = ?',
+
+    [key]
+
+  );
+
+  return row ? row.value : null;
+
+}
+
