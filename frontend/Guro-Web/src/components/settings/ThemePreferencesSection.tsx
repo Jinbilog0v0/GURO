@@ -85,6 +85,9 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
   const handleSelectAccent = (themeId: string, label: string) => {
     setAccentTheme(themeId);
     localStorage.setItem('guro_accent_theme', themeId);
+    document.documentElement.setAttribute('data-accent-theme', themeId);
+    document.body.setAttribute('data-accent-theme', themeId);
+    window.dispatchEvent(new CustomEvent('guro_accent_updated', { detail: { themeId } }));
     toast.success(`Color skin updated to ${label}!`);
   };
 
@@ -114,6 +117,12 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
   const handleChangeFontScale = (val: string) => {
     setFontScale(val);
     localStorage.setItem('guro_font_scale', val);
+    if (val === 'normal') {
+      document.documentElement.removeAttribute('data-font-scale');
+    } else {
+      document.documentElement.setAttribute('data-font-scale', val);
+    }
+    window.dispatchEvent(new CustomEvent('guro_font_scale_updated', { detail: { fontScale: val } }));
     toast.success('Text scale adjusted!');
   };
 
@@ -126,6 +135,7 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
   const handleChangeLanguage = (val: string) => {
     setLanguage(val);
     localStorage.setItem('guro_language', val);
+    window.dispatchEvent(new CustomEvent('guro_language_updated', { detail: { language: val } }));
     toast.success(val === 'fil' ? 'Inilipat sa Filipino / Taglish!' : 'Switched to English!');
   };
 

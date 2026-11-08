@@ -34,14 +34,14 @@ export const StepProgressBar: React.FC<StepProgressBarProps> = ({ currentStep })
                     ? 'bg-[#11428E] border-[#11428E] text-white'
                     : isActive
                     ? 'bg-transparent border-[#11428E] text-[#11428E]'
-                    : 'bg-transparent border-white/20 text-white/30'
+                    : 'bg-transparent border-[var(--border-color)] text-[var(--text-muted)] opacity-60'
                 }`}
               >
                 {isDone ? <Check size={12} strokeWidth={3} /> : i + 1}
               </div>
               <span
                 className={`text-[9px] font-bold uppercase tracking-wider transition-colors duration-300 ${
-                  isActive ? 'text-[#11428E]' : isDone ? 'text-white/50' : 'text-white/20'
+                  isActive ? 'text-[#11428E]' : isDone ? 'text-[var(--text-main)] font-semibold' : 'text-[var(--text-muted)] opacity-50'
                 }`}
               >
                 {step.label}
@@ -50,7 +50,7 @@ export const StepProgressBar: React.FC<StepProgressBarProps> = ({ currentStep })
             {i < STEPS.length - 1 && (
               <div
                 className={`flex-1 h-[2px] mb-4 mx-1 rounded transition-all duration-300 ${
-                  i < currentIndex ? 'bg-[#11428E]' : 'bg-white/10'
+                  i < currentIndex ? 'bg-[#11428E]' : 'bg-[var(--border-color)]'
                 }`}
               />
             )}

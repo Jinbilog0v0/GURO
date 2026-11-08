@@ -13,6 +13,15 @@ try {
     document.documentElement.classList.remove('light-mode');
     if (document.body) document.body.classList.remove('light-mode');
   }
+
+  const cachedAccent = localStorage.getItem('guro_accent_theme') || 'blue';
+  document.documentElement.setAttribute('data-accent-theme', cachedAccent);
+  if (document.body) document.body.setAttribute('data-accent-theme', cachedAccent);
+
+  const cachedFontScale = localStorage.getItem('guro_font_scale');
+  if (cachedFontScale && cachedFontScale !== 'normal') {
+    document.documentElement.setAttribute('data-font-scale', cachedFontScale);
+  }
 } catch {
   // Ignore in environments without localStorage
 }

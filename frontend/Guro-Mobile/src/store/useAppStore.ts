@@ -1,829 +1,836 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
-import itemBankData from '../../assets/item_bank.json';
-import {
-  getLocalItemBank,
-  saveLocalItemBank,
-  saveLocalProgress,
-  getLocalProgress,
-  clearLocalProgress,
-  markEventsAsSynced,
-  getParentSetting,
-  saveParentSetting,
-} from '../utils/sqliteHelper';
-export interface Question {
-  id: string;
-  questionText: string;
-  options: string[];
-  correctAnswer: string;
-  feedback: {
-    en: string;
-    fil: string;
-  };
-  type?: 'multiple-choice' | 'fill-in-the-blank' | 'drag-drop-matching' | 'true-false' | 'swipe-card';
-  matchingPairs?: Record<string, string>;
-}
-export type AssessmentCategory = 'Figures of Speech' | 'Reading/Paragraph Comprehension';
-export type DifficultyTier = 'Easy' | 'Average' | 'Difficult';
-export interface StudyContent {
-  introduction: string;
-  definitions: Array<{
-    term: string;
-    definition: string;
-    examples: string[];
-  }>;
-  summary: string[];
-  refresherQuiz?: Array<{ questionText: string; options: string[]; correctAnswer: string; explanation: string; id?: string; feedback?: any }>;
-  orderIndex?: number;
-}
-export interface TopicData {
-  studyContent?: StudyContent;
-  [difficulty: string]: {
-    [category: string]: Question[];
-  } | StudyContent | undefined;
-}
-export interface GradeData {
-  [topic: string]: TopicData;
-}
-export interface SubjectData {
-  [grade: string]: GradeData;
-}
-export interface ItemBank {
-  [subject: string]: SubjectData;
-}
-export interface ProgressEvent {
-  eventId: string;
-  studentId?: string;
-  subject: string;
-  gradeLevel: number;
-  topic: string;
-  score: number;
-  totalQuestions: number;
-  difficulty?: string;
-  assessmentType?: 'pre-test' | 'post-test' | 'practice';
-  schoolYear?: string;
-  term?: string;
-  timestamp: string;
-  synced: boolean;
-  classroomId?: string;
-}
-export interface LinkedChild {
-  id: number;
-  userId: string;
-  studentId: string;
-  name: string;
-  email?: string;
-  accessCode?: string;
-  classroomId?: string;
-  section?: string;
-  gradeLevel?: number;
-  subject?: string;
-  teacherName?: string;
-  createdAt?: string;
-}
-interface AppState {
-  itemBank: ItemBank | null;
-  logs: string[];
-  parentPin: string | null;
-  token: string | null;
-  studentProgress: ProgressEvent[];
-  studentId: string;
-  classroomId: string | null;
-  teacherName: string | null;
-  showQuizAnswers: boolean;
-  consultationHours: string | null;
-  myChildren: LinkedChild[];
-  activeChildId: string | null;
-  setActiveChildId: (id: string | null) => void;
-  fetchMyChildren: (serverUrl?: string) => Promise<void>;
-  claimChild: (studentId: string, accessCode: string, serverUrl?: string) => Promise<{ success: boolean; message: string }>;
-  activeSubjects: string[];
-  activeSchoolYear: string;
-  activeTerm: string;
-  streakCount: number;
-  bestStreak: number;
-  unlockedBadges: string[];
-  parentalControls: {
-    dailyTimeLimit: number;
-    mathBeforeEnglish: boolean;
-    forcedBilingual: boolean;
-    priorityTopic: string | null;
-  };
-  currentUser: {
-    userId: string;
-    email: string;
-    name: string;
-    role: string;
-    classroomId?: string;
-    verificationStatus?: 'pending' | 'approved' | 'rejected';
-    schoolName?: string | null;
-    schoolIdNumber?: string | null;
-    rejectionReason?: string | null;
-    emailVerifiedAt?: string | null;
-  } | null;
-  appMode: 'online' | 'offline';
-  guestName: string | null;
-  dailyMinutesUsed: number;
-  lastActiveDay: string | null;
-  lastStudyDate: string | null;
-  avatarEmoji: string;
-  soundEffectsEnabled: boolean;
-  speechRate: number;
-  colorTheme: string;
-  themeMode: 'light' | 'dark';
-  xpPoints: number;
-  virtualStars: number;
-  mascotOutfit: string;
-  ownedOutfits: string[];
-  voiceGuideTheme: string;
-  correctSoundTheme: string;
-  preferredGrade: number;
-  serverUrl: string;
-  setServerUrl: (url: string) => void;
-  setAvatarEmoji: (emoji: string) => void;
-  setSoundEffectsEnabled: (enabled: boolean) => void;
-  setSpeechRate: (rate: number) => void;
-  setColorTheme: (theme: string) => void;
-  setThemeMode: (mode: 'light' | 'dark') => void;
-  setMascotOutfit: (outfit: string) => void;
-  purchaseOutfit: (outfit: string, cost: number) => boolean;
-  setVoiceGuideTheme: (theme: string) => void;
-  setCorrectSoundTheme: (theme: string) => void;
-  setPreferredGrade: (grade: number) => void;
-  setActiveSchoolYear: (sy: string) => void;
-  setActiveTerm: (term: string) => void;
-  setToken: (token: string | null) => void;
-  addLog: (message: string) => void;
-  clearLogs: () => void;
-  loadItemBankSync: () => Promise<void>;
-  setParentPin: (pin: string | null) => void;
-  setStudentId: (id: string) => void;
-  setClassroomId: (id: string | null, teacherName?: string | null, showQuizAnswers?: boolean, consultationHours?: string | null) => void;
-  setShowQuizAnswers: (val: boolean) => void;
-  setConsultationHours: (hours: string | null) => void;
-  setTeacherName: (name: string | null) => void;
-  adaptiveTiers: Record<string, 'Easy' | 'Average' | 'Difficult'>;
-  consecutiveFailures: Record<string, number>;
-  setAdaptiveTier: (topicKey: string, tier: 'Easy' | 'Average' | 'Difficult') => void;
-  incrementConsecutiveFailures: (topicKey: string) => number;
-  resetConsecutiveFailures: (topicKey: string) => void;
-  setActiveSubjects: (subjects: string[]) => void;
-  setAppMode: (mode: 'online' | 'offline') => void;
-  setGuestName: (name: string | null, emailOrId?: string | null) => void;
-  fetchItemBankFromServer: (serverUrl: string, classroomId: string) => Promise<boolean>;
-  recordProgress: (event: Omit<ProgressEvent, 'eventId' | 'timestamp' | 'synced'>) => Promise<void>;
-  clearProgress: () => Promise<void>;
-  syncProgressNow: (serverUrl: string) => Promise<{ success: boolean; syncedCount: number; message: string }>;
-  updateParentalControls: (controls: Partial<AppState['parentalControls']>) => void;
-  registerAndPromote: (email: string, password: string, name: string, firstName?: string, middleName?: string, lastName?: string) => Promise<{ success: boolean; message: string }>;
-  loginToCloud: (email: string, password: string, role?: string) => Promise<{ success: boolean; message: string }>;
-  logoutFromCloud: () => void;
-  trackActiveMinutes: (minutes: number) => void;
-  resetDailyMinutes: () => void;
-  initializeLocalStore: (targetStudentId?: string) => Promise<void>;
-}
-export function resolveServerUrl(url?: string | null): string {
-  const fallback = process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-  const target = (url && typeof url === 'string' && url.trim()) ? url.trim() : fallback;
-  let cleaned = target;
-  // Strip trailing slashes
-  cleaned = cleaned.replace(/\/+$/, '');
-  // Strip trailing /api so we don't end up with /api/api
-  if (cleaned.endsWith('/api')) {
-    cleaned = cleaned.substring(0, cleaned.length - 4);
-  }
-  if (Platform.OS === 'android') {
-    cleaned = cleaned.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
-  }
-  return cleaned;
-}
-export const useAppStore = create<AppState>()(
-  persist(
-    (set, get) => ({
-      itemBank: null,
-      logs: [],
-      parentPin: null,
-      studentProgress: [],
-      studentId: 'GURO-STUDENT-LOCAL',
-      classroomId: null,
-      teacherName: null,
-      showQuizAnswers: true,
-      consultationHours: null,
-      myChildren: [],
-      activeChildId: null,
-      activeSubjects: ['Mathematics', 'English'],
-      activeSchoolYear: '2026-2027',
-      activeTerm: 'Quarter 1',
-      streakCount: 0,
-      bestStreak: 0,
-      unlockedBadges: [],
-      parentalControls: {
-        dailyTimeLimit: 0,
-        mathBeforeEnglish: false,
-        forcedBilingual: false,
-        priorityTopic: null,
-      },
-      currentUser: null,
-      token: null,
-      appMode: 'offline',
-      guestName: null,
-      dailyMinutesUsed: 0,
-      lastActiveDay: null,
-      lastStudyDate: null,
-      avatarEmoji: '🦉',
-      soundEffectsEnabled: true,
-      speechRate: 1.0,
-      colorTheme: 'blue',
-      themeMode: 'light',
-      xpPoints: 0,
-      virtualStars: 0,
-      mascotOutfit: 'default',
-      ownedOutfits: ['default'],
-      voiceGuideTheme: 'astronaut',
-      correctSoundTheme: 'ding',
-      preferredGrade: 4,
-      serverUrl: process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app',
-      adaptiveTiers: {},
-      consecutiveFailures: {},
-      setActiveChildId: (id) => set({ activeChildId: id }),
-      fetchMyChildren: async (serverUrl?: string) => {
-        const token = get().token;
-        if (!token) return;
-        const rawUrl = serverUrl || get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-        const resolvedUrl = resolveServerUrl(rawUrl);
-        try {
-          const res = await fetch(`${resolvedUrl}/api/parent/children`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          if (res.ok) {
-            const data = await res.json();
-            const children = data.children || [];
-            const currentActive = get().activeChildId;
-            const nextActive = children.some((c: LinkedChild) => c.studentId === currentActive)
-              ? currentActive
-              : (children[0]?.studentId || null);
-            set({ myChildren: children, activeChildId: nextActive });
-          }
-        } catch (e: any) {
-          console.warn('[Store] fetchMyChildren error:', e);
-        }
-      },
-      claimChild: async (studentId: string, accessCode: string, serverUrl?: string) => {
-        const token = get().token;
-        if (!token) return { success: false, message: 'Authentication required' };
-        const rawUrl = serverUrl || get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-        const resolvedUrl = resolveServerUrl(rawUrl);
-        try {
-          const res = await fetch(`${resolvedUrl}/api/parent/claim-child`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ studentId, accessCode }),
-          });
-          const data = await res.json().catch(() => ({}));
-          if (res.ok && data.success) {
-            await get().fetchMyChildren(serverUrl);
-            return { success: true, message: data.message || 'Child linked successfully!' };
-          }
-          return { success: false, message: data.error || 'Failed to link child.' };
-        } catch (e: any) {
-          return { success: false, message: e.message || 'Network error' };
-        }
-      },
-      setActiveSchoolYear: (sy) => set({ activeSchoolYear: sy }),
-      setActiveTerm: (term) => set({ activeTerm: term }),
-      setServerUrl: (url) => set({ serverUrl: url }),
-      setToken: (token) => set({ token }),
-      setAppMode: (mode) => set({ appMode: mode }),
-      setGuestName: (name, emailOrId) => {
-        const primaryId = (emailOrId && emailOrId.trim()) ? emailOrId.trim() : (name && name.trim()) ? name.trim() : 'STUDENT-MOBILE-USER';
-        const sanitized = primaryId.replace(/\s+/g, '-').toUpperCase();
-        set({ guestName: name, studentId: sanitized });
-      },
-      setAvatarEmoji: (emoji) => set({ avatarEmoji: emoji }),
-      setSoundEffectsEnabled: (enabled) => set({ soundEffectsEnabled: enabled }),
-      setSpeechRate: (rate) => set({ speechRate: rate }),
-      setColorTheme: (theme) => set({ colorTheme: theme }),
-      setThemeMode: (mode) => set({ themeMode: mode }),
-      setMascotOutfit: (outfit) => set({ mascotOutfit: outfit }),
-      purchaseOutfit: (outfit, cost) => {
-        const state = get();
-        if (state.virtualStars >= cost && !state.ownedOutfits.includes(outfit)) {
-          set({
-            virtualStars: state.virtualStars - cost,
-            ownedOutfits: [...state.ownedOutfits, outfit],
-            mascotOutfit: outfit
-          });
-          get().addLog(`Purchased and equipped mascot outfit: ${outfit}`);
-          saveParentSetting('virtual_stars', (state.virtualStars - cost).toString()).catch(console.error);
-          saveParentSetting('owned_outfits', JSON.stringify([...state.ownedOutfits, outfit])).catch(console.error);
-          saveParentSetting('mascot_outfit', outfit).catch(console.error);
-          return true;
-        }
-        return false;
-      },
-      setVoiceGuideTheme: (theme) => {
-        set({ voiceGuideTheme: theme });
-        saveParentSetting('voice_guide_theme', theme).catch(console.error);
-      },
-      setCorrectSoundTheme: (theme) => {
-        set({ correctSoundTheme: theme });
-        saveParentSetting('correct_sound_theme', theme).catch(console.error);
-      },
-      setPreferredGrade: (grade) => set({ preferredGrade: grade }),
-      trackActiveMinutes: (minutes) => {
-        const today = new Date().toISOString().split('T')[0];
-        const state = get();
-        if (state.lastActiveDay !== today) {
-          set({ lastActiveDay: today, dailyMinutesUsed: minutes });
-        } else {
-          set({ dailyMinutesUsed: state.dailyMinutesUsed + minutes });
-        }
-      },
-      resetDailyMinutes: () => {
-        set({ dailyMinutesUsed: 0 });
-      },
-      updateParentalControls: (controls) => {
-        set((state) => ({
-          parentalControls: { ...state.parentalControls, ...controls },
-        }));
-        get().addLog('Parental control settings updated.');
-      },
-      registerAndPromote: async (email, password, name, firstName, middleName, lastName) => {
-        const anonymousStudentId = get().studentId;
-        const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-        const resolvedUrl = resolveServerUrl(rawUrl);
-        try {
-          const res = await fetch(`${resolvedUrl}/api/auth/promote`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              anonymousStudentId,
-              email,
-              password,
-              name,
-              first_name: firstName,
-              middle_name: middleName,
-              last_name: lastName
-            })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            set({ 
-              currentUser: data.user,
-              studentId: data.studentId,
-              token: data.token
-            });
-            get().addLog(`Guest account promoted. Official studentId is now: ${data.studentId}`);
-            return { success: true, message: 'Account successfully registered and progress merged!' };
-          } else {
-            const err = await res.json().catch(() => ({}));
-            return { success: false, message: err.error || 'Promotion failed.' };
-          }
-        } catch (e: any) {
-          return { success: false, message: e.message || 'Connection error.' };
-        }
-      },
-      loginToCloud: async (email, password, role) => {
-        const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-        const resolvedUrl = resolveServerUrl(rawUrl);
-        try {
-          const res = await fetch(`${resolvedUrl}/api/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, ...(role ? { role } : {}) })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            const serverClassroomId = data.user?.classroomId || data.classroomId;
-            const serverTeacherName = data.user?.teacherName || data.teacherName;
-            const incomingStudentId = data.studentId ?? data.user.name.replace(/\\s+/g, '-').toUpperCase();
-            set({
-              currentUser: data.user,
-              studentId: incomingStudentId,
-              token: data.token,
-              ...(serverClassroomId ? { classroomId: serverClassroomId } : {}),
-              ...(serverTeacherName ? { teacherName: serverTeacherName } : {}),
-            });
-            get().addLog('Logged in as: ' + data.user.email);
-            get().initializeLocalStore(incomingStudentId).catch(console.error);
-            if (data.user?.role === 'parent') {
-              get().fetchMyChildren().catch(console.warn);
-            }
-            return { success: true, message: `Successfully logged in as ${data.user.name}` };
-          } else {
-            const err = await res.json().catch(() => ({}));
-            return { success: false, message: err.error || 'Login failed.' };
-          }
-        } catch (e: any) {
-          return { success: false, message: e.message || 'Connection error.' };
-        }
-      },
-      logoutFromCloud: () => {
-        const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-        const resolvedUrl = resolveServerUrl(rawUrl);
-        const currentToken = get().token;
-        if (currentToken) {
-          fetch(`${resolvedUrl}/api/auth/logout`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${currentToken}`,
-            },
-          }).catch(() => {});
-        }
-        set((state) => ({
-          currentUser: null,
-          token: null,
-          studentId: 'GURO-STUDENT-LOCAL',
-          studentProgress: [],
-          streakCount: 0,
-          bestStreak: 0,
-          unlockedBadges: [],
-          xpPoints: 0,
-          virtualStars: 0,
-          lastStudyDate: null,
-          lastActiveDay: null,
-          dailyMinutesUsed: 0,
-          // NOTE: Preserve classroomId on logout so offline classroom access is not revoked
-          classroomId: state.classroomId,
-          teacherName: state.teacherName,
-          myChildren: [],
-          activeChildId: null,
-          appMode: 'offline',
-          guestName: null,
-          parentalControls: {
-            dailyTimeLimit: 0,
-            mathBeforeEnglish: false,
-            forcedBilingual: false,
-            priorityTopic: null,
-          },
-        }));
-        get().addLog('Logged out of cloud account. Cleared local active session.');
-        get().initializeLocalStore('GURO-STUDENT-LOCAL').catch(console.error);
-      },
-      addLog: (message) =>
-        set((state) => ({
-          logs: [`[${new Date().toLocaleTimeString()}] ${message}`, ...state.logs],
-        })),
-      clearLogs: () => set({ logs: ['Logs cleared.'] }),
-      loadItemBankSync: async () => {
-        try {
-          const localBank = await getLocalItemBank();
-          // Check if local bank has study content (representing the new gamified asset). If not, force reload from JSON.
-          const hasAdjectiveStudy = localBank && localBank['English']?.['5']?.['Adjectives']?.studyContent;
-          if (localBank && Object.keys(localBank).length > 0 && hasAdjectiveStudy) {
-            set({ itemBank: localBank });
-          } else {
-            const fallbackBank = itemBankData as ItemBank;
-            set({ itemBank: fallbackBank });
-            await saveLocalItemBank(fallbackBank);
-          }
-        } catch (e) {
-          console.error('[SQLite] Failed to load local item bank:', e);
-          set({ itemBank: itemBankData as ItemBank });
-        }
-      },
-      setParentPin: (pin) => {
-        set({ parentPin: pin });
-        get().addLog(pin ? 'Parent PIN updated.' : 'Parent PIN reset.');
-      },
-      setAdaptiveTier: (topicKey, tier) => set((state) => ({
-        adaptiveTiers: { ...state.adaptiveTiers, [topicKey]: tier }
-      })),
-      incrementConsecutiveFailures: (topicKey) => {
-        const current = get().consecutiveFailures[topicKey] || 0;
-        const next = current + 1;
-        set((state) => ({
-          consecutiveFailures: { ...state.consecutiveFailures, [topicKey]: next }
-        }));
-        return next;
-      },
-      resetConsecutiveFailures: (topicKey) => set((state) => ({
-        consecutiveFailures: { ...state.consecutiveFailures, [topicKey]: 0 }
-      })),
-      setStudentId: (id) => {
-        const sanitized = id.replace(/\s+/g, '-').toUpperCase();
-        set({ studentId: sanitized });
-        get().addLog(`Student Device ID configured to: ${sanitized}`);
-      },
-      setClassroomId: (id, teacherName, showQuizAnswers, consultationHours) => {
-        set({
-          classroomId: id,
-          teacherName: teacherName !== undefined ? teacherName : (id ? get().teacherName : null),
-          showQuizAnswers: showQuizAnswers !== undefined ? showQuizAnswers : get().showQuizAnswers,
-          consultationHours: consultationHours !== undefined ? consultationHours : get().consultationHours,
-        });
-        if (!id) {
-          set({ activeSubjects: ['Mathematics', 'English'], teacherName: null });
-        }
-        get().addLog(id ? `Linked device to classroom invite code: ${id}` : 'Unlinked device from classroom invite code.');
-      },
-      setShowQuizAnswers: (val) => set({ showQuizAnswers: val }),
-      setConsultationHours: (hours) => set({ consultationHours: hours }),
-      setTeacherName: (name) => {
-        set({ teacherName: name });
-      },
-      setActiveSubjects: (subjects) => {
-        set({ activeSubjects: subjects });
-      },
-      fetchItemBankFromServer: async (serverUrl, id) => {
-        const resolvedUrl = resolveServerUrl(serverUrl);
-        try {
-          const res = await fetch(`${resolvedUrl}/api/item-bank?classroomId=${id}`, {
-            headers: { Authorization: `Bearer ${get().token ?? ''}` },
-          });
-          if (res.ok) {
-            const bank = await res.json();
-            if (bank && Object.keys(bank).length > 0) {
-              set({ itemBank: bank });
-              await saveLocalItemBank(bank);
-              // Also fetch active subjects and classroom details offered by the teacher
-              try {
-                const subRes = await fetch(`${resolvedUrl}/api/classroom/active-subjects?classroomId=${id}`);
-                if (subRes.ok) {
-                  const subData = await subRes.json();
-                  if (subData.subjects && Array.isArray(subData.subjects)) {
-                    set({ activeSubjects: subData.subjects });
-                  }
-                }
-              } catch (subErr) {
-                console.error('[Store] Failed to fetch active subjects:', subErr);
-              }
-              // Auto-fetch teacher name, school year, consultation schedule, and answer review visibility
-              try {
-                const verRes = await fetch(`${resolvedUrl}/api/classroom/verify?code=${encodeURIComponent(id)}`);
-                if (verRes.ok) {
-                  const verData = await verRes.json();
-                  if (verData.teacherName) {
-                    set({ teacherName: verData.teacherName });
-                  }
-                  if (verData.showQuizAnswers !== undefined) {
-                    set({ showQuizAnswers: verData.showQuizAnswers });
-                  }
-                  if (verData.consultationHours) {
-                    set({ consultationHours: verData.consultationHours });
-                  }
-                  if (verData.schoolYear) {
-                    set({ activeSchoolYear: verData.schoolYear });
-                  }
-                  if (verData.term) {
-                    set({ activeTerm: verData.term });
-                  }
-                }
-              } catch (verErr) {
-                console.error('[Store] Failed to verify teacher name / academic term:', verErr);
-              }
-              get().addLog(`Downloaded custom classroom item bank from server for: ${id}`);
-              return true;
-            }
-          }
-        } catch (e: any) {
-          get().addLog(`Failed to fetch online item bank: ${e.message}`);
-        }
-        return false;
-      },
-      recordProgress: async (event) => {
-        const state = get();
-        const newEvent: ProgressEvent = {
-          ...event,
-          assessmentType: event.assessmentType || 'practice',
-          schoolYear: event.schoolYear || state.activeSchoolYear || '2026-2027',
-          term: event.term || state.activeTerm || 'Quarter 1',
-          eventId: `EVT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-          timestamp: new Date().toISOString(),
-          synced: false,
-        };
-        const today = new Date().toISOString().split('T')[0];
-        const lastStudy = get().lastStudyDate;
-        let nextStreak = get().streakCount || 0;
-        if (!lastStudy) {
-          nextStreak = 1;
-        } else if (lastStudy !== today) {
-          const yesterdayObj = new Date();
-          yesterdayObj.setDate(yesterdayObj.getDate() - 1);
-          const yesterday = yesterdayObj.toISOString().split('T')[0];
-          if (lastStudy === yesterday) {
-            nextStreak += 1;
-          } else {
-            nextStreak = 1;
-          }
-        }
-        const nextBadges = [...(get().unlockedBadges || [])];
-        const isPerfect = event.score === event.totalQuestions;
-        if (!nextBadges.includes('first_step')) {
-          nextBadges.push('first_step');
-        }
-        if (isPerfect && !nextBadges.includes('perfect_score')) {
-          nextBadges.push('perfect_score');
-        }
-        if (isPerfect && event.subject === 'Mathematics' && !nextBadges.includes('math_wizard')) {
-          nextBadges.push('math_wizard');
-        }
-        if (isPerfect && event.subject === 'English' && !nextBadges.includes('english_champion')) {
-          nextBadges.push('english_champion');
-        }
-        if (nextStreak >= 3 && !nextBadges.includes('streak_starter')) {
-          nextBadges.push('streak_starter');
-        }
-        if (nextStreak >= 5 && !nextBadges.includes('streak_master')) {
-          nextBadges.push('streak_master');
-        }
-        // Calculate XP and Stars earned
-        const earnedXP = event.score * 10 + (isPerfect ? 50 : 0);
-        const earnedStars = event.score * 2 + (isPerfect ? 10 : 0);
-        const currentBest = get().bestStreak || 0;
-        const nextBest = Math.max(currentBest, nextStreak);
-        set((state) => ({
-          studentProgress: [newEvent, ...state.studentProgress],
-          streakCount: nextStreak,
-          bestStreak: nextBest,
-          unlockedBadges: nextBadges,
-          lastStudyDate: today,
-          xpPoints: (state.xpPoints || 0) + earnedXP,
-          virtualStars: (state.virtualStars || 0) + earnedStars,
-        }));
-        const currentStudentId = get().studentId;
-        try {
-          await saveLocalProgress(newEvent, currentStudentId);
-          await saveParentSetting('streak_count', nextStreak.toString(), currentStudentId);
-          await saveParentSetting('best_streak', nextBest.toString(), currentStudentId);
-          await saveParentSetting('unlocked_badges', JSON.stringify(nextBadges), currentStudentId);
-          await saveParentSetting('last_study_date', today, currentStudentId);
-          await saveParentSetting('xp_points', get().xpPoints.toString(), currentStudentId);
-          await saveParentSetting('virtual_stars', get().virtualStars.toString(), currentStudentId);
-        } catch (e) {
-          console.error('[SQLite] Failed to save progress/achievements locally:', e);
-        }
-        get().addLog(`Recorded local progress for "${event.topic}" (${event.score}/${event.totalQuestions}) (+${earnedXP} XP, +${earnedStars} Stars)`);
-        // Trigger background sync in online mode to sync with web immediately
-        const currentState = get();
-        if (currentState.appMode === 'online') {
-          get().syncProgressNow(currentState.serverUrl).catch((err) => {
-            console.warn('[Sync] Background sync failed:', err);
-          });
-        }
-      },
-      clearProgress: async () => {
-        set({ studentProgress: [] });
-        try {
-          await clearLocalProgress();
-        } catch (e) {
-          console.error('[SQLite] Failed to clear local progress:', e);
-        }
-        get().addLog('Local student progress logs cleared.');
-      },
-      syncProgressNow: async (serverUrl?: string) => {
-        const resolvedUrl = resolveServerUrl(serverUrl || get().serverUrl);
-        const unsyncedEvents = get().studentProgress.filter((e) => !e.synced);
-        if (unsyncedEvents.length === 0) {
-          return { success: true, syncedCount: 0, message: 'No new progress logs to sync.' };
-        }
-        get().addLog(`Starting manual sync of ${unsyncedEvents.length} events...`);
-        try {
-          const response = await fetch(`${resolvedUrl}/api/sync`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${get().token ?? ''}`,
-            },
-            body: JSON.stringify({
-              studentId: get().studentId || 'GURO-STUDENT-LOCAL',
-              classroomId: get().classroomId,
-              events: unsyncedEvents,
-            }),
-          });
-          if (!response.ok) {
-            throw new Error(`Sync server responded with status: ${response.status}`);
-          }
-          const result = await response.json();
-          set((state) => ({
-            studentProgress: state.studentProgress.map((e) => {
-              if (!e.synced) {
-                return { ...e, synced: true };
-              }
-              return e;
-            }),
-          }));
-          try {
-            const eventIds = unsyncedEvents.map(e => e.eventId);
-            await markEventsAsSynced(eventIds);
-          } catch (sqliteErr) {
-            console.error('[SQLite] Failed to mark events as synced in SQLite:', sqliteErr);
-          }
-          get().addLog(`Sync completed successfully. Uploaded ${unsyncedEvents.length} events.`);
-          return {
-            success: true,
-            syncedCount: unsyncedEvents.length,
-            message: `Successfully synchronized ${unsyncedEvents.length} progress events.`,
-          };
-        } catch (error: any) {
-          const errMsg = error.message || 'Network error';
-          get().addLog(`Sync failed: ${errMsg}`);
-          return {
-            success: false,
-            syncedCount: 0,
-            message: `Sync failed: ${errMsg}. Logs are preserved locally.`,
-          };
-        }
-      },
-       initializeLocalStore: async (targetStudentId?: string) => {
-        try {
-          const activeStudent = targetStudentId || get().studentId;
-          const localLogs = await getLocalProgress(activeStudent);
-          const localBank = await getLocalItemBank();
-          const streakStr = await getParentSetting('streak_count', activeStudent);
-          const bestStreakStr = await getParentSetting('best_streak', activeStudent);
-          const badgesStr = await getParentSetting('unlocked_badges', activeStudent);
-          const lastStudyStr = await getParentSetting('last_study_date', activeStudent);
-          const xpStr = await getParentSetting('xp_points', activeStudent);
-          const starsStr = await getParentSetting('virtual_stars', activeStudent);
-          const ownedOutfitsStr = await getParentSetting('owned_outfits', activeStudent);
-          const mascotOutfitStr = await getParentSetting('mascot_outfit', activeStudent);
-          const voiceThemeStr = await getParentSetting('voice_guide_theme', activeStudent);
-          const correctSoundStr = await getParentSetting('correct_sound_theme', activeStudent);
-          set({
-            studentProgress: localLogs,
-            itemBank: localBank || get().itemBank,
-            streakCount: streakStr ? parseInt(streakStr, 10) : 0,
-            bestStreak: bestStreakStr ? parseInt(bestStreakStr, 10) : 0,
-            unlockedBadges: badgesStr ? JSON.parse(badgesStr) : [],
-            lastStudyDate: lastStudyStr || null,
-            xpPoints: xpStr ? parseInt(xpStr, 10) : 0,
-            virtualStars: starsStr ? parseInt(starsStr, 10) : 0,
-            ownedOutfits: ownedOutfitsStr ? JSON.parse(ownedOutfitsStr) : get().ownedOutfits,
-            mascotOutfit: mascotOutfitStr || get().mascotOutfit,
-            voiceGuideTheme: voiceThemeStr || get().voiceGuideTheme,
-            correctSoundTheme: correctSoundStr || get().correctSoundTheme,
-          });
-          get().addLog('[SQLite] Loaded state from local SQLite database.');
-        } catch (e: any) {
-          get().addLog(`[SQLite] Error initializing local database: ${e.message}`);
-        }
-      },
-    }),
-    {
-      name: 'guro-app-storage',
-      storage: createJSONStorage(() => AsyncStorage),
-      // Persist logs, progress, parent PIN, student ID, classroom ID, parental controls, and user session
-      partialize: (state) => ({
-        logs: state.logs,
-        parentPin: state.parentPin,
-        studentProgress: state.studentProgress,
-        studentId: state.studentId,
-        activeSubjects: state.activeSubjects,
-        activeSchoolYear: state.activeSchoolYear,
-        activeTerm: state.activeTerm,
-        classroomId: state.classroomId,
-        teacherName: state.teacherName,
-        showQuizAnswers: state.showQuizAnswers,
-        consultationHours: state.consultationHours,
-        streakCount: state.streakCount,
-        unlockedBadges: state.unlockedBadges,
-        parentalControls: state.parentalControls,
-        myChildren: state.myChildren,
-        activeChildId: state.activeChildId,
-        currentUser: state.currentUser,
-        token: state.token,
-        appMode: state.appMode,
-        guestName: state.guestName,
-        dailyMinutesUsed: state.dailyMinutesUsed,
-        lastActiveDay: state.lastActiveDay,
-        lastStudyDate: state.lastStudyDate,
-        xpPoints: state.xpPoints,
-        virtualStars: state.virtualStars,
-        mascotOutfit: state.mascotOutfit,
-        ownedOutfits: state.ownedOutfits,
-        voiceGuideTheme: state.voiceGuideTheme,
-        correctSoundTheme: state.correctSoundTheme,
-        preferredGrade: state.preferredGrade,
-        serverUrl: state.serverUrl,
-        avatarEmoji: state.avatarEmoji,
-        speechRate: state.speechRate,
-        soundEffectsEnabled: state.soundEffectsEnabled,
-        colorTheme: state.colorTheme,
-        themeMode: state.themeMode,
-        adaptiveTiers: state.adaptiveTiers,
-        consecutiveFailures: state.consecutiveFailures,
-      }),
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          if (
-            !state.serverUrl ||
-            state.serverUrl.includes('localhost') ||
-            state.serverUrl.includes('127.0.0.1') ||
-            state.serverUrl.includes('10.0.2.2')
-          ) {
-            state.serverUrl = process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-          }
-        }
-      },
-    }
-  )
-);
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+import { applyThemeSkin } from '../theme/colors';
+import itemBankData from '../../assets/item_bank.json';
+import {
+  getLocalItemBank,
+  saveLocalItemBank,
+  saveLocalProgress,
+  getLocalProgress,
+  clearLocalProgress,
+  markEventsAsSynced,
+  getParentSetting,
+  saveParentSetting,
+} from '../utils/sqliteHelper';
+export interface Question {
+  id: string;
+  questionText: string;
+  options: string[];
+  correctAnswer: string;
+  feedback: {
+    en: string;
+    fil: string;
+  };
+  type?: 'multiple-choice' | 'fill-in-the-blank' | 'drag-drop-matching' | 'true-false' | 'swipe-card';
+  matchingPairs?: Record<string, string>;
+}
+export type AssessmentCategory = 'Figures of Speech' | 'Reading/Paragraph Comprehension';
+export type DifficultyTier = 'Easy' | 'Average' | 'Difficult';
+export interface StudyContent {
+  introduction: string;
+  definitions: Array<{
+    term: string;
+    definition: string;
+    examples: string[];
+  }>;
+  summary: string[];
+  refresherQuiz?: Array<{ questionText: string; options: string[]; correctAnswer: string; explanation: string; id?: string; feedback?: any }>;
+  orderIndex?: number;
+}
+export interface TopicData {
+  studyContent?: StudyContent;
+  [difficulty: string]: {
+    [category: string]: Question[];
+  } | StudyContent | undefined;
+}
+export interface GradeData {
+  [topic: string]: TopicData;
+}
+export interface SubjectData {
+  [grade: string]: GradeData;
+}
+export interface ItemBank {
+  [subject: string]: SubjectData;
+}
+export interface ProgressEvent {
+  eventId: string;
+  studentId?: string;
+  subject: string;
+  gradeLevel: number;
+  topic: string;
+  score: number;
+  totalQuestions: number;
+  difficulty?: string;
+  assessmentType?: 'pre-test' | 'post-test' | 'practice';
+  schoolYear?: string;
+  term?: string;
+  timestamp: string;
+  synced: boolean;
+  classroomId?: string;
+}
+export interface LinkedChild {
+  id: number;
+  userId: string;
+  studentId: string;
+  name: string;
+  email?: string;
+  accessCode?: string;
+  classroomId?: string;
+  section?: string;
+  gradeLevel?: number;
+  subject?: string;
+  teacherName?: string;
+  createdAt?: string;
+}
+interface AppState {
+  itemBank: ItemBank | null;
+  logs: string[];
+  parentPin: string | null;
+  token: string | null;
+  studentProgress: ProgressEvent[];
+  studentId: string;
+  classroomId: string | null;
+  teacherName: string | null;
+  showQuizAnswers: boolean;
+  consultationHours: string | null;
+  myChildren: LinkedChild[];
+  activeChildId: string | null;
+  setActiveChildId: (id: string | null) => void;
+  fetchMyChildren: (serverUrl?: string) => Promise<void>;
+  claimChild: (studentId: string, accessCode: string, serverUrl?: string) => Promise<{ success: boolean; message: string }>;
+  activeSubjects: string[];
+  activeSchoolYear: string;
+  activeTerm: string;
+  streakCount: number;
+  bestStreak: number;
+  unlockedBadges: string[];
+  parentalControls: {
+    dailyTimeLimit: number;
+    mathBeforeEnglish: boolean;
+    forcedBilingual: boolean;
+    priorityTopic: string | null;
+  };
+  currentUser: {
+    userId: string;
+    email: string;
+    name: string;
+    role: string;
+    classroomId?: string;
+    verificationStatus?: 'pending' | 'approved' | 'rejected';
+    schoolName?: string | null;
+    schoolIdNumber?: string | null;
+    rejectionReason?: string | null;
+    emailVerifiedAt?: string | null;
+  } | null;
+  appMode: 'online' | 'offline';
+  guestName: string | null;
+  dailyMinutesUsed: number;
+  lastActiveDay: string | null;
+  lastStudyDate: string | null;
+  avatarEmoji: string;
+  soundEffectsEnabled: boolean;
+  speechRate: number;
+  colorTheme: string;
+  themeMode: 'light' | 'dark';
+  xpPoints: number;
+  virtualStars: number;
+  mascotOutfit: string;
+  ownedOutfits: string[];
+  voiceGuideTheme: string;
+  correctSoundTheme: string;
+  preferredGrade: number;
+  serverUrl: string;
+  setServerUrl: (url: string) => void;
+  setAvatarEmoji: (emoji: string) => void;
+  setSoundEffectsEnabled: (enabled: boolean) => void;
+  setSpeechRate: (rate: number) => void;
+  setColorTheme: (theme: string) => void;
+  setThemeMode: (mode: 'light' | 'dark') => void;
+  setMascotOutfit: (outfit: string) => void;
+  purchaseOutfit: (outfit: string, cost: number) => boolean;
+  setVoiceGuideTheme: (theme: string) => void;
+  setCorrectSoundTheme: (theme: string) => void;
+  setPreferredGrade: (grade: number) => void;
+  setActiveSchoolYear: (sy: string) => void;
+  setActiveTerm: (term: string) => void;
+  setToken: (token: string | null) => void;
+  addLog: (message: string) => void;
+  clearLogs: () => void;
+  loadItemBankSync: () => Promise<void>;
+  setParentPin: (pin: string | null) => void;
+  setStudentId: (id: string) => void;
+  setClassroomId: (id: string | null, teacherName?: string | null, showQuizAnswers?: boolean, consultationHours?: string | null) => void;
+  setShowQuizAnswers: (val: boolean) => void;
+  setConsultationHours: (hours: string | null) => void;
+  setTeacherName: (name: string | null) => void;
+  adaptiveTiers: Record<string, 'Easy' | 'Average' | 'Difficult'>;
+  consecutiveFailures: Record<string, number>;
+  setAdaptiveTier: (topicKey: string, tier: 'Easy' | 'Average' | 'Difficult') => void;
+  incrementConsecutiveFailures: (topicKey: string) => number;
+  resetConsecutiveFailures: (topicKey: string) => void;
+  setActiveSubjects: (subjects: string[]) => void;
+  setAppMode: (mode: 'online' | 'offline') => void;
+  setGuestName: (name: string | null, emailOrId?: string | null) => void;
+  fetchItemBankFromServer: (serverUrl: string, classroomId: string) => Promise<boolean>;
+  recordProgress: (event: Omit<ProgressEvent, 'eventId' | 'timestamp' | 'synced'>) => Promise<void>;
+  clearProgress: () => Promise<void>;
+  syncProgressNow: (serverUrl: string) => Promise<{ success: boolean; syncedCount: number; message: string }>;
+  updateParentalControls: (controls: Partial<AppState['parentalControls']>) => void;
+  registerAndPromote: (email: string, password: string, name: string, firstName?: string, middleName?: string, lastName?: string) => Promise<{ success: boolean; message: string }>;
+  loginToCloud: (email: string, password: string, role?: string) => Promise<{ success: boolean; message: string }>;
+  logoutFromCloud: () => void;
+  trackActiveMinutes: (minutes: number) => void;
+  resetDailyMinutes: () => void;
+  initializeLocalStore: (targetStudentId?: string) => Promise<void>;
+}
+export function resolveServerUrl(url?: string | null): string {
+  const fallback = process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+  const target = (url && typeof url === 'string' && url.trim()) ? url.trim() : fallback;
+  let cleaned = target;
+  // Strip trailing slashes
+  cleaned = cleaned.replace(/\/+$/, '');
+  // Strip trailing /api so we don't end up with /api/api
+  if (cleaned.endsWith('/api')) {
+    cleaned = cleaned.substring(0, cleaned.length - 4);
+  }
+  if (Platform.OS === 'android') {
+    cleaned = cleaned.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
+  }
+  return cleaned;
+}
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      itemBank: null,
+      logs: [],
+      parentPin: null,
+      studentProgress: [],
+      studentId: 'GURO-STUDENT-LOCAL',
+      classroomId: null,
+      teacherName: null,
+      showQuizAnswers: true,
+      consultationHours: null,
+      myChildren: [],
+      activeChildId: null,
+      activeSubjects: ['Mathematics', 'English'],
+      activeSchoolYear: '2026-2027',
+      activeTerm: 'Quarter 1',
+      streakCount: 0,
+      bestStreak: 0,
+      unlockedBadges: [],
+      parentalControls: {
+        dailyTimeLimit: 0,
+        mathBeforeEnglish: false,
+        forcedBilingual: false,
+        priorityTopic: null,
+      },
+      currentUser: null,
+      token: null,
+      appMode: 'offline',
+      guestName: null,
+      dailyMinutesUsed: 0,
+      lastActiveDay: null,
+      lastStudyDate: null,
+      avatarEmoji: '🦉',
+      soundEffectsEnabled: true,
+      speechRate: 1.0,
+      colorTheme: 'blue',
+      themeMode: 'light',
+      xpPoints: 0,
+      virtualStars: 0,
+      mascotOutfit: 'default',
+      ownedOutfits: ['default'],
+      voiceGuideTheme: 'astronaut',
+      correctSoundTheme: 'ding',
+      preferredGrade: 4,
+      serverUrl: process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app',
+      adaptiveTiers: {},
+      consecutiveFailures: {},
+      setActiveChildId: (id) => set({ activeChildId: id }),
+      fetchMyChildren: async (serverUrl?: string) => {
+        const token = get().token;
+        if (!token) return;
+        const rawUrl = serverUrl || get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+        const resolvedUrl = resolveServerUrl(rawUrl);
+        try {
+          const res = await fetch(`${resolvedUrl}/api/parent/children`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const children = data.children || [];
+            const currentActive = get().activeChildId;
+            const nextActive = children.some((c: LinkedChild) => c.studentId === currentActive)
+              ? currentActive
+              : (children[0]?.studentId || null);
+            set({ myChildren: children, activeChildId: nextActive });
+          }
+        } catch (e: any) {
+          console.warn('[Store] fetchMyChildren error:', e);
+        }
+      },
+      claimChild: async (studentId: string, accessCode: string, serverUrl?: string) => {
+        const token = get().token;
+        if (!token) return { success: false, message: 'Authentication required' };
+        const rawUrl = serverUrl || get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+        const resolvedUrl = resolveServerUrl(rawUrl);
+        try {
+          const res = await fetch(`${resolvedUrl}/api/parent/claim-child`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ studentId, accessCode }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.success) {
+            await get().fetchMyChildren(serverUrl);
+            return { success: true, message: data.message || 'Child linked successfully!' };
+          }
+          return { success: false, message: data.error || 'Failed to link child.' };
+        } catch (e: any) {
+          return { success: false, message: e.message || 'Network error' };
+        }
+      },
+      setActiveSchoolYear: (sy) => set({ activeSchoolYear: sy }),
+      setActiveTerm: (term) => set({ activeTerm: term }),
+      setServerUrl: (url) => set({ serverUrl: url }),
+      setToken: (token) => set({ token }),
+      setAppMode: (mode) => set({ appMode: mode }),
+      setGuestName: (name, emailOrId) => {
+        const primaryId = (emailOrId && emailOrId.trim()) ? emailOrId.trim() : (name && name.trim()) ? name.trim() : 'STUDENT-MOBILE-USER';
+        const sanitized = primaryId.replace(/\s+/g, '-').toUpperCase();
+        set({ guestName: name, studentId: sanitized });
+      },
+      setAvatarEmoji: (emoji) => set({ avatarEmoji: emoji }),
+      setSoundEffectsEnabled: (enabled) => set({ soundEffectsEnabled: enabled }),
+      setSpeechRate: (rate) => set({ speechRate: rate }),
+      setColorTheme: (theme) => {
+        applyThemeSkin(theme);
+        set({ colorTheme: theme });
+      },
+      setThemeMode: (mode) => set({ themeMode: mode }),
+      setMascotOutfit: (outfit) => set({ mascotOutfit: outfit }),
+      purchaseOutfit: (outfit, cost) => {
+        const state = get();
+        if (state.virtualStars >= cost && !state.ownedOutfits.includes(outfit)) {
+          set({
+            virtualStars: state.virtualStars - cost,
+            ownedOutfits: [...state.ownedOutfits, outfit],
+            mascotOutfit: outfit
+          });
+          get().addLog(`Purchased and equipped mascot outfit: ${outfit}`);
+          saveParentSetting('virtual_stars', (state.virtualStars - cost).toString()).catch(console.error);
+          saveParentSetting('owned_outfits', JSON.stringify([...state.ownedOutfits, outfit])).catch(console.error);
+          saveParentSetting('mascot_outfit', outfit).catch(console.error);
+          return true;
+        }
+        return false;
+      },
+      setVoiceGuideTheme: (theme) => {
+        set({ voiceGuideTheme: theme });
+        saveParentSetting('voice_guide_theme', theme).catch(console.error);
+      },
+      setCorrectSoundTheme: (theme) => {
+        set({ correctSoundTheme: theme });
+        saveParentSetting('correct_sound_theme', theme).catch(console.error);
+      },
+      setPreferredGrade: (grade) => set({ preferredGrade: grade }),
+      trackActiveMinutes: (minutes) => {
+        const today = new Date().toISOString().split('T')[0];
+        const state = get();
+        if (state.lastActiveDay !== today) {
+          set({ lastActiveDay: today, dailyMinutesUsed: minutes });
+        } else {
+          set({ dailyMinutesUsed: state.dailyMinutesUsed + minutes });
+        }
+      },
+      resetDailyMinutes: () => {
+        set({ dailyMinutesUsed: 0 });
+      },
+      updateParentalControls: (controls) => {
+        set((state) => ({
+          parentalControls: { ...state.parentalControls, ...controls },
+        }));
+        get().addLog('Parental control settings updated.');
+      },
+      registerAndPromote: async (email, password, name, firstName, middleName, lastName) => {
+        const anonymousStudentId = get().studentId;
+        const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+        const resolvedUrl = resolveServerUrl(rawUrl);
+        try {
+          const res = await fetch(`${resolvedUrl}/api/auth/promote`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              anonymousStudentId,
+              email,
+              password,
+              name,
+              first_name: firstName,
+              middle_name: middleName,
+              last_name: lastName
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            set({ 
+              currentUser: data.user,
+              studentId: data.studentId,
+              token: data.token
+            });
+            get().addLog(`Guest account promoted. Official studentId is now: ${data.studentId}`);
+            return { success: true, message: 'Account successfully registered and progress merged!' };
+          } else {
+            const err = await res.json().catch(() => ({}));
+            return { success: false, message: err.error || 'Promotion failed.' };
+          }
+        } catch (e: any) {
+          return { success: false, message: e.message || 'Connection error.' };
+        }
+      },
+      loginToCloud: async (email, password, role) => {
+        const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+        const resolvedUrl = resolveServerUrl(rawUrl);
+        try {
+          const res = await fetch(`${resolvedUrl}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, ...(role ? { role } : {}) })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const serverClassroomId = data.user?.classroomId || data.classroomId;
+            const serverTeacherName = data.user?.teacherName || data.teacherName;
+            const incomingStudentId = data.studentId ?? data.user.name.replace(/\\s+/g, '-').toUpperCase();
+            set({
+              currentUser: data.user,
+              studentId: incomingStudentId,
+              token: data.token,
+              ...(serverClassroomId ? { classroomId: serverClassroomId } : {}),
+              ...(serverTeacherName ? { teacherName: serverTeacherName } : {}),
+            });
+            get().addLog('Logged in as: ' + data.user.email);
+            get().initializeLocalStore(incomingStudentId).catch(console.error);
+            if (data.user?.role === 'parent') {
+              get().fetchMyChildren().catch(console.warn);
+            }
+            return { success: true, message: `Successfully logged in as ${data.user.name}` };
+          } else {
+            const err = await res.json().catch(() => ({}));
+            return { success: false, message: err.error || 'Login failed.' };
+          }
+        } catch (e: any) {
+          return { success: false, message: e.message || 'Connection error.' };
+        }
+      },
+      logoutFromCloud: () => {
+        const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+        const resolvedUrl = resolveServerUrl(rawUrl);
+        const currentToken = get().token;
+        if (currentToken) {
+          fetch(`${resolvedUrl}/api/auth/logout`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${currentToken}`,
+            },
+          }).catch(() => {});
+        }
+        set((state) => ({
+          currentUser: null,
+          token: null,
+          studentId: 'GURO-STUDENT-LOCAL',
+          studentProgress: [],
+          streakCount: 0,
+          bestStreak: 0,
+          unlockedBadges: [],
+          xpPoints: 0,
+          virtualStars: 0,
+          lastStudyDate: null,
+          lastActiveDay: null,
+          dailyMinutesUsed: 0,
+          // NOTE: Preserve classroomId on logout so offline classroom access is not revoked
+          classroomId: state.classroomId,
+          teacherName: state.teacherName,
+          myChildren: [],
+          activeChildId: null,
+          appMode: 'offline',
+          guestName: null,
+          parentalControls: {
+            dailyTimeLimit: 0,
+            mathBeforeEnglish: false,
+            forcedBilingual: false,
+            priorityTopic: null,
+          },
+        }));
+        get().addLog('Logged out of cloud account. Cleared local active session.');
+        get().initializeLocalStore('GURO-STUDENT-LOCAL').catch(console.error);
+      },
+      addLog: (message) =>
+        set((state) => ({
+          logs: [`[${new Date().toLocaleTimeString()}] ${message}`, ...state.logs],
+        })),
+      clearLogs: () => set({ logs: ['Logs cleared.'] }),
+      loadItemBankSync: async () => {
+        try {
+          const localBank = await getLocalItemBank();
+          // Check if local bank has study content (representing the new gamified asset). If not, force reload from JSON.
+          const hasAdjectiveStudy = localBank && localBank['English']?.['5']?.['Adjectives']?.studyContent;
+          if (localBank && Object.keys(localBank).length > 0 && hasAdjectiveStudy) {
+            set({ itemBank: localBank });
+          } else {
+            const fallbackBank = itemBankData as ItemBank;
+            set({ itemBank: fallbackBank });
+            await saveLocalItemBank(fallbackBank);
+          }
+        } catch (e) {
+          console.error('[SQLite] Failed to load local item bank:', e);
+          set({ itemBank: itemBankData as ItemBank });
+        }
+      },
+      setParentPin: (pin) => {
+        set({ parentPin: pin });
+        get().addLog(pin ? 'Parent PIN updated.' : 'Parent PIN reset.');
+      },
+      setAdaptiveTier: (topicKey, tier) => set((state) => ({
+        adaptiveTiers: { ...state.adaptiveTiers, [topicKey]: tier }
+      })),
+      incrementConsecutiveFailures: (topicKey) => {
+        const current = get().consecutiveFailures[topicKey] || 0;
+        const next = current + 1;
+        set((state) => ({
+          consecutiveFailures: { ...state.consecutiveFailures, [topicKey]: next }
+        }));
+        return next;
+      },
+      resetConsecutiveFailures: (topicKey) => set((state) => ({
+        consecutiveFailures: { ...state.consecutiveFailures, [topicKey]: 0 }
+      })),
+      setStudentId: (id) => {
+        const sanitized = id.replace(/\s+/g, '-').toUpperCase();
+        set({ studentId: sanitized });
+        get().addLog(`Student Device ID configured to: ${sanitized}`);
+      },
+      setClassroomId: (id, teacherName, showQuizAnswers, consultationHours) => {
+        set({
+          classroomId: id,
+          teacherName: teacherName !== undefined ? teacherName : (id ? get().teacherName : null),
+          showQuizAnswers: showQuizAnswers !== undefined ? showQuizAnswers : get().showQuizAnswers,
+          consultationHours: consultationHours !== undefined ? consultationHours : get().consultationHours,
+        });
+        if (!id) {
+          set({ activeSubjects: ['Mathematics', 'English'], teacherName: null });
+        }
+        get().addLog(id ? `Linked device to classroom invite code: ${id}` : 'Unlinked device from classroom invite code.');
+      },
+      setShowQuizAnswers: (val) => set({ showQuizAnswers: val }),
+      setConsultationHours: (hours) => set({ consultationHours: hours }),
+      setTeacherName: (name) => {
+        set({ teacherName: name });
+      },
+      setActiveSubjects: (subjects) => {
+        set({ activeSubjects: subjects });
+      },
+      fetchItemBankFromServer: async (serverUrl, id) => {
+        const resolvedUrl = resolveServerUrl(serverUrl);
+        try {
+          const res = await fetch(`${resolvedUrl}/api/item-bank?classroomId=${id}`, {
+            headers: { Authorization: `Bearer ${get().token ?? ''}` },
+          });
+          if (res.ok) {
+            const bank = await res.json();
+            if (bank && Object.keys(bank).length > 0) {
+              set({ itemBank: bank });
+              await saveLocalItemBank(bank);
+              // Also fetch active subjects and classroom details offered by the teacher
+              try {
+                const subRes = await fetch(`${resolvedUrl}/api/classroom/active-subjects?classroomId=${id}`);
+                if (subRes.ok) {
+                  const subData = await subRes.json();
+                  if (subData.subjects && Array.isArray(subData.subjects)) {
+                    set({ activeSubjects: subData.subjects });
+                  }
+                }
+              } catch (subErr) {
+                console.error('[Store] Failed to fetch active subjects:', subErr);
+              }
+              // Auto-fetch teacher name, school year, consultation schedule, and answer review visibility
+              try {
+                const verRes = await fetch(`${resolvedUrl}/api/classroom/verify?code=${encodeURIComponent(id)}`);
+                if (verRes.ok) {
+                  const verData = await verRes.json();
+                  if (verData.teacherName) {
+                    set({ teacherName: verData.teacherName });
+                  }
+                  if (verData.showQuizAnswers !== undefined) {
+                    set({ showQuizAnswers: verData.showQuizAnswers });
+                  }
+                  if (verData.consultationHours) {
+                    set({ consultationHours: verData.consultationHours });
+                  }
+                  if (verData.schoolYear) {
+                    set({ activeSchoolYear: verData.schoolYear });
+                  }
+                  if (verData.term) {
+                    set({ activeTerm: verData.term });
+                  }
+                }
+              } catch (verErr) {
+                console.error('[Store] Failed to verify teacher name / academic term:', verErr);
+              }
+              get().addLog(`Downloaded custom classroom item bank from server for: ${id}`);
+              return true;
+            }
+          }
+        } catch (e: any) {
+          get().addLog(`Failed to fetch online item bank: ${e.message}`);
+        }
+        return false;
+      },
+      recordProgress: async (event) => {
+        const state = get();
+        const newEvent: ProgressEvent = {
+          ...event,
+          assessmentType: event.assessmentType || 'practice',
+          schoolYear: event.schoolYear || state.activeSchoolYear || '2026-2027',
+          term: event.term || state.activeTerm || 'Quarter 1',
+          eventId: `EVT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+          timestamp: new Date().toISOString(),
+          synced: false,
+        };
+        const today = new Date().toISOString().split('T')[0];
+        const lastStudy = get().lastStudyDate;
+        let nextStreak = get().streakCount || 0;
+        if (!lastStudy) {
+          nextStreak = 1;
+        } else if (lastStudy !== today) {
+          const yesterdayObj = new Date();
+          yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+          const yesterday = yesterdayObj.toISOString().split('T')[0];
+          if (lastStudy === yesterday) {
+            nextStreak += 1;
+          } else {
+            nextStreak = 1;
+          }
+        }
+        const nextBadges = [...(get().unlockedBadges || [])];
+        const isPerfect = event.score === event.totalQuestions;
+        if (!nextBadges.includes('first_step')) {
+          nextBadges.push('first_step');
+        }
+        if (isPerfect && !nextBadges.includes('perfect_score')) {
+          nextBadges.push('perfect_score');
+        }
+        if (isPerfect && event.subject === 'Mathematics' && !nextBadges.includes('math_wizard')) {
+          nextBadges.push('math_wizard');
+        }
+        if (isPerfect && event.subject === 'English' && !nextBadges.includes('english_champion')) {
+          nextBadges.push('english_champion');
+        }
+        if (nextStreak >= 3 && !nextBadges.includes('streak_starter')) {
+          nextBadges.push('streak_starter');
+        }
+        if (nextStreak >= 5 && !nextBadges.includes('streak_master')) {
+          nextBadges.push('streak_master');
+        }
+        // Calculate XP and Stars earned
+        const earnedXP = event.score * 10 + (isPerfect ? 50 : 0);
+        const earnedStars = event.score * 2 + (isPerfect ? 10 : 0);
+        const currentBest = get().bestStreak || 0;
+        const nextBest = Math.max(currentBest, nextStreak);
+        set((state) => ({
+          studentProgress: [newEvent, ...state.studentProgress],
+          streakCount: nextStreak,
+          bestStreak: nextBest,
+          unlockedBadges: nextBadges,
+          lastStudyDate: today,
+          xpPoints: (state.xpPoints || 0) + earnedXP,
+          virtualStars: (state.virtualStars || 0) + earnedStars,
+        }));
+        const currentStudentId = get().studentId;
+        try {
+          await saveLocalProgress(newEvent, currentStudentId);
+          await saveParentSetting('streak_count', nextStreak.toString(), currentStudentId);
+          await saveParentSetting('best_streak', nextBest.toString(), currentStudentId);
+          await saveParentSetting('unlocked_badges', JSON.stringify(nextBadges), currentStudentId);
+          await saveParentSetting('last_study_date', today, currentStudentId);
+          await saveParentSetting('xp_points', get().xpPoints.toString(), currentStudentId);
+          await saveParentSetting('virtual_stars', get().virtualStars.toString(), currentStudentId);
+        } catch (e) {
+          console.error('[SQLite] Failed to save progress/achievements locally:', e);
+        }
+        get().addLog(`Recorded local progress for "${event.topic}" (${event.score}/${event.totalQuestions}) (+${earnedXP} XP, +${earnedStars} Stars)`);
+        // Trigger background sync in online mode to sync with web immediately
+        const currentState = get();
+        if (currentState.appMode === 'online') {
+          get().syncProgressNow(currentState.serverUrl).catch((err) => {
+            console.warn('[Sync] Background sync failed:', err);
+          });
+        }
+      },
+      clearProgress: async () => {
+        set({ studentProgress: [] });
+        try {
+          await clearLocalProgress();
+        } catch (e) {
+          console.error('[SQLite] Failed to clear local progress:', e);
+        }
+        get().addLog('Local student progress logs cleared.');
+      },
+      syncProgressNow: async (serverUrl?: string) => {
+        const resolvedUrl = resolveServerUrl(serverUrl || get().serverUrl);
+        const unsyncedEvents = get().studentProgress.filter((e) => !e.synced);
+        if (unsyncedEvents.length === 0) {
+          return { success: true, syncedCount: 0, message: 'No new progress logs to sync.' };
+        }
+        get().addLog(`Starting manual sync of ${unsyncedEvents.length} events...`);
+        try {
+          const response = await fetch(`${resolvedUrl}/api/sync`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${get().token ?? ''}`,
+            },
+            body: JSON.stringify({
+              studentId: get().studentId || 'GURO-STUDENT-LOCAL',
+              classroomId: get().classroomId,
+              events: unsyncedEvents,
+            }),
+          });
+          if (!response.ok) {
+            throw new Error(`Sync server responded with status: ${response.status}`);
+          }
+          const result = await response.json();
+          set((state) => ({
+            studentProgress: state.studentProgress.map((e) => {
+              if (!e.synced) {
+                return { ...e, synced: true };
+              }
+              return e;
+            }),
+          }));
+          try {
+            const eventIds = unsyncedEvents.map(e => e.eventId);
+            await markEventsAsSynced(eventIds);
+          } catch (sqliteErr) {
+            console.error('[SQLite] Failed to mark events as synced in SQLite:', sqliteErr);
+          }
+          get().addLog(`Sync completed successfully. Uploaded ${unsyncedEvents.length} events.`);
+          return {
+            success: true,
+            syncedCount: unsyncedEvents.length,
+            message: `Successfully synchronized ${unsyncedEvents.length} progress events.`,
+          };
+        } catch (error: any) {
+          const errMsg = error.message || 'Network error';
+          get().addLog(`Sync failed: ${errMsg}`);
+          return {
+            success: false,
+            syncedCount: 0,
+            message: `Sync failed: ${errMsg}. Logs are preserved locally.`,
+          };
+        }
+      },
+       initializeLocalStore: async (targetStudentId?: string) => {
+        try {
+          const activeStudent = targetStudentId || get().studentId;
+          const localLogs = await getLocalProgress(activeStudent);
+          const localBank = await getLocalItemBank();
+          const streakStr = await getParentSetting('streak_count', activeStudent);
+          const bestStreakStr = await getParentSetting('best_streak', activeStudent);
+          const badgesStr = await getParentSetting('unlocked_badges', activeStudent);
+          const lastStudyStr = await getParentSetting('last_study_date', activeStudent);
+          const xpStr = await getParentSetting('xp_points', activeStudent);
+          const starsStr = await getParentSetting('virtual_stars', activeStudent);
+          const ownedOutfitsStr = await getParentSetting('owned_outfits', activeStudent);
+          const mascotOutfitStr = await getParentSetting('mascot_outfit', activeStudent);
+          const voiceThemeStr = await getParentSetting('voice_guide_theme', activeStudent);
+          const correctSoundStr = await getParentSetting('correct_sound_theme', activeStudent);
+          set({
+            studentProgress: localLogs,
+            itemBank: localBank || get().itemBank,
+            streakCount: streakStr ? parseInt(streakStr, 10) : 0,
+            bestStreak: bestStreakStr ? parseInt(bestStreakStr, 10) : 0,
+            unlockedBadges: badgesStr ? JSON.parse(badgesStr) : [],
+            lastStudyDate: lastStudyStr || null,
+            xpPoints: xpStr ? parseInt(xpStr, 10) : 0,
+            virtualStars: starsStr ? parseInt(starsStr, 10) : 0,
+            ownedOutfits: ownedOutfitsStr ? JSON.parse(ownedOutfitsStr) : get().ownedOutfits,
+            mascotOutfit: mascotOutfitStr || get().mascotOutfit,
+            voiceGuideTheme: voiceThemeStr || get().voiceGuideTheme,
+            correctSoundTheme: correctSoundStr || get().correctSoundTheme,
+          });
+          get().addLog('[SQLite] Loaded state from local SQLite database.');
+        } catch (e: any) {
+          get().addLog(`[SQLite] Error initializing local database: ${e.message}`);
+        }
+      },
+    }),
+    {
+      name: 'guro-app-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+      // Persist logs, progress, parent PIN, student ID, classroom ID, parental controls, and user session
+      partialize: (state) => ({
+        logs: state.logs,
+        parentPin: state.parentPin,
+        studentProgress: state.studentProgress,
+        studentId: state.studentId,
+        activeSubjects: state.activeSubjects,
+        activeSchoolYear: state.activeSchoolYear,
+        activeTerm: state.activeTerm,
+        classroomId: state.classroomId,
+        teacherName: state.teacherName,
+        showQuizAnswers: state.showQuizAnswers,
+        consultationHours: state.consultationHours,
+        streakCount: state.streakCount,
+        unlockedBadges: state.unlockedBadges,
+        parentalControls: state.parentalControls,
+        myChildren: state.myChildren,
+        activeChildId: state.activeChildId,
+        currentUser: state.currentUser,
+        token: state.token,
+        appMode: state.appMode,
+        guestName: state.guestName,
+        dailyMinutesUsed: state.dailyMinutesUsed,
+        lastActiveDay: state.lastActiveDay,
+        lastStudyDate: state.lastStudyDate,
+        xpPoints: state.xpPoints,
+        virtualStars: state.virtualStars,
+        mascotOutfit: state.mascotOutfit,
+        ownedOutfits: state.ownedOutfits,
+        voiceGuideTheme: state.voiceGuideTheme,
+        correctSoundTheme: state.correctSoundTheme,
+        preferredGrade: state.preferredGrade,
+        serverUrl: state.serverUrl,
+        avatarEmoji: state.avatarEmoji,
+        speechRate: state.speechRate,
+        soundEffectsEnabled: state.soundEffectsEnabled,
+        colorTheme: state.colorTheme,
+        themeMode: state.themeMode,
+        adaptiveTiers: state.adaptiveTiers,
+        consecutiveFailures: state.consecutiveFailures,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          if (state.colorTheme) {
+            applyThemeSkin(state.colorTheme);
+          }
+          if (
+            !state.serverUrl ||
+            state.serverUrl.includes('localhost') ||
+            state.serverUrl.includes('127.0.0.1') ||
+            state.serverUrl.includes('10.0.2.2')
+          ) {
+            state.serverUrl = process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+          }
+        }
+      },
+    }
+  )
+);

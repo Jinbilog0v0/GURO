@@ -53,3 +53,38 @@ export const Colors = {
 } as const;
 
 export type ColorKey = keyof typeof Colors;
+
+export const ThemePalettes = {
+  blue: {
+    accentPrimary: '#11428E',
+    accentPrimaryGlow: 'rgba(17,66,142,0.25)',
+    accentPrimaryDeep: 'rgba(17,66,142,0.12)',
+    borderFocus: '#11428E',
+  },
+  teal: {
+    accentPrimary: '#0F766E',
+    accentPrimaryGlow: 'rgba(15,118,110,0.25)',
+    accentPrimaryDeep: 'rgba(15,118,110,0.12)',
+    borderFocus: '#0F766E',
+  },
+  yellow: {
+    accentPrimary: '#D97706',
+    accentPrimaryGlow: 'rgba(217,119,6,0.25)',
+    accentPrimaryDeep: 'rgba(217,119,6,0.12)',
+    borderFocus: '#D97706',
+  },
+  purple: {
+    accentPrimary: '#6D28D9',
+    accentPrimaryGlow: 'rgba(109,40,217,0.25)',
+    accentPrimaryDeep: 'rgba(109,40,217,0.12)',
+    borderFocus: '#6D28D9',
+  },
+} as const;
+
+export function applyThemeSkin(themeName: string) {
+  const palette = ThemePalettes[themeName as keyof typeof ThemePalettes] || ThemePalettes.blue;
+  (Colors as any).accentPrimary = palette.accentPrimary;
+  (Colors as any).accentPrimaryGlow = palette.accentPrimaryGlow;
+  (Colors as any).accentPrimaryDeep = palette.accentPrimaryDeep;
+  (Colors as any).borderFocus = palette.borderFocus;
+}
