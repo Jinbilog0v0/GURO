@@ -220,6 +220,34 @@ export const FALLBACK_ITEM_BANK: ItemBank = {
                 "Easy": {
                     "Figures of Speech": [
                         {
+                            "id": "ENG-G4-SWIPE-001",
+                            "type": "swipe-card",
+                            "questionText": "'Her cheeks are like red roses.' Swipe left for Simile or right for Metaphor.",
+                            "options": [
+                                "Simile",
+                                "Metaphor"
+                            ],
+                            "correctAnswer": "Simile",
+                            "feedback": {
+                                "en": "A simile compares two things using 'like' or 'as'. Here, cheeks are compared to roses using 'like'.",
+                                "fil": "Ang simile ay naghahambing gamit ang 'like' o 'as'. Dito, inihambing ang pisngi sa rosas gamit ang 'like'."
+                            }
+                        },
+                        {
+                            "id": "ENG-G4-SWIPE-002",
+                            "type": "swipe-card",
+                            "questionText": "'Time is gold.' Swipe left for Simile or right for Metaphor.",
+                            "options": [
+                                "Simile",
+                                "Metaphor"
+                            ],
+                            "correctAnswer": "Metaphor",
+                            "feedback": {
+                                "en": "A metaphor makes a direct comparison without using 'like' or 'as'.",
+                                "fil": "Ang metapora ay direktang paghahambing nang hindi gumagamit ng 'like' o 'as'."
+                            }
+                        },
+                        {
                             "id": "ENG-G4-FIG-001",
                             "questionText": "Which of the following sentences is a simile?",
                             "options": [
