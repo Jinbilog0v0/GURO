@@ -152,7 +152,8 @@ export const EducationalImagePicker: React.FC<EducationalImagePickerProps> = ({
       {/* Input depending on mode */}
       <div className="w-full min-w-0">
         {mode === 'ai' && (
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="space-y-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <input
               type="text"
               placeholder={defaultPrompt ? `Prompt (e.g. ${defaultPrompt})` : 'Describe the educational graphic...'}
@@ -184,6 +185,32 @@ export const EducationalImagePicker: React.FC<EducationalImagePickerProps> = ({
                 </>
               )}
             </button>
+          </div>
+
+          {/* Quick-Pick Verified Curriculum Diagrams */}
+          <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+            <span className="text-[10px] font-bold text-[var(--text-muted)]">Curated Diagrams:</span>
+            {[
+              { label: '🍰 3/4 Fraction Pie', prompt: 'fraction pie divided into 4 slices, 3 shaded' },
+              { label: '📊 10x10 Decimals Grid', prompt: 'decimals 10x10 grid model with shaded squares' },
+              { label: '📏 Number Line', prompt: 'number line with tick marks from 0 to 10' },
+              { label: '📐 Geometric Shapes', prompt: 'geometric shapes triangle square circle rectangle' },
+              { label: '💡 Figures of Speech', prompt: 'figures of speech simile metaphor illustration' },
+              { label: '🧮 Place Value', prompt: 'place value blocks chart hundreds tens ones' },
+            ].map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => {
+                  setCustomPrompt(item.prompt);
+                  handleGenerateAI(item.prompt);
+                }}
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[var(--bg-main)] hover:bg-[#11428E]/10 hover:text-[#11428E] border border-[var(--border-color)] text-[var(--text-muted)] transition-colors cursor-pointer"
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
           </div>
         )}
 

@@ -343,8 +343,13 @@ class GeminiService
         // 1. Comprehensive curated Unsplash high-res educational photo bank for primary school curriculum
         $visualCatalog = [
             'mathematics' => [
+                'fraction pie' => 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=600&q=80',
+                'fraction circle' => 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=600&q=80',
                 'fractions' => 'https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=600&q=80',
+                'decimals grid' => 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&q=80',
                 'decimals' => 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=600&q=80',
+                'number line' => 'https://images.unsplash.com/photo-1583912267550-d44d7a125e7e?auto=format&fit=crop&w=600&q=80',
+                'place value' => 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&w=600&q=80',
                 'algebra' => 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&w=600&q=80',
                 'equations' => 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&w=600&q=80',
                 'geometry' => 'https://images.unsplash.com/photo-1583912267550-d44d7a125e7e?auto=format&fit=crop&w=600&q=80',
@@ -376,6 +381,9 @@ class GeminiService
             ],
             'english' => [
                 'figures of speech' => 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
+                'simile' => 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
+                'metaphor' => 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
+                'personification' => 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80',
                 'reading' => 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80',
                 'comprehension' => 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80',
                 'idioms' => 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80',
@@ -430,9 +438,9 @@ class GeminiService
         }
 
         $dimension = ($contextKey !== '' && $contextKey !== 'intro') ? 'width=600&height=400' : 'width=800&height=500';
-        $promptStr = "educational diagram illustration of {$cleanTerm} for grade {$grade} elementary school {$subject}, clear simple colorful textbook style graphics, high quality educational visual aid, white clean background";
+        $promptStr = "clean educational vector infographic diagram of {$cleanTerm} for elementary grade {$grade} {$subject}, simple colorful flat textbook diagram, high contrast educational graphic, white clean background, accurate pedagogical chart";
         $encodedPrompt = urlencode($promptStr);
 
-        return "https://image.pollinations.ai/prompt/{$encodedPrompt}?{$dimension}&nologo=true";
+        return "https://image.pollinations.ai/prompt/{$encodedPrompt}?{$dimension}&nologo=true&seed=42";
     }
 }

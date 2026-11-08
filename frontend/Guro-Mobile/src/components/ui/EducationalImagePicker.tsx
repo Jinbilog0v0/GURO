@@ -9,6 +9,7 @@ import {
   Modal,
   StyleSheet,
   Alert,
+  ScrollView,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -57,8 +58,8 @@ export function EducationalImagePicker({
   const [hasError, setHasError] = useState(false);
 
   // Generate educational visual via AI (Backend endpoint with client-side Pollinations fallback)
-  const handleGenerateAI = async () => {
-    const promptToUse = defaultPrompt.trim() || 'elementary school lesson visual aid';
+  const handleGenerateAI = async (promptOverride?: any) => {
+    const promptToUse = (typeof promptOverride === 'string' && promptOverride.trim()) ? promptOverride.trim() : (defaultPrompt.trim() || 'elementary school lesson visual aid');
     setIsGenerating(true);
     setHasError(false);
 
@@ -206,7 +207,8 @@ export function EducationalImagePicker({
           </View>
         </View>
       ) : (
-        <View style={styles.buttonRow}>
+        <>
+          <View style={styles.buttonRow}>
           <TouchableOpacity
             onPress={handleGenerateAI}
             disabled={isGenerating}
@@ -244,6 +246,36 @@ export function EducationalImagePicker({
             <Text style={styles.linkButtonText}>Link</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Quick Curated Diagrams */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }} contentContainerStyle={{ gap: 6 }}>
+          {[
+            { label: '🍰 Fraction 3/4', prompt: 'fraction pie divided into 4 slices, 3 shaded' },
+            { label: '📊 10x10 Grid', prompt: 'decimals 10x10 grid model with shaded squares' },
+            { label: '📏 Number Line', prompt: 'number line with tick marks from 0 to 10' },
+            { label: '📐 Shapes', prompt: 'geometric shapes triangle square circle rectangle' },
+            { label: '💡 Figures of Speech', prompt: 'figures of speech simile metaphor illustration' },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              onPress={() => handleGenerateAI(item.prompt)}
+              activeOpacity={0.7}
+              style={{
+                backgroundColor: 'rgba(17,66,142,0.06)',
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: 'rgba(17,66,142,0.15)',
+              }}
+            >
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+        </>
       )}
 
       {/* URL Input Modal */}
