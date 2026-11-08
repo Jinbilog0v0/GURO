@@ -1,97 +1,98 @@
-<?php
-
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ChatController;
-use App\Http\Controllers\ClassroomController;
-use App\Http\Controllers\RateLimitController;
-use App\Http\Controllers\SyncController;
-use Illuminate\Support\Facades\Route;
-
-Route::get('/login', [AuthController::class, 'unauthorized'])->name('login');
-Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/login', [AuthController::class, 'login']);
-Route::post('/auth/promote', [AuthController::class, 'promote']);
-Route::post('/auth/forgot-password/send-code', [AuthController::class, 'sendRecoveryCode']);
-Route::post('/auth/forgot-password/verify-code', [AuthController::class, 'verifyRecoveryCode']);
-Route::post('/auth/email/send-verification', [AuthController::class, 'sendVerificationCode']);
-Route::post('/auth/email/verify', [AuthController::class, 'verifyEmail']);
-Route::get('/classroom/verify', [ClassroomController::class, 'verifyCode']);
-Route::post('/classroom/pair', [ClassroomController::class, 'pairStudent']);
-Route::get('/classroom/active-subjects', [ClassroomController::class, 'getActiveSubjects']);
-Route::get('/item-bank', [ClassroomController::class, 'getItemBank']);
-Route::get('/version', fn () => response()->json([
-    'version' => config('app.version', '1.0.2'),
-    'name' => config('app.name', 'GURO'),
-]));
-Route::post('/sync', [SyncController::class, 'syncTelemetry']);
-Route::get('/progress', [SyncController::class, 'getProgress']);
-
-// Parent-Teacher Chat Suite
-Route::get('/chat/threads', [ChatController::class, 'getThreads']);
-Route::get('/chat/messages', [ChatController::class, 'getMessages']);
-Route::post('/chat/send', [ChatController::class, 'sendMessage']);
-Route::post('/chat/edit', [ChatController::class, 'editMessage']);
-Route::post('/chat/unsend', [ChatController::class, 'unsendMessage']);
-Route::post('/chat/mark-read', [ChatController::class, 'markRead']);
-
-// Educational visuals generator
-Route::post('/lesson/generate-image', [ClassroomController::class, 'generateLessonImage']);
-
-// Protected — valid Sanctum token required for Teachers & Admins
-Route::middleware('auth:sanctum')->group(function () {
-    // Item Bank & Generation
-    Route::post('/generate', [ClassroomController::class, 'generateLesson']);
-    Route::post('/save', [ClassroomController::class, 'saveToItemBank']);
-
-    // Classroom Management
-    Route::get('/classroom/my-classrooms', [ClassroomController::class, 'getMyClassrooms']);
-    Route::post('/classroom/create', [ClassroomController::class, 'createClassroom']);
-    Route::post('/classroom/lock', [ClassroomController::class, 'lockClassroom']);
-    Route::post('/classroom/toggle-answers', [ClassroomController::class, 'toggleQuizAnswers']);
-    Route::post('/classroom/update-schedule', [ClassroomController::class, 'updateConsultationSchedule']);
-    Route::post('/classroom/claim', [ClassroomController::class, 'claimTemplateBank']);
-    Route::post('/classroom/update-lesson', [ClassroomController::class, 'updateClassroomLesson']);
-    Route::post('/classroom/delete-lesson', [ClassroomController::class, 'deleteClassroomLesson']);
-    Route::get('/classroom/members', [ClassroomController::class, 'getClassroomMembers']);
-    Route::get('/classroom/eosy-report', [ClassroomController::class, 'getEosyReport']);
-    Route::post('/classroom/promote', [ClassroomController::class, 'promoteStudents']);
-    Route::get('/student/academic-history', [ClassroomController::class, 'getStudentAcademicHistory']);
-
-    // Parent Student Management
-    Route::post('/parent/create-student', [AuthController::class, 'createStudent']);
-    Route::get('/parent/children', [AuthController::class, 'getMyChildren']);
-    Route::post('/parent/claim-child', [AuthController::class, 'claimChild']);
-
-    // User Management
-    Route::post('/user/update-profile', [AuthController::class, 'updateProfile']);
-    Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-
-    // Developer — Rate Limit Management
-    Route::prefix('dev')->group(function () {
-        Route::get('/rate-limits', [RateLimitController::class, 'index']);
-        Route::put('/rate-limits/{role}', [RateLimitController::class, 'upsert']);
-        Route::delete('/rate-limits/{role}', [RateLimitController::class, 'destroy']);
-        Route::get('/rate-limits/usage', [RateLimitController::class, 'usage']);
-    });
-
-    // Admin & IT Governance Suite
-    Route::prefix('admin')->group(function () {
-        Route::get('/overview', [AdminController::class, 'overview']);
-        Route::post('/cache-purge', [AdminController::class, 'purgeCache']);
-        Route::get('/users', [AdminController::class, 'getUsers']);
-        Route::post('/users/{id}/update-role', [AdminController::class, 'updateUserRole']);
-        Route::post('/users/{id}/reset-password', [AdminController::class, 'resetUserPassword']);
-        Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
-        Route::get('/classrooms', [AdminController::class, 'getClassrooms']);
-        Route::post('/classrooms/{id}/toggle-lock', [AdminController::class, 'toggleLockClassroom']);
-        Route::post('/classrooms/{id}/reassign', [AdminController::class, 'reassignClassroom']);
-        Route::delete('/classrooms/{id}', [AdminController::class, 'deleteClassroom']);
-        Route::get('/reports/summary', [AdminController::class, 'getReportsSummary']);
-        Route::get('/sync-logs', [AdminController::class, 'getSyncTelemetry']);
-        Route::get('/teacher-verifications', [AdminController::class, 'getTeacherVerifications']);
-        Route::post('/teacher-verifications/{id}/review', [AdminController::class, 'reviewTeacherVerification']);
-        Route::delete('/teacher-verifications/{id}', [AdminController::class, 'deleteTeacherVerification']);
-    });
-});
+<?php
+
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\ClassroomController;
+use App\Http\Controllers\RateLimitController;
+use App\Http\Controllers\SyncController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/login', [AuthController::class, 'unauthorized'])->name('login');
+Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/promote', [AuthController::class, 'promote']);
+Route::post('/auth/forgot-password/send-code', [AuthController::class, 'sendRecoveryCode']);
+Route::post('/auth/forgot-password/verify-code', [AuthController::class, 'verifyRecoveryCode']);
+Route::post('/auth/email/send-verification', [AuthController::class, 'sendVerificationCode']);
+Route::post('/auth/email/verify', [AuthController::class, 'verifyEmail']);
+Route::get('/classroom/verify', [ClassroomController::class, 'verifyCode']);
+Route::post('/classroom/pair', [ClassroomController::class, 'pairStudent']);
+Route::get('/classroom/active-subjects', [ClassroomController::class, 'getActiveSubjects']);
+Route::get('/item-bank', [ClassroomController::class, 'getItemBank']);
+Route::get('/version', fn () => response()->json([
+    'version' => config('app.version', '1.0.2'),
+    'name' => config('app.name', 'GURO'),
+]));
+Route::post('/sync', [SyncController::class, 'syncTelemetry']);
+Route::get('/progress', [SyncController::class, 'getProgress']);
+
+// Parent-Teacher Chat Suite
+Route::get('/chat/threads', [ChatController::class, 'getThreads']);
+Route::get('/chat/messages', [ChatController::class, 'getMessages']);
+Route::post('/chat/send', [ChatController::class, 'sendMessage']);
+Route::post('/chat/edit', [ChatController::class, 'editMessage']);
+Route::post('/chat/unsend', [ChatController::class, 'unsendMessage']);
+Route::post('/chat/mark-read', [ChatController::class, 'markRead']);
+
+// Educational visuals generator
+Route::post('/lesson/generate-image', [ClassroomController::class, 'generateLessonImage']);
+
+// Protected — valid Sanctum token required for Teachers & Admins
+Route::middleware('auth:sanctum')->group(function () {
+    // Item Bank & Generation
+    Route::post('/generate', [ClassroomController::class, 'generateLesson']);
+    Route::post('/save', [ClassroomController::class, 'saveToItemBank']);
+
+    // Classroom Management
+    Route::get('/classroom/my-classrooms', [ClassroomController::class, 'getMyClassrooms']);
+    Route::post('/classroom/create', [ClassroomController::class, 'createClassroom']);
+    Route::post('/classroom/lock', [ClassroomController::class, 'lockClassroom']);
+    Route::post('/classroom/toggle-answers', [ClassroomController::class, 'toggleQuizAnswers']);
+    Route::post('/classroom/update-schedule', [ClassroomController::class, 'updateConsultationSchedule']);
+    Route::post('/classroom/toggle-subject', [ClassroomController::class, 'toggleSubject']);
+    Route::post('/classroom/claim', [ClassroomController::class, 'claimTemplateBank']);
+    Route::post('/classroom/update-lesson', [ClassroomController::class, 'updateClassroomLesson']);
+    Route::post('/classroom/delete-lesson', [ClassroomController::class, 'deleteClassroomLesson']);
+    Route::get('/classroom/members', [ClassroomController::class, 'getClassroomMembers']);
+    Route::get('/classroom/eosy-report', [ClassroomController::class, 'getEosyReport']);
+    Route::post('/classroom/promote', [ClassroomController::class, 'promoteStudents']);
+    Route::get('/student/academic-history', [ClassroomController::class, 'getStudentAcademicHistory']);
+
+    // Parent Student Management
+    Route::post('/parent/create-student', [AuthController::class, 'createStudent']);
+    Route::get('/parent/children', [AuthController::class, 'getMyChildren']);
+    Route::post('/parent/claim-child', [AuthController::class, 'claimChild']);
+
+    // User Management
+    Route::post('/user/update-profile', [AuthController::class, 'updateProfile']);
+    Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+
+    // Developer — Rate Limit Management
+    Route::prefix('dev')->group(function () {
+        Route::get('/rate-limits', [RateLimitController::class, 'index']);
+        Route::put('/rate-limits/{role}', [RateLimitController::class, 'upsert']);
+        Route::delete('/rate-limits/{role}', [RateLimitController::class, 'destroy']);
+        Route::get('/rate-limits/usage', [RateLimitController::class, 'usage']);
+    });
+
+    // Admin & IT Governance Suite
+    Route::prefix('admin')->group(function () {
+        Route::get('/overview', [AdminController::class, 'overview']);
+        Route::post('/cache-purge', [AdminController::class, 'purgeCache']);
+        Route::get('/users', [AdminController::class, 'getUsers']);
+        Route::post('/users/{id}/update-role', [AdminController::class, 'updateUserRole']);
+        Route::post('/users/{id}/reset-password', [AdminController::class, 'resetUserPassword']);
+        Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
+        Route::get('/classrooms', [AdminController::class, 'getClassrooms']);
+        Route::post('/classrooms/{id}/toggle-lock', [AdminController::class, 'toggleLockClassroom']);
+        Route::post('/classrooms/{id}/reassign', [AdminController::class, 'reassignClassroom']);
+        Route::delete('/classrooms/{id}', [AdminController::class, 'deleteClassroom']);
+        Route::get('/reports/summary', [AdminController::class, 'getReportsSummary']);
+        Route::get('/sync-logs', [AdminController::class, 'getSyncTelemetry']);
+        Route::get('/teacher-verifications', [AdminController::class, 'getTeacherVerifications']);
+        Route::post('/teacher-verifications/{id}/review', [AdminController::class, 'reviewTeacherVerification']);
+        Route::delete('/teacher-verifications/{id}', [AdminController::class, 'deleteTeacherVerification']);
+    });
+});
