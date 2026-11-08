@@ -65,6 +65,7 @@ export function TeacherLessonBuilderScreen() {
   const [studyIntro, setStudyIntro] = useState('');
   const [lessonImage, setLessonImage] = useState('');
   const [questions, setQuestions] = useState<QuestionDraft[]>([emptyQuestion()]);
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const classroomId = currentUser?.classroomId || useAppStore((state) => state.classroomId);
@@ -100,6 +101,38 @@ export function TeacherLessonBuilderScreen() {
       return;
     }
     setQuestions((prev) => prev.filter((q) => q.id !== id));
+    setSelectedQuestionIds((prev) => prev.filter((i) => i !== id));
+  };
+
+  const toggleSelectQuestion = (id: string) => {
+    setSelectedQuestionIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedQuestionIds.length === questions.length) {
+      setSelectedQuestionIds([]);
+    } else {
+      setSelectedQuestionIds(questions.map((q) => q.id));
+    }
+  };
+
+  const deleteSelectedQuestions = () => {
+    if (selectedQuestionIds.length === 0) return;
+    if (selectedQuestionIds.length === questions.length) {
+      deleteAllQuestions();
+      return;
+    }
+    setQuestions((prev) => prev.filter((q) => !selectedQuestionIds.includes(q.id)));
+    setSelectedQuestionIds([]);
+    toast.success(`Removed ${selectedQuestionIds.length} question(s).`);
+  };
+
+  const deleteAllQuestions = () => {
+    setQuestions([emptyQuestion()]);
+    setSelectedQuestionIds([]);
+    toast.success('Reset questions to 1 clean slot.');
   };
 
   const validateAndSubmit = async () => {
@@ -353,10 +386,109 @@ export function TeacherLessonBuilderScreen() {
             subtitle="Tap a letter bubble to mark the correct answer"
           />
 
+          {/* Batch Question Actions */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: Spacing.sm }}>
+            <TouchableOpacity
+              onPress={toggleSelectAll}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: 'rgba(17,66,142,0.06)',
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: 'rgba(17,66,142,0.15)',
+              }}
+            >
+              <View
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: 4,
+                  borderWidth: 1.5,
+                  borderColor: selectedQuestionIds.length === questions.length ? Colors.accentPrimary : Colors.borderStrong,
+                  backgroundColor: selectedQuestionIds.length === questions.length ? Colors.accentPrimary : 'transparent',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                {selectedQuestionIds.length === questions.length && (
+                  <View style={{ width: 8, height: 8, backgroundColor: '#FFFFFF', borderRadius: 2 }} />
+                )}
+              </View>
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.textMain }}>
+                {selectedQuestionIds.length === questions.length ? 'Deselect All' : 'Select All'}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {selectedQuestionIds.length > 0 && (
+                <TouchableOpacity
+                  onPress={deleteSelectedQuestions}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    backgroundColor: 'rgba(239,68,68,0.1)',
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: 'rgba(239,68,68,0.25)',
+                  }}
+                >
+                  <Trash2 size={13} color={Colors.danger} />
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.danger }}>
+                    Delete ({selectedQuestionIds.length})
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {questions.length > 1 && (
+                <TouchableOpacity
+                  onPress={deleteAllQuestions}
+                  activeOpacity={0.7}
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.dangerText }}>
+                    Delete All
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
           {questions.map((q, qIdx) => (
             <GlassCard key={q.id} style={[styles.section, { marginBottom: Spacing.md }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
-                <Badge label={`Q${qIdx + 1}`} variant="indigo" />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => toggleSelectQuestion(q.id)}
+                    activeOpacity={0.7}
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: 5,
+                      borderWidth: 1.5,
+                      borderColor: selectedQuestionIds.includes(q.id) ? Colors.accentPrimary : Colors.borderStrong,
+                      backgroundColor: selectedQuestionIds.includes(q.id) ? Colors.accentPrimary : 'transparent',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    {selectedQuestionIds.includes(q.id) && (
+                      <View style={{ width: 8, height: 8, backgroundColor: '#FFFFFF', borderRadius: 2 }} />
+                    )}
+                  </TouchableOpacity>
+                  <Badge label={`Q${qIdx + 1}`} variant="indigo" />
+                </View>
                 <TouchableOpacity onPress={() => removeQuestion(q.id)} activeOpacity={0.75}>
                   <Trash2 size={16} color={Colors.danger} />
                 </TouchableOpacity>

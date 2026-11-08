@@ -81,6 +81,8 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
     }
   ]);
 
+  const [selectedQuestions, setSelectedQuestions] = useState<number[]>([]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Helper to generate a standardized ID for a question index
@@ -158,6 +160,52 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
     const filtered = questions.filter((_, idx) => idx !== indexToRemove);
     // Re-index all IDs
     setQuestions(updateAllQuestionIds(subject, grade, topic, filtered));
+    setSelectedQuestions(prev => prev.filter(i => i !== indexToRemove).map(i => i > indexToRemove ? i - 1 : i));
+  };
+
+  const handleToggleSelect = (index: number) => {
+    setSelectedQuestions(prev =>
+      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+    );
+  };
+
+  const handleToggleSelectAll = () => {
+    if (selectedQuestions.length === questions.length) {
+      setSelectedQuestions([]);
+    } else {
+      setSelectedQuestions(questions.map((_, idx) => idx));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedQuestions.length === 0) return;
+    if (selectedQuestions.length === questions.length) {
+      handleDeleteAll();
+      return;
+    }
+    const filtered = questions.filter((_, idx) => !selectedQuestions.includes(idx));
+    setQuestions(updateAllQuestionIds(subject, grade, topic, filtered));
+    setSelectedQuestions([]);
+    toast.success(`Deleted ${selectedQuestions.length} selected question(s).`);
+  };
+
+  const handleDeleteAll = () => {
+    const { categories: currentCats } = getCategoriesAndTypes(subject, grade);
+    const fallbackCat = currentCats[0] || 'Reading/Paragraph Comprehension';
+    const cleanQ: Question = {
+      id: generateQuestionId(0, subject, grade, topic),
+      difficulty: 'Easy',
+      category: fallbackCat,
+      type: 'multiple-choice',
+      questionText: '',
+      options: ['', '', '', ''],
+      correctAnswer: '',
+      feedback: { en: '', fil: '' },
+      imageUrl: ''
+    };
+    setQuestions([cleanQ]);
+    setSelectedQuestions([]);
+    toast.success('Cleared all questions. Reset to 1 fresh slot.');
   };
 
   // Update specific question field
@@ -632,16 +680,63 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
 
         {/* Right Editor: Add questions list manually */}
         <div className="glass-panel p-6 flex flex-col min-h-[500px]">
-          <div className="flex justify-between items-center border-b border-[var(--border-color)] pb-4 mb-5">
-            <h3 className="text-[15px] font-bold text-[var(--text-main)]">Manually Write Questions</h3>
-            <button
-              type="button"
-              onClick={handleAddQuestion}
-              className="btn btn-secondary px-3.5 py-2 text-xs font-bold flex items-center gap-1.5"
-            >
-              <Plus size={16} />
-              Add Question Slot
-            </button>
+          <div className="flex flex-wrap justify-between items-center border-b border-[var(--border-color)] pb-4 mb-5 gap-3">
+            <div className="flex items-center gap-3">
+              <h3 className="text-[15px] font-bold text-[var(--text-main)]">Manually Write Questions</h3>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#11428E]/10 text-[#11428E] dark:text-sky-300 font-extrabold tabular-nums">
+                {questions.length} {questions.length === 1 ? 'item' : 'items'}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Select All Checkbox */}
+              <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-muted)] cursor-pointer select-none px-2.5 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 border border-transparent hover:border-[var(--border-color)] transition-colors">
+                <input
+                  type="checkbox"
+                  checked={questions.length > 0 && selectedQuestions.length === questions.length}
+                  onChange={handleToggleSelectAll}
+                  className="rounded border-[var(--border-color)] text-[#11428E] focus:ring-0 cursor-pointer size-3.5"
+                />
+                <span>Select All</span>
+              </label>
+
+              {/* Delete Selected */}
+              {selectedQuestions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleDeleteSelected}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                >
+                  <Trash2 size={13} />
+                  <span>Delete Selected ({selectedQuestions.length})</span>
+                </button>
+              )}
+
+              {/* Delete All */}
+              {questions.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to delete all questions? This will reset to 1 clean question slot.')) {
+                      handleDeleteAll();
+                    }
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-colors cursor-pointer"
+                  title="Delete all questions"
+                >
+                  Delete All
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleAddQuestion}
+                className="btn btn-secondary px-3.5 py-2 text-xs font-bold flex items-center gap-1.5"
+              >
+                <Plus size={16} />
+                Add Question Slot
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-6 max-h-[600px] overflow-y-auto pr-1.5">
@@ -650,7 +745,18 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
               return questions.map((q, idx) => (
                 <div key={idx} className="bg-[var(--bg-sidebar)] border border-[var(--border-color)] rounded-2xl p-5 flex flex-col gap-4">
                   <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-2.5">
-                    <span className="text-[13px] font-extrabold text-[var(--accent-primary-text)] uppercase tracking-[0.5px]">Question #{idx + 1}</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedQuestions.includes(idx)}
+                        onChange={() => handleToggleSelect(idx)}
+                        className="rounded border-[var(--border-color)] text-[#11428E] focus:ring-0 cursor-pointer size-4"
+                        aria-label={`Select Question #${idx + 1}`}
+                      />
+                      <span className="text-[13px] font-extrabold text-[var(--accent-primary-text)] uppercase tracking-[0.5px]">
+                        Question #{idx + 1}
+                      </span>
+                    </div>
                     <input
                       type="text"
                       value={q.id}
