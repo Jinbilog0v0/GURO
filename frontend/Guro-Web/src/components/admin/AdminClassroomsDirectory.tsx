@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../../utils/api';
-import { School, Search, Lock, Unlock, Users, Trash2, Edit3, Calculator, BookOpen, RefreshCw, X, Calendar } from 'lucide-react';
+import { School, Search, Lock, Unlock, Users, Trash2, Edit3, Calculator, BookOpen, RefreshCw, X, Calendar, FileSpreadsheet, UserPlus } from 'lucide-react';
+import { AdminBatchEnrollModal } from './AdminBatchEnrollModal';
 import { toast } from '../../utils/toast';
 import { ConfirmModal } from '../shared/ConfirmModal';
 
@@ -33,6 +34,9 @@ export function AdminClassroomsDirectory() {
 
   // Delete Modal
   const [deletingClassroom, setDeletingClassroom] = useState<ClassroomRecord | null>(null);
+
+  // Batch Enroll Modal
+  const [batchClassroom, setBatchClassroom] = useState<ClassroomRecord | null>(null);
   const [submittingDelete, setSubmittingDelete] = useState(false);
 
   const fetchClassrooms = async () => {
@@ -254,6 +258,13 @@ export function AdminClassroomsDirectory() {
                             {c.isLocked ? <Unlock size={14} /> : <Lock size={14} />}
                           </button>
                           <button
+                            onClick={() => setBatchClassroom(c)}
+                            className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-500/10 transition-all cursor-pointer"
+                            title="Batch Master List Import"
+                          >
+                            <FileSpreadsheet size={14} />
+                          </button>
+                          <button
                             onClick={() => { setReassigningClassroom(c); setNewTeacherName(c.teacherName); }}
                             className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[#11428E] hover:bg-[#11428E]/10 transition-all cursor-pointer"
                             title="Reassign Teacher"
@@ -340,6 +351,13 @@ export function AdminClassroomsDirectory() {
         isLoading={submittingDelete}
         onClose={() => setDeletingClassroom(null)}
         onConfirm={handleDelete}
+      />
+
+      <AdminBatchEnrollModal
+        isOpen={!!batchClassroom}
+        onClose={() => setBatchClassroom(null)}
+        classroom={batchClassroom}
+        onSuccess={fetchClassrooms}
       />
     </div>
   );

@@ -88,7 +88,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
         Route::get('/classrooms', [AdminController::class, 'getClassrooms']);
         Route::post('/classrooms/{id}/toggle-lock', [AdminController::class, 'toggleLockClassroom']);
-        Route::post('/classrooms/{id}/reassign', [AdminController::class, 'reassignClassroom']);
+        Route::post('/classrooms/{id}/reassign', [AdminController::class, 'reassignClassroom']);
+        Route::post('/classrooms/{id}/batch-students', [AdminController::class, 'batchStudents']);
         Route::delete('/classrooms/{id}', [AdminController::class, 'deleteClassroom']);
         Route::get('/reports/summary', [AdminController::class, 'getReportsSummary']);
         Route::get('/sync-logs', [AdminController::class, 'getSyncTelemetry']);

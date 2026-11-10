@@ -408,7 +408,190 @@ class AdminController extends Controller
         ]);
     }
 
-    // GET /api/admin/reports/summary
+        // POST /api/admin/classrooms/{id}/batch-students
+    public function batchStudents(Request $request, $id)
+    {
+        $this->authorizeAdmin($request);
+
+        $classroom = Classroom::where('id', $id)->orWhere('classroom_id', $id)->first();
+        if (! $classroom) {
+            return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        $rawText = $request->input('raw_text');
+        $studentsList = $request->input('students');
+
+        $entries = [];
+
+        if (is_array($studentsList) && count($studentsList) > 0) {
+            $entries = $studentsList;
+        } elseif (! empty($rawText)) {
+            $lines = explode("\n", str_replace("\r", "", trim($rawText)));
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (empty($line) || str_starts_with(strtolower($line), 'lrn')) {
+                    continue;
+                }
+
+                $delimiter = strpos($line, "\t") !== false ? "\t" : ',';
+                $parts = array_map('trim', explode($delimiter, $line));
+
+                if (count($parts) >= 3) {
+                    $lrn = preg_replace('/\D/', '', $parts[0]);
+                    if (count($parts) >= 5) {
+                        $lastName = $parts[1];
+                        $firstName = $parts[2];
+                        $middleName = $parts[3] ?: null;
+                        $gender = ucfirst(strtolower($parts[4]));
+                    } elseif (count($parts) === 4) {
+                        $lastName = $parts[1];
+                        $firstName = $parts[2];
+                        $middleName = null;
+                        $gender = ucfirst(strtolower($parts[3]));
+                    } else {
+                        $nameParts = explode(' ', $parts[1]);
+                        $firstName = $nameParts[0];
+                        $lastName = count($nameParts) > 1 ? $nameParts[count($nameParts) - 1] : 'Learner';
+                        $middleName = count($nameParts) > 2 ? implode(' ', array_slice($nameParts, 1, -1)) : null;
+                        $gender = ucfirst(strtolower($parts[2]));
+                    }
+
+                    if (strlen($lrn) === 12) {
+                        $entries[] = [
+                            'lrn' => $lrn,
+                            'first_name' => $firstName,
+                            'last_name' => $lastName,
+                            'middle_name' => $middleName,
+                            'gender' => in_array($gender, ['Female', 'F']) ? 'Female' : 'Male',
+                        ];
+                    }
+                }
+            }
+        }
+
+        if (empty($entries)) {
+            return response()->json(['error' => 'No valid student entries found with 12-digit DepEd LRNs.'], 422);
+        }
+
+        $defaultPassword = $request->input('default_password') ?: 'Guro2026!';
+        $created = [];
+        $existing = [];
+
+        DB::beginTransaction();
+        try {
+            foreach ($entries as $entry) {
+                $lrn = $entry['lrn'];
+                $firstName = $entry['first_name'];
+                $lastName = $entry['last_name'];
+                $middleName = $entry['middle_name'] ?? null;
+                $gender = $entry['gender'] ?? 'Male';
+
+                $user = User::where('lrn', $lrn)->first();
+                if ($user) {
+                    $member = ClassroomMember::firstOrCreate([
+                        'classroom_id' => $classroom->classroom_id,
+                        'student_id' => $user->user_id,
+                    ], [
+                        'lrn' => $lrn,
+                        'gender' => $gender,
+                        'section_name' => $classroom->section_name,
+                        'status' => 'enrolled',
+                    ]);
+                    $user->classroom_id = $classroom->classroom_id;
+                    $user->save();
+
+                    $existing[] = [
+                        'studentId' => $user->user_id,
+                        'lrn' => $lrn,
+                        'name' => $user->name,
+                        'gender' => $gender,
+                        'parentAccessToken' => $user->parent_access_token,
+                        'status' => 'Enrolled Existing',
+                    ];
+                } else {
+                    $fullName = trim($firstName . ($middleName ? ' ' . $middleName : '') . ' ' . $lastName);
+                    $displayFullName = $classroom->section_name ? "{$fullName} ({$classroom->section_name})" : $fullName;
+                    $studentUserId = 'LRN-' . $lrn;
+                    if (User::where('user_id', $studentUserId)->exists()) {
+                        $studentUserId .= '-' . strtoupper(\Illuminate\Support\Str::random(3));
+                    }
+
+                    $normalized = strtoupper(preg_replace('/\s+/', '-', trim($studentUserId)));
+                    $salt = 'GURO_PARENT_SALT';
+                    $combined = $normalized . $salt;
+                    $sum = 0;
+                    $len = strlen($combined);
+                    for ($i = 0; $i < $len; $i++) {
+                        $sum += ord($combined[$i]) * ($i + 1);
+                    }
+                    $accessCode = (string) (100000 + ($sum % 900000));
+
+                    $email = strtolower("lrn{$lrn}@student.guro.local");
+                    if (User::where('email', $email)->exists()) {
+                        $email = strtolower("lrn{$lrn}." . \Illuminate\Support\Str::random(4) . "@student.guro.local");
+                    }
+
+                    $user = User::create([
+                        'user_id' => $studentUserId,
+                        'lrn' => $lrn,
+                        'email' => $email,
+                        'password_hash' => $this->hashPassword($defaultPassword),
+                        'name' => $displayFullName,
+                        'first_name' => $firstName,
+                        'middle_name' => $middleName,
+                        'last_name' => $lastName,
+                        'gender' => $gender,
+                        'role' => 'student',
+                        'classroom_id' => $classroom->classroom_id,
+                        'parent_access_token' => $accessCode,
+                        'verification_status' => 'approved',
+                    ]);
+
+                    ClassroomMember::create([
+                        'classroom_id' => $classroom->classroom_id,
+                        'student_id' => $studentUserId,
+                        'lrn' => $lrn,
+                        'gender' => $gender,
+                        'section_name' => $classroom->section_name,
+                        'status' => 'enrolled',
+                    ]);
+
+                    $created[] = [
+                        'studentId' => $user->user_id,
+                        'lrn' => $lrn,
+                        'name' => $user->name,
+                        'gender' => $gender,
+                        'email' => $user->email,
+                        'temporaryPassword' => $defaultPassword,
+                        'parentAccessToken' => $accessCode,
+                        'status' => 'Newly Created & Enrolled',
+                    ];
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully processed ' . (count($created) + count($existing)) . " student records into section {$classroom->section_name}.",
+                'summary' => [
+                    'totalProcessed' => count($created) + count($existing),
+                    'createdCount' => count($created),
+                    'existingEnrolledCount' => count($existing),
+                    'classroom' => $classroom->classroom_id,
+                    'sectionName' => $classroom->section_name,
+                    'teacherName' => $classroom->teacher_name,
+                ],
+                'records' => array_merge($created, $existing),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json(['error' => 'Batch enrollment failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+// GET /api/admin/reports/summary
     public function getReportsSummary(Request $request)
     {
         $this->authorizeAdmin($request);
