@@ -445,10 +445,10 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                 <span>{comboStreak}x!</span>
                             </span>
                         )}
-                        <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] font-bold text-xs sm:text-sm">
+                        <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] font-bold text-xs sm:text-sm tabular-nums font-mono">
                             {currentQuestionIndex}/{totalQuestions}
                         </span>
-                        <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full shadow-sm text-emerald-600 dark:text-emerald-400 font-bold text-xs sm:text-sm">
+                        <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full shadow-sm text-emerald-600 dark:text-emerald-400 font-bold text-xs sm:text-sm tabular-nums font-mono">
                             Score: {score}
                         </span>
                     </div>

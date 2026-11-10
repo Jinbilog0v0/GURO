@@ -288,7 +288,7 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                                     </div>
                                     <h2 className="font-extrabold text-[var(--text-main)] text-lg">{currentSlide.title}</h2>
                                 </div>
-                                <p className="text-[var(--text-main)] text-sm sm:text-base leading-relaxed font-medium mt-2">
+                                <p className="text-[var(--text-main)] text-sm sm:text-base leading-relaxed font-medium mt-2 max-w-prose">
                                     {currentSlide.data}
                                 </p>
                                 {currentSlide.imageUrl && (
@@ -314,7 +314,7 @@ export const StudyContentStep: React.FC<StudyContentStepProps> = ({
                                 </div>
                                 <div className={`rounded-2xl p-5 border mt-2 ${accentBorder} ${accentBg} flex flex-col gap-2`}>
                                     <p className={`font-extrabold text-lg ${accentText}`}>{currentSlide.data.term}</p>
-                                    <p className="text-[var(--text-main)] text-sm sm:text-base leading-relaxed font-medium">
+                                    <p className="text-[var(--text-main)] text-sm sm:text-base leading-relaxed font-medium max-w-prose">
                                         {currentSlide.data.definition}
                                     </p>
                                 </div>
