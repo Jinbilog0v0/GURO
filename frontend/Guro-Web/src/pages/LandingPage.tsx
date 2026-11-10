@@ -650,9 +650,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             gradient: 'from-purple-600 to-indigo-600',
         },
         {
-            label: 'Works 100% Offline',
-            description: 'Learn anywhere, zero internet required',
-            badge: 'Offline Mode',
+            label: 'Offline Capable',
+            description: 'Zero-data mobile app for quizzes & slides anywhere',
+            badge: 'Mobile App',
             Icon: Smartphone,
             gradient: 'from-emerald-600 to-teal-600',
         },

@@ -24,7 +24,7 @@ describe('SystemOverviewPage Component', () => {
 
     expect(screen.getByText(/Philippine Classrooms/i)).toBeInTheDocument();
     expect(screen.getAllByText(/DepEd MELC Aligned/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/100% Zero-Data/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/Offline Capable/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/Form SF9 Ready/i).length).toBeGreaterThanOrEqual(1);
   });
 

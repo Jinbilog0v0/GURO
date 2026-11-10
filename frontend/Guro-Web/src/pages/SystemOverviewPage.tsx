@@ -43,7 +43,7 @@ const NAV_SECTIONS: NavSection[] = [
 ];
 
 const HERO_METRICS = [
-  { label: 'Offline Ready', value: '100% Zero-Data', desc: 'Quizzes & slides run without internet', dot: 'bg-emerald-500' },
+  { label: 'Offline Ready', value: 'Offline Capable', desc: 'Mobile app runs quizzes & slides without internet', dot: 'bg-emerald-500' },
   { label: 'DepEd Standards', value: 'Grades 4, 5, 6', desc: 'Official MELC curriculum alignment', dot: 'bg-blue-500' },
   { label: 'Teacher Analytics', value: 'Form SF9 Ready', desc: 'Automated quarterly reports & analytics', dot: 'bg-indigo-500' },
   { label: 'Guardian Sync', value: '6-Digit Codes', desc: 'Secure guardian sync & screen time', dot: 'bg-amber-500' },
@@ -383,7 +383,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
 
             {/* Subtitle */}
             <p className="text-[clamp(0.8rem,2.4vw,0.95rem)] sm:text-base lg:text-lg text-[var(--text-muted)] w-full max-w-[21.5rem] sm:max-w-2xl leading-[1.55] font-medium">
-              GURO (Guided Unified Resource Optimization) bridges the digital divide with rich interactive slides, diagnostic quizzes, automated DepEd SF9 reports, and 100% offline capability.
+              GURO (Guided Unified Resource Optimization) bridges the digital divide with rich interactive slides, diagnostic quizzes, automated DepEd SF9 reports, and offline-capable mobile learning.
             </p>
 
             {/* Action Buttons */}
@@ -472,7 +472,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                 {
                   icon: WifiOff,
                   color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
-                  title: '100% Offline Learning',
+                  title: 'Offline-Capable Mobile Learning',
                   description: 'All lesson materials, interactive study slides, and quizzes run locally on the client with zero network dependency. Syncs automatically when back online.',
                 },
                 {
@@ -753,7 +753,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           <div className="flex items-center gap-4 font-semibold">
             <span>DepEd MELC Aligned</span>
             <span>•</span>
-            <span>100% Offline Ready</span>
+            <span>Offline-Capable App</span>
             <span>•</span>
             <button onClick={onOpenAuth} className="text-[#11428E] dark:text-sky-400 hover:underline cursor-pointer">
               Sign In
