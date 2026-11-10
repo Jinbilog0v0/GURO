@@ -5,7 +5,8 @@ import { TeacherSettings } from '../components/settings/TeacherSettings';
 import { ParentSettings } from '../components/settings/ParentSettings';
 import { AdminSettings } from '../components/settings/AdminSettings';
 import { SharedSecuritySection } from '../components/settings/SharedSecuritySection';
-import { User, Lock, LogOut, Shield, School, Users, GraduationCap } from 'lucide-react';
+import { UserManualModal } from '../components/shared/UserManualModal';
+import { User, Lock, LogOut, Shield, School, Users, GraduationCap, BookOpen } from 'lucide-react';
 
 interface SettingsSpaceProps {
   currentUser: {
@@ -44,6 +45,7 @@ export const SettingsSpace: React.FC<SettingsSpaceProps> = ({
   parentAccessCode = 'GURO-P-7492',
 }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  const [showManual, setShowManual] = useState(false);
 
   const role = currentUser?.role?.toLowerCase() || 'student';
   const roleTitle = role === 'teacher'
@@ -113,6 +115,14 @@ export const SettingsSpace: React.FC<SettingsSpaceProps> = ({
           >
             <User className="size-4 shrink-0" />
             <span>Session & Account</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowManual(true)}
+            className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-card)] transition-all cursor-pointer text-left"
+          >
+            <BookOpen className="size-4 shrink-0 text-[#11428E] dark:text-sky-400" />
+            <span>User Manual & Guide</span>
           </button>
         </aside>
 
@@ -193,6 +203,12 @@ export const SettingsSpace: React.FC<SettingsSpaceProps> = ({
           )}
         </main>
       </div>
+
+      <UserManualModal
+        isOpen={showManual}
+        onClose={() => setShowManual(false)}
+        defaultRole={role as any}
+      />
     </div>
   );
 };

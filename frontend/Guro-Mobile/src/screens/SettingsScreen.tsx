@@ -39,8 +39,10 @@ import {
   Mail,
   CheckCircle2,
   ShieldCheck,
-  AlertCircle,
-} from 'lucide-react-native';
+  AlertCircle,
+  BookOpen,
+} from 'lucide-react-native';
+import { UserManualModal } from '../components/shared/UserManualModal';
 
 // ── Update Service ──────────────────────────────────────────────────────────
 import {
@@ -121,7 +123,8 @@ export function SettingsScreen({ navigation }: Props) {
 
   // Dialog states
   const [purchasingOutfit, setPurchasingOutfit] = useState<any | null>(null);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showManualModal, setShowManualModal] = useState(false);
 
   // Email verification modal states
   const [showEmailVerifyModal, setShowEmailVerifyModal] = useState(false);
@@ -1326,6 +1329,15 @@ export function SettingsScreen({ navigation }: Props) {
 
         <Text style={styles.headerTitle}>GURO System Settings</Text>
 
+        <TouchableOpacity
+          onPress={() => setShowManualModal(true)}
+          style={[styles.headerSubtitleBadge, { flexDirection: 'row', alignItems: 'center' }]}
+          activeOpacity={0.75}
+          accessibilityLabel="Open User Manual"
+        >
+          <BookOpen size={12} color="#11428E" style={{ marginRight: 4 }} />
+          <Text style={[styles.headerSubtitleText, { color: '#11428E' }]}>Manual</Text>
+        </TouchableOpacity>
         <View style={styles.headerSubtitleBadge}>
           <Text style={styles.headerSubtitleText}>
             {appMode === 'online' ? 'Connected' : 'Offline Mode'}
@@ -1508,6 +1520,11 @@ export function SettingsScreen({ navigation }: Props) {
         onConfirm={handleConfirmLogout}
         onCancel={() => setShowLogoutConfirm(false)}
       />
+      <UserManualModal
+        visible={showManualModal}
+        onClose={() => setShowManualModal(false)}
+        defaultRole="student"
+      />
     </SafeAreaView>
   );
 }

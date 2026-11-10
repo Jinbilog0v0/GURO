@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User, Users, ArrowLeft, Mail, Lock, Sparkles, BookOpen, Target, Smartphone, AlertCircle, Rocket, School, GraduationCap, Eye, EyeOff, Shield, ShieldCheck, KeyRound, Terminal, Sun, Moon, Upload, CheckCircle2, Clock, X, Download, MoreVertical } from 'lucide-react';
 import { RoleCard, type RoleCardProps } from '../components/landing/RoleCard';
 import { FeatureCard, type FeatureCardProps } from '../components/landing/FeatureCard';
+import { UserManualModal } from '../components/shared/UserManualModal';
 import { setAuthToken } from '../utils/api';
 import { toast } from '../utils/toast';
 
@@ -51,6 +52,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     onBackToOverview,
 }) => {
     const [view, setView] = useState<ViewType>('login');
+    const [showManualModal, setShowManualModal] = useState(false);
     const [isAdminMode, setIsAdminMode] = useState(false);
     const [adminSecretKey, setAdminSecretKey] = useState('');
     const [email, setEmail] = useState('');
@@ -695,6 +697,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         </div>
                         <button
                             type="button"
+                            onClick={() => setShowManualModal(true)}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-sidebar)] text-[var(--text-main)] text-xs font-bold transition-all cursor-pointer shadow-xs"
+                            title="Open User Manual"
+                        >
+                            <BookOpen className="size-3.5 text-[#11428E] dark:text-sky-400" />
+                            <span className="hidden sm:inline">User Manual</span>
+                            <span className="sm:hidden">Help</span>
+                        </button>
+
+                        <button
+                            type="button"
                             onClick={() => {
                                 setIsAdminMode((prev) => {
                                     const nextMode = !prev;
@@ -749,6 +762,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             <span className="hidden sm:inline">Download APK</span>
                             <span className="sm:hidden">APK</span>
                         </a>
+
+                        <button
+                            type="button"
+                            onClick={() => setShowManualModal(true)}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-sidebar)] text-[var(--text-main)] text-xs font-bold transition-all cursor-pointer shadow-xs"
+                            title="Open User Manual"
+                        >
+                            <BookOpen className="size-3.5 text-[#11428E] dark:text-sky-400" />
+                            <span className="hidden sm:inline">User Manual</span>
+                            <span className="sm:hidden">Help</span>
+                        </button>
 
                         <button
                             type="button"
@@ -1576,6 +1600,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         </div>
                     </div>
                 )}
+
+                <UserManualModal
+                    isOpen={showManualModal}
+                    onClose={() => setShowManualModal(false)}
+                />
             </div>
         </div>
     );
