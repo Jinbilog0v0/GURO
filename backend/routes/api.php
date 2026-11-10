@@ -55,7 +55,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/classroom/update-lesson', [ClassroomController::class, 'updateClassroomLesson']);
     Route::post('/classroom/delete-lesson', [ClassroomController::class, 'deleteClassroomLesson']);
     Route::get('/classroom/members', [ClassroomController::class, 'getClassroomMembers']);
-    Route::post('/classroom/create-student', [ClassroomController::class, 'createStudent']);
+    Route::post('/classroom/create-student', [ClassroomController::class, 'createStudent']);
+    Route::get('/classroom/attendance', [ClassroomController::class, 'getAttendance']);
+    Route::post('/classroom/attendance/batch', [ClassroomController::class, 'batchRecordAttendance']);
+    Route::get('/classroom/attendance/summary', [ClassroomController::class, 'getAttendanceSummary']);
     Route::get('/classroom/eosy-report', [ClassroomController::class, 'getEosyReport']);
     Route::post('/classroom/promote', [ClassroomController::class, 'promoteStudents']);
     Route::get('/student/academic-history', [ClassroomController::class, 'getStudentAcademicHistory']);

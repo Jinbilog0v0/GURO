@@ -11,6 +11,7 @@ use App\Models\AiGenerationLog;
 use App\Models\Classroom;
 
 use App\Models\ClassroomMember;
+use App\Models\ClassroomAttendance;
 
 use App\Models\ProgressLog;
 
@@ -2214,6 +2215,189 @@ class ClassroomController extends Controller
     }
 
 
+
+    // GET /api/classroom/attendance
+    public function getAttendance(Request $request)
+    {
+        $classroomId = strtoupper(trim((string) $request->query('classroomId')));
+        if (! $classroomId) {
+            return response()->json(['error' => 'Missing classroomId parameter.'], 400);
+        }
+
+        $classroom = Classroom::where('classroom_id', $classroomId)->first();
+        if (! $classroom) {
+            return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        if (! $this->isClassroomOwner($classroom, $request->user())) {
+            return response()->json(['error' => 'Forbidden.'], 403);
+        }
+
+        $date = $request->query('date') ?: now()->format('Y-m-d');
+
+        $members = ClassroomMember::where('classroom_id', $classroomId)
+            ->orderBy('student_id', 'asc')
+            ->get();
+
+        $studentIds = $members->pluck('student_id')->toArray();
+        $studentUsers = User::whereIn('user_id', $studentIds)->get()->keyBy('user_id');
+
+        $attendances = ClassroomAttendance::where('classroom_id', $classroomId)
+            ->whereDate('attendance_date', $date)
+            ->get()
+            ->keyBy('student_id');
+
+        $records = $members->map(function ($m) use ($attendances, $studentUsers) {
+            $att = $attendances->get($m->student_id);
+            $u = $studentUsers->get($m->student_id);
+
+            return [
+                'studentId' => $m->student_id,
+                'name' => $u ? $u->name : $m->student_id,
+                'lrn' => $m->lrn ?: ($u ? $u->lrn : null),
+                'gender' => $m->gender ?: ($u ? $u->gender : 'Male'),
+                'status' => $att ? $att->status : 'present', // defaults to present if not marked
+                'isRecorded' => (bool) $att,
+                'remarks' => $att ? $att->remarks : null,
+            ];
+        });
+
+        $counts = [
+            'total' => $records->count(),
+            'present' => $records->where('status', 'present')->count(),
+            'late' => $records->where('status', 'late')->count(),
+            'absent' => $records->where('status', 'absent')->count(),
+            'excused' => $records->where('status', 'excused')->count(),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'date' => $date,
+            'classroomId' => $classroomId,
+            'sectionName' => $classroom->section_name,
+            'counts' => $counts,
+            'records' => $records,
+        ]);
+    }
+
+    // POST /api/classroom/attendance/batch
+    public function batchRecordAttendance(Request $request)
+    {
+        $request->validate([
+            'classroomId' => 'required|string',
+            'date' => 'required|date',
+            'records' => 'required|array',
+            'records.*.studentId' => 'required|string',
+            'records.*.status' => 'required|in:present,late,absent,excused',
+            'records.*.remarks' => 'nullable|string',
+        ]);
+
+        $classroomId = strtoupper(trim((string) $request->input('classroomId')));
+        $classroom = Classroom::where('classroom_id', $classroomId)->first();
+        if (! $classroom) {
+            return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        if (! $this->isClassroomOwner($classroom, $request->user())) {
+            return response()->json(['error' => 'Forbidden.'], 403);
+        }
+
+        $date = $request->input('date');
+        $records = $request->input('records');
+        $userId = $request->user()->user_id ?? (string) $request->user()->id;
+
+        DB::beginTransaction();
+        try {
+            foreach ($records as $r) {
+                ClassroomAttendance::updateOrCreate(
+                    [
+                        'classroom_id' => $classroomId,
+                        'student_id' => $r['studentId'],
+                        'attendance_date' => $date,
+                    ],
+                    [
+                        'status' => $r['status'],
+                        'remarks' => $r['remarks'] ?? null,
+                        'recorded_by_user_id' => $userId,
+                    ]
+                );
+            }
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Attendance recorded successfully.',
+                'savedCount' => count($records),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json(['error' => 'Failed to save attendance: ' . $e->getMessage()], 500);
+        }
+    }
+
+    // GET /api/classroom/attendance/summary
+    public function getAttendanceSummary(Request $request)
+    {
+        $classroomId = strtoupper(trim((string) $request->query('classroomId')));
+        if (! $classroomId) {
+            return response()->json(['error' => 'Missing classroomId parameter.'], 400);
+        }
+
+        $classroom = Classroom::where('classroom_id', $classroomId)->first();
+        if (! $classroom) {
+            return response()->json(['error' => 'Classroom not found.'], 404);
+        }
+
+        if (! $this->isClassroomOwner($classroom, $request->user())) {
+            return response()->json(['error' => 'Forbidden.'], 403);
+        }
+
+        $month = $request->query('month') ?: now()->format('Y-m');
+
+        $attendances = ClassroomAttendance::where('classroom_id', $classroomId)
+            ->where('attendance_date', 'like', "{$month}%")
+            ->get();
+
+        $uniqueDays = $attendances->pluck('attendance_date')->unique()->count();
+
+        $members = ClassroomMember::where('classroom_id', $classroomId)->get();
+        $studentIds = $members->pluck('student_id')->toArray();
+        $studentUsers = User::whereIn('user_id', $studentIds)->get()->keyBy('user_id');
+
+        $summary = $members->map(function ($m) use ($attendances, $uniqueDays, $studentUsers) {
+            $userLogs = $attendances->where('student_id', $m->student_id);
+            $present = $userLogs->where('status', 'present')->count();
+            $late = $userLogs->where('status', 'late')->count();
+            $absent = $userLogs->where('status', 'absent')->count();
+            $excused = $userLogs->where('status', 'excused')->count();
+            $attended = $present + $late + $excused;
+            $rate = $uniqueDays > 0 ? round(($attended / $uniqueDays) * 100) : 100;
+            $u = $studentUsers->get($m->student_id);
+
+            return [
+                'studentId' => $m->student_id,
+                'name' => $u ? $u->name : $m->student_id,
+                'lrn' => $m->lrn ?: ($u ? $u->lrn : null),
+                'gender' => $m->gender ?: ($u ? $u->gender : 'Male'),
+                'present' => $present,
+                'late' => $late,
+                'absent' => $absent,
+                'excused' => $excused,
+                'attendedDays' => $attended,
+                'totalSchoolDays' => $uniqueDays,
+                'attendanceRate' => $rate,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'classroomId' => $classroomId,
+            'month' => $month,
+            'totalSchoolDays' => $uniqueDays,
+            'learners' => $summary,
+        ]);
+    }
 
     // GET /api/classroom/eosy-report
 

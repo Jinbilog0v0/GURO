@@ -11,6 +11,7 @@ import { ClassroomDetailView } from '../components/teacher/ClassroomDetailView';
 import { ClassroomManagement } from '../components/teacher/ClassroomManagement';
 import { ParentConsultationHub } from '../components/teacher/ParentConsultationHub';
 import { StudentDirectory } from '../components/teacher/StudentDirectory';
+import { TeacherAttendanceConsole } from '../components/teacher/TeacherAttendanceConsole';
 import { LessonSpace } from './LessonSpace';
 import { SkeletonStatCards, SkeletonCard, SkeletonTable } from '../components/shared/SkeletonLoader';
 import { School, TrendingUp, Key, Edit3, RotateCw, Plus, Calculator, BookOpen, X, Search, User, Target, GraduationCap, Clock, AlertCircle, Lightbulb, Calendar } from 'lucide-react';
@@ -130,7 +131,7 @@ export function TeacherSpace({
   const [selectedClassroomForDetail, setSelectedClassroomForDetail] = useState<string | null>(null);
 
   // Segmented control for Analytics: 'mastery' | 'directory' | 'growth' | 'eosy'
-  const [analyticsSegment, setAnalyticsSegment] = useState<'mastery' | 'directory' | 'growth' | 'eosy'>(() => {
+  const [analyticsSegment, setAnalyticsSegment] = useState<'mastery' | 'directory' | 'growth' | 'eosy' | 'attendance'>(() => {
     if (activeSubTab === 'analytics-directory') return 'directory';
     if (activeSubTab === 'analytics-growth' || activeSubTab === 'pre-post-test') return 'growth';
     if (activeSubTab === 'analytics-eosy' || activeSubTab === 'eosy-promotion') return 'eosy';
@@ -1578,6 +1579,20 @@ export function TeacherSpace({
               </button>
               <button
                 onClick={() => {
+                  setActiveSubTab('attendance');
+                  setAnalyticsSegment('attendance');
+                }}
+                className={`px-3.5 py-1.5 border-none font-semibold text-xs rounded-md cursor-pointer transition-all duration-200 flex items-center gap-1.5 ${
+                  analyticsSegment === 'attendance' || activeSubTab === 'attendance'
+                    ? 'bg-white/10 text-[var(--text-main)]'
+                    : 'bg-transparent text-[var(--text-muted)]'
+                }`}
+              >
+                <Calendar size={14} className="shrink-0" />
+                <span>Attendance (SF2)</span>
+              </button>
+              <button
+                onClick={() => {
                   setActiveSubTab('analytics-directory');
                   setAnalyticsSegment('directory');
                 }}
@@ -1919,7 +1934,11 @@ export function TeacherSpace({
         /* Analytics SubTab ('analytics', 'analytics-mastery', 'analytics-directory', 'pre-post-test', 'eosy-promotion', etc.) */
         <div className="flex flex-col gap-6">
           {/* Render Active Segment */}
-          {analyticsSegment === 'directory' ? (
+          {analyticsSegment === 'attendance' || activeSubTab === 'attendance' ? (
+            <TeacherAttendanceConsole
+              classroomCode={classroomCode}
+            />
+          ) : analyticsSegment === 'directory' ? (
             <StudentDirectory
               progressLogs={progressLogs}
               activeClassroomId={classroomCode}
