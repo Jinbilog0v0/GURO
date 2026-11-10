@@ -460,7 +460,7 @@ export function LoginScreen({ navigation }: Props) {
     <SafeAreaView style={styles.screen}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <StatusBar barStyle="light-content" backgroundColor={Colors.bgMain} />
       <ScrollView
@@ -789,7 +789,7 @@ export function LoginScreen({ navigation }: Props) {
         }}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={{ flex: 1, backgroundColor: 'rgba(6, 9, 19, 0.72)', justifyContent: 'center', alignItems: 'center', padding: Spacing.lg }}
         >
           <GlassCard padding={Spacing.xl} style={{ width: '100%', maxWidth: 400, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.12)' }}>

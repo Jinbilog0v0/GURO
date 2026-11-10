@@ -78,6 +78,7 @@ import {
   Edit2,
   History,
   Ban,
+  ChevronLeft,
 } from 'lucide-react-native';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ParentDashboard'>;
@@ -1682,12 +1683,62 @@ export function ParentDashboard({ navigation }: Props) {
       {/* ── Tab 2: Teacher Consultation Chat ── */}
       <View style={activeTab === 'chat' ? { flex: 1 } : { display: 'none', height: 0, flex: 0 }}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 70 : 0}
           style={{ flex: 1 }}
         >
+          {/* Dedicated Top Nav Bar for Consultation Chat */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: Spacing.lg,
+            paddingTop: Spacing.sm,
+            paddingBottom: Spacing.xs,
+          }}>
+            <TouchableOpacity
+              onPress={() => setActiveTab('progress')}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Back to Child Progress"
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                paddingVertical: 6,
+                paddingHorizontal: 10,
+                backgroundColor: 'rgba(17,66,142,0.08)',
+                borderRadius: Radius.md,
+              }}
+            >
+              <ChevronLeft size={16} color={Colors.accentPrimary} />
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                Back to Progress
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setActiveTab('settings')}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Open device settings"
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                paddingVertical: 6,
+                paddingHorizontal: 8,
+              }}
+            >
+              <Settings size={14} color={Colors.textMuted} />
+              <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                Settings
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Teacher Consultation Header Card */}
-          <View style={{ paddingHorizontal: Spacing.lg, paddingTop: Spacing.md }}>
+          <View style={{ paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs }}>
             <GlassCard padding={Spacing.md} style={styles.chatTeacherCard}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
@@ -1933,7 +1984,7 @@ export function ParentDashboard({ navigation }: Props) {
             style={[
               styles.chatInputContainer,
               {
-                paddingBottom: insets.bottom > 0 && !isKeyboardVisible ? insets.bottom : Spacing.sm,
+                paddingBottom: Math.max(insets.bottom, Spacing.sm),
               },
             ]}
           >
@@ -1953,6 +2004,7 @@ export function ParentDashboard({ navigation }: Props) {
             <TouchableOpacity
               onPress={handleSendChat}
               disabled={isSendingChat || !chatInput.trim()}
+              activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityLabel="Send message"
               style={[
@@ -1965,7 +2017,7 @@ export function ParentDashboard({ navigation }: Props) {
               {isSendingChat ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Send size={18} color="#FFFFFF" />
+                <Send size={18} color={chatInput.trim() ? '#FFFFFF' : Colors.textDark} />
               )}
             </TouchableOpacity>
           </View>
@@ -2301,18 +2353,18 @@ export function ParentDashboard({ navigation }: Props) {
       </ScrollView>
     </View>
 
-      {/* ── Bottom Navigation Bar (Auto-hides during active chat typing to avoid clipping) ── */}
-      {!(activeTab === 'chat' && isKeyboardVisible) && (
-        <View
-          style={[
-            styles.bottomTabBar,
-            {
-              height: 60 + insets.bottom,
-              paddingTop: 8,
-              paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-            },
-          ]}
-        >
+      {/* ── Bottom Navigation Bar ── */}
+      <View
+        style={[
+          styles.bottomTabBar,
+          {
+            height: 60 + insets.bottom,
+            paddingTop: 8,
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+            display: activeTab === 'chat' && isKeyboardVisible ? 'none' : 'flex',
+          },
+        ]}
+      >
         <TouchableOpacity
           style={styles.tabButton}
           onPress={() => setActiveTab('progress')}
@@ -2379,7 +2431,6 @@ export function ParentDashboard({ navigation }: Props) {
           </Text>
         </TouchableOpacity>
       </View>
-      )}
 
       {/* Clear Practice History Dialog */}
       <ConfirmDialog

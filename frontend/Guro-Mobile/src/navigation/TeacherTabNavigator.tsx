@@ -89,6 +89,7 @@ export function TeacherTabNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           backgroundColor: Colors.bgSidebar,
           borderTopWidth: 1,

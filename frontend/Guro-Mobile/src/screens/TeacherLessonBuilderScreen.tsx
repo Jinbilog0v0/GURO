@@ -16,6 +16,7 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { PrimaryButton, SecondaryButton, DangerButton } from '../components/ui/Buttons';
 import { SectionHeader } from '../components/ui/SectionHeader';
 import { ThemedTextInput } from '../components/ui/ThemedTextInput';
+import { Checkbox } from '../components/ui/Checkbox';
 import { Badge } from '../components/ui/Badge';
 import { SyncBadge } from '../components/shared/SyncBadge';
 import { toast } from '../components';
@@ -388,41 +389,20 @@ export function TeacherLessonBuilderScreen() {
 
           {/* Batch Question Actions */}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: Spacing.sm }}>
-            <TouchableOpacity
+            <Checkbox
+              checked={selectedQuestionIds.length === questions.length && questions.length > 0}
               onPress={toggleSelectAll}
-              activeOpacity={0.7}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 6,
+              label={selectedQuestionIds.length === questions.length ? 'Deselect All' : 'Select All'}
+              containerStyle={{
                 backgroundColor: 'rgba(17,66,142,0.06)',
-                paddingHorizontal: 10,
+                paddingHorizontal: 12,
                 paddingVertical: 6,
-                borderRadius: 10,
+                borderRadius: Radius.md,
                 borderWidth: 1,
                 borderColor: 'rgba(17,66,142,0.15)',
+                minHeight: 40,
               }}
-            >
-              <View
-                style={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: 4,
-                  borderWidth: 1.5,
-                  borderColor: selectedQuestionIds.length === questions.length ? Colors.accentPrimary : Colors.borderStrong,
-                  backgroundColor: selectedQuestionIds.length === questions.length ? Colors.accentPrimary : 'transparent',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                {selectedQuestionIds.length === questions.length && (
-                  <View style={{ width: 8, height: 8, backgroundColor: '#FFFFFF', borderRadius: 2 }} />
-                )}
-              </View>
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.textMain }}>
-                {selectedQuestionIds.length === questions.length ? 'Deselect All' : 'Select All'}
-              </Text>
-            </TouchableOpacity>
+            />
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               {selectedQuestionIds.length > 0 && (
@@ -469,24 +449,11 @@ export function TeacherLessonBuilderScreen() {
             <GlassCard key={q.id} style={[styles.section, { marginBottom: Spacing.md }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <TouchableOpacity
+                  <Checkbox
+                    checked={selectedQuestionIds.includes(q.id)}
                     onPress={() => toggleSelectQuestion(q.id)}
-                    activeOpacity={0.7}
-                    style={{
-                      width: 20,
-                      height: 20,
-                      borderRadius: 5,
-                      borderWidth: 1.5,
-                      borderColor: selectedQuestionIds.includes(q.id) ? Colors.accentPrimary : Colors.borderStrong,
-                      backgroundColor: selectedQuestionIds.includes(q.id) ? Colors.accentPrimary : 'transparent',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                  >
-                    {selectedQuestionIds.includes(q.id) && (
-                      <View style={{ width: 8, height: 8, backgroundColor: '#FFFFFF', borderRadius: 2 }} />
-                    )}
-                  </TouchableOpacity>
+                    accessibilityLabel={`Select question ${qIdx + 1}`}
+                  />
                   <Badge label={`Q${qIdx + 1}`} variant="indigo" />
                 </View>
                 <TouchableOpacity onPress={() => removeQuestion(q.id)} activeOpacity={0.75}>

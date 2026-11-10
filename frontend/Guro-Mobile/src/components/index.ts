@@ -5,6 +5,7 @@ export { Badge } from './ui/Badge';
 export { StatCard } from './ui/StatCard';
 export { SectionHeader } from './ui/SectionHeader';
 export { ThemedTextInput } from './ui/ThemedTextInput';
+export { Checkbox } from './ui/Checkbox';
 export { ProgressBar } from './ui/ProgressBar';
 export { LessonCard } from './ui/LessonCard';
 export { ToastContainer, toast } from './ui/ToastContainer';

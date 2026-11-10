@@ -1934,7 +1934,7 @@ export function StudentDashboard() {
 
           style={{ flex: 1, backgroundColor: 'rgba(6, 9, 19, 0.72)', justifyContent: 'center', padding: Spacing.lg }}
 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
 
         >
 
