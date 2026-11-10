@@ -89,4 +89,20 @@ describe('QuestionStep Component', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(defaultProps.onBack).toHaveBeenCalledTimes(1);
   });
+
+  test('renders countdown timer formatted as MM:SS when timed', () => {
+    render(<QuestionStep {...defaultProps} isTimed={true} timeRemainingSeconds={185} />);
+    
+    // 185s = 03:05
+    expect(screen.getByText('03:05')).toBeInTheDocument();
+  });
+
+  test('displays urgent warning styling when timer is under 30s', () => {
+    render(<QuestionStep {...defaultProps} isTimed={true} timeRemainingSeconds={25} />);
+    
+    const timerElem = screen.getByText('00:25');
+    expect(timerElem).toBeInTheDocument();
+    // Parent badge container should include text-rose-600 or rose border
+    expect(timerElem.parentElement).toHaveClass('text-rose-600');
+  });
 });

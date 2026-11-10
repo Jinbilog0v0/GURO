@@ -48,6 +48,7 @@ import {
   TrendingUp,
   BarChart3,
   Rocket,
+  Clock,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -366,6 +367,12 @@ export function AssessmentScreen({ route, navigation }: Props) {
   const [shadedSlices, setShadedSlices] = useState<number[]>([]);
   const [foundationalReviewTarget, setFoundationalReviewTarget] = useState<{ targetLesson: { topic: string; grade: number; subject?: string }; topicKey: string } | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+
+  // ── Quiz Countdown Timer ────────────────────────────────────────────────────
+  const initialQuizDuration = Math.min(900, Math.max(180, (questions.length || 5) * 60));
+  const [timeRemainingSeconds, setTimeRemainingSeconds] = useState<number>(initialQuizDuration);
+  const startTimeRef = useRef<number>(Date.now());
+  const timerSubmittedRef = useRef<boolean>(false);
 
   interface AnswerLogEntry {
     questionText: string;
@@ -687,6 +694,79 @@ export function AssessmentScreen({ route, navigation }: Props) {
     }
   };
 
+  // Finalize quiz results and record progress
+  const finishAssessment = (finalScore: number) => {
+    const isPerfect = finalScore === questions.length;
+    const earnedXP = finalScore * 10 + (isPerfect ? 50 : 0);
+    const oldXp = useAppStore.getState().xpPoints || 0;
+    const newXp = oldXp + earnedXP;
+    const oldLevel = Math.floor(oldXp / 100) + 1;
+    const newLevel = Math.floor(newXp / 100) + 1;
+    if (newLevel > oldLevel) {
+      setLevelUpLevel(newLevel);
+    }
+    recordProgress({
+      subject,
+      gradeLevel,
+      topic,
+      score: finalScore,
+      totalQuestions: questions.length,
+      difficulty: currentTier,
+      assessmentType,
+    });
+
+    // Adaptive progression & continuous failure routing
+    const percentage = Math.round((finalScore / questions.length) * 100);
+    const remediation = evaluateRemediationRouting(percentage, subject, gradeLevel, topic, currentTier);
+    
+    // Update store active difficulty tier using defensive guards
+    const state = useAppStore.getState();
+    if (typeof state.setAdaptiveTier === 'function') {
+      state.setAdaptiveTier(topicKey, remediation.tier);
+    }
+
+    if (percentage < 75) {
+      let nextFailures = 1;
+      if (typeof state.incrementConsecutiveFailures === 'function') {
+        nextFailures = state.incrementConsecutiveFailures(topicKey);
+      }
+      if (nextFailures >= 3 && remediation.targetLesson) {
+        setFoundationalReviewTarget({
+          targetLesson: remediation.targetLesson,
+          topicKey,
+        });
+      }
+    } else {
+      if (typeof state.resetConsecutiveFailures === 'function') {
+        state.resetConsecutiveFailures(topicKey);
+      }
+    }
+    setQuizFinished(true);
+    if (percentage >= MASTERY_THRESHOLD) {
+      playFanfareSound();
+    }
+    addLog(
+      `Completed quiz for topic "${topic}". Final Score: ${finalScore}/${questions.length}`,
+    );
+  };
+
+  // Timer countdown with background/drift check
+  useEffect(() => {
+    if (quizFinished) return;
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      const remaining = Math.max(0, initialQuizDuration - elapsed);
+      setTimeRemainingSeconds(remaining);
+      if (remaining <= 0 && !timerSubmittedRef.current) {
+        timerSubmittedRef.current = true;
+        clearInterval(interval);
+        Alert.alert('⏱️ Time Up!', 'The countdown timer has expired. Submitting your current answers.');
+        finishAssessment(score);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [quizFinished, initialQuizDuration, score]);
+
   const handleNext = () => {
     setShowConfetti(false);
     if (currentIndex + 1 < questions.length) {
@@ -695,59 +775,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
       setIsAnswered(false);
       pan.setValue({ x: 0, y: 0 });
     } else {
-      const finalScore = score;
-      const isPerfect = finalScore === questions.length;
-      const earnedXP = finalScore * 10 + (isPerfect ? 50 : 0);
-      const oldXp = useAppStore.getState().xpPoints || 0;
-      const newXp = oldXp + earnedXP;
-      const oldLevel = Math.floor(oldXp / 100) + 1;
-      const newLevel = Math.floor(newXp / 100) + 1;
-      if (newLevel > oldLevel) {
-        setLevelUpLevel(newLevel);
-      }
-      recordProgress({
-        subject,
-        gradeLevel,
-        topic,
-        score: finalScore,
-        totalQuestions: questions.length,
-        difficulty: currentTier,
-        assessmentType,
-      });
-
-      // Adaptive progression & continuous failure routing
-      const percentage = Math.round((finalScore / questions.length) * 100);
-      const remediation = evaluateRemediationRouting(percentage, subject, gradeLevel, topic, currentTier);
-      
-      // Update store active difficulty tier using defensive guards
-      const state = useAppStore.getState();
-      if (typeof state.setAdaptiveTier === 'function') {
-        state.setAdaptiveTier(topicKey, remediation.tier);
-      }
-
-      if (percentage < 75) {
-        let nextFailures = 1;
-        if (typeof state.incrementConsecutiveFailures === 'function') {
-          nextFailures = state.incrementConsecutiveFailures(topicKey);
-        }
-        if (nextFailures >= 3 && remediation.targetLesson) {
-          setFoundationalReviewTarget({
-            targetLesson: remediation.targetLesson,
-            topicKey,
-          });
-        }
-      } else {
-        if (typeof state.resetConsecutiveFailures === 'function') {
-          state.resetConsecutiveFailures(topicKey);
-        }
-      }
-      setQuizFinished(true);
-      if (percentage >= MASTERY_THRESHOLD) {
-        playFanfareSound();
-      }
-      addLog(
-        `Completed quiz for topic "${topic}". Final Score: ${finalScore}/${questions.length}`,
-      );
+      finishAssessment(score);
     }
   };
 
@@ -779,6 +807,9 @@ export function AssessmentScreen({ route, navigation }: Props) {
       const letters = shuffle((nextQ.correctAnswer || '').replace(/\s+/g, '').split(''));
       setLetterPool(letters.map((char, index) => ({ id: `${char}-${index}-${Math.random()}`, letter: char, selected: false })));
     }
+    startTimeRef.current = Date.now();
+    setTimeRemainingSeconds(Math.min(900, Math.max(180, (shuffled.length || 5) * 60)));
+    timerSubmittedRef.current = false;
   };
 
   // ── Quiz finished screen ───────────────────────────────────────────────────
@@ -1423,6 +1454,44 @@ export function AssessmentScreen({ route, navigation }: Props) {
                   style={styles.headerBadgeGap}
                 />
               )}
+              {/* Quiz Countdown Timer Badge */}
+              <View
+                accessibilityLabel={`Time remaining: ${Math.floor(timeRemainingSeconds / 60)} minutes ${timeRemainingSeconds % 60} seconds`}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: Radius.full,
+                  backgroundColor: timeRemainingSeconds <= 30
+                    ? 'rgba(239, 68, 68, 0.12)'
+                    : timeRemainingSeconds <= 60
+                    ? 'rgba(245, 158, 11, 0.12)'
+                    : 'rgba(17, 66, 142, 0.08)',
+                  borderWidth: 1,
+                  borderColor: timeRemainingSeconds <= 30
+                    ? 'rgba(239, 68, 68, 0.35)'
+                    : timeRemainingSeconds <= 60
+                    ? 'rgba(245, 158, 11, 0.35)'
+                    : 'rgba(17, 66, 142, 0.20)',
+                }}
+              >
+                <Clock
+                  size={12}
+                  color={timeRemainingSeconds <= 30 ? Colors.danger : timeRemainingSeconds <= 60 ? Colors.warning : Colors.accentPrimary}
+                />
+                <Text
+                  style={{
+                    fontFamily: Fonts.mono,
+                    fontSize: FontSizes.xs,
+                    color: timeRemainingSeconds <= 30 ? Colors.danger : timeRemainingSeconds <= 60 ? Colors.warning : Colors.accentPrimary,
+                    fontVariant: ['tabular-nums'],
+                  }}
+                >
+                  {`${Math.floor(timeRemainingSeconds / 60).toString().padStart(2, '0')}:${(timeRemainingSeconds % 60).toString().padStart(2, '0')}`}
+                </Text>
+              </View>
             </View>
             <View style={styles.questionCounterPill}>
               <Text style={styles.questionCounterCurrent}>{currentIndex + 1}</Text>

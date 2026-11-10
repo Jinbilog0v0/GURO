@@ -77,6 +77,8 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     const [selectedTopic, setSelectedTopic] = useState(() => {
         return localStorage.getItem('guro_student_topic') ?? '';
     });
+    const [quizTimeRemaining, setQuizTimeRemaining] = useState<number>(300);
+    const [isQuizTimed, setIsQuizTimed] = useState<boolean>(true);
     const [classroomCode, setClassroomCode] = useState(() => {
         const currentUserClassroom = currentUser?.classroomId;
         return currentUserClassroom || localStorage.getItem(`guro_student_classroom_id_${activeStudentId}`) || localStorage.getItem('guro_student_classroom_id') || '';
@@ -690,6 +692,28 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         return [...allQuestions].sort(() => 0.5 - Math.random()).slice(0, 5);
     };
 
+    // Live countdown timer for quizzes
+    useEffect(() => {
+        if (step !== 'quiz' || !isQuizTimed) return;
+        if (quizTimeRemaining <= 0) {
+            toast('⏱️ Time is up! Submitting your answers...', { icon: '⏳' });
+            setStep('results');
+            return;
+        }
+        const timer = setInterval(() => {
+            setQuizTimeRemaining((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    toast('⏱️ Time is up! Submitting your answers...', { icon: '⏳' });
+                    setStep('results');
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [step, isQuizTimed, quizTimeRemaining]);
+
     // Select a topic — show study content first, then quiz
     const handleSelectTopic = (topicName: string, subjectName?: string) => {
         const subject = subjectName || selectedSubject;
@@ -713,6 +737,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         setCurrentQuestionIndex(0);
         setScore(0);
         setAnsweredHistory([]);
+        setQuizTimeRemaining(Math.min(900, Math.max(180, (quizSlice ? quizSlice.length : 5) * 60)));
 
         // Check for study content
         const gradeStr = selectedGrade.toString();
@@ -725,7 +750,10 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     };
 
     // Called by StudyContentStep "Start Quiz" button
-    const handleStartQuiz = () => setStep('quiz');
+    const handleStartQuiz = () => {
+        setQuizTimeRemaining(Math.min(900, Math.max(180, questions.length * 60)));
+        setStep('quiz');
+    };
 
     // Handler when an answer is submitted and the student clicks next
     const handleQuestionNext = async (
@@ -1138,6 +1166,8 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                     outfitEmoji={outfitEmoji}
                     imageUrl={questions[currentQuestionIndex].imageUrl}
                     subject={selectedSubject}
+                    timeRemainingSeconds={quizTimeRemaining}
+                    isTimed={isQuizTimed}
                 />
             )}
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Volume2, Square, X, Check, ThumbsUp, ThumbsDown, Sparkles, Star, Lightbulb, Flame } from 'lucide-react';
+import { ArrowLeft, Volume2, Square, X, Check, ThumbsUp, ThumbsDown, Sparkles, Star, Lightbulb, Flame, Clock } from 'lucide-react';
 import { QuizOption } from './QuizOption';
 import { QuizExplanation } from './QuizExplanation';
 
@@ -43,6 +43,8 @@ interface QuestionStepProps {
     outfitEmoji?: string;
     imageUrl?: string;
     subject?: string;
+    timeRemainingSeconds?: number;
+    isTimed?: boolean;
 }
 
 const matchColorClasses = [
@@ -70,6 +72,8 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
     outfitEmoji = '',
     imageUrl,
     subject = 'English',
+    timeRemainingSeconds,
+    isTimed = true,
 }) => {
     const isMath = subject === 'Mathematics';
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -443,6 +447,23 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                             <span className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-[11px] sm:text-xs rounded-full shadow-md animate-bounce flex items-center gap-1">
                                 <Flame className="size-3 sm:size-3.5 fill-white text-white" />
                                 <span>{comboStreak}x!</span>
+                            </span>
+                        )}
+                        {isTimed && timeRemainingSeconds !== undefined && (
+                            <span 
+                                data-testid="quiz-timer-pill"
+                                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border shadow-sm font-mono text-xs sm:text-sm font-extrabold tabular-nums flex items-center gap-1.5 transition-colors ${
+                                timeRemainingSeconds <= 30
+                                    ? 'bg-rose-500/15 border-rose-500 text-rose-600 dark:text-rose-400 animate-pulse'
+                                    : timeRemainingSeconds <= 60
+                                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
+                                    : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-main)]'
+                            }`}>
+                                <Clock className="size-3.5" />
+                                <span>
+                                    {Math.floor(timeRemainingSeconds / 60).toString().padStart(2, '0')}:
+                                    {(timeRemainingSeconds % 60).toString().padStart(2, '0')}
+                                </span>
                             </span>
                         )}
                         <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full shadow-sm text-[var(--text-main)] font-bold text-xs sm:text-sm tabular-nums font-mono">
