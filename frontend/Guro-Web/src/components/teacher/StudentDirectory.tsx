@@ -10,8 +10,10 @@ import {
   LayoutGrid,
   Target,
   CheckCircle2,
-  TrendingUp
+  TrendingUp,
+  UserPlus
 } from 'lucide-react';
+import { CreateStudentModal } from './CreateStudentModal';
 
 export interface SyncedEvent {
   studentId: string;
@@ -28,10 +30,16 @@ export interface SyncedEvent {
 export interface StudentDirectoryProps {
   progressLogs: SyncedEvent[];
   activeClassroomId?: string | null;
+  onStudentCreated?: () => void;
 }
 
-export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs, activeClassroomId: _activeClassroomId }) => {
+export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ 
+  progressLogs, 
+  activeClassroomId,
+  onStudentCreated 
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [gradeFilter, setGradeFilter] = useState<'All' | 4 | 5 | 6>('All');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Mastery' | 'Review' | 'Remediation'>('All');
   const [viewMode, setViewMode] = useState<'table' | 'card'>(() => {
@@ -123,6 +131,15 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
             <span>Remedial (&lt; 50%):</span>
             <strong className="font-mono">{remedialCount}</strong>
           </div>
+          {activeClassroomId && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#11428E] hover:bg-[#0d3470] text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+            >
+              <UserPlus className="size-3.5" />
+              <span>+ Enroll Student</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -567,6 +584,15 @@ export const StudentDirectory: React.FC<StudentDirectoryProps> = ({ progressLogs
           </div>
         </div>,
         document.body
+      )}
+
+      {activeClassroomId && (
+        <CreateStudentModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          classroomId={activeClassroomId}
+          onStudentCreated={onStudentCreated}
+        />
       )}
     </div>
   );
