@@ -1,1144 +1,2295 @@
-/**
- * StudentDashboard — Home tab.
- * Shows a greeting, XP/level card, quick stats, today's recommended lesson,
- * and a quick-action grid. Topic browsing lives in the Lessons tab.
- *
- * UX Audit fixes applied:
- * - C1: Replaced hardcoded 'Inter_700Bold' etc. strings with Fonts.* tokens
- * - V1: Collapsed dual empty-state into one when no classroom is linked
- * - O5: Added connectivity pre-check before classroom verify API call
- * - M4: Wrapped classroom code TextInput in KeyboardAvoidingView
- * - U7: Added personalization subtitle to Today's Pick card
- */
-
-import React, { useEffect, useState } from 'react';
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  ScrollView,
-  BackHandler,
-  Modal,
-  TextInput,
-  ActivityIndicator,
-  RefreshControl,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import * as Network from 'expo-network';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { useAppStore, resolveServerUrl } from '../store/useAppStore';
-import {
-  BookOpen,
-  Hourglass,
-  Flame,
-  Rocket,
-  Inbox,
-  Play,
-  ChevronRight,
-  Star,
-  Trophy,
-  Users,
-  CheckCircle2,
-  School,
-  Calendar,
-  Sparkles,
-} from 'lucide-react-native';
-import { toast } from '../components';
-
-import { Colors } from '../theme/colors';
-import { Fonts, FontSizes, LetterSpacing } from '../theme/typography';
-import { Spacing, Radius } from '../theme/spacing';
-import { Badges } from '../theme/styles';
-import { GlassCard } from '../components/ui/GlassCard';
-import { SyncBadge } from '../components/shared/SyncBadge';
-import { ProgressBar } from '../components/ui/ProgressBar';
-import { LessonCard } from '../components/ui/LessonCard';
-import { styles } from '../styles/StudentDashboard.styles';
-import { isLessonLocked, LESSON_SEQUENCE } from '../utils/engine';
-import itemBankData from '../../assets/item_bank.json';
-
-const OUTFIT_EMOJIS: Record<string, string> = {
-  default: '',
-  graduation_cap: '🎓',
-  detective_hat: '🕵️‍♂️',
-  space_visor: '🧑‍🚀',
-  wizard_cape: '🧙‍♂️',
-  crown: '👑',
-  superhero_cape: '🦸',
-  party_hat: '🥳',
-  astronaut_helmet: '🧑‍🚀',
-  artist_beret: '🎨',
-  scientist_goggles: '🔬',
-};
-
-export function StudentDashboard() {
-  const navigation = useNavigation<any>();
-
-  const itemBank = useAppStore((s) => s.itemBank);
-  const parentalControls = useAppStore((s) => s.parentalControls);
-  const studentProgress = useAppStore((s) => s.studentProgress);
-  const dailyMinutesUsed = useAppStore((s) => s.dailyMinutesUsed);
-  const currentUser = useAppStore((s) => s.currentUser);
-  const guestName = useAppStore((s) => s.guestName);
-  const streakCount = useAppStore((s) => s.streakCount || 0);
-  const avatarEmoji = useAppStore((s) => s.avatarEmoji);
-  const xpPoints = useAppStore((s) => s.xpPoints || 0);
-  const virtualStars = useAppStore((s) => s.virtualStars || 0);
-  const mascotOutfit = useAppStore((s) => s.mascotOutfit || 'default');
-  const preferredGrade = useAppStore((s) => s.preferredGrade || 4);
-  const classroomId = useAppStore((s) => s.classroomId);
-  const teacherName = useAppStore((s) => s.teacherName);
-  const setClassroomId = useAppStore((s) => s.setClassroomId);
-  const activeSubjects = useAppStore((s) => s.activeSubjects || ['Mathematics', 'English']);
-  const activeSchoolYear = useAppStore((s) => s.activeSchoolYear || '2026-2027');
-  const activeTerm = useAppStore((s) => s.activeTerm || 'Quarter 1');
-
-  const [joinModalVisible, setJoinModalVisible] = React.useState(false);
-  const [typedCode, setTypedCode] = React.useState('');
-  const [verifying, setVerifying] = React.useState(false);
-  const [verifiedClassroom, setVerifiedClassroom] = React.useState<any>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [mascotMessage, setMascotMessage] = useState('');
-
-  useEffect(() => {
-    const msgs = [
-      "You're doing amazing! Ready to learn something new today? 🚀",
-      "Learning is a superpower, and you're doing great! 🌟",
-      "Stuck on a topic? Review the concept cards anytime! 📚",
-      "Each correct answer is a step closer to mastery! Keep going! 🎯",
-      "Don't forget to visit the Mascot Shop to dress me up! 🎓👑",
-      "Consistency is key! Let's keep our daily streak alive! 🔥",
-      "Make sure to read the lesson guides carefully, they have cool pictures now! 🖼️",
-      "You're leveling up fast! Keep it up, explorer! 🎖️"
-    ];
-    const randomMsg = msgs[Math.floor(Math.random() * msgs.length)];
-    setMascotMessage(randomMsg);
-  }, []);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    const appMode = useAppStore.getState().appMode;
-    const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-    try {
-      if (appMode === 'online') {
-        await useAppStore.getState().syncProgressNow(serverUrl);
-        if (classroomId) {
-          await useAppStore.getState().fetchItemBankFromServer(serverUrl, classroomId);
-        }
-      }
-    } catch (err) {
-      console.warn('[Refresh] Failed to refresh student dashboard:', err);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  const handleVerifyCode = async () => {
-    const code = typedCode.trim().toUpperCase();
-    if (!code) {
-      toast.error('Please enter a classroom code.');
-      return;
-    }
-    const codeRegex = /^[A-Z0-9-]{3,24}$/i;
-    if (!codeRegex.test(code)) {
-      toast.error('Invalid classroom code format.');
-      return;
-    }
-
-    // O5: Pre-check connectivity before attempting server call
-    try {
-      const netState = await Network.getNetworkStateAsync();
-      const isOnline = netState.isConnected && netState.isInternetReachable !== false;
-      if (!isOnline) {
-        toast.error('You need internet access to join a classroom. Please connect and try again.');
-        return;
-      }
-    } catch {
-      // If network check itself fails, proceed and let fetch handle the error
-    }
-
-    setVerifying(true);
-    try {
-      const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-      const resolvedUrl = resolveServerUrl(serverUrl);
-      const res = await fetch(`${resolvedUrl}/api/classroom/verify?code=${encodeURIComponent(code)}`);
-      if (res.ok) {
-        const data = await res.json();
-        
-        // Strict Grade Level Enforcement
-        if (data.gradeLevel && Number(data.gradeLevel) !== Number(preferredGrade)) {
-          toast.error(`Grade Level Mismatch: This classroom is strictly for Grade ${data.gradeLevel} students. Your profile is set to Grade ${preferredGrade}.`);
-          setVerifiedClassroom(null);
-          return;
-        }
-
-        setVerifiedClassroom(data);
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        toast.error(errData.error || 'Invalid classroom code. Check the code and try again.');
-      }
-    } catch (err) {
-      toast.error('Could not reach server. Please check your connection and try again.');
-    } finally {
-      setVerifying(false);
-    }
-  };
-
-  const handleConfirmJoin = async () => {
-    if (!verifiedClassroom) return;
-    if (verifiedClassroom.gradeLevel && Number(verifiedClassroom.gradeLevel) !== Number(preferredGrade)) {
-      toast.error(`Grade Level Mismatch: This classroom is strictly for Grade ${verifiedClassroom.gradeLevel} students. Your profile is set to Grade ${preferredGrade}.`);
-      return;
-    }
-    const code = verifiedClassroom.classroomId;
-    const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
-
-    setVerifying(true);
-    try {
-      const ok = await useAppStore.getState().fetchItemBankFromServer(serverUrl, code);
-      if (ok) {
-        setClassroomId(
-          code,
-          verifiedClassroom?.teacherName || null,
-          verifiedClassroom?.showQuizAnswers,
-          verifiedClassroom?.consultationHours
-        );
-        
-        // Update the student's preferred grade based on the classroom joined
-        if (verifiedClassroom && verifiedClassroom.gradeLevel) {
-          useAppStore.getState().setPreferredGrade(verifiedClassroom.gradeLevel);
-        }
-        if (verifiedClassroom && verifiedClassroom.schoolYear) {
-          useAppStore.getState().setActiveSchoolYear(verifiedClassroom.schoolYear);
-        }
-        if (verifiedClassroom && verifiedClassroom.term) {
-          useAppStore.getState().setActiveTerm(verifiedClassroom.term);
-        }
-
-        // Pair this student name on the server as a classroom member
-        const resolvedUrl = resolveServerUrl(serverUrl);
-        const activeStudentId = useAppStore.getState().studentId || 'GUEST';
-        await fetch(`${resolvedUrl}/api/classroom/pair`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ studentId: activeStudentId, classroomId: code, gradeLevel: preferredGrade }),
-        }).catch(() => {});
-
-        setJoinModalVisible(false);
-        setTypedCode('');
-        setVerifiedClassroom(null);
-        toast.success(`Joined classroom "${code}" successfully!`);
-      } else {
-        toast.error('Joined classroom, but failed to download assignment bank.');
-      }
-    } catch (err) {
-      toast.error('Failed to complete classroom joining.');
-    } finally {
-      setVerifying(false);
-    }
-  };
-
-  const outfitEmoji = OUTFIT_EMOJIS[mascotOutfit] || '';
-  const level = Math.floor(xpPoints / 100) + 1;
-  const xpInLevel = xpPoints % 100;
-  const studentName = guestName ?? currentUser?.name ?? 'Explorer';
-
-  const isTimeLimitExceeded =
-    parentalControls.dailyTimeLimit > 0 &&
-    dailyMinutesUsed >= parentalControls.dailyTimeLimit;
-
-  // Screen time tracking
-  useEffect(() => {
-    const interval = setInterval(() => {
-      useAppStore.getState().trackActiveMinutes(0.25);
-    }, 15000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Intercept Android hardware back (prevent escaping to Login)
-  useEffect(() => {
-    const onBack = () => true;
-    const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
-    return () => sub.remove();
-  }, []);
-
-  // Auto-sync offline progress to server when entering Student Dashboard
-  useEffect(() => {
-    const appMode = useAppStore.getState().appMode;
-    const serverUrl = useAppStore.getState().serverUrl;
-    if (appMode === 'online') {
-      useAppStore.getState().syncProgressNow(serverUrl).catch((err) => {
-        console.warn('[Sync] Background auto-sync failed on mount:', err);
-      });
-    }
-  }, []);
-
-  const getMathAverageScore = (grade: number): number => {
-    const logs = studentProgress.filter(
-      (p) => (p.subject === 'Mathematics' || p.subject === 'Math') && p.gradeLevel === grade,
-    );
-    if (logs.length === 0) return 0;
-    const sum = logs.reduce((acc, p) => acc + (p.score / p.totalQuestions) * 100, 0);
-    return Math.round(sum / logs.length);
-  };
-
-  const isEnglishLocked = (gradeLevel: number): boolean => {
-    if (classroomId || !parentalControls.mathBeforeEnglish) return false;
-    const mathLogs = studentProgress.filter(
-      (p) => (p.subject === 'Mathematics' || p.subject === 'Math') && p.gradeLevel === gradeLevel,
-    );
-    if (mathLogs.length === 0) return false;
-    const mathScore = getMathAverageScore(gradeLevel);
-    return mathScore < 80;
-  };
-
-  // Smart recommended: needs-improvement (40–79%) first, then unattempted.
-  // Grade order: student's preferredGrade first. Subject order: weaker subject first.
-  const recommended = (() => {
-    const effectiveBank = itemBank || (itemBankData as any);
-    if (!effectiveBank) return null;
-
-    const getBestRatio = (subject: string, grade: number, topic: string): number | null => {
-      const logs = studentProgress.filter(
-        (p) =>
-          (p.subject === subject || (subject === 'Mathematics' && p.subject === 'Math')) &&
-          p.gradeLevel === grade &&
-          p.topic === topic,
-      );
-      if (logs.length === 0) return null;
-      return Math.max(...logs.map((p) => p.score / p.totalQuestions));
-    };
-
-    const getSubjectAvg = (subject: string): number => {
-      const logs = studentProgress.filter(
-        (p) => p.subject === subject || (subject === 'Mathematics' && p.subject === 'Math'),
-      );
-      if (logs.length === 0) return -1;
-      return logs.reduce((acc, p) => acc + p.score / p.totalQuestions, 0) / logs.length;
-    };
-
-    const availableSubjects = Array.from(new Set(['Mathematics', 'English', ...(activeSubjects || [])]));
-    if (availableSubjects.length === 0) return null;
-
-    const gradeOrder = [preferredGrade, ...[4, 5, 6].filter((g) => g !== preferredGrade)];
-    const mathAvg = getSubjectAvg('Mathematics');
-    const engAvg = getSubjectAvg('English');
-    const subjectOrder = (mathAvg <= engAvg ? ['Mathematics', 'English'] : ['English', 'Mathematics'])
-      .filter((s) => availableSubjects.includes(s));
-
-    let improvable: { subject: string; gradeLevel: number; topic: string } | null = null;
-    let unattempted: { subject: string; gradeLevel: number; topic: string } | null = null;
-
-    for (const grade of gradeOrder) {
-      for (const subject of subjectOrder) {
-        const gradeData = effectiveBank[subject]?.[grade.toString()];
-        if (!gradeData) continue;
-        for (const topic of Object.keys(gradeData)) {
-          if (topic === 'studyContent') continue;
-
-          // Skip if locked by 1:1 progression or English-after-Math lock rules
-          const isProgLocked = isLessonLocked(subject, grade, topic, studentProgress, preferredGrade, effectiveBank);
-          const isEngLocked = subject === 'English' && isEnglishLocked(grade);
-          if (isProgLocked || isEngLocked) continue;
-
-          const best = getBestRatio(subject, grade, topic);
-          if (best === null) {
-            if (!unattempted) unattempted = { subject, gradeLevel: grade, topic };
-          } else if (best >= 0.4 && best < 0.8) {
-            if (!improvable) improvable = { subject, gradeLevel: grade, topic };
-          }
-        }
-      }
-    }
-
-    return improvable ?? unattempted;
-  })();
-
-  // Most recent quiz attempt for "Continue Learning" card
-  const availableSubjectsList = Array.from(new Set(['Mathematics', 'English', ...(activeSubjects || [])]));
-  const filteredProgress = studentProgress.filter(
-    (p) =>
-      (availableSubjectsList.includes(p.subject) || (p.subject === 'Math' && availableSubjectsList.includes('Mathematics'))) &&
-      p.gradeLevel === preferredGrade,
-  );
-  const lastActivity = filteredProgress.length > 0
-    ? filteredProgress.reduce((a, b) => (new Date(a.timestamp) > new Date(b.timestamp) ? a : b))
-    : null;
-
-  const dashboardTopics = React.useMemo(() => {
-    const effectiveBank = itemBank || (itemBankData as any);
-    if (!effectiveBank) return [];
-    const list: Array<{
-      topic: string;
-      subject: string;
-      gradeLevel: number;
-      completionPercent: number;
-      bestScore: number | null;
-      questionCount: number;
-      isLocked: boolean;
-      lockReason?: string;
-    }> = [];
-
-    const subjects = Array.from(new Set(['Mathematics', 'English', ...(activeSubjects || [])]));
-    for (const sub of subjects) {
-      const gradeData = effectiveBank[sub]?.[preferredGrade.toString()];
-      if (!gradeData) continue;
-      for (const top of Object.keys(gradeData)) {
-        if (top === 'studyContent') continue;
-        const logs = studentProgress.filter(
-          (p) => (p.subject === sub || (sub === 'Mathematics' && p.subject === 'Math')) &&
-                 p.gradeLevel === preferredGrade && p.topic === top
-        );
-        const bestScore = logs.length > 0 ? Math.round(Math.max(...logs.map((p) => (p.score / p.totalQuestions) * 100))) : null;
-        const completionPercent = bestScore ?? 0;
-        const qCount = Array.isArray(gradeData[top]?.questions) ? gradeData[top].questions.length : 4;
-        const isProgLocked = isLessonLocked(sub, preferredGrade, top, studentProgress, preferredGrade, effectiveBank);
-        const isEngLocked = sub === 'English' && isEnglishLocked(preferredGrade);
-        const isLocked = isProgLocked || isEngLocked;
-        let lockReason: string | undefined = undefined;
-        if (isEngLocked) {
-          lockReason = `Reach 80% in Math first`;
-        } else if (isProgLocked) {
-          lockReason = `Locked`;
-        }
-
-        list.push({
-          topic: top,
-          subject: sub,
-          gradeLevel: preferredGrade,
-          completionPercent,
-          bestScore,
-          questionCount: qCount,
-          isLocked,
-          lockReason,
-        });
-      }
-    }
-    return list;
-  }, [itemBank, preferredGrade, activeSubjects, studentProgress]);
-
-  return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      {/* Header */}
-      <View style={styles.headerBar}>
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.accentPrimary, letterSpacing: LetterSpacing.tight }}>
-              GURO
-            </Text>
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 4,
-              backgroundColor: 'rgba(17,66,142,0.08)',
-              paddingHorizontal: 8,
-              paddingVertical: 3,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: 'rgba(17,66,142,0.15)',
-            }}>
-              <Calendar size={11} color={Colors.accentPrimary} />
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
-                S.Y. {activeSchoolYear} • {activeTerm}
-              </Text>
-            </View>
-          </View>
-          <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
-            DepEd-Aligned Interactive Learning
-          </Text>
-        </View>
-        <SyncBadge gradeLevel={preferredGrade} />
-      </View>
- 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[Colors.accentPrimary]}
-            tintColor={Colors.accentPrimary}
-          />
-        }
-      >
-        {/* Time-limit banner */}
-        {isTimeLimitExceeded && (
-          <GlassCard style={styles.timeBanner} padding={Spacing.md}>
-            <View style={[Badges.base, Badges.danger, { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start' }]}>
-              <Hourglass size={12} color={Colors.dangerText} />
-              <Text style={[Badges.text, Badges.dangerText]}>Time Limit Reached</Text>
-            </View>
-            <Text style={styles.timeBannerText}>
-              You've used {Math.round(dailyMinutesUsed)} / {parentalControls.dailyTimeLimit} min today.
-              Rest up and come back tomorrow!
-            </Text>
-          </GlassCard>
-        )}
-
-        {/* Integrated Mascot Hero & XP Card */}
-        <View
-          style={{
-            backgroundColor: Colors.accentBlue,
-            borderRadius: Radius.lg,
-            padding: Spacing.lg,
-            flexDirection: 'column',
-            gap: Spacing.md,
-            shadowColor: Colors.accentBlue,
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.15,
-            shadowRadius: 10,
-            elevation: 4,
-          }}
-        >
-          {/* Top Row: Avatar and Name */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-            {/* Clickable mascot avatar capsule */}
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('Me')}
-              style={{
-                position: 'relative',
-                width: 64,
-                height: 64,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                borderRadius: Radius.md,
-                borderWidth: 2,
-                borderColor: 'rgba(255,255,255,0.3)',
-              }}
-            >
-              <Text style={{ fontSize: 40 }}>{avatarEmoji}</Text>
-              {outfitEmoji ? (
-                <Text style={{ fontSize: 18, position: 'absolute', top: -5, right: -5 }}>
-                  {outfitEmoji}
-                </Text>
-              ) : null}
-            </TouchableOpacity>
-            
-            <View style={{ flex: 1, gap: 2 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 2 }}>
-                <View style={{
-                  backgroundColor: 'rgba(255,255,255,0.22)',
-                  paddingHorizontal: 8,
-                  paddingVertical: 2,
-                  borderRadius: Radius.full,
-                }}>
-                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 9, color: Colors.white, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Student Dashboard
-                  </Text>
-                </View>
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: 'rgba(255,255,255,0.9)' }}>
-                  Level {level} Explorer
-                </Text>
-              </View>
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.white }}>
-                Welcome back, {studentName}!
-              </Text>
-            </View>
-          </View>
-
-          {/* Mascot companion speech bubble */}
-          <View style={{
-            backgroundColor: 'rgba(255,255,255,0.12)',
-            borderRadius: Radius.sm,
-            padding: Spacing.sm,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.2)',
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            gap: 6,
-          }}>
-            <Sparkles size={14} color="#FEF3C7" style={{ marginTop: 2, flexShrink: 0 }} />
-            <Text style={{ flex: 1, fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.white, lineHeight: 16 }}>
-              Companion Guide: <Text style={{ fontFamily: Fonts.bodyMedium, color: '#FEF3C7' }}>"{mascotMessage}"</Text>
-            </Text>
-          </View>
-          
-          {/* Bottom section: Full-width XP Progress Bar */}
-          <View style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: Spacing.sm, borderRadius: Radius.md, gap: 4 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.white }}>
-                Learning Progress
-              </Text>
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.white }}>
-                {xpInLevel} / 100 XP
-              </Text>
-            </View>
-            <ProgressBar progress={xpInLevel} height={8} color="#F59E0B" backgroundColor="rgba(255,255,255,0.25)" />
-          </View>
-        </View>
-
-        {/* Connected Classroom Card vs Connect Onboarding */}
-        {classroomId ? (
-          <GlassCard padding={Spacing.lg} style={{ gap: Spacing.sm, borderColor: 'rgba(16,185,129,0.3)', borderWidth: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-                <School size={20} color={Colors.accentPrimary} />
-                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
-                  My Classroom Connection
-                </Text>
-              </View>
-              <View style={{ backgroundColor: 'rgba(16,185,129,0.12)', paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.full, borderWidth: 1, borderColor: 'rgba(16,185,129,0.25)' }}>
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.success }}>
-                  Connected
-                </Text>
-              </View>
-            </View>
-            <View style={{ gap: 4 }}>
-              {teacherName ? (
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }}>
-                  Teacher: <Text style={{ color: Colors.accentPrimary }}>{teacherName}</Text>
-                </Text>
-              ) : null}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <Calendar size={13} color={Colors.accentPrimary} />
-                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
-                  Enrolled Term: S.Y. {activeSchoolYear} • {activeTerm}
-                </Text>
-              </View>
-              <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                Class Code: {classroomId}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setJoinModalVisible(true)}
-                activeOpacity={0.8}
-                style={{
-                  marginTop: Spacing.xs,
-                  paddingVertical: Spacing.sm,
-                  paddingHorizontal: Spacing.md,
-                  borderRadius: Radius.md,
-                  borderWidth: 1,
-                  borderColor: 'rgba(17,66,142,0.25)',
-                  backgroundColor: 'rgba(17,66,142,0.06)',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: Spacing.xs,
-                }}
-              >
-                <Users size={14} color={Colors.accentPrimary} />
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
-                  Switch / Join Another Classroom
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </GlassCard>
-        ) : (
-          <GlassCard padding={Spacing.lg} style={{ gap: Spacing.sm, borderColor: 'rgba(17,66,142,0.15)', borderWidth: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-              <Users size={20} color={Colors.accentPrimary} />
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
-                My Classroom Connection
-              </Text>
-            </View>
-            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
-              Enter the invite code from your teacher to unlock assignments, lessons, and sync your achievements.
-            </Text>
-            <TouchableOpacity
-              onPress={() => setJoinModalVisible(true)}
-              activeOpacity={0.8}
-              style={{
-                backgroundColor: 'rgba(17,66,142,0.06)',
-                borderWidth: 1,
-                borderColor: Colors.accentPrimary,
-                borderRadius: Radius.md,
-                paddingVertical: Spacing.md,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.accentPrimary }}>
-                Enter Invite Code
-              </Text>
-            </TouchableOpacity>
-          </GlassCard>
-        )}
-
-        {/* Stats row */}
-        <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-          <GlassCard padding={Spacing.md} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
-            <Flame size={22} color="#F59E0B" />
-            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
-              {streakCount}
-            </Text>
-            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-              Day Streak
-            </Text>
-          </GlassCard>
-          <GlassCard padding={Spacing.md} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
-            <Star size={22} color="#F59E0B" fill="#F59E0B" />
-            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
-              {virtualStars}
-            </Text>
-            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-              Stars Collected
-            </Text>
-          </GlassCard>
-          <GlassCard padding={Spacing.md} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
-            <Trophy size={22} color="#F59E0B" />
-            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
-              {studentProgress.length}
-            </Text>
-            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-              Lessons Completed
-            </Text>
-          </GlassCard>
-        </View>
-
-        {/* Today's Pick — U7: added personalization subtitle */}
-        {recommended ? (
-          <GlassCard padding={Spacing.lg} style={{ gap: Spacing.sm }}>
-            <Text style={{
-              fontFamily: Fonts.bodySemiBold,
-              fontSize: FontSizes.xs,
-              color: Colors.accentPrimary,
-              textTransform: 'uppercase',
-              letterSpacing: 1,
-            }}>
-              Today's Pick
-            </Text>
-            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
-              {recommended.topic}
-            </Text>
-            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
-              {recommended.subject} · Grade {recommended.gradeLevel}
-            </Text>
-            {/* U7: Personalization hint so students know this is tailored for them */}
-            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textDark, fontStyle: 'italic' }}>
-              Recommended based on your progress
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                if (isTimeLimitExceeded) {
-                  toast.warning("You've reached your daily screen time limit.");
-                  return;
-                }
-                navigation.navigate('Study', {
-                  subject: recommended.subject,
-                  gradeLevel: recommended.gradeLevel,
-                  topic: recommended.topic,
-                });
-              }}
-              activeOpacity={0.8}
-              accessibilityLabel="Start Today's Lesson"
-              style={{
-                marginTop: Spacing.xs,
-                backgroundColor: Colors.accentPrimary,
-                borderRadius: Radius.md,
-                paddingVertical: Spacing.md,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: Spacing.sm,
-              }}
-            >
-              <Rocket size={16} color={Colors.white} />
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.md, color: Colors.white }}>
-                Start Practice
-              </Text>
-            </TouchableOpacity>
-          </GlassCard>
-        ) : itemBank && studentProgress.length > 0 ? (
-          <GlassCard padding={Spacing.lg} style={{ alignItems: 'center', gap: Spacing.sm }}>
-            <Trophy size={32} color="#F59E0B" fill="#F59E0B" style={{ marginBottom: Spacing.xs }} />
-            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
-              All caught up!
-            </Text>
-            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted, textAlign: 'center' }}>
-              You've tried all available topics. Keep practising to improve your scores!
-            </Text>
-          </GlassCard>
-        ) : (
-          // V1: Suppress duplicate empty state when no-classroom card is already shown above
-          !classroomId ? null : (
-            <GlassCard padding={Spacing.lg} style={{ alignItems: 'center', gap: Spacing.sm }}>
-              <Inbox size={36} color={Colors.textMuted} />
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
-                No topics yet
-              </Text>
-              <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted, textAlign: 'center' }}>
-                Link a classroom from your Profile tab to load activities.
-              </Text>
-            </GlassCard>
-          )
-        )}
-
-        {/* Continue Learning — C1: All hardcoded font strings replaced with Fonts.* tokens */}
-        {lastActivity ? (
-          <GlassCard padding={Spacing.lg} style={{ gap: Spacing.sm }}>
-            <Text style={styles.sectionLabel}>Continue Learning</Text>
-            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.md, color: Colors.textMain }}>
-              {lastActivity.topic}
-            </Text>
-            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
-              {lastActivity.subject} · Grade {lastActivity.gradeLevel} ·{' '}
-              Last score: {Math.round((lastActivity.score / lastActivity.totalQuestions) * 100)}%
-            </Text>
-            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs }}>
-              <TouchableOpacity
-                onPress={() => {
-                  if (isTimeLimitExceeded) {
-                    toast.warning("You've reached your daily screen time limit.");
-                    return;
-                  }
-                  const isProgLocked = isLessonLocked(lastActivity.subject, lastActivity.gradeLevel, lastActivity.topic, studentProgress, preferredGrade, itemBank);
-                  const isEngLocked = lastActivity.subject === 'English' && isEnglishLocked(lastActivity.gradeLevel);
-                  if (isProgLocked || isEngLocked) {
-                    toast.info("This lesson is currently locked based on progression and grade rules.");
-                    return;
-                  }
-                  navigation.navigate('Study', {
-                    subject: lastActivity.subject,
-                    gradeLevel: lastActivity.gradeLevel,
-                    topic: lastActivity.topic,
-                  });
-                }}
-                activeOpacity={0.8}
-                style={{
-                  flex: 1,
-                  backgroundColor: Colors.accentPrimary,
-                  borderRadius: Radius.md,
-                  paddingVertical: Spacing.sm,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
-              >
-                <Play size={14} color={Colors.white} fill={Colors.white} />
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.white }}>Resume Lesson</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Lessons')}
-                activeOpacity={0.8}
-                style={{
-                  flex: 1,
-                  borderWidth: 1,
-                  borderColor: Colors.border,
-                  borderRadius: Radius.md,
-                  paddingVertical: Spacing.sm,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
-              >
-                <BookOpen size={14} color={Colors.accentPrimary} />
-                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.accentPrimary }}>
-                  Next Topic
-                </Text>
-                <ChevronRight size={14} color={Colors.accentPrimary} />
-              </TouchableOpacity>
-            </View>
-          </GlassCard>
-        ) : (
-          <GlassCard padding={Spacing.lg} style={{ gap: Spacing.sm }}>
-            <Text style={styles.sectionLabel}>Ready to Start?</Text>
-            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.md, color: Colors.textMain }}>
-              Pick your first lesson!
-            </Text>
-            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
-              Head to the Lessons tab and choose a topic to begin your learning journey.
-            </Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Lessons')}
-              activeOpacity={0.8}
-              style={{
-                marginTop: Spacing.xs,
-                backgroundColor: Colors.accentPrimary,
-                borderRadius: Radius.md,
-                paddingVertical: Spacing.md,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-            >
-              <Rocket size={16} color={Colors.white} />
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.white }}>
-                Browse Lessons
-              </Text>
-            </TouchableOpacity>
-          </GlassCard>
-        )}
-        {/* Explore Topics / Quick Curriculum Access with See All */}
-        {dashboardTopics.length > 0 && (
-          <View style={{ gap: Spacing.sm, marginTop: Spacing.xs }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 }}>
-              <View>
-                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, letterSpacing: -0.3 }}>
-                  Explore Topics
-                </Text>
-                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                  Grade {preferredGrade} • {dashboardTopics.length} topics available
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Lessons')}
-                activeOpacity={0.7}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 3,
-                  backgroundColor: 'rgba(17,66,142,0.08)',
-                  paddingHorizontal: 10,
-                  paddingVertical: 5,
-                  borderRadius: Radius.full,
-                }}
-              >
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
-                  See All
-                </Text>
-                <ChevronRight size={14} color={Colors.accentPrimary} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={{ gap: Spacing.sm }}>
-              {dashboardTopics.slice(0, 3).map((item) => (
-                <LessonCard
-                  key={`${item.subject}-${item.gradeLevel}-${item.topic}`}
-                  topic={item.topic}
-                  subject={item.subject}
-                  gradeLevel={item.gradeLevel}
-                  completionPercent={item.completionPercent}
-                  bestScore={item.bestScore}
-                  questionCount={item.questionCount}
-                  isLocked={item.isLocked}
-                  lockReason={item.lockReason}
-                  onPress={() => {
-                    if (isTimeLimitExceeded) {
-                      toast.warning("You've reached your daily screen time limit.");
-                      return;
-                    }
-                    navigation.navigate('Study', {
-                      subject: item.subject,
-                      gradeLevel: item.gradeLevel,
-                      topic: item.topic,
-                    });
-                  }}
-                  accessibilityLabel={`Start ${item.topic}`}
-                />
-              ))}
-            </View>
-
-            {dashboardTopics.length > 3 && (
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Lessons')}
-                activeOpacity={0.8}
-                style={{
-                  backgroundColor: Colors.bgInput,
-                  borderWidth: 1,
-                  borderColor: Colors.border,
-                  borderRadius: Radius.md,
-                  minHeight: 44,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginTop: 2,
-                }}
-              >
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
-                  See All Topics ({dashboardTopics.length}) →
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-
-        <View style={styles.bottomSpacer} />
-      </ScrollView>
-
-      {/* ── Join Classroom Modal ── */}
-      <Modal
-        visible={joinModalVisible}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => {
-          setJoinModalVisible(false);
-          setTypedCode('');
-          setVerifiedClassroom(null);
-        }}
-      >
-        {/* M4: KeyboardAvoidingView prevents keyboard from covering the TextInput */}
-        <KeyboardAvoidingView
-          style={{ flex: 1, backgroundColor: 'rgba(6, 9, 19, 0.72)', justifyContent: 'center', padding: Spacing.lg }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <GlassCard style={{ padding: Spacing.xl, gap: Spacing.md, backgroundColor: Colors.bgCard, borderRadius: Radius['2xl'], borderWidth: 1, borderColor: Colors.border }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-              <View style={{
-                width: 44,
-                height: 44,
-                borderRadius: Radius.xl,
-                backgroundColor: 'rgba(17, 66, 142, 0.12)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: 'rgba(17, 66, 142, 0.25)',
-              }}>
-                <Users size={22} color={Colors.accentPrimary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, fontWeight: '700' }}>
-                  Join Classroom
-                </Text>
-                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                  Connect with your teacher
-                </Text>
-              </View>
-            </View>
-
-            {!verifiedClassroom ? (
-              <>
-                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
-                  Type the invite code provided by your teacher (e.g. MTH-G4-XYZ):
-                </Text>
-
-                <TextInput
-                  placeholder="Invite Code"
-                  value={typedCode}
-                  onChangeText={setTypedCode}
-                  autoCapitalize="characters"
-                  maxLength={12}
-                  style={{
-                    borderWidth: 1,
-                    borderColor: Colors.border,
-                    borderRadius: Radius.lg,
-                    paddingHorizontal: Spacing.md,
-                    paddingVertical: Spacing.md,
-                    fontFamily: Fonts.bodyBold,
-                    fontSize: FontSizes.md,
-                    color: Colors.textMain,
-                    backgroundColor: Colors.bgInput,
-                    textAlign: 'center',
-                    letterSpacing: 2
-                  }}
-                />
-
-                <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs }}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setJoinModalVisible(false);
-                      setTypedCode('');
-                    }}
-                    style={{
-                      flex: 1,
-                      borderWidth: 1,
-                      borderColor: Colors.border,
-                      borderRadius: Radius.lg,
-                      paddingVertical: Spacing.md,
-                      alignItems: 'center',
-                      backgroundColor: Colors.bgMain,
-                    }}
-                  >
-                    <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMuted }}>Cancel</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={handleVerifyCode}
-                    disabled={verifying}
-                    style={{
-                      flex: 1,
-                      backgroundColor: Colors.accentPrimary,
-                      borderRadius: Radius.lg,
-                      paddingVertical: Spacing.md,
-                      alignItems: 'center',
-                      flexDirection: 'row',
-                      justifyContent: 'center',
-                      gap: 6
-                    }}
-                  >
-                    {verifying ? (
-                      <ActivityIndicator size="small" color={Colors.white} />
-                    ) : (
-                      <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.white }}>Verify Code</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </>
-            ) : (
-              <>
-                {/* Classroom Details Confirmation Screen */}
-                <View style={{ backgroundColor: 'rgba(16,185,129,0.05)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)', borderRadius: Radius.md, padding: Spacing.md, gap: Spacing.xs }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                    <CheckCircle2 size={16} color={Colors.success} />
-                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.success }}>
-                      Classroom Verified!
-                    </Text>
-                  </View>
-                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                    Teacher: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{verifiedClassroom.teacherName}</Text>
-                  </Text>
-                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                    Subject: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{verifiedClassroom.subject}</Text>
-                  </Text>
-                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                    Grade Level: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>Grade {verifiedClassroom.gradeLevel}</Text>
-                  </Text>
-                  {verifiedClassroom.sectionName && (
-                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                      Section: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{verifiedClassroom.sectionName}</Text>
-                    </Text>
-                  )}
-                  {(verifiedClassroom.schoolYear || verifiedClassroom.term) && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                      <Calendar size={12} color={Colors.textMuted} />
-                      <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                        Academic Period: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>S.Y. {verifiedClassroom.schoolYear || '2026-2027'} • {verifiedClassroom.term || 'Quarter 1'}</Text>
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                  Would you like to connect and download this teacher's custom assignments?
-                </Text>
-
-                <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs }}>
-                  <TouchableOpacity
-                    onPress={() => setVerifiedClassroom(null)}
-                    style={{
-                      flex: 1,
-                      borderWidth: 1,
-                      borderColor: Colors.border,
-                      borderRadius: Radius.lg,
-                      paddingVertical: Spacing.md,
-                      alignItems: 'center',
-                      backgroundColor: Colors.bgMain,
-                    }}
-                  >
-                    <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMuted }}>Back</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={handleConfirmJoin}
-                    disabled={verifying}
-                    style={{
-                      flex: 1,
-                      backgroundColor: Colors.success,
-                      borderRadius: Radius.lg,
-                      paddingVertical: Spacing.md,
-                      alignItems: 'center',
-                      flexDirection: 'row',
-                      justifyContent: 'center',
-                      gap: 6
-                    }}
-                  >
-                    {verifying ? (
-                      <ActivityIndicator size="small" color={Colors.white} />
-                    ) : (
-                      <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.white }}>Confirm &amp; Join</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </GlassCard>
-        </KeyboardAvoidingView>
-      </Modal>
-    </SafeAreaView>
-  );
-}
+/**
+
+ * StudentDashboard — Home tab.
+
+ * Shows a greeting, XP/level card, quick stats, today's recommended lesson,
+
+ * and a quick-action grid. Topic browsing lives in the Lessons tab.
+
+ *
+
+ * UX Audit fixes applied:
+
+ * - C1: Replaced hardcoded 'Inter_700Bold' etc. strings with Fonts.* tokens
+
+ * - V1: Collapsed dual empty-state into one when no classroom is linked
+
+ * - O5: Added connectivity pre-check before classroom verify API call
+
+ * - M4: Wrapped classroom code TextInput in KeyboardAvoidingView
+
+ * - U7: Added personalization subtitle to Today's Pick card
+
+ */
+
+
+
+import React, { useEffect, useState } from 'react';
+
+import {
+
+  Text,
+
+  View,
+
+  TouchableOpacity,
+
+  ScrollView,
+
+  BackHandler,
+
+  Modal,
+
+  TextInput,
+
+  ActivityIndicator,
+
+  RefreshControl,
+
+  KeyboardAvoidingView,
+
+  Platform,
+
+} from 'react-native';
+
+import * as Network from 'expo-network';
+
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { useNavigation } from '@react-navigation/native';
+
+import { useAppStore, resolveServerUrl } from '../store/useAppStore';
+
+import {
+
+  BookOpen,
+
+  Hourglass,
+
+  Flame,
+
+  Rocket,
+
+  Inbox,
+
+  Play,
+
+  ChevronRight,
+
+  Star,
+
+  Trophy,
+
+  Users,
+
+  CheckCircle2,
+
+  School,
+
+  Calendar,
+
+  Sparkles,
+
+} from 'lucide-react-native';
+
+import { toast } from '../components';
+
+
+
+import { Colors } from '../theme/colors';
+
+import { Fonts, FontSizes, LetterSpacing } from '../theme/typography';
+
+import { Spacing, Radius } from '../theme/spacing';
+
+import { Badges } from '../theme/styles';
+
+import { GlassCard } from '../components/ui/GlassCard';
+
+import { SyncBadge } from '../components/shared/SyncBadge';
+
+import { ProgressBar } from '../components/ui/ProgressBar';
+
+import { LessonCard } from '../components/ui/LessonCard';
+
+import { styles } from '../styles/StudentDashboard.styles';
+
+import { isLessonLocked, LESSON_SEQUENCE } from '../utils/engine';
+
+import itemBankData from '../../assets/item_bank.json';
+import { StudentFeatureTourModal } from '../components/shared/StudentFeatureTourModal';
+
+
+
+const OUTFIT_EMOJIS: Record<string, string> = {
+
+  default: '',
+
+  graduation_cap: '🎓',
+
+  detective_hat: '🕵️‍♂️',
+
+  space_visor: '🧑‍🚀',
+
+  wizard_cape: '🧙‍♂️',
+
+  crown: '👑',
+
+  superhero_cape: '🦸',
+
+  party_hat: '🥳',
+
+  astronaut_helmet: '🧑‍🚀',
+
+  artist_beret: '🎨',
+
+  scientist_goggles: '🔬',
+
+};
+
+
+
+export function StudentDashboard() {
+
+  const navigation = useNavigation<any>();
+
+
+
+  const itemBank = useAppStore((s) => s.itemBank);
+
+  const parentalControls = useAppStore((s) => s.parentalControls);
+
+  const studentProgress = useAppStore((s) => s.studentProgress);
+
+  const dailyMinutesUsed = useAppStore((s) => s.dailyMinutesUsed);
+
+  const currentUser = useAppStore((s) => s.currentUser);
+
+  const guestName = useAppStore((s) => s.guestName);
+
+  const streakCount = useAppStore((s) => s.streakCount || 0);
+
+  const avatarEmoji = useAppStore((s) => s.avatarEmoji);
+
+  const xpPoints = useAppStore((s) => s.xpPoints || 0);
+
+  const virtualStars = useAppStore((s) => s.virtualStars || 0);
+
+  const mascotOutfit = useAppStore((s) => s.mascotOutfit || 'default');
+
+  const preferredGrade = useAppStore((s) => s.preferredGrade || 4);
+
+  const classroomId = useAppStore((s) => s.classroomId);
+
+  const teacherName = useAppStore((s) => s.teacherName);
+
+  const setClassroomId = useAppStore((s) => s.setClassroomId);
+
+  const activeSubjects = useAppStore((s) => s.activeSubjects || ['Mathematics', 'English']);
+
+  const activeSchoolYear = useAppStore((s) => s.activeSchoolYear || '2026-2027');
+
+  const activeTerm = useAppStore((s) => s.activeTerm || 'Quarter 1');
+
+
+
+  const [joinModalVisible, setJoinModalVisible] = React.useState(false);
+  const [showTourModal, setShowTourModal] = React.useState(false);
+
+  const [typedCode, setTypedCode] = React.useState('');
+
+  const [verifying, setVerifying] = React.useState(false);
+
+  const [verifiedClassroom, setVerifiedClassroom] = React.useState<any>(null);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [mascotMessage, setMascotMessage] = useState('');
+
+
+
+  useEffect(() => {
+
+    const msgs = [
+
+      "You're doing amazing! Ready to learn something new today? 🚀",
+
+      "Learning is a superpower, and you're doing great! 🌟",
+
+      "Stuck on a topic? Review the concept cards anytime! 📚",
+
+      "Each correct answer is a step closer to mastery! Keep going! 🎯",
+
+      "Don't forget to visit the Mascot Shop to dress me up! 🎓👑",
+
+      "Consistency is key! Let's keep our daily streak alive! 🔥",
+
+      "Make sure to read the lesson guides carefully, they have cool pictures now! 🖼️",
+
+      "You're leveling up fast! Keep it up, explorer! 🎖️"
+
+    ];
+
+    const randomMsg = msgs[Math.floor(Math.random() * msgs.length)];
+
+    setMascotMessage(randomMsg);
+
+  }, []);
+
+
+
+  const handleRefresh = async () => {
+
+    setRefreshing(true);
+
+    const appMode = useAppStore.getState().appMode;
+
+    const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+
+    try {
+
+      if (appMode === 'online') {
+
+        await useAppStore.getState().syncProgressNow(serverUrl);
+
+        if (classroomId) {
+
+          await useAppStore.getState().fetchItemBankFromServer(serverUrl, classroomId);
+
+        }
+
+      }
+
+    } catch (err) {
+
+      console.warn('[Refresh] Failed to refresh student dashboard:', err);
+
+    } finally {
+
+      setRefreshing(false);
+
+    }
+
+  };
+
+
+
+  const handleVerifyCode = async () => {
+
+    const code = typedCode.trim().toUpperCase();
+
+    if (!code) {
+
+      toast.error('Please enter a classroom code.');
+
+      return;
+
+    }
+
+    const codeRegex = /^[A-Z0-9-]{3,24}$/i;
+
+    if (!codeRegex.test(code)) {
+
+      toast.error('Invalid classroom code format.');
+
+      return;
+
+    }
+
+
+
+    // O5: Pre-check connectivity before attempting server call
+
+    try {
+
+      const netState = await Network.getNetworkStateAsync();
+
+      const isOnline = netState.isConnected && netState.isInternetReachable !== false;
+
+      if (!isOnline) {
+
+        toast.error('You need internet access to join a classroom. Please connect and try again.');
+
+        return;
+
+      }
+
+    } catch {
+
+      // If network check itself fails, proceed and let fetch handle the error
+
+    }
+
+
+
+    setVerifying(true);
+
+    try {
+
+      const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+
+      const resolvedUrl = resolveServerUrl(serverUrl);
+
+      const res = await fetch(`${resolvedUrl}/api/classroom/verify?code=${encodeURIComponent(code)}`);
+
+      if (res.ok) {
+
+        const data = await res.json();
+
+        
+
+        // Strict Grade Level Enforcement
+
+        if (data.gradeLevel && Number(data.gradeLevel) !== Number(preferredGrade)) {
+
+          toast.error(`Grade Level Mismatch: This classroom is strictly for Grade ${data.gradeLevel} students. Your profile is set to Grade ${preferredGrade}.`);
+
+          setVerifiedClassroom(null);
+
+          return;
+
+        }
+
+
+
+        setVerifiedClassroom(data);
+
+      } else {
+
+        const errData = await res.json().catch(() => ({}));
+
+        toast.error(errData.error || 'Invalid classroom code. Check the code and try again.');
+
+      }
+
+    } catch (err) {
+
+      toast.error('Could not reach server. Please check your connection and try again.');
+
+    } finally {
+
+      setVerifying(false);
+
+    }
+
+  };
+
+
+
+  const handleConfirmJoin = async () => {
+
+    if (!verifiedClassroom) return;
+
+    if (verifiedClassroom.gradeLevel && Number(verifiedClassroom.gradeLevel) !== Number(preferredGrade)) {
+
+      toast.error(`Grade Level Mismatch: This classroom is strictly for Grade ${verifiedClassroom.gradeLevel} students. Your profile is set to Grade ${preferredGrade}.`);
+
+      return;
+
+    }
+
+    const code = verifiedClassroom.classroomId;
+
+    const serverUrl = useAppStore.getState().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+
+
+
+    setVerifying(true);
+
+    try {
+
+      const ok = await useAppStore.getState().fetchItemBankFromServer(serverUrl, code);
+
+      if (ok) {
+
+        setClassroomId(
+
+          code,
+
+          verifiedClassroom?.teacherName || null,
+
+          verifiedClassroom?.showQuizAnswers,
+
+          verifiedClassroom?.consultationHours
+
+        );
+
+        
+
+        // Update the student's preferred grade based on the classroom joined
+
+        if (verifiedClassroom && verifiedClassroom.gradeLevel) {
+
+          useAppStore.getState().setPreferredGrade(verifiedClassroom.gradeLevel);
+
+        }
+
+        if (verifiedClassroom && verifiedClassroom.schoolYear) {
+
+          useAppStore.getState().setActiveSchoolYear(verifiedClassroom.schoolYear);
+
+        }
+
+        if (verifiedClassroom && verifiedClassroom.term) {
+
+          useAppStore.getState().setActiveTerm(verifiedClassroom.term);
+
+        }
+
+
+
+        // Pair this student name on the server as a classroom member
+
+        const resolvedUrl = resolveServerUrl(serverUrl);
+
+        const activeStudentId = useAppStore.getState().studentId || 'GUEST';
+
+        await fetch(`${resolvedUrl}/api/classroom/pair`, {
+
+          method: 'POST',
+
+          headers: { 'Content-Type': 'application/json' },
+
+          body: JSON.stringify({ studentId: activeStudentId, classroomId: code, gradeLevel: preferredGrade }),
+
+        }).catch(() => {});
+
+
+
+        setJoinModalVisible(false);
+
+        setTypedCode('');
+
+        setVerifiedClassroom(null);
+
+        toast.success(`Joined classroom "${code}" successfully!`);
+
+      } else {
+
+        toast.error('Joined classroom, but failed to download assignment bank.');
+
+      }
+
+    } catch (err) {
+
+      toast.error('Failed to complete classroom joining.');
+
+    } finally {
+
+      setVerifying(false);
+
+    }
+
+  };
+
+
+
+  const outfitEmoji = OUTFIT_EMOJIS[mascotOutfit] || '';
+
+  const level = Math.floor(xpPoints / 100) + 1;
+
+  const xpInLevel = xpPoints % 100;
+
+  const studentName = guestName ?? currentUser?.name ?? 'Explorer';
+
+
+
+  const isTimeLimitExceeded =
+
+    parentalControls.dailyTimeLimit > 0 &&
+
+    dailyMinutesUsed >= parentalControls.dailyTimeLimit;
+
+
+
+  // Screen time tracking
+
+  useEffect(() => {
+
+    const interval = setInterval(() => {
+
+      useAppStore.getState().trackActiveMinutes(0.25);
+
+    }, 15000);
+
+    return () => clearInterval(interval);
+
+  }, []);
+
+
+
+  // Intercept Android hardware back (prevent escaping to Login)
+
+  useEffect(() => {
+
+    const onBack = () => true;
+
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
+
+    return () => sub.remove();
+
+  }, []);
+
+
+
+  // Auto-sync offline progress to server when entering Student Dashboard
+
+  useEffect(() => {
+
+    const appMode = useAppStore.getState().appMode;
+
+    const serverUrl = useAppStore.getState().serverUrl;
+
+    if (appMode === 'online') {
+
+      useAppStore.getState().syncProgressNow(serverUrl).catch((err) => {
+
+        console.warn('[Sync] Background auto-sync failed on mount:', err);
+
+      });
+
+    }
+
+  }, []);
+
+
+
+  const getMathAverageScore = (grade: number): number => {
+
+    const logs = studentProgress.filter(
+
+      (p) => (p.subject === 'Mathematics' || p.subject === 'Math') && p.gradeLevel === grade,
+
+    );
+
+    if (logs.length === 0) return 0;
+
+    const sum = logs.reduce((acc, p) => acc + (p.score / p.totalQuestions) * 100, 0);
+
+    return Math.round(sum / logs.length);
+
+  };
+
+
+
+  const isEnglishLocked = (gradeLevel: number): boolean => {
+
+    if (classroomId || !parentalControls.mathBeforeEnglish) return false;
+
+    const mathLogs = studentProgress.filter(
+
+      (p) => (p.subject === 'Mathematics' || p.subject === 'Math') && p.gradeLevel === gradeLevel,
+
+    );
+
+    if (mathLogs.length === 0) return false;
+
+    const mathScore = getMathAverageScore(gradeLevel);
+
+    return mathScore < 80;
+
+  };
+
+
+
+  // Smart recommended: needs-improvement (40–79%) first, then unattempted.
+
+  // Grade order: student's preferredGrade first. Subject order: weaker subject first.
+
+  const recommended = (() => {
+
+    const effectiveBank = itemBank || (itemBankData as any);
+
+    if (!effectiveBank) return null;
+
+
+
+    const getBestRatio = (subject: string, grade: number, topic: string): number | null => {
+
+      const logs = studentProgress.filter(
+
+        (p) =>
+
+          (p.subject === subject || (subject === 'Mathematics' && p.subject === 'Math')) &&
+
+          p.gradeLevel === grade &&
+
+          p.topic === topic,
+
+      );
+
+      if (logs.length === 0) return null;
+
+      return Math.max(...logs.map((p) => p.score / p.totalQuestions));
+
+    };
+
+
+
+    const getSubjectAvg = (subject: string): number => {
+
+      const logs = studentProgress.filter(
+
+        (p) => p.subject === subject || (subject === 'Mathematics' && p.subject === 'Math'),
+
+      );
+
+      if (logs.length === 0) return -1;
+
+      return logs.reduce((acc, p) => acc + p.score / p.totalQuestions, 0) / logs.length;
+
+    };
+
+
+
+    const availableSubjects = Array.from(new Set(['Mathematics', 'English', ...(activeSubjects || [])]));
+
+    if (availableSubjects.length === 0) return null;
+
+
+
+    const gradeOrder = [preferredGrade, ...[4, 5, 6].filter((g) => g !== preferredGrade)];
+
+    const mathAvg = getSubjectAvg('Mathematics');
+
+    const engAvg = getSubjectAvg('English');
+
+    const subjectOrder = (mathAvg <= engAvg ? ['Mathematics', 'English'] : ['English', 'Mathematics'])
+
+      .filter((s) => availableSubjects.includes(s));
+
+
+
+    let improvable: { subject: string; gradeLevel: number; topic: string } | null = null;
+
+    let unattempted: { subject: string; gradeLevel: number; topic: string } | null = null;
+
+
+
+    for (const grade of gradeOrder) {
+
+      for (const subject of subjectOrder) {
+
+        const gradeData = effectiveBank[subject]?.[grade.toString()];
+
+        if (!gradeData) continue;
+
+        for (const topic of Object.keys(gradeData)) {
+
+          if (topic === 'studyContent') continue;
+
+
+
+          // Skip if locked by 1:1 progression or English-after-Math lock rules
+
+          const isProgLocked = isLessonLocked(subject, grade, topic, studentProgress, preferredGrade, effectiveBank);
+
+          const isEngLocked = subject === 'English' && isEnglishLocked(grade);
+
+          if (isProgLocked || isEngLocked) continue;
+
+
+
+          const best = getBestRatio(subject, grade, topic);
+
+          if (best === null) {
+
+            if (!unattempted) unattempted = { subject, gradeLevel: grade, topic };
+
+          } else if (best >= 0.4 && best < 0.8) {
+
+            if (!improvable) improvable = { subject, gradeLevel: grade, topic };
+
+          }
+
+        }
+
+      }
+
+    }
+
+
+
+    return improvable ?? unattempted;
+
+  })();
+
+
+
+  // Most recent quiz attempt for "Continue Learning" card
+
+  const availableSubjectsList = Array.from(new Set(['Mathematics', 'English', ...(activeSubjects || [])]));
+
+  const filteredProgress = studentProgress.filter(
+
+    (p) =>
+
+      (availableSubjectsList.includes(p.subject) || (p.subject === 'Math' && availableSubjectsList.includes('Mathematics'))) &&
+
+      p.gradeLevel === preferredGrade,
+
+  );
+
+  const lastActivity = filteredProgress.length > 0
+
+    ? filteredProgress.reduce((a, b) => (new Date(a.timestamp) > new Date(b.timestamp) ? a : b))
+
+    : null;
+
+
+
+  const dashboardTopics = React.useMemo(() => {
+
+    const effectiveBank = itemBank || (itemBankData as any);
+
+    if (!effectiveBank) return [];
+
+    const list: Array<{
+
+      topic: string;
+
+      subject: string;
+
+      gradeLevel: number;
+
+      completionPercent: number;
+
+      bestScore: number | null;
+
+      questionCount: number;
+
+      isLocked: boolean;
+
+      lockReason?: string;
+
+    }> = [];
+
+
+
+    const subjects = Array.from(new Set(['Mathematics', 'English', ...(activeSubjects || [])]));
+
+    for (const sub of subjects) {
+
+      const gradeData = effectiveBank[sub]?.[preferredGrade.toString()];
+
+      if (!gradeData) continue;
+
+      for (const top of Object.keys(gradeData)) {
+
+        if (top === 'studyContent') continue;
+
+        const logs = studentProgress.filter(
+
+          (p) => (p.subject === sub || (sub === 'Mathematics' && p.subject === 'Math')) &&
+
+                 p.gradeLevel === preferredGrade && p.topic === top
+
+        );
+
+        const bestScore = logs.length > 0 ? Math.round(Math.max(...logs.map((p) => (p.score / p.totalQuestions) * 100))) : null;
+
+        const completionPercent = bestScore ?? 0;
+
+        const qCount = Array.isArray(gradeData[top]?.questions) ? gradeData[top].questions.length : 4;
+
+        const isProgLocked = isLessonLocked(sub, preferredGrade, top, studentProgress, preferredGrade, effectiveBank);
+
+        const isEngLocked = sub === 'English' && isEnglishLocked(preferredGrade);
+
+        const isLocked = isProgLocked || isEngLocked;
+
+        let lockReason: string | undefined = undefined;
+
+        if (isEngLocked) {
+
+          lockReason = `Reach 80% in Math first`;
+
+        } else if (isProgLocked) {
+
+          lockReason = `Locked`;
+
+        }
+
+
+
+        list.push({
+
+          topic: top,
+
+          subject: sub,
+
+          gradeLevel: preferredGrade,
+
+          completionPercent,
+
+          bestScore,
+
+          questionCount: qCount,
+
+          isLocked,
+
+          lockReason,
+
+        });
+
+      }
+
+    }
+
+    return list;
+
+  }, [itemBank, preferredGrade, activeSubjects, studentProgress]);
+
+
+
+  return (
+
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+
+      {/* Header */}
+
+      <View style={styles.headerBar}>
+
+        <View style={{ flex: 1 }}>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+
+            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.accentPrimary, letterSpacing: LetterSpacing.tight }}>
+
+              GURO
+
+            </Text>
+
+            <View style={{
+
+              flexDirection: 'row',
+
+              alignItems: 'center',
+
+              gap: 4,
+
+              backgroundColor: 'rgba(17,66,142,0.08)',
+
+              paddingHorizontal: 8,
+
+              paddingVertical: 3,
+
+              borderRadius: 12,
+
+              borderWidth: 1,
+
+              borderColor: 'rgba(17,66,142,0.15)',
+
+            }}>
+
+              <Calendar size={11} color={Colors.accentPrimary} />
+
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+
+                S.Y. {activeSchoolYear} • {activeTerm}
+
+              </Text>
+
+            </View>
+
+          </View>
+
+          <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
+
+            DepEd-Aligned Interactive Learning
+
+          </Text>
+
+        </View>
+
+        <SyncBadge gradeLevel={preferredGrade} />
+
+      </View>
+
+ 
+
+      <ScrollView
+
+        contentContainerStyle={styles.scrollContent}
+
+        showsVerticalScrollIndicator={false}
+
+        refreshControl={
+
+          <RefreshControl
+
+            refreshing={refreshing}
+
+            onRefresh={handleRefresh}
+
+            colors={[Colors.accentPrimary]}
+
+            tintColor={Colors.accentPrimary}
+
+          />
+
+        }
+
+      >
+
+        {/* Time-limit banner */}
+
+        {isTimeLimitExceeded && (
+
+          <GlassCard style={styles.timeBanner} padding={Spacing.md}>
+
+            <View style={[Badges.base, Badges.danger, { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start' }]}>
+
+              <Hourglass size={12} color={Colors.dangerText} />
+
+              <Text style={[Badges.text, Badges.dangerText]}>Time Limit Reached</Text>
+
+            </View>
+
+            <Text style={styles.timeBannerText}>
+
+              You've used {Math.round(dailyMinutesUsed)} / {parentalControls.dailyTimeLimit} min today.
+
+              Rest up and come back tomorrow!
+
+            </Text>
+
+          </GlassCard>
+
+        )}
+
+
+
+        {/* Integrated Mascot Hero & XP Card */}
+
+        <View
+
+          style={{
+
+            backgroundColor: Colors.accentBlue,
+
+            borderRadius: Radius.lg,
+
+            padding: Spacing.lg,
+
+            flexDirection: 'column',
+
+            gap: Spacing.md,
+
+            shadowColor: Colors.accentBlue,
+
+            shadowOffset: { width: 0, height: 6 },
+
+            shadowOpacity: 0.15,
+
+            shadowRadius: 10,
+
+            elevation: 4,
+
+          }}
+
+        >
+
+          {/* Top Row: Avatar and Name */}
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+
+            {/* Clickable mascot avatar capsule */}
+
+            <TouchableOpacity
+
+              activeOpacity={0.85}
+
+              onPress={() => navigation.navigate('Me')}
+
+              style={{
+
+                position: 'relative',
+
+                width: 64,
+
+                height: 64,
+
+                alignItems: 'center',
+
+                justifyContent: 'center',
+
+                backgroundColor: 'rgba(255,255,255,0.2)',
+
+                borderRadius: Radius.md,
+
+                borderWidth: 2,
+
+                borderColor: 'rgba(255,255,255,0.3)',
+
+              }}
+
+            >
+
+              <Text style={{ fontSize: 40 }}>{avatarEmoji}</Text>
+
+              {outfitEmoji ? (
+
+                <Text style={{ fontSize: 18, position: 'absolute', top: -5, right: -5 }}>
+
+                  {outfitEmoji}
+
+                </Text>
+
+              ) : null}
+
+            </TouchableOpacity>
+
+            
+
+            <View style={{ flex: 1, gap: 2 }}>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 2 }}>
+
+                <View style={{
+
+                  backgroundColor: 'rgba(255,255,255,0.22)',
+
+                  paddingHorizontal: 8,
+
+                  paddingVertical: 2,
+
+                  borderRadius: Radius.full,
+
+                }}>
+
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 9, color: Colors.white, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+
+                    Student Dashboard
+
+                  </Text>
+
+                </View>
+
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: 'rgba(255,255,255,0.9)' }}>
+
+                  Level {level} Explorer
+
+                </Text>
+
+              </View>
+
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.white }}>
+
+                Welcome back, {studentName}!
+
+              </Text>
+
+            </View>
+
+          </View>
+
+
+
+          {/* Mascot companion speech bubble */}
+
+          <View style={{
+
+            backgroundColor: 'rgba(255,255,255,0.12)',
+
+            borderRadius: Radius.sm,
+
+            padding: Spacing.sm,
+
+            borderWidth: 1,
+
+            borderColor: 'rgba(255,255,255,0.2)',
+
+            flexDirection: 'row',
+
+            alignItems: 'flex-start',
+
+            gap: 6,
+
+          }}>
+
+            <Sparkles size={14} color="#FEF3C7" style={{ marginTop: 2, flexShrink: 0 }} />
+
+            <Text style={{ flex: 1, fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.white, lineHeight: 16 }}>
+
+              Companion Guide: <Text style={{ fontFamily: Fonts.bodyMedium, color: '#FEF3C7' }}>"{mascotMessage}"</Text>
+
+            </Text>
+
+          </View>
+
+          
+
+          {/* Bottom section: Full-width XP Progress Bar */}
+
+          <View style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: Spacing.sm, borderRadius: Radius.md, gap: 4 }}>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+
+              <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.white }}>
+
+                Learning Progress
+
+              </Text>
+
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.white }}>
+
+                {xpInLevel} / 100 XP
+
+              </Text>
+
+            </View>
+
+            <ProgressBar progress={xpInLevel} height={8} color="#F59E0B" backgroundColor="rgba(255,255,255,0.25)" />
+
+          </View>
+
+        </View>
+
+
+
+        {/* Connected Classroom Card vs Connect Onboarding */}
+
+        {classroomId ? (
+
+          <GlassCard padding={Spacing.lg} style={{ gap: Spacing.sm, borderColor: 'rgba(16,185,129,0.3)', borderWidth: 1 }}>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+
+                <School size={20} color={Colors.accentPrimary} />
+
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
+
+                  My Classroom Connection
+
+                </Text>
+
+              </View>
+
+              <View style={{ backgroundColor: 'rgba(16,185,129,0.12)', paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.full, borderWidth: 1, borderColor: 'rgba(16,185,129,0.25)' }}>
+
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.success }}>
+
+                  Connected
+
+                </Text>
+
+              </View>
+
+            </View>
+
+            <View style={{ gap: 4 }}>
+
+              {teacherName ? (
+
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.textMain }}>
+
+                  Teacher: <Text style={{ color: Colors.accentPrimary }}>{teacherName}</Text>
+
+                </Text>
+
+              ) : null}
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+
+                <Calendar size={13} color={Colors.accentPrimary} />
+
+                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+
+                  Enrolled Term: S.Y. {activeSchoolYear} • {activeTerm}
+
+                </Text>
+
+              </View>
+
+              <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+
+                Class Code: {classroomId}
+
+              </Text>
+
+              <TouchableOpacity
+
+                onPress={() => setJoinModalVisible(true)}
+
+                activeOpacity={0.8}
+
+                style={{
+
+                  marginTop: Spacing.xs,
+
+                  paddingVertical: Spacing.sm,
+
+                  paddingHorizontal: Spacing.md,
+
+                  borderRadius: Radius.md,
+
+                  borderWidth: 1,
+
+                  borderColor: 'rgba(17,66,142,0.25)',
+
+                  backgroundColor: 'rgba(17,66,142,0.06)',
+
+                  flexDirection: 'row',
+
+                  alignItems: 'center',
+
+                  justifyContent: 'center',
+
+                  gap: Spacing.xs,
+
+                }}
+
+              >
+
+                <Users size={14} color={Colors.accentPrimary} />
+
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+
+                  Switch / Join Another Classroom
+
+                </Text>
+
+              </TouchableOpacity>
+
+            </View>
+
+          </GlassCard>
+
+        ) : (
+
+          <GlassCard padding={Spacing.lg} style={{ gap: Spacing.sm, borderColor: 'rgba(17,66,142,0.15)', borderWidth: 1 }}>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+
+              <Users size={20} color={Colors.accentPrimary} />
+
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
+
+                My Classroom Connection
+
+              </Text>
+
+            </View>
+
+            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
+
+              Enter the invite code from your teacher to unlock assignments, lessons, and sync your achievements.
+
+            </Text>
+
+            <TouchableOpacity
+
+              onPress={() => setJoinModalVisible(true)}
+
+              activeOpacity={0.8}
+
+              style={{
+
+                backgroundColor: 'rgba(17,66,142,0.06)',
+
+                borderWidth: 1,
+
+                borderColor: Colors.accentPrimary,
+
+                borderRadius: Radius.md,
+
+                paddingVertical: Spacing.md,
+
+                alignItems: 'center',
+
+                justifyContent: 'center',
+
+              }}
+
+            >
+
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.accentPrimary }}>
+
+                Enter Invite Code
+
+              </Text>
+
+            </TouchableOpacity>
+
+          </GlassCard>
+
+        )}
+
+
+
+        {/* Stats row */}
+
+        <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+
+          <GlassCard padding={Spacing.md} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
+
+            <Flame size={22} color="#F59E0B" />
+
+            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
+
+              {streakCount}
+
+            </Text>
+
+            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+
+              Day Streak
+
+            </Text>
+
+          </GlassCard>
+
+          <GlassCard padding={Spacing.md} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
+
+            <Star size={22} color="#F59E0B" fill="#F59E0B" />
+
+            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
+
+              {virtualStars}
+
+            </Text>
+
+            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+
+              Stars Collected
+
+            </Text>
+
+          </GlassCard>
+
+          <GlassCard padding={Spacing.md} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
+
+            <Trophy size={22} color="#F59E0B" />
+
+            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
+
+              {studentProgress.length}
+
+            </Text>
+
+            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+
+              Lessons Completed
+
+            </Text>
+
+          </GlassCard>
+
+        </View>
+
+
+
+        {/* Today's Pick — U7: added personalization subtitle */}
+
+        {recommended ? (
+
+          <GlassCard padding={Spacing.lg} style={{ gap: Spacing.sm }}>
+
+            <Text style={{
+
+              fontFamily: Fonts.bodySemiBold,
+
+              fontSize: FontSizes.xs,
+
+              color: Colors.accentPrimary,
+
+              textTransform: 'uppercase',
+
+              letterSpacing: 1,
+
+            }}>
+
+              Today's Pick
+
+            </Text>
+
+            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
+
+              {recommended.topic}
+
+            </Text>
+
+            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
+
+              {recommended.subject} · Grade {recommended.gradeLevel}
+
+            </Text>
+
+            {/* U7: Personalization hint so students know this is tailored for them */}
+
+            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textDark, fontStyle: 'italic' }}>
+
+              Recommended based on your progress
+
+            </Text>
+
+            <TouchableOpacity
+
+              onPress={() => {
+
+                if (isTimeLimitExceeded) {
+
+                  toast.warning("You've reached your daily screen time limit.");
+
+                  return;
+
+                }
+
+                navigation.navigate('Study', {
+
+                  subject: recommended.subject,
+
+                  gradeLevel: recommended.gradeLevel,
+
+                  topic: recommended.topic,
+
+                });
+
+              }}
+
+              activeOpacity={0.8}
+
+              accessibilityLabel="Start Today's Lesson"
+
+              style={{
+
+                marginTop: Spacing.xs,
+
+                backgroundColor: Colors.accentPrimary,
+
+                borderRadius: Radius.md,
+
+                paddingVertical: Spacing.md,
+
+                flexDirection: 'row',
+
+                alignItems: 'center',
+
+                justifyContent: 'center',
+
+                gap: Spacing.sm,
+
+              }}
+
+            >
+
+              <Rocket size={16} color={Colors.white} />
+
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.md, color: Colors.white }}>
+
+                Start Practice
+
+              </Text>
+
+            </TouchableOpacity>
+
+          </GlassCard>
+
+        ) : itemBank && studentProgress.length > 0 ? (
+
+          <GlassCard padding={Spacing.lg} style={{ alignItems: 'center', gap: Spacing.sm }}>
+
+            <Trophy size={32} color="#F59E0B" fill="#F59E0B" style={{ marginBottom: Spacing.xs }} />
+
+            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
+
+              All caught up!
+
+            </Text>
+
+            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted, textAlign: 'center' }}>
+
+              You've tried all available topics. Keep practising to improve your scores!
+
+            </Text>
+
+          </GlassCard>
+
+        ) : (
+
+          // V1: Suppress duplicate empty state when no-classroom card is already shown above
+
+          !classroomId ? null : (
+
+            <GlassCard padding={Spacing.lg} style={{ alignItems: 'center', gap: Spacing.sm }}>
+
+              <Inbox size={36} color={Colors.textMuted} />
+
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain }}>
+
+                No topics yet
+
+              </Text>
+
+              <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted, textAlign: 'center' }}>
+
+                Link a classroom from your Profile tab to load activities.
+
+              </Text>
+
+            </GlassCard>
+
+          )
+
+        )}
+
+
+
+        {/* Continue Learning — C1: All hardcoded font strings replaced with Fonts.* tokens */}
+
+        {lastActivity ? (
+
+          <GlassCard padding={Spacing.lg} style={{ gap: Spacing.sm }}>
+
+            <Text style={styles.sectionLabel}>Continue Learning</Text>
+
+            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.md, color: Colors.textMain }}>
+
+              {lastActivity.topic}
+
+            </Text>
+
+            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
+
+              {lastActivity.subject} · Grade {lastActivity.gradeLevel} ·{' '}
+
+              Last score: {Math.round((lastActivity.score / lastActivity.totalQuestions) * 100)}%
+
+            </Text>
+
+            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs }}>
+
+              <TouchableOpacity
+
+                onPress={() => {
+
+                  if (isTimeLimitExceeded) {
+
+                    toast.warning("You've reached your daily screen time limit.");
+
+                    return;
+
+                  }
+
+                  const isProgLocked = isLessonLocked(lastActivity.subject, lastActivity.gradeLevel, lastActivity.topic, studentProgress, preferredGrade, itemBank);
+
+                  const isEngLocked = lastActivity.subject === 'English' && isEnglishLocked(lastActivity.gradeLevel);
+
+                  if (isProgLocked || isEngLocked) {
+
+                    toast.info("This lesson is currently locked based on progression and grade rules.");
+
+                    return;
+
+                  }
+
+                  navigation.navigate('Study', {
+
+                    subject: lastActivity.subject,
+
+                    gradeLevel: lastActivity.gradeLevel,
+
+                    topic: lastActivity.topic,
+
+                  });
+
+                }}
+
+                activeOpacity={0.8}
+
+                style={{
+
+                  flex: 1,
+
+                  backgroundColor: Colors.accentPrimary,
+
+                  borderRadius: Radius.md,
+
+                  paddingVertical: Spacing.sm,
+
+                  flexDirection: 'row',
+
+                  alignItems: 'center',
+
+                  justifyContent: 'center',
+
+                  gap: 6,
+
+                }}
+
+              >
+
+                <Play size={14} color={Colors.white} fill={Colors.white} />
+
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.white }}>Resume Lesson</Text>
+
+              </TouchableOpacity>
+
+              <TouchableOpacity
+
+                onPress={() => navigation.navigate('Lessons')}
+
+                activeOpacity={0.8}
+
+                style={{
+
+                  flex: 1,
+
+                  borderWidth: 1,
+
+                  borderColor: Colors.border,
+
+                  borderRadius: Radius.md,
+
+                  paddingVertical: Spacing.sm,
+
+                  flexDirection: 'row',
+
+                  alignItems: 'center',
+
+                  justifyContent: 'center',
+
+                  gap: 6,
+
+                }}
+
+              >
+
+                <BookOpen size={14} color={Colors.accentPrimary} />
+
+                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.sm, color: Colors.accentPrimary }}>
+
+                  Next Topic
+
+                </Text>
+
+                <ChevronRight size={14} color={Colors.accentPrimary} />
+
+              </TouchableOpacity>
+
+            </View>
+
+          </GlassCard>
+
+        ) : (
+
+          <GlassCard padding={Spacing.lg} style={{ gap: Spacing.sm }}>
+
+            <Text style={styles.sectionLabel}>Ready to Start?</Text>
+
+            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.md, color: Colors.textMain }}>
+
+              Pick your first lesson!
+
+            </Text>
+
+            <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
+
+              Head to the Lessons tab and choose a topic to begin your learning journey.
+
+            </Text>
+
+            <TouchableOpacity
+
+              onPress={() => navigation.navigate('Lessons')}
+
+              activeOpacity={0.8}
+
+              style={{
+
+                marginTop: Spacing.xs,
+
+                backgroundColor: Colors.accentPrimary,
+
+                borderRadius: Radius.md,
+
+                paddingVertical: Spacing.md,
+
+                flexDirection: 'row',
+
+                alignItems: 'center',
+
+                justifyContent: 'center',
+
+                gap: 8,
+
+              }}
+
+            >
+
+              <Rocket size={16} color={Colors.white} />
+
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.white }}>
+
+                Browse Lessons
+
+              </Text>
+
+            </TouchableOpacity>
+
+          </GlassCard>
+
+        )}
+
+        {/* Explore Topics / Quick Curriculum Access with See All */}
+
+        {dashboardTopics.length > 0 && (
+
+          <View style={{ gap: Spacing.sm, marginTop: Spacing.xs }}>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 }}>
+
+              <View>
+
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, letterSpacing: -0.3 }}>
+
+                  Explore Topics
+
+                </Text>
+
+                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+
+                  Grade {preferredGrade} • {dashboardTopics.length} topics available
+
+                </Text>
+
+              </View>
+
+              <TouchableOpacity
+
+                onPress={() => navigation.navigate('Lessons')}
+
+                activeOpacity={0.7}
+
+                style={{
+
+                  flexDirection: 'row',
+
+                  alignItems: 'center',
+
+                  gap: 3,
+
+                  backgroundColor: 'rgba(17,66,142,0.08)',
+
+                  paddingHorizontal: 10,
+
+                  paddingVertical: 5,
+
+                  borderRadius: Radius.full,
+
+                }}
+
+              >
+
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+
+                  See All
+
+                </Text>
+
+                <ChevronRight size={14} color={Colors.accentPrimary} />
+
+              </TouchableOpacity>
+
+            </View>
+
+
+
+            <View style={{ gap: Spacing.sm }}>
+
+              {dashboardTopics.slice(0, 3).map((item) => (
+
+                <LessonCard
+
+                  key={`${item.subject}-${item.gradeLevel}-${item.topic}`}
+
+                  topic={item.topic}
+
+                  subject={item.subject}
+
+                  gradeLevel={item.gradeLevel}
+
+                  completionPercent={item.completionPercent}
+
+                  bestScore={item.bestScore}
+
+                  questionCount={item.questionCount}
+
+                  isLocked={item.isLocked}
+
+                  lockReason={item.lockReason}
+
+                  onPress={() => {
+
+                    if (isTimeLimitExceeded) {
+
+                      toast.warning("You've reached your daily screen time limit.");
+
+                      return;
+
+                    }
+
+                    navigation.navigate('Study', {
+
+                      subject: item.subject,
+
+                      gradeLevel: item.gradeLevel,
+
+                      topic: item.topic,
+
+                    });
+
+                  }}
+
+                  accessibilityLabel={`Start ${item.topic}`}
+
+                />
+
+              ))}
+
+            </View>
+
+
+
+            {dashboardTopics.length > 3 && (
+
+              <TouchableOpacity
+
+                onPress={() => navigation.navigate('Lessons')}
+
+                activeOpacity={0.8}
+
+                style={{
+
+                  backgroundColor: Colors.bgInput,
+
+                  borderWidth: 1,
+
+                  borderColor: Colors.border,
+
+                  borderRadius: Radius.md,
+
+                  minHeight: 44,
+
+                  alignItems: 'center',
+
+                  justifyContent: 'center',
+
+                  marginTop: 2,
+
+                }}
+
+              >
+
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+
+                  See All Topics ({dashboardTopics.length}) →
+
+                </Text>
+
+              </TouchableOpacity>
+
+            )}
+
+          </View>
+
+        )}
+
+
+
+        <View style={styles.bottomSpacer} />
+
+      </ScrollView>
+
+
+
+      {/* ── Join Classroom Modal ── */}
+
+      <Modal
+
+        visible={joinModalVisible}
+
+        animationType="fade"
+
+        transparent={true}
+
+        onRequestClose={() => {
+
+          setJoinModalVisible(false);
+
+          setTypedCode('');
+
+          setVerifiedClassroom(null);
+
+        }}
+
+      >
+
+        {/* M4: KeyboardAvoidingView prevents keyboard from covering the TextInput */}
+
+        <KeyboardAvoidingView
+
+          style={{ flex: 1, backgroundColor: 'rgba(6, 9, 19, 0.72)', justifyContent: 'center', padding: Spacing.lg }}
+
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+
+        >
+
+          <GlassCard style={{ padding: Spacing.xl, gap: Spacing.md, backgroundColor: Colors.bgCard, borderRadius: Radius['2xl'], borderWidth: 1, borderColor: Colors.border }}>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+
+              <View style={{
+
+                width: 44,
+
+                height: 44,
+
+                borderRadius: Radius.xl,
+
+                backgroundColor: 'rgba(17, 66, 142, 0.12)',
+
+                alignItems: 'center',
+
+                justifyContent: 'center',
+
+                borderWidth: 1,
+
+                borderColor: 'rgba(17, 66, 142, 0.25)',
+
+              }}>
+
+                <Users size={22} color={Colors.accentPrimary} />
+
+              </View>
+
+              <View style={{ flex: 1 }}>
+
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, fontWeight: '700' }}>
+
+                  Join Classroom
+
+                </Text>
+
+                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+
+                  Connect with your teacher
+
+                </Text>
+
+              </View>
+
+            </View>
+
+
+
+            {!verifiedClassroom ? (
+
+              <>
+
+                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
+
+                  Type the invite code provided by your teacher (e.g. MTH-G4-XYZ):
+
+                </Text>
+
+
+
+                <TextInput
+
+                  placeholder="Invite Code"
+
+                  value={typedCode}
+
+                  onChangeText={setTypedCode}
+
+                  autoCapitalize="characters"
+
+                  maxLength={12}
+
+                  style={{
+
+                    borderWidth: 1,
+
+                    borderColor: Colors.border,
+
+                    borderRadius: Radius.lg,
+
+                    paddingHorizontal: Spacing.md,
+
+                    paddingVertical: Spacing.md,
+
+                    fontFamily: Fonts.bodyBold,
+
+                    fontSize: FontSizes.md,
+
+                    color: Colors.textMain,
+
+                    backgroundColor: Colors.bgInput,
+
+                    textAlign: 'center',
+
+                    letterSpacing: 2
+
+                  }}
+
+                />
+
+
+
+                <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs }}>
+
+                  <TouchableOpacity
+
+                    onPress={() => {
+
+                      setJoinModalVisible(false);
+
+                      setTypedCode('');
+
+                    }}
+
+                    style={{
+
+                      flex: 1,
+
+                      borderWidth: 1,
+
+                      borderColor: Colors.border,
+
+                      borderRadius: Radius.lg,
+
+                      paddingVertical: Spacing.md,
+
+                      alignItems: 'center',
+
+                      backgroundColor: Colors.bgMain,
+
+                    }}
+
+                  >
+
+                    <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMuted }}>Cancel</Text>
+
+                  </TouchableOpacity>
+
+
+
+                  <TouchableOpacity
+
+                    onPress={handleVerifyCode}
+
+                    disabled={verifying}
+
+                    style={{
+
+                      flex: 1,
+
+                      backgroundColor: Colors.accentPrimary,
+
+                      borderRadius: Radius.lg,
+
+                      paddingVertical: Spacing.md,
+
+                      alignItems: 'center',
+
+                      flexDirection: 'row',
+
+                      justifyContent: 'center',
+
+                      gap: 6
+
+                    }}
+
+                  >
+
+                    {verifying ? (
+
+                      <ActivityIndicator size="small" color={Colors.white} />
+
+                    ) : (
+
+                      <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.white }}>Verify Code</Text>
+
+                    )}
+
+                  </TouchableOpacity>
+
+                </View>
+
+              </>
+
+            ) : (
+
+              <>
+
+                {/* Classroom Details Confirmation Screen */}
+
+                <View style={{ backgroundColor: 'rgba(16,185,129,0.05)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)', borderRadius: Radius.md, padding: Spacing.md, gap: Spacing.xs }}>
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+
+                    <CheckCircle2 size={16} color={Colors.success} />
+
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.sm, color: Colors.success }}>
+
+                      Classroom Verified!
+
+                    </Text>
+
+                  </View>
+
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+
+                    Teacher: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{verifiedClassroom.teacherName}</Text>
+
+                  </Text>
+
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+
+                    Subject: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{verifiedClassroom.subject}</Text>
+
+                  </Text>
+
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+
+                    Grade Level: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>Grade {verifiedClassroom.gradeLevel}</Text>
+
+                  </Text>
+
+                  {verifiedClassroom.sectionName && (
+
+                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+
+                      Section: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{verifiedClassroom.sectionName}</Text>
+
+                    </Text>
+
+                  )}
+
+                  {(verifiedClassroom.schoolYear || verifiedClassroom.term) && (
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+
+                      <Calendar size={12} color={Colors.textMuted} />
+
+                      <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+
+                        Academic Period: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>S.Y. {verifiedClassroom.schoolYear || '2026-2027'} • {verifiedClassroom.term || 'Quarter 1'}</Text>
+
+                      </Text>
+
+                    </View>
+
+                  )}
+
+                </View>
+
+
+
+                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+
+                  Would you like to connect and download this teacher's custom assignments?
+
+                </Text>
+
+
+
+                <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs }}>
+
+                  <TouchableOpacity
+
+                    onPress={() => setVerifiedClassroom(null)}
+
+                    style={{
+
+                      flex: 1,
+
+                      borderWidth: 1,
+
+                      borderColor: Colors.border,
+
+                      borderRadius: Radius.lg,
+
+                      paddingVertical: Spacing.md,
+
+                      alignItems: 'center',
+
+                      backgroundColor: Colors.bgMain,
+
+                    }}
+
+                  >
+
+                    <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMuted }}>Back</Text>
+
+                  </TouchableOpacity>
+
+
+
+                  <TouchableOpacity
+
+                    onPress={handleConfirmJoin}
+
+                    disabled={verifying}
+
+                    style={{
+
+                      flex: 1,
+
+                      backgroundColor: Colors.success,
+
+                      borderRadius: Radius.lg,
+
+                      paddingVertical: Spacing.md,
+
+                      alignItems: 'center',
+
+                      flexDirection: 'row',
+
+                      justifyContent: 'center',
+
+                      gap: 6
+
+                    }}
+
+                  >
+
+                    {verifying ? (
+
+                      <ActivityIndicator size="small" color={Colors.white} />
+
+                    ) : (
+
+                      <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.white }}>Confirm &amp; Join</Text>
+
+                    )}
+
+                  </TouchableOpacity>
+
+                </View>
+
+              </>
+
+            )}
+
+          </GlassCard>
+
+        </KeyboardAvoidingView>
+
+      </Modal>
+
+      <StudentFeatureTourModal
+        visible={showTourModal}
+        onClose={() => setShowTourModal(false)}
+      />
+
+    </SafeAreaView>
+
+  );
+
+}
+

@@ -12,6 +12,7 @@ import { getParentAccessCode } from '../utils/security';
 import { LogoutConfirmModal } from '../components/shared/LogoutConfirmModal';
 import { ConfirmModal } from '../components/shared/ConfirmModal';
 import { ClassroomStep } from '../components/student/ClassroomStep';
+import { StudentFeatureTour } from '../components/student/StudentFeatureTour';
 import { toast } from '../utils/toast';
 import { apiFetch } from '../utils/api';
 
@@ -56,6 +57,12 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         if (currentUser) return 'dashboard';
         if (savedName) return 'dashboard'; // skip name step if name is saved
         return 'name';
+    });
+    const [showTour, setShowTour] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('guro_student_tour_completed_v1') !== 'true';
+        }
+        return false;
     });
     const [userName, setUserName] = useState(currentUser ? currentUser.name : savedName);
     const storedEmailOrId = localStorage.getItem('guro_student_email_or_id') || (currentUser ? currentUser.email : '');
@@ -1187,6 +1194,11 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                         setPendingGradeSwitch(null);
                     }
                 }}
+            />
+
+            <StudentFeatureTour
+                isOpen={showTour}
+                onClose={() => setShowTour(false)}
             />
         </div>
     );
