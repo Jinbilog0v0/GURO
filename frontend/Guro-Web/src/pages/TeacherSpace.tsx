@@ -46,7 +46,8 @@ export type TeacherSubTab =
   | 'eosy-promotion' 
   | 'classroom-pairing' 
   | 'manual-lesson' 
-  | 'pre-post-test';
+  | 'pre-post-test'
+  | 'attendance';
 
 interface TeacherSpaceProps {
   currentUser?: {
@@ -1936,7 +1937,7 @@ export function TeacherSpace({
           {/* Render Active Segment */}
           {analyticsSegment === 'attendance' || activeSubTab === 'attendance' ? (
             <TeacherAttendanceConsole
-              classroomCode={classroomCode}
+              classroomCode={classroomCode || ''}
             />
           ) : analyticsSegment === 'directory' ? (
             <StudentDirectory
@@ -2221,6 +2222,8 @@ export function TeacherSpace({
         confirmLabel="Delete Lesson"
         variant="danger"
         loading={isDeletingTopic}
+        requireVerificationPhrase="DELETE"
+        safetyCountdownSeconds={2}
       />
     </div>
   );

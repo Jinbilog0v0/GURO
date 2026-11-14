@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { apiFetch } from '../../utils/api';
 import { BookOpen, Calculator, Download, RefreshCw, ChevronDown, ChevronUp, FolderOpen, Layers, Check } from 'lucide-react';
 import { toast } from '../../utils/toast';
+import { ConfirmModal } from '../shared/ConfirmModal';
 
 interface ItemBankStructure {
   [subject: string]: {
@@ -26,6 +27,7 @@ interface QuestionItem {
 export function AdminCurriculumManager() {
   const [loading, setLoading] = useState(true);
   const [purgingCache, setPurgingCache] = useState(false);
+  const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [itemBankData, setItemBankData] = useState<ItemBankStructure>({});
   const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
   const [dbStats, setDbStats] = useState({ subjects: 0, topics: 0, questions: 0 });
@@ -175,7 +177,7 @@ export function AdminCurriculumManager() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={handlePurgeCache}
+            onClick={() => setShowPurgeModal(true)}
             disabled={purgingCache}
             className="btn btn-secondary text-xs px-3.5 py-2 font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
@@ -308,6 +310,22 @@ export function AdminCurriculumManager() {
           );
         })}
       </div>
+
+      {/* Purge Cache Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showPurgeModal}
+        onClose={() => setShowPurgeModal(false)}
+        onConfirm={async () => {
+          setShowPurgeModal(false);
+          await handlePurgeCache();
+        }}
+        title="Purge Curriculum Cache?"
+        description="This will clear in-memory item bank caches across active server instances and force reload fresh competencies from disk. Are you sure you want to proceed?"
+        confirmLabel="Purge Cache"
+        variant="warning"
+        safetyCountdownSeconds={2}
+        isLoading={purgingCache}
+      />
     </div>
   );
 }

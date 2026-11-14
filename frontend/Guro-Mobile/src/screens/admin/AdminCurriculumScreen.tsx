@@ -404,6 +404,7 @@ export function AdminCurriculumScreen({ navigation }: any) {
         confirmLabel="Purge Cache"
         cancelLabel="Cancel"
         loading={purging}
+        safetyCountdownSeconds={2}
         onConfirm={executePurgeCache}
         onCancel={() => setShowPurgeConfirm(false)}
       />

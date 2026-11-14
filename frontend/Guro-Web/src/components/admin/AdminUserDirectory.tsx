@@ -441,6 +441,8 @@ export function AdminUserDirectory() {
         cancelText="Cancel"
         variant="danger"
         isLoading={submittingDelete}
+        requireVerificationPhrase="DELETE"
+        safetyCountdownSeconds={3}
         onClose={() => setDeletingUser(null)}
         onConfirm={handleDeleteUser}
       />

@@ -78,7 +78,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
         return localStorage.getItem('guro_student_topic') ?? '';
     });
     const [quizTimeRemaining, setQuizTimeRemaining] = useState<number>(300);
-    const [isQuizTimed, setIsQuizTimed] = useState<boolean>(true);
+    const [isQuizTimed] = useState<boolean>(true);
     const [classroomCode, setClassroomCode] = useState(() => {
         const currentUserClassroom = currentUser?.classroomId;
         return currentUserClassroom || localStorage.getItem(`guro_student_classroom_id_${activeStudentId}`) || localStorage.getItem('guro_student_classroom_id') || '';
@@ -1214,6 +1214,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                 confirmText="Leave & Switch Grade"
                 cancelText="Keep Current Grade"
                 variant="warning"
+                safetyCountdownSeconds={2}
                 onClose={() => setPendingGradeSwitch(null)}
                 onConfirm={() => {
                     if (pendingGradeSwitch) {

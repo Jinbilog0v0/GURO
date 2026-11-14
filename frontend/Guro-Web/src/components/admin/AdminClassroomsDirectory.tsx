@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../../utils/api';
-import { School, Search, Lock, Unlock, Users, Trash2, Edit3, Calculator, BookOpen, RefreshCw, X, Calendar, FileSpreadsheet, UserPlus } from 'lucide-react';
+import { School, Search, Lock, Unlock, Users, Trash2, Edit3, Calculator, BookOpen, RefreshCw, X, Calendar, FileSpreadsheet } from 'lucide-react';
 import { AdminBatchEnrollModal } from './AdminBatchEnrollModal';
 import { toast } from '../../utils/toast';
 import { ConfirmModal } from '../shared/ConfirmModal';
@@ -348,6 +348,8 @@ export function AdminClassroomsDirectory() {
         confirmText="Archive Classroom"
         cancelText="Cancel"
         variant="danger"
+        requireVerificationPhrase={deletingClassroom?.classroomId || 'DELETE'}
+        safetyCountdownSeconds={3}
         isLoading={submittingDelete}
         onClose={() => setDeletingClassroom(null)}
         onConfirm={handleDelete}

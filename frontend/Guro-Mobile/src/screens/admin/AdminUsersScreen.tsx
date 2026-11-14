@@ -507,6 +507,9 @@ export function AdminUsersScreen() {
         cancelText="Cancel"
         variant="danger"
         loading={isDeletingUser}
+        safetyCountdownSeconds={3}
+        requiredVerificationText="DELETE"
+        verificationPlaceholder="Type DELETE to confirm"
         onConfirm={executeDeleteUser}
         onCancel={() => setDeletingUser(null)}
       />

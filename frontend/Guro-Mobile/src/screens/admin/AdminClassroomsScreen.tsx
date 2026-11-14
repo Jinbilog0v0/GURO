@@ -408,6 +408,9 @@ export function AdminClassroomsScreen() {
         cancelText="Cancel"
         variant="danger"
         loading={isDeletingClassroom}
+        safetyCountdownSeconds={3}
+        requiredVerificationText={deletingClassroom?.classroomId || 'DELETE'}
+        verificationPlaceholder={`Type ${deletingClassroom?.classroomId || 'DELETE'} to confirm`}
         onConfirm={executeDeleteClassroom}
         onCancel={() => setDeletingClassroom(null)}
       />

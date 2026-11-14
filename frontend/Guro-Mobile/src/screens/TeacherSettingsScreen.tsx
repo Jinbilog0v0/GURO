@@ -53,6 +53,7 @@ export function TeacherSettingsScreen() {
   const logs = useAppStore((state) => state.logs);
   const addLog = useAppStore((state) => state.addLog);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [deletingReportFile, setDeletingReportFile] = useState<string | null>(null);
   const clearLogs = useAppStore((state) => state.clearLogs);
 
   const [fullHistoryVisible, setFullHistoryVisible] = useState(false);
@@ -699,7 +700,7 @@ export function TeacherSettingsScreen() {
                   />
                   <DangerButton
                     label="Delete"
-                    onPress={() => handleDeleteReport(fileName)}
+                    onPress={() => setDeletingReportFile(fileName)}
                     style={styles.fileBtn}
                   />
                 </View>
@@ -1378,6 +1379,25 @@ export function TeacherSettingsScreen() {
             navigation.replace((appMode as string) === 'offline' ? 'StudentDashboard' : 'Login');
           }}
           onCancel={() => setShowLogoutConfirm(false)}
+        />
+
+        {/* Delete Diagnostic Report Confirmation */}
+        <ConfirmDialog
+          visible={!!deletingReportFile}
+          variant="danger"
+          title="Delete Diagnostic Report?"
+          description={`Are you sure you want to permanently delete report "${deletingReportFile}" from local storage? This action cannot be reversed.`}
+          confirmLabel="Delete Report"
+          cancelLabel="Cancel"
+          safetyCountdownSeconds={2}
+          onConfirm={async () => {
+            if (!deletingReportFile) return;
+            const target = deletingReportFile;
+            setDeletingReportFile(null);
+            await handleDeleteReport(target);
+            toast.success('Diagnostic report deleted.');
+          }}
+          onCancel={() => setDeletingReportFile(null)}
         />
       </ScrollView>
     </SafeAreaView>

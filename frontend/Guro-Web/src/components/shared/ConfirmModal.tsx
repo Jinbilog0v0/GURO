@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { AlertTriangle, Trash2, Info, AlertCircle, CheckCircle2, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { AlertTriangle, Trash2, Info, AlertCircle, CheckCircle2, X, ShieldAlert } from 'lucide-react';
 
 export type ModalVariant = 'danger' | 'warning' | 'primary' | 'info' | 'success';
 
@@ -19,6 +19,12 @@ export interface ConfirmModalProps {
   loading?: boolean;
   isLoading?: boolean;
   hideCancel?: boolean;
+  /** Security enhancement: User must type this phrase to enable the confirm button */
+  requiredVerificationText?: string;
+  requireVerificationPhrase?: string;
+  verificationPlaceholder?: string;
+  /** Optional safety countdown in seconds before confirm button can be pressed */
+  safetyCountdownSeconds?: number;
 }
 
 const VARIANT_STYLES: Record<ModalVariant, {
@@ -81,9 +87,19 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   loading,
   isLoading,
   hideCancel = false,
+  requiredVerificationText,
+  requireVerificationPhrase,
+  verificationPlaceholder,
+  safetyCountdownSeconds = 0,
 }) => {
   const cancelRef = useRef<HTMLButtonElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
+
+  const [verificationInput, setVerificationInput] = useState('');
+  const [countdown, setCountdown] = useState(safetyCountdownSeconds);
+
+  const targetPhrase = requireVerificationPhrase || requiredVerificationText;
+  const isVerified = !targetPhrase || verificationInput.trim().toUpperCase() === targetPhrase.trim().toUpperCase();
 
   const finalMessage = message ?? description;
   const finalConfirmLabel = confirmLabel ?? confirmText ?? 'Confirm';
@@ -92,6 +108,28 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
   const style = VARIANT_STYLES[variant] || VARIANT_STYLES.danger;
   const IconToRender = CustomIcon || style.DefaultIcon;
+
+  useEffect(() => {
+    if (!isOpen) {
+      setVerificationInput('');
+      setCountdown(safetyCountdownSeconds || 0);
+      return;
+    }
+
+    if (safetyCountdownSeconds && safetyCountdownSeconds > 0) {
+      setCountdown(safetyCountdownSeconds);
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [isOpen, safetyCountdownSeconds]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -157,9 +195,31 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         </h3>
 
         {/* Description / Message */}
-        <div className="text-[var(--text-muted)] text-xs sm:text-sm text-center mb-6 leading-relaxed">
+        <div className="text-[var(--text-muted)] text-xs sm:text-sm text-center mb-4 leading-relaxed">
           {finalMessage}
         </div>
+
+        {/* Security Verification Input */}
+        {targetPhrase && (
+          <div className="mb-5 p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] text-left">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-rose-500 mb-1.5">
+              <ShieldAlert size={14} className="shrink-0" />
+              <span>Confirmation Challenge Required</span>
+            </div>
+            <p className="text-xs text-[var(--text-muted)] mb-2">
+              To prevent accidental deletion, type <span className="font-mono font-bold text-[var(--text-main)] px-1.5 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)] select-all">{targetPhrase}</span> below:
+            </p>
+            <input
+              type="text"
+              value={verificationInput}
+              onChange={(e) => setVerificationInput(e.target.value)}
+              placeholder={verificationPlaceholder || `Type "${targetPhrase}" to verify`}
+              disabled={finalLoading}
+              className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-mono bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-all"
+              autoFocus
+            />
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center gap-3">
@@ -176,13 +236,15 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <button
             ref={confirmRef}
             onClick={onConfirm}
-            disabled={finalLoading}
-            className={`flex-1 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 ${style.confirmBtn}`}
+            disabled={finalLoading || !isVerified || countdown > 0}
+            className={`flex-1 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${style.confirmBtn}`}
           >
             {finalLoading ? (
               <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : null}
-            <span>{finalConfirmLabel}</span>
+            <span>
+              {countdown > 0 ? `${finalConfirmLabel} (${countdown}s)` : finalConfirmLabel}
+            </span>
           </button>
         </div>
       </div>
