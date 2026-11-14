@@ -10,8 +10,9 @@ import {
   Platform,
   Modal,
   Pressable,
+  Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore, resolveServerUrl } from '../store/useAppStore';
 import { Colors } from '../theme/colors';
 import { Fonts, FontSizes } from '../theme/typography';
@@ -70,6 +71,7 @@ export interface ChatMessage {
 }
 
 export function TeacherChatScreen() {
+  const insets = useSafeAreaInsets();
   const currentUser = useAppStore((state) => state.currentUser);
   const activeSchoolYear = useAppStore((state) => state.activeSchoolYear || '2026-2027');
   const activeTerm = useAppStore((state) => state.activeTerm || 'Quarter 1');
@@ -512,13 +514,15 @@ export function TeacherChatScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
         <ScrollView
           ref={chatScrollRef}
           style={{ flex: 1, paddingHorizontal: Spacing.md }}
           contentContainerStyle={{ paddingVertical: Spacing.md, flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -763,6 +767,11 @@ export function TeacherChatScreen() {
               onChangeText={setInputText}
               editable={Boolean(activeStudentId)}
               containerStyle={{ marginBottom: 0 }}
+              onFocus={() => {
+                setTimeout(() => {
+                  chatScrollRef.current?.scrollToEnd({ animated: true });
+                }, 120);
+              }}
             />
           </View>
           <TouchableOpacity

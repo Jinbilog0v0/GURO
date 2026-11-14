@@ -532,7 +532,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.sm,
     paddingBottom: Spacing.sm,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgSidebar,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     minHeight: 62,

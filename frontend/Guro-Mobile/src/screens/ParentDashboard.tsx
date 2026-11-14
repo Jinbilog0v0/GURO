@@ -1684,7 +1684,7 @@ export function ParentDashboard({ navigation }: Props) {
       <View style={activeTab === 'chat' ? { flex: 1 } : { display: 'none', height: 0, flex: 0 }}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 70 : 0}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
           style={{ flex: 1 }}
         >
           {/* Dedicated Top Nav Bar for Consultation Chat */}
@@ -1806,6 +1806,8 @@ export function ParentDashboard({ navigation }: Props) {
             ref={chatScrollRef}
             contentContainerStyle={styles.chatScrollContent}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
             onContentSizeChange={() => chatScrollRef.current?.scrollToEnd({ animated: true })}
           >
             {loadingChat && chatMessages.length === 0 ? (
@@ -1984,7 +1986,7 @@ export function ParentDashboard({ navigation }: Props) {
             style={[
               styles.chatInputContainer,
               {
-                paddingBottom: Math.max(insets.bottom, Spacing.sm),
+                paddingBottom: Spacing.sm,
               },
             ]}
           >
@@ -1995,6 +1997,7 @@ export function ParentDashboard({ navigation }: Props) {
                 onChangeText={setChatInput}
                 containerStyle={{ marginBottom: 0 }}
                 onFocus={() => {
+                  setIsKeyboardVisible(true);
                   setTimeout(() => {
                     chatScrollRef.current?.scrollToEnd({ animated: true });
                   }, 120);
@@ -2440,6 +2443,8 @@ export function ParentDashboard({ navigation }: Props) {
         confirmText="Clear All"
         cancelText="Cancel"
         variant="danger"
+        requiredVerificationText="CLEAR"
+        safetyCountdownSeconds={2}
         icon={Trash2}
         onConfirm={() => {
           clearProgress();
