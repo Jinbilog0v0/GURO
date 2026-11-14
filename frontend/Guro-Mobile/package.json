@@ -1,6 +1,6 @@
 {
   "name": "guro-app",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.2",
