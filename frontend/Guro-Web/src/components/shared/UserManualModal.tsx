@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, BookOpen, GraduationCap, Users, HeartHandshake, CheckCircle2, QrCode, Smartphone, WifiOff, FileText, Printer, ArrowRight } from 'lucide-react';
+import { X, BookOpen, GraduationCap, Users, HeartHandshake, Printer } from 'lucide-react';
 
 interface UserManualModalProps {
   isOpen: boolean;

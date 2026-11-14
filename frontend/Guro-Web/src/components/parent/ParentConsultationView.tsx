@@ -260,7 +260,7 @@ export const ParentConsultationView: React.FC<ParentConsultationViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] min-h-[600px] bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-200">
+    <div className="flex flex-col h-[calc(100dvh-130px)] min-h-[500px] bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-200">
       
       {/* Top Header: Title & Child Switcher */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-color)] bg-[var(--bg-sidebar)] gap-4 flex-wrap">
@@ -282,7 +282,7 @@ export const ParentConsultationView: React.FC<ParentConsultationViewProps> = ({
         </div>
 
         {/* Child Selector Pills */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap max-w-full overflow-x-auto pb-1">
           <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Learner:</span>
           {loadingChildren ? (
             <div className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
@@ -514,13 +514,13 @@ export const ParentConsultationView: React.FC<ParentConsultationViewProps> = ({
               placeholder={`Message Teacher ${teacherName ? `${teacherName} ` : ''}about ${activeChild.name}...`}
               maxLength={1000}
               disabled={isSending}
-              className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] text-xs text-[var(--text-main)] placeholder-[var(--text-muted)] px-4 py-3 rounded-2xl focus:border-[#11428E] focus:outline-none transition-all"
+              className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] text-sm sm:text-xs text-[var(--text-main)] placeholder-[var(--text-muted)] px-4 py-3 min-h-[44px] rounded-2xl focus:border-[#11428E] focus:outline-none transition-all"
             />
 
             <button
               type="submit"
               disabled={isSending || !messageInput.trim()}
-              className="px-5 py-3 bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-95 text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-blue-900/20 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer flex items-center gap-2 shrink-0"
+              className="px-5 py-3 min-h-[44px] bg-gradient-to-r from-[#11428E] to-[#A01322] hover:opacity-95 text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-blue-900/20 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer flex items-center gap-2 shrink-0"
             >
               {isSending ? (
                 <RefreshCw size={14} className="animate-spin" />
