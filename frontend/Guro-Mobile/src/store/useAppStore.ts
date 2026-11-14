@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import { applyThemeSkin } from '../theme/colors';
+import { applyThemeSkin, applyThemeMode } from '../theme/colors';
 import itemBankData from '../../assets/item_bank.json';
 import {
   getLocalItemBank,
@@ -311,10 +311,13 @@ export const useAppStore = create<AppState>()(
       setSoundEffectsEnabled: (enabled) => set({ soundEffectsEnabled: enabled }),
       setSpeechRate: (rate) => set({ speechRate: rate }),
       setColorTheme: (theme) => {
-        applyThemeSkin(theme);
+        applyThemeMode(get().themeMode, theme);
         set({ colorTheme: theme });
       },
-      setThemeMode: (mode) => set({ themeMode: mode }),
+      setThemeMode: (mode) => {
+        applyThemeMode(mode, get().colorTheme);
+        set({ themeMode: mode });
+      },
       setMascotOutfit: (outfit) => set({ mascotOutfit: outfit }),
       purchaseOutfit: (outfit, cost) => {
         const state = get();
@@ -818,9 +821,7 @@ export const useAppStore = create<AppState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          if (state.colorTheme) {
-            applyThemeSkin(state.colorTheme);
-          }
+          applyThemeMode(state.themeMode || 'light', state.colorTheme || 'blue');
           if (
             !state.serverUrl ||
             state.serverUrl.includes('localhost') ||
