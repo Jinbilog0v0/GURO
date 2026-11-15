@@ -2004,7 +2004,10 @@ export function ParentDashboard({ navigation }: Props) {
                 </Text>
               </View>
             ) : (
-              chatMessages.map((msg) => {
+              <>
+                {/* Flexible top spacer so consultation bubbles sit directly above the input bar */}
+                <View style={{ flex: 1, minHeight: 0 }} />
+                {chatMessages.map((msg) => {
                 const isParent = msg.sender_role === 'parent';
                 const isUnsent = msg.is_unsent;
                 const isEdited = Boolean(msg.edited_at);
@@ -2127,7 +2130,8 @@ export function ParentDashboard({ navigation }: Props) {
                     </View>
                   </Pressable>
                 );
-              })
+              })}
+              </>
             )}
           </ScrollView>
 

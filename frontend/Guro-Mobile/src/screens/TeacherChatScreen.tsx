@@ -643,11 +643,14 @@ export function TeacherChatScreen() {
               </Text>
             </View>
           ) : (
-            messages.map((msg) => {
-              const isTeacher = msg.sender_role === 'teacher';
-              const isUnsent = msg.is_unsent;
-              const isEdited = Boolean(msg.edited_at);
-              const isHovered = hoveredMessageId === msg.id || selectedActionMessage?.id === msg.id;
+            <>
+              {/* Flexible top spacer so consultation bubbles sit directly above the input bar */}
+              <View style={{ flex: 1, minHeight: 0 }} />
+              {messages.map((msg) => {
+                const isTeacher = msg.sender_role === 'teacher';
+                const isUnsent = msg.is_unsent;
+                const isEdited = Boolean(msg.edited_at);
+                const isHovered = hoveredMessageId === msg.id || selectedActionMessage?.id === msg.id;
 
               if (isUnsent) {
                 return (
@@ -798,7 +801,8 @@ export function TeacherChatScreen() {
                   </View>
                 </Pressable>
               );
-            })
+            })}
+            </>
           )}
         </ScrollView>
 
