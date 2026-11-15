@@ -51,7 +51,9 @@ const GuroLogoGraphic = () => (
       style={{ width: '100%', height: '100%' }}
       resizeMode="cover"
     />
-    <Text style={{ position: 'absolute', top: -2, right: 3, fontSize: 13, color: '#F59E0B', fontWeight: 'bold' }}>✦</Text>
+    <View style={{ position: 'absolute', top: 2, right: 2 }}>
+      <Sparkles size={11} color="#F59E0B" />
+    </View>
   </View>
 );
 

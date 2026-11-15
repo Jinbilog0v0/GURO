@@ -24,7 +24,7 @@ const GuroLogoGraphic: React.FC<{ size?: 'sm' | 'md' | 'lg'; onClick?: () => voi
                 alt="GURO Logo" 
                 className="w-full h-full object-cover" 
             />
-            <span className="absolute -top-1.5 -right-1.5 text-xs text-amber-300 animate-pulse">✦</span>
+            <Sparkles className="absolute -top-1.5 -right-1.5 w-3 h-3 text-amber-300 animate-pulse" />
         </div>
     );
 };

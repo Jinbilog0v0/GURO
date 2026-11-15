@@ -256,8 +256,13 @@ Web Login: https://neoguro.app`;
                   onChange={(e) => handleLrnChange(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-sm font-mono tracking-wider tabular-nums rounded-xl border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-[#11428E]/30"
                 />
-                <p className="text-[11px] text-[var(--text-muted)] mt-1">
-                  {lrn.length}/12 digits entered {lrn.length === 12 && '✓ Valid LRN format'}
+                <p className="text-[11px] text-[var(--text-muted)] mt-1 flex items-center gap-1">
+                  <span>{lrn.length}/12 digits entered</span>
+                  {lrn.length === 12 && (
+                    <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 font-medium">
+                      <Check size={12} /> Valid LRN format
+                    </span>
+                  )}
                 </p>
               </div>
 

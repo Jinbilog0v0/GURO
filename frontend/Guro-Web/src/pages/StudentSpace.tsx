@@ -849,10 +849,10 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
             flushSyncQueue();
 
             // Badge unlock toasts
-            if (lessonsCompleted === 0) toast('👣 Badge unlocked: First Step!', { icon: '🏅' });
-            if (isPerfect) toast('💯 Perfect score! Badge unlocked: Perfect 100%!', { icon: '🌟' });
+            if (lessonsCompleted === 0) toast('Badge unlocked: First Step!');
+            if (isPerfect) toast('Perfect score! Badge unlocked: Perfect 100%!');
             if (newScore > 0 && lessonsCompleted > 0 && lessonsCompleted % 2 === 0) {
-                toast(`🔥 ${lessonsCompleted + 1} lessons completed! Keep it up!`, { icon: '🔥' });
+                toast(`${lessonsCompleted + 1} lessons completed! Keep it up!`);
             }
 
             setStep('results');

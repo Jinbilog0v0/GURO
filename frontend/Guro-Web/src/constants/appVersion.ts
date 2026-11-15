@@ -12,8 +12,8 @@ import React from 'react';
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-export const APP_VERSION = '1.0.3';
-export const APP_BUILD_NUMBER = '7';
+export const APP_VERSION = '1.0.5';
+export const APP_BUILD_NUMBER = '8';
 export const APP_NAME = 'GURO';
 export const APP_FULL_NAME = 'GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION';
 export const APP_TAGLINE = 'Guided Unified Resource Optimization';

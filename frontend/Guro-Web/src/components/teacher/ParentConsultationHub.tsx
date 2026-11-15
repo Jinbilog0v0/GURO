@@ -461,10 +461,10 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer flex items-center justify-center p-0.5 rounded hover:bg-black/5 dark:hover:bg-white/5"
                 aria-label="Clear search"
               >
-                ✕
+                <X size={13} />
               </button>
             )}
           </div>
@@ -666,21 +666,38 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
           {activeStudentId ? (
             <>
               {/* Active Conversation Header */}
-              <div className="px-4 sm:px-6 py-3.5 border-b border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 sm:gap-3">
+              <div className="px-4 sm:px-6 py-3 border-b border-[var(--border-color)] bg-[var(--bg-card)] flex flex-col gap-2 relative">
+                {/* Top Accent Line */}
+                <div className="absolute top-0 left-0 right-0 h-0.5 bg-[#11428E]" />
+
+                {/* Row 1: Back to Chats button on left, TEACHER badge on right */}
+                <div className="flex items-center justify-between gap-3">
                   <button
                     type="button"
                     onClick={() => setActiveStudentId(null)}
-                    className="md:hidden p-2 -ml-1 rounded-xl bg-[var(--bg-main)] hover:bg-[var(--bg-sidebar)] border border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer transition-all active:scale-95"
+                    className="md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#11428E]/10 hover:bg-[#11428E]/15 border border-[#11428E]/20 text-[#11428E] dark:text-blue-300 text-xs font-bold cursor-pointer transition-all active:scale-95"
                     aria-label="Back to Inquiries list"
                     title="Back to Inquiries"
                   >
-                    <ChevronLeft size={18} />
+                    <ChevronLeft size={14} />
+                    <span>Chats</span>
                   </button>
-                  <div className="w-10 h-10 rounded-full bg-[#11428E]/10 border border-[#11428E]/20 flex items-center justify-center font-extrabold text-sm text-[#11428E] dark:text-blue-400 shrink-0">
-                    <User size={18} />
+
+                  <div className="hidden md:flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-[#11428E]/10 border border-[#11428E]/20 flex items-center justify-center font-extrabold text-xs text-[#11428E] dark:text-blue-400 shrink-0">
+                      <User size={15} />
+                    </div>
+                    <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Active Consultation</span>
                   </div>
-                  <div>
+
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#11428E]/10 text-[#11428E] dark:text-blue-300 border border-[#11428E]/20 tracking-wider">
+                    TEACHER
+                  </span>
+                </div>
+
+                {/* Row 2: Participant details below Chats on left, Connected badge below role on right */}
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-bold text-[var(--text-main)]">
                         {activeThread ? activeThread.studentName : activeStudentId}
@@ -695,16 +712,14 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
                       Class: <span className="font-semibold text-[var(--text-main)]">{selectedClassroomId}</span>
                       {selectedClassroomObj && ` · Grade ${selectedClassroomObj.gradeLevel} ${selectedClassroomObj.subject}`}
                     </p>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-emerald-500 font-semibold flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                    <CheckCircle2 size={13} /> Linked to Student App
+                  <span className="text-xs text-emerald-500 font-semibold flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    <CheckCircle2 size={12} /> Connected
                   </span>
                 </div>
               </div>

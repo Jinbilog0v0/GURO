@@ -588,13 +588,15 @@ export function DashboardSpace({
                               {log.topic}
                             </span>
                             {percentage === 100 && (
-                              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                                🌟 Perfect 100%
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                <Sparkles size={11} className="text-emerald-500" />
+                                <span>Perfect 100%</span>
                               </span>
                             )}
                             {isStruggling && (
-                              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
-                                ⚠️ Review
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+                                <AlertTriangle size={11} className="text-rose-500" />
+                                <span>Review</span>
                               </span>
                             )}
                           </div>

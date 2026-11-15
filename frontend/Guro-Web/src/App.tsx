@@ -989,7 +989,7 @@ function App() {
                 if (currentUser) {
                   handleOpenProfileModal();
                 } else {
-                  toast('Please log in to manage profile settings.', { icon: '⚙️' });
+                  toast('Please log in to manage profile settings.');
                 }
               }}
               aria-label="Settings"
@@ -1008,7 +1008,7 @@ function App() {
                 if (currentUser) {
                   handleOpenProfileModal();
                 } else {
-                  toast('Please log in to manage profile settings.', { icon: '⚙️' });
+                  toast('Please log in to manage profile settings.');
                 }
               }}
               aria-label="Settings"

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, UploadCloud, Link as LinkIcon, X, RefreshCw, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, UploadCloud, Link as LinkIcon, X, RefreshCw, AlertCircle, Image as ImageIcon, PieChart, Grid, Ruler, Shapes, Lightbulb, Calculator } from 'lucide-react';
 import { apiFetch } from '../../utils/api';
 import { toast } from '../../utils/toast';
 
@@ -191,25 +191,29 @@ export const EducationalImagePicker: React.FC<EducationalImagePickerProps> = ({
           <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
             <span className="text-[10px] font-bold text-[var(--text-muted)]">Curated Diagrams:</span>
             {[
-              { label: '🍰 3/4 Fraction Pie', prompt: 'fraction pie divided into 4 slices, 3 shaded' },
-              { label: '📊 10x10 Decimals Grid', prompt: 'decimals 10x10 grid model with shaded squares' },
-              { label: '📏 Number Line', prompt: 'number line with tick marks from 0 to 10' },
-              { label: '📐 Geometric Shapes', prompt: 'geometric shapes triangle square circle rectangle' },
-              { label: '💡 Figures of Speech', prompt: 'figures of speech simile metaphor illustration' },
-              { label: '🧮 Place Value', prompt: 'place value blocks chart hundreds tens ones' },
-            ].map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() => {
-                  setCustomPrompt(item.prompt);
-                  handleGenerateAI(item.prompt);
-                }}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[var(--bg-main)] hover:bg-[#11428E]/10 hover:text-[#11428E] border border-[var(--border-color)] text-[var(--text-muted)] transition-colors cursor-pointer"
-              >
-                {item.label}
-              </button>
-            ))}
+              { label: '3/4 Fraction Pie', icon: PieChart, prompt: 'fraction pie divided into 4 slices, 3 shaded' },
+              { label: '10x10 Decimals Grid', icon: Grid, prompt: 'decimals 10x10 grid model with shaded squares' },
+              { label: 'Number Line', icon: Ruler, prompt: 'number line with tick marks from 0 to 10' },
+              { label: 'Geometric Shapes', icon: Shapes, prompt: 'geometric shapes triangle square circle rectangle' },
+              { label: 'Figures of Speech', icon: Lightbulb, prompt: 'figures of speech simile metaphor illustration' },
+              { label: 'Place Value', icon: Calculator, prompt: 'place value blocks chart hundreds tens ones' },
+            ].map((item) => {
+              const IconComp = item.icon;
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => {
+                    setCustomPrompt(item.prompt);
+                    handleGenerateAI(item.prompt);
+                  }}
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[var(--bg-main)] hover:bg-[#11428E]/10 hover:text-[#11428E] border border-[var(--border-color)] text-[var(--text-muted)] transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <IconComp size={11} className="text-[#11428E] dark:text-blue-400" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
           </div>
         )}

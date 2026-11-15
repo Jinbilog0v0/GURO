@@ -23,6 +23,11 @@ import {
   AlertCircle,
   X,
   Check,
+  PieChart,
+  Grid,
+  Ruler,
+  Shapes,
+  Lightbulb,
 } from 'lucide-react-native';
 import { Colors } from '../../theme/colors';
 import { Fonts, FontSizes } from '../../theme/typography';
@@ -250,30 +255,37 @@ export function EducationalImagePicker({
         {/* Quick Curated Diagrams */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }} contentContainerStyle={{ gap: 6 }}>
           {[
-            { label: '🍰 Fraction 3/4', prompt: 'fraction pie divided into 4 slices, 3 shaded' },
-            { label: '📊 10x10 Grid', prompt: 'decimals 10x10 grid model with shaded squares' },
-            { label: '📏 Number Line', prompt: 'number line with tick marks from 0 to 10' },
-            { label: '📐 Shapes', prompt: 'geometric shapes triangle square circle rectangle' },
-            { label: '💡 Figures of Speech', prompt: 'figures of speech simile metaphor illustration' },
-          ].map((item) => (
-            <TouchableOpacity
-              key={item.label}
-              onPress={() => handleGenerateAI(item.prompt)}
-              activeOpacity={0.7}
-              style={{
-                backgroundColor: 'rgba(17,66,142,0.06)',
-                paddingHorizontal: 8,
-                paddingVertical: 4,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: 'rgba(17,66,142,0.15)',
-              }}
-            >
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+            { label: 'Fraction 3/4', icon: PieChart, prompt: 'fraction pie divided into 4 slices, 3 shaded' },
+            { label: '10x10 Grid', icon: Grid, prompt: 'decimals 10x10 grid model with shaded squares' },
+            { label: 'Number Line', icon: Ruler, prompt: 'number line with tick marks from 0 to 10' },
+            { label: 'Shapes', icon: Shapes, prompt: 'geometric shapes triangle square circle rectangle' },
+            { label: 'Figures of Speech', icon: Lightbulb, prompt: 'figures of speech simile metaphor illustration' },
+          ].map((item) => {
+            const IconComp = item.icon;
+            return (
+              <TouchableOpacity
+                key={item.label}
+                onPress={() => handleGenerateAI(item.prompt)}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  backgroundColor: 'rgba(17,66,142,0.06)',
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: 'rgba(17,66,142,0.15)',
+                }}
+              >
+                <IconComp size={11} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
         </>
       )}

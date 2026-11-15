@@ -8,6 +8,7 @@ import {
   WifiOff,
   BarChart3,
   BookOpen,
+  Calculator,
   ArrowRight,
   Sparkles,
   Shield,
@@ -367,10 +368,12 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
               {/* Row 1: Subject chips */}
               <div className="flex items-center justify-center gap-2">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 text-xs font-bold shadow-2xs">
-                  <span>📐</span> Mathematics
+                  <Calculator size={13} />
+                  <span>Mathematics</span>
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-bold shadow-2xs">
-                  <span>📖</span> English
+                  <BookOpen size={13} />
+                  <span>English</span>
                 </span>
               </div>
               {/* Row 2: Grade chips */}

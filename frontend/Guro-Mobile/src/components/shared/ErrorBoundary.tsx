@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ShieldAlert } from 'lucide-react-native';
 import { Colors } from '../../theme/colors';
 
 interface Props {
@@ -58,7 +59,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <SafeAreaView style={styles.safeArea}>
           <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.iconContainer}>
-              <Text style={styles.icon}>🦉</Text>
+              <ShieldAlert size={44} color={Colors.accentPrimary} />
             </View>
 
             <Text style={styles.title}>Oops! Something went wrong</Text>

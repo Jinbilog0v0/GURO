@@ -976,7 +976,7 @@ export function AssessmentScreen({ route, navigation }: Props) {
                       />
                     </View>
                     <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMain, lineHeight: 17 }}>
-                      Pre-Test: {prePercent}% ➔ Post-Test: {percentage}% ({normalizedGain >= 0 ? `Normalized Gain: ${normalizedGain}%` : 'Keep reviewing!'})
+                      Pre-Test: {prePercent}% &rarr; Post-Test: {percentage}% ({normalizedGain >= 0 ? `Normalized Gain: ${normalizedGain}%` : 'Keep reviewing!'})
                     </Text>
                   </View>
                 );

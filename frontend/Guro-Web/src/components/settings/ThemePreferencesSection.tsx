@@ -572,11 +572,11 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
               onChange={(e) => handleChangeSfxStyle(e.target.value)}
               className="px-2.5 py-1.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg text-xs font-semibold text-[var(--text-main)] focus:outline-none focus:border-indigo-500 disabled:opacity-50 cursor-pointer"
             >
-              <option value="classic">🔔 Classic Bell</option>
-              <option value="arcade">👾 8-Bit Arcade</option>
-              <option value="laser">⚡ Sci-Fi Laser</option>
-              <option value="fanfare">🎺 Royal Fanfare</option>
-              <option value="magic">✨ Magic Sparkle</option>
+              <option value="classic">Classic Bell</option>
+              <option value="arcade">8-Bit Arcade</option>
+              <option value="laser">Sci-Fi Laser</option>
+              <option value="fanfare">Royal Fanfare</option>
+              <option value="magic">Magic Sparkle</option>
             </select>
           </div>
 
@@ -606,12 +606,12 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
               onChange={(e) => handleChangeVoiceGuide(e.target.value)}
               className="px-2.5 py-1.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg text-xs font-semibold text-[var(--text-main)] focus:outline-none focus:border-indigo-500 cursor-pointer"
             >
-              <option value="owl">🦉 Wise Owl Guide</option>
-              <option value="astronaut">👨‍🚀 Astro Explorer</option>
-              <option value="robot">🤖 Friendly Robot</option>
-              <option value="mentor">🧙 Master Guro Mentor</option>
-              <option value="superhero">🦸 Super Hero Champion</option>
-              <option value="fox">🦊 Clever Fox Guide</option>
+              <option value="owl">Wise Owl Guide</option>
+              <option value="astronaut">Astro Explorer</option>
+              <option value="robot">Friendly Robot</option>
+              <option value="mentor">Master Guro Mentor</option>
+              <option value="superhero">Super Hero Champion</option>
+              <option value="fox">Clever Fox Guide</option>
             </select>
           </div>
 
@@ -641,11 +641,11 @@ export const ThemePreferencesSection: React.FC<ThemePreferencesSectionProps> = (
               onChange={(e) => handleChangeSpeechSpeed(e.target.value)}
               className="px-2.5 py-1.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg text-xs font-semibold text-[var(--text-main)] focus:outline-none focus:border-indigo-500 cursor-pointer"
             >
-              <option value="0.6">🐢 0.6x (Very Gentle / Remedial)</option>
-              <option value="0.8">🚶 0.8x (Relaxed Pace)</option>
-              <option value="1.0">🗣️ 1.0x (Standard Speed)</option>
-              <option value="1.2">🏃 1.2x (Brisk Pace)</option>
-              <option value="1.5">⚡ 1.5x (Speedy Review)</option>
+              <option value="0.6">0.6x (Very Gentle / Remedial)</option>
+              <option value="0.8">0.8x (Relaxed Pace)</option>
+              <option value="1.0">1.0x (Standard Speed)</option>
+              <option value="1.2">1.2x (Brisk Pace)</option>
+              <option value="1.5">1.5x (Speedy Review)</option>
             </select>
           </div>
         </div>
