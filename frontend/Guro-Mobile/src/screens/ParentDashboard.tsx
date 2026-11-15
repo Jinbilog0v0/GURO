@@ -1974,6 +1974,7 @@ export function ParentDashboard({ navigation }: Props) {
                 borderBottomColor: Colors.border,
                 position: 'relative',
                 flexShrink: 0,
+                zIndex: 10,
               }}
             >
               {/* Top Blue Accent Line */}
@@ -1988,36 +1989,8 @@ export function ParentDashboard({ navigation }: Props) {
                 }}
               />
 
-              {/* Row 1: Teacher Name & Child subtitle on left, PARENT badge on right */}
+              {/* Row 1: < Chats button on left (above name), PARENT badge on right */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm }}>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text numberOfLines={1} style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700' }}>
-                    {activeTeacherName || 'Classroom Teacher'}
-                  </Text>
-                  <Text numberOfLines={1} style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
-                    Child: {selectedChild?.name || (selectedChild as any)?.studentName || 'Student'}
-                  </Text>
-                </View>
-
-                <View
-                  style={{
-                    backgroundColor: 'rgba(17,66,142,0.08)',
-                    paddingHorizontal: 10,
-                    paddingVertical: 3,
-                    borderRadius: 14,
-                    borderWidth: 1,
-                    borderColor: 'rgba(17,66,142,0.18)',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
-                    PARENT
-                  </Text>
-                </View>
-              </View>
-
-              {/* Row 2: < Chats button below Name on left, Connected badge below role on right */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.xs }}>
                 <TouchableOpacity
                   onPress={() => setIsChatThreadOpen(false)}
                   activeOpacity={0.7}
@@ -2041,6 +2014,34 @@ export function ParentDashboard({ navigation }: Props) {
                     Chats
                   </Text>
                 </TouchableOpacity>
+
+                <View
+                  style={{
+                    backgroundColor: 'rgba(17,66,142,0.08)',
+                    paddingHorizontal: 10,
+                    paddingVertical: 3,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: 'rgba(17,66,142,0.18)',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
+                    PARENT
+                  </Text>
+                </View>
+              </View>
+
+              {/* Row 2: Teacher Name & Child subtitle below Chats on left, Connected badge below role on right */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.xs, gap: Spacing.sm }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text numberOfLines={1} style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700' }}>
+                    {activeTeacherName || 'Classroom Teacher'}
+                  </Text>
+                  <Text numberOfLines={1} style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
+                    Child: {selectedChild?.name || (selectedChild as any)?.studentName || 'Student'}
+                  </Text>
+                </View>
 
                 <SyncBadge />
               </View>
@@ -2275,7 +2276,9 @@ export function ParentDashboard({ navigation }: Props) {
             style={[
               styles.chatInputContainer,
               {
-                paddingBottom: Spacing.sm,
+                paddingTop: 6,
+                paddingBottom: isKeyboardVisible ? 4 : Math.max(insets.bottom, 8),
+                minHeight: isKeyboardVisible ? 48 : 58,
               },
             ]}
           >

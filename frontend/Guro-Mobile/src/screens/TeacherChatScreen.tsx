@@ -728,6 +728,7 @@ export function TeacherChatScreen() {
               borderBottomColor: Colors.border,
               position: 'relative',
               flexShrink: 0,
+              zIndex: 10,
             }}
           >
             {/* Blue Line on Top */}
@@ -742,36 +743,8 @@ export function TeacherChatScreen() {
               }}
             />
 
-            {/* Row 1: Student Name & Parent on left, TEACHER badge on right */}
+            {/* Row 1: < Chats button on left (above name), TEACHER badge on right */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm }}>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text numberOfLines={1} style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700' }}>
-                  {activeThread?.studentName || 'Student Consultation'}
-                </Text>
-                <Text numberOfLines={1} style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
-                  {activeThread?.parentName ? `Parent: ${activeThread.parentName}` : 'Parent Consultation'}
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  backgroundColor: 'rgba(17,66,142,0.08)',
-                  paddingHorizontal: 10,
-                  paddingVertical: 3,
-                  borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: 'rgba(17,66,142,0.18)',
-                  flexShrink: 0,
-                }}
-              >
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
-                  TEACHER
-                </Text>
-              </View>
-            </View>
-
-            {/* Row 2: < Chats button below Name on left, Connected badge below role on right */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.xs }}>
               <TouchableOpacity
                 onPress={() => setActiveStudentId(null)}
                 activeOpacity={0.7}
@@ -795,6 +768,34 @@ export function TeacherChatScreen() {
                   Chats
                 </Text>
               </TouchableOpacity>
+
+              <View
+                style={{
+                  backgroundColor: 'rgba(17,66,142,0.08)',
+                  paddingHorizontal: 10,
+                  paddingVertical: 3,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: 'rgba(17,66,142,0.18)',
+                  flexShrink: 0,
+                }}
+              >
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
+                  TEACHER
+                </Text>
+              </View>
+            </View>
+
+            {/* Row 2: Student Name & Parent below Chats on left, Connected badge below role on right */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.xs, gap: Spacing.sm }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text numberOfLines={1} style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700' }}>
+                  {activeThread?.studentName || 'Student Consultation'}
+                </Text>
+                <Text numberOfLines={1} style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
+                  {activeThread?.parentName ? `Parent: ${activeThread.parentName}` : 'Parent Consultation'}
+                </Text>
+              </View>
 
               <SyncBadge />
             </View>
@@ -1029,14 +1030,15 @@ export function TeacherChatScreen() {
         <View
           style={{
             paddingHorizontal: Spacing.md,
-            paddingTop: Spacing.sm,
-            paddingBottom: isKeyboardVisible ? Spacing.sm : Math.max(insets.bottom, Spacing.sm),
+            paddingTop: 6,
+            paddingBottom: isKeyboardVisible ? 4 : Math.max(insets.bottom, 8),
             backgroundColor: Colors.bgSidebar,
             borderTopWidth: 1,
             borderTopColor: Colors.border,
             flexDirection: 'row',
             alignItems: 'center',
             gap: Spacing.sm,
+            minHeight: isKeyboardVisible ? 48 : 58,
           }}
         >
           <View style={{ flex: 1 }}>
