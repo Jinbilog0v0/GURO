@@ -16,7 +16,7 @@ import * as Updates from 'expo-updates';
 
 export const APP_VERSION = '1.0.5';
 export const APP_BUILD_NUMBER = '9';
-export const APP_VERSION_CODE = 21;
+export const APP_VERSION_CODE = 22;
 export const APP_NAME = 'GURO';
 export const APP_FULL_NAME = 'GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION';
 export const APP_TAGLINE = 'Offline-first · SQLite powered';
