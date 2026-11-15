@@ -438,6 +438,7 @@ export function TeacherChatScreen() {
               borderBottomWidth: 1,
               borderBottomColor: Colors.border,
               position: 'relative',
+              flexShrink: 0,
             }}
           >
             {/* Top Blue Line */}
@@ -486,9 +487,8 @@ export function TeacherChatScreen() {
                 </View>
               </View>
 
-              {/* Right Stack: Connected status beside TEACHER badge */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <SyncBadge />
+              {/* Right Stack: TEACHER badge on top, Connected status on 2nd line */}
+              <View style={{ flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-start', gap: 4, flexShrink: 0 }}>
                 <View
                   style={{
                     backgroundColor: 'rgba(17,66,142,0.08)',
@@ -503,6 +503,7 @@ export function TeacherChatScreen() {
                     TEACHER
                   </Text>
                 </View>
+                <SyncBadge />
               </View>
             </View>
           </View>
@@ -726,6 +727,7 @@ export function TeacherChatScreen() {
               borderBottomWidth: 1,
               borderBottomColor: Colors.border,
               position: 'relative',
+              flexShrink: 0,
             }}
           >
             {/* Blue Line on Top */}
@@ -740,34 +742,9 @@ export function TeacherChatScreen() {
               }}
             />
 
+            {/* Row 1: Student Name & Parent on left, TEACHER badge on right */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm }}>
-              {/* Back to Conversations Button */}
-              <TouchableOpacity
-                onPress={() => setActiveStudentId(null)}
-                activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                accessibilityRole="button"
-                accessibilityLabel="Back to conversations list"
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 3,
-                  paddingVertical: 5,
-                  paddingHorizontal: 10,
-                  backgroundColor: 'rgba(17,66,142,0.08)',
-                  borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: 'rgba(17,66,142,0.18)',
-                }}
-              >
-                <ChevronLeft size={16} color={Colors.accentPrimary} />
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.accentPrimary }}>
-                  Chats
-                </Text>
-              </TouchableOpacity>
-
-              {/* Center Title: Student Name & Parent */}
-              <View style={{ flex: 1, paddingHorizontal: 4 }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
                 <Text numberOfLines={1} style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700' }}>
                   {activeThread?.studentName || 'Student Consultation'}
                 </Text>
@@ -776,24 +753,50 @@ export function TeacherChatScreen() {
                 </Text>
               </View>
 
-              {/* Right: SyncBadge + TEACHER Badge */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <SyncBadge />
-                <View
-                  style={{
-                    backgroundColor: 'rgba(17,66,142,0.08)',
-                    paddingHorizontal: 10,
-                    paddingVertical: 3,
-                    borderRadius: 14,
-                    borderWidth: 1,
-                    borderColor: 'rgba(17,66,142,0.18)',
-                  }}
-                >
-                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
-                    TEACHER
-                  </Text>
-                </View>
+              <View
+                style={{
+                  backgroundColor: 'rgba(17,66,142,0.08)',
+                  paddingHorizontal: 10,
+                  paddingVertical: 3,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: 'rgba(17,66,142,0.18)',
+                  flexShrink: 0,
+                }}
+              >
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
+                  TEACHER
+                </Text>
               </View>
+            </View>
+
+            {/* Row 2: < Chats button below Name on left, Connected badge below role on right */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.xs }}>
+              <TouchableOpacity
+                onPress={() => setActiveStudentId(null)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Back to conversations list"
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 3,
+                  paddingVertical: 4,
+                  paddingHorizontal: 10,
+                  backgroundColor: 'rgba(17,66,142,0.08)',
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: 'rgba(17,66,142,0.18)',
+                }}
+              >
+                <ChevronLeft size={15} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.accentPrimary }}>
+                  Chats
+                </Text>
+              </TouchableOpacity>
+
+              <SyncBadge />
             </View>
           </View>
 
