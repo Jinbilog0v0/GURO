@@ -282,7 +282,7 @@ export const ParentConsultationView: React.FC<ParentConsultationViewProps> = ({
               Teacher Consultations
               <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#11428E]/10 text-[#11428E] dark:text-blue-300 border border-[#11428E]/20 flex items-center gap-1">
                 <Calendar size={11} />
-                S.Y. 2026-2027 • 1st Sem
+                S.Y. 2026-2027 • Quarter 1
               </span>
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                 Official DepEd Channel
