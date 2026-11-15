@@ -15,11 +15,28 @@ export interface PatchNoteItem {
 
 export const PATCH_NOTES_HISTORY: PatchNoteItem[] = [
   {
+    version: '1.0.5',
+    date: 'November 2026',
+    title: 'In-App OTA Updates, Version Hub & Patch Notes',
+    badge: 'LATEST RELEASE',
+    badgeVariant: 'success',
+    highlights: [
+      '🔄 In-App Over-The-Air (OTA) updates engine with zero-downtime hot reload.',
+      '✨ Global update modal with release highlights and instant upgrade button.',
+      '📋 Dedicated "What\'s New & Updates" release notes screen with full changelog history.',
+      '🔍 Real-time EAS update check button and installed build metadata inspector.',
+    ],
+    fixes: [
+      'Added startup 4-second non-blocking update check guard.',
+      'Integrated unread update badges across Settings and Teacher dashboards.',
+    ],
+  },
+  {
     version: '1.0.4',
     date: 'November 2026',
     title: 'UI/UX Dark Mode, Chat Responsiveness & Security Challenges',
-    badge: 'LATEST RELEASE',
-    badgeVariant: 'success',
+    badge: 'STABLE',
+    badgeVariant: 'primary',
     highlights: [
       '🌓 WCAG AA Compliant Light & Dark mode themes with instant theme switcher in Settings.',
       '💬 Smooth mobile keyboard responsiveness in Teacher & Parent chat pages with safe-area insets.',
