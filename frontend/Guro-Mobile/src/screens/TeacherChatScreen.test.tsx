@@ -282,7 +282,7 @@ describe('TeacherChatScreen', () => {
     });
   });
 
-  test('omits edit and unsend options if message is older than 30 minutes', async () => {
+  test('displays disabled edit and unsend options if message is older than 30 minutes', async () => {
     const oldMessages = [
       {
         id: 99,
@@ -326,8 +326,9 @@ describe('TeacherChatScreen', () => {
 
     const json = JSON.stringify(root.toJSON());
     expect(json).toContain('Message Actions');
-    expect(json).not.toContain('Edit Message');
-    expect(json).not.toContain('Unsend Message');
+    expect(json).toContain('Edit Message');
+    expect(json).toContain('Unsend Message');
+    expect(json).toContain('Expired • 30-minute limit exceeded');
 
     act(() => {
       root.unmount();

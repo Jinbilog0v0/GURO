@@ -467,30 +467,44 @@ export const ParentConsultationView: React.FC<ParentConsultationViewProps> = ({
                       </div>
                     ) : (
                       <div className="flex items-start gap-1 max-w-[85%] md:max-w-[70%]">
-                        {/* Parent message action trigger (within 30 mins) */}
-                        {isMe && (Date.now() - new Date(msg.created_at).getTime()) <= 30 * 60 * 1000 && (
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 mt-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingMessageId(msg.id);
-                                setEditBody(msg.message_body);
-                              }}
-                              title="Edit message"
-                              className="p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] rounded hover:bg-white/10"
-                            >
-                              <Edit2 size={12} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleUnsend(msg.id)}
-                              title="Unsend message"
-                              className="p-1 text-red-400 hover:text-red-500 rounded hover:bg-red-500/10"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        )}
+                        {/* Parent message action trigger */}
+                        {isMe && (() => {
+                          const isWithin30Mins = (Date.now() - new Date(msg.created_at).getTime()) <= 30 * 60 * 1000;
+                          return (
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 mt-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!isWithin30Mins) return;
+                                  setEditingMessageId(msg.id);
+                                  setEditBody(msg.message_body);
+                                }}
+                                disabled={!isWithin30Mins}
+                                title={isWithin30Mins ? "Edit message" : "Expired: 30-minute limit exceeded"}
+                                className={`p-1 rounded ${
+                                  isWithin30Mins
+                                    ? 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-white/10'
+                                    : 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
+                                }`}
+                              >
+                                <Edit2 size={12} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => isWithin30Mins && handleUnsend(msg.id)}
+                                disabled={!isWithin30Mins}
+                                title={isWithin30Mins ? "Unsend message" : "Expired: 30-minute limit exceeded"}
+                                className={`p-1 rounded ${
+                                  isWithin30Mins
+                                    ? 'text-red-400 hover:text-red-500 hover:bg-red-500/10'
+                                    : 'opacity-40 cursor-not-allowed text-[var(--text-muted)]'
+                                }`}
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          );
+                        })()}
 
                         <div
                           className={`p-3.5 rounded-2xl text-xs leading-relaxed max-w-prose shadow-sm ${

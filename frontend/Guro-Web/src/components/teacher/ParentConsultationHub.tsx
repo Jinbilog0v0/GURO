@@ -830,28 +830,36 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
                                     <div
                                       className="absolute right-0 top-full mt-1 z-30 w-36 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-lg p-1 animate-in fade-in zoom-in-95 duration-100 flex flex-col text-xs"
                                     >
-                                      {/* Only show edit if within 30-minute window */}
-                                      {isWithin30Mins && (
-                                        <button
-                                          type="button"
-                                          onClick={() => handleStartEdit(msg)}
-                                          className="w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer transition-colors hover:bg-[var(--bg-main)] text-[var(--text-main)]"
-                                        >
-                                          <Edit2 size={12} />
-                                          <span>Edit message</span>
-                                        </button>
-                                      )}
-                                      {/* Only show unsend if within 30-minute window */}
-                                      {isWithin30Mins && (
-                                        <button
-                                          type="button"
-                                          onClick={() => handleUnsend(msg.id)}
-                                          className="w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors font-medium"
-                                        >
-                                          <Trash2 size={12} />
-                                          <span>Unsend</span>
-                                        </button>
-                                      )}
+                                      {/* Edit message (always displayed, disabled if > 30 mins) */}
+                                      <button
+                                        type="button"
+                                        onClick={() => isWithin30Mins && handleStartEdit(msg)}
+                                        disabled={!isWithin30Mins}
+                                        title={isWithin30Mins ? "Edit message" : "Expired: 30-minute limit exceeded"}
+                                        className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 transition-colors ${
+                                          isWithin30Mins
+                                            ? 'cursor-pointer hover:bg-[var(--bg-main)] text-[var(--text-main)]'
+                                            : 'cursor-not-allowed opacity-40 text-[var(--text-muted)]'
+                                        }`}
+                                      >
+                                        <Edit2 size={12} />
+                                        <span>Edit message</span>
+                                      </button>
+                                      {/* Unsend message (always displayed, disabled if > 30 mins) */}
+                                      <button
+                                        type="button"
+                                        onClick={() => isWithin30Mins && handleUnsend(msg.id)}
+                                        disabled={!isWithin30Mins}
+                                        title={isWithin30Mins ? "Unsend message" : "Expired: 30-minute limit exceeded"}
+                                        className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 transition-colors ${
+                                          isWithin30Mins
+                                            ? 'text-rose-500 hover:bg-rose-500/10 cursor-pointer font-medium'
+                                            : 'cursor-not-allowed opacity-40 text-[var(--text-muted)]'
+                                        }`}
+                                      >
+                                        <Trash2 size={12} />
+                                        <span>Unsend</span>
+                                      </button>
                                     </div>
                                   </>
                                 )}

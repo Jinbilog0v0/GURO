@@ -896,16 +896,21 @@ export function TeacherChatScreen() {
                   </View>
 
                   <View style={{ gap: 8 }}>
-                    {selectedActionMessage &&
-                      Date.now() - new Date(selectedActionMessage.created_at).getTime() <= 30 * 60 * 1000 && (
+                    {/* Edit Message Button (Displayed always, disabled if > 30 mins) */}
+                    {selectedActionMessage && (() => {
+                      const isExpired = Date.now() - new Date(selectedActionMessage.created_at).getTime() > 30 * 60 * 1000;
+                      return (
                         <TouchableOpacity
                           onPress={() => {
+                            if (isExpired) return;
                             const target = selectedActionMessage;
                             setSelectedActionMessage(null);
                             setIsConfirmingUnsend(false);
                             setEditingModalMessage(target);
                             setEditingText(target.message_body);
                           }}
+                          disabled={isExpired}
+                          activeOpacity={isExpired ? 1 : 0.7}
                           style={{
                             flexDirection: 'row',
                             alignItems: 'center',
@@ -913,43 +918,61 @@ export function TeacherChatScreen() {
                             paddingVertical: 12,
                             paddingHorizontal: 14,
                             borderRadius: 12,
-                            backgroundColor: 'rgba(17,66,142,0.06)',
+                            backgroundColor: isExpired ? 'rgba(0,0,0,0.03)' : 'rgba(17,66,142,0.06)',
+                            opacity: isExpired ? 0.45 : 1,
                           }}
-                          accessibilityLabel="Edit message"
+                          accessibilityLabel={isExpired ? "Edit message (disabled, 30-minute window expired)" : "Edit message"}
                         >
-                          <Edit2 size={16} color={Colors.accentPrimary} />
+                          <Edit2 size={16} color={isExpired ? Colors.textMuted : Colors.accentPrimary} />
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.textMain }}>Edit Message</Text>
-                            <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>Within 30 minutes of sending</Text>
+                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: isExpired ? Colors.textMuted : Colors.textMain }}>
+                              Edit Message
+                            </Text>
+                            <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
+                              {isExpired ? 'Expired • 30-minute limit exceeded' : 'Within 30 minutes of sending'}
+                            </Text>
                           </View>
                         </TouchableOpacity>
-                      )}
+                      );
+                    })()}
 
-                    {/* Unsend Message (Sender only, within 30 mins) */}
+                    {/* Unsend Message Button (Displayed always for sender, disabled if > 30 mins) */}
                     {selectedActionMessage &&
                       (selectedActionMessage.sender_role === 'teacher' ||
-                        selectedActionMessage.sender_id === (currentUser?.userId || 'teacher')) &&
-                      Date.now() - new Date(selectedActionMessage.created_at).getTime() <= 30 * 60 * 1000 && (
-                      <TouchableOpacity
-                        onPress={() => setIsConfirmingUnsend(true)}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 12,
-                          paddingVertical: 12,
-                          paddingHorizontal: 14,
-                          borderRadius: 12,
-                          backgroundColor: 'rgba(239,68,68,0.06)',
-                        }}
-                        accessibilityLabel="Unsend message"
-                      >
-                        <Trash2 size={16} color={Colors.danger} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.danger }}>Unsend Message</Text>
-                          <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>Within 30 minutes of sending</Text>
-                        </View>
-                      </TouchableOpacity>
-                    )}
+                        selectedActionMessage.sender_id === (currentUser?.userId || 'teacher')) && (() => {
+                      const isExpired = Date.now() - new Date(selectedActionMessage.created_at).getTime() > 30 * 60 * 1000;
+                      return (
+                        <TouchableOpacity
+                          onPress={() => {
+                            if (isExpired) return;
+                            setIsConfirmingUnsend(true);
+                          }}
+                          disabled={isExpired}
+                          activeOpacity={isExpired ? 1 : 0.7}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 12,
+                            paddingVertical: 12,
+                            paddingHorizontal: 14,
+                            borderRadius: 12,
+                            backgroundColor: isExpired ? 'rgba(0,0,0,0.03)' : 'rgba(239,68,68,0.06)',
+                            opacity: isExpired ? 0.45 : 1,
+                          }}
+                          accessibilityLabel={isExpired ? "Unsend message (disabled, 30-minute window expired)" : "Unsend message"}
+                        >
+                          <Trash2 size={16} color={isExpired ? Colors.textMuted : Colors.danger} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: isExpired ? Colors.textMuted : Colors.danger }}>
+                              Unsend Message
+                            </Text>
+                            <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
+                              {isExpired ? 'Expired • 30-minute limit exceeded' : 'Within 30 minutes of sending'}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })()}
                   </View>
                 </>
               ) : (
