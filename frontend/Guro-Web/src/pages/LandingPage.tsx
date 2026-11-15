@@ -5,6 +5,7 @@ import { FeatureCard, type FeatureCardProps } from '../components/landing/Featur
 import { UserManualModal } from '../components/shared/UserManualModal';
 import { setAuthToken } from '../utils/api';
 import { toast } from '../utils/toast';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 
 // ─── Logo ────────────────────────────────────────────────────────────────────
 
@@ -53,6 +54,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
     const [view, setView] = useState<ViewType>('login');
     const [showManualModal, setShowManualModal] = useState(false);
+
+    useScrollReveal(view);
     const [isAdminMode, setIsAdminMode] = useState(false);
     const [adminSecretKey, setAdminSecretKey] = useState('');
     const [email, setEmail] = useState('');
@@ -1295,15 +1298,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 {view === 'guest-roles' && (
                     <div className="flex flex-col items-center gap-8 w-full mt-4">
                         <div className="grid w-full max-w-4xl grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 px-2 justify-center">
-                            {guestCards.map((card) => (
-                                <RoleCard
+                            {guestCards.map((card, idx) => (
+                                <div
                                     key={card.key}
-                                    role={card.role}
-                                    description={card.description}
-                                    Icon={card.Icon}
-                                    bgColor={card.bgColor}
-                                    onClick={card.onClick}
-                                />
+                                    className="scroll-reveal-card"
+                                    style={{ transitionDelay: `${idx * 75}ms` }}
+                                >
+                                    <RoleCard
+                                        role={card.role}
+                                        description={card.description}
+                                        Icon={card.Icon}
+                                        bgColor={card.bgColor}
+                                        onClick={card.onClick}
+                                    />
+                                </div>
                             ))}
                         </div>
                     </div>
@@ -1312,8 +1320,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 {/* ── Feature strip ── */}
                 {view !== 'guest-roles' && (
                     <div className="grid w-full grid-cols-1 sm:grid-cols-3 gap-5 max-w-3xl mt-4 px-2">
-                        {featureCards.map((card) => (
-                            <FeatureCard key={card.label} {...card} />
+                        {featureCards.map((card, idx) => (
+                            <div
+                                key={card.label}
+                                className="scroll-reveal-card"
+                                style={{ transitionDelay: `${idx * 90}ms` }}
+                            >
+                                <FeatureCard {...card} />
+                            </div>
                         ))}
                     </div>
                 )}

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { AppVersionBadge } from '../constants/appVersion';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 import {
   GraduationCap,
   School,
@@ -60,6 +61,8 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
   const [activeNavSection, setActiveNavSection] = useState<NavSectionId>('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+
+  useScrollReveal(activeAudienceTab);
 
   useEffect(() => {
     if (typeof navigator !== 'undefined') {
@@ -499,12 +502,16 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
               ].map((p, idx) => {
                 const Icon = p.icon;
                 return (
-                  <div key={idx} className="p-5 sm:p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs flex flex-col gap-2.5 sm:gap-3 transition-transform hover:-translate-y-0.5">
+                  <div
+                    key={idx}
+                    className="scroll-reveal-card p-5 sm:p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xs flex flex-col gap-2.5 sm:gap-3 transition-transform hover:-translate-y-1 hover:shadow-md cursor-default"
+                    style={{ transitionDelay: `${idx * 80}ms` }}
+                  >
                     <div className={`size-11 sm:size-12 rounded-2xl border flex items-center justify-center ${p.color}`}>
                       <Icon className="size-5 sm:size-6" />
                     </div>
                     <h3 className="text-sm sm:text-base font-extrabold text-[var(--text-main)] mt-1">{p.title}</h3>
-                    <p className="text-xs text-[var(--text-muted)] leading-relaxed">{p.description}</p>
+                    <p className="text-xs text-[var(--text-muted)] leading-relaxed max-w-prose">{p.description}</p>
                   </div>
                 );
               })}
@@ -552,7 +559,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
           </div>
 
           {/* Role Tab Card Content */}
-          <div className="p-5 sm:p-8 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm">
+          <div className="scroll-reveal-card p-5 sm:p-8 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm">
             {activeAudienceTab === 'student' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 items-center">
                 <div className="flex flex-col gap-3 sm:gap-4">
@@ -560,7 +567,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                   <h3 className="text-xl sm:text-2xl font-black text-[var(--text-main)] leading-tight">
                     Engaging, Self-Paced Learning with Zero Barriers
                   </h3>
-                  <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed max-w-prose">
                     Students can learn anywhere—at school or at home—without worrying about Wi-Fi or data allowances.
                   </p>
                   <ul className="flex flex-col gap-2 sm:gap-2.5 text-xs text-[var(--text-main)] font-semibold mt-1">
@@ -570,7 +577,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                     <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-emerald-500 shrink-0" /> 1-tap offline guest mode with zero registration required</li>
                   </ul>
                 </div>
-                <div className="p-5 sm:p-6 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col gap-3">
+                <div className="scroll-reveal-card p-5 sm:p-6 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col gap-3 tabular-nums" style={{ transitionDelay: '100ms' }}>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[var(--text-muted)]">Active Module</span>
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">Grade 4 Math</span>
@@ -591,7 +598,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                   <h3 className="text-xl sm:text-2xl font-black text-[var(--text-main)] leading-tight">
                     Comprehensive Classroom Analytics &amp; SF9 Reporting
                   </h3>
-                  <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed max-w-prose">
                     Save hours of manual grading with automated telemetry and standardized DepEd report outputs.
                   </p>
                   <ul className="flex flex-col gap-2 sm:gap-2.5 text-xs text-[var(--text-main)] font-semibold mt-1">
@@ -601,7 +608,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                     <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-blue-500 shrink-0" /> Classroom PIN generation for seamless pairing</li>
                   </ul>
                 </div>
-                <div className="p-5 sm:p-6 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col gap-3">
+                <div className="scroll-reveal-card p-5 sm:p-6 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col gap-3 tabular-nums" style={{ transitionDelay: '100ms' }}>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[var(--text-muted)]">Section 4-Rizal</span>
                     <span className="text-xs font-bold text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-full">32 Students</span>
@@ -619,7 +626,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                   <h3 className="text-xl sm:text-2xl font-black text-[var(--text-main)] leading-tight">
                     Stay Connected to Your Child's Academic Journey
                   </h3>
-                  <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed max-w-prose">
                     No complicated setups. A simple 6-digit access code pairs parent devices with their child's tablet or phone.
                   </p>
                   <ul className="flex flex-col gap-2 sm:gap-2.5 text-xs text-[var(--text-main)] font-semibold mt-1">
@@ -629,7 +636,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                     <li className="flex items-center gap-2"><CheckCircle2 className="size-4 text-amber-500 shrink-0" /> Instant badge showcase to celebrate milestones</li>
                   </ul>
                 </div>
-                <div className="p-5 sm:p-6 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col gap-3">
+                <div className="scroll-reveal-card p-5 sm:p-6 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col gap-3 tabular-nums" style={{ transitionDelay: '100ms' }}>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[var(--text-muted)]">Linked Student</span>
                     <span className="text-xs font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full">Grade 4</span>
@@ -690,10 +697,11 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                   color: 'from-[#A01322] to-rose-700',
                   badge: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
                 },
-              ].map((item) => (
+              ].map((item, index) => (
                 <div
                   key={item.letter}
-                  className="p-5 sm:p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:shadow-md transition-all flex flex-col gap-3 group"
+                  className="scroll-reveal-card p-5 sm:p-6 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm hover:shadow-md transition-all flex flex-col gap-3 group"
+                  style={{ transitionDelay: `${index * 80}ms` }}
                 >
                   <div className="flex items-center justify-between">
                     <span className={`size-11 rounded-2xl bg-gradient-to-br ${item.color} text-white font-black text-xl flex items-center justify-center shadow-md shadow-[#11428E]/15`}>
@@ -707,7 +715,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
                     <h4 className="text-base font-extrabold text-[var(--text-main)] group-hover:text-[#11428E] dark:group-hover:text-sky-400 transition-colors">
                       {item.title}
                     </h4>
-                    <p className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed">
+                    <p className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed max-w-prose">
                       {item.desc}
                     </p>
                   </div>
@@ -716,7 +724,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
             </div>
 
             {/* Core Mission Banner Card */}
-            <div className="p-5 sm:p-8 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="scroll-reveal-card p-5 sm:p-8 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm flex flex-col md:flex-row items-center justify-between gap-6" style={{ transitionDelay: '120ms' }}>
               <div className="flex flex-col gap-2 max-w-xl text-center md:text-left">
                 <span className="text-xs font-bold text-[#11428E] dark:text-sky-400 uppercase tracking-wider">
                   National Curriculum Anchor

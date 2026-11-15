@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Volume2, Square, X, Check, ThumbsUp, ThumbsDown, Sparkles, Star, Lightbulb, Flame, Clock } from 'lucide-react';
+import { ArrowLeft, Volume2, Square, X, Check, ThumbsUp, ThumbsDown, Sparkles, Star, Lightbulb, Flame, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { QuizOption } from './QuizOption';
 import { QuizExplanation } from './QuizExplanation';
 
@@ -732,7 +732,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                         ? "bg-rose-500/15 border-rose-400 text-rose-700 dark:text-rose-300 scale-105" 
                                         : "bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)]"
                                 }`}>
-                                    <span className="text-xs font-bold uppercase tracking-wider">Swipe Left ◀</span>
+                                    <span className="text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1">Swipe Left <ChevronLeft size={13} /></span>
                                     <span className="text-lg font-extrabold">{options[0] || 'Left'}</span>
                                 </div>
                                 <div className={`flex flex-col items-center gap-1 p-3 rounded-2xl border-2 transition-all ${
@@ -740,7 +740,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
                                         ? "bg-emerald-500/15 border-emerald-400 text-emerald-700 dark:text-emerald-300 scale-105" 
                                         : "bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-muted)]"
                                 }`}>
-                                    <span className="text-xs font-bold uppercase tracking-wider">▶ Swipe Right</span>
+                                    <span className="text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1"><ChevronRight size={13} /> Swipe Right</span>
                                     <span className="text-lg font-extrabold">{options[1] || 'Right'}</span>
                                 </div>
                             </div>

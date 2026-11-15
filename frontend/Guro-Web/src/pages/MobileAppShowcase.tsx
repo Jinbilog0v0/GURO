@@ -48,6 +48,7 @@ import {
   Hourglass,
   Lock,
   Globe,
+  Star,
   Key,
   LogOut,
 } from 'lucide-react';
@@ -691,7 +692,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                     {/* Quick Stats Grid */}
                     <div className="grid grid-cols-3 gap-2">
                       <div className="p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center text-center">
-                        <span className="text-sm font-black text-amber-500">⭐ {earnedStars}</span>
+                        <span className="inline-flex items-center gap-1 text-sm font-black text-amber-500"><Star size={14} className="fill-amber-400 text-amber-500" /> {earnedStars}</span>
                         <span className="text-[9px] font-semibold text-[var(--text-muted)]">Total Stars</span>
                       </div>
                       <div className="p-2.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex flex-col items-center text-center">
@@ -843,8 +844,8 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                   <div className="flex flex-col gap-3 animate-in fade-in duration-200">
                     {/* Mascot Profile Header */}
                     <div className="p-4 rounded-2xl bg-gradient-to-br from-[#11428E]/15 to-[#A01322]/15 border border-[#11428E]/20 flex items-center gap-3">
-                      <div className="size-12 rounded-2xl bg-[#11428E] text-white flex items-center justify-center text-xl shadow-xs">
-                        🦉
+                      <div className="size-12 rounded-2xl bg-[#11428E] text-white flex items-center justify-center shadow-xs">
+                        <GraduationCap className="size-6 text-white" />
                       </div>
                       <div>
                         <h4 className="text-sm font-black text-[var(--text-main)]">Juan Dela Cruz</h4>
@@ -881,16 +882,19 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                       <span className="text-[10px] font-extrabold text-[var(--text-muted)] uppercase">My Badges</span>
                       <div className="grid grid-cols-4 gap-2 text-center">
                         {[
-                          { emoji: '⭐', label: 'First Quiz' },
-                          { emoji: '📐', label: 'Math Star' },
-                          { emoji: '📖', label: 'Reader' },
-                          { emoji: '🔥', label: 'Streak' },
-                        ].map((b, idx) => (
-                          <div key={idx} className="p-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col items-center">
-                            <span className="text-base">{b.emoji}</span>
-                            <span className="text-[8px] font-bold text-[var(--text-muted)] mt-0.5">{b.label}</span>
-                          </div>
-                        ))}
+                          { icon: Star, color: 'text-amber-500', label: 'First Quiz' },
+                          { icon: Calculator, color: 'text-blue-500', label: 'Math Star' },
+                          { icon: BookOpen, color: 'text-emerald-500', label: 'Reader' },
+                          { icon: Flame, color: 'text-rose-500', label: 'Streak' },
+                        ].map((b, idx) => {
+                          const IconComponent = b.icon;
+                          return (
+                            <div key={idx} className="p-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] flex flex-col items-center">
+                              <IconComponent className={`size-4 ${b.color}`} />
+                              <span className="text-[8px] font-bold text-[var(--text-muted)] mt-1">{b.label}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -964,8 +968,8 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                             Refresher Quick Check
                           </span>
                         </div>
-                        <span className="text-[10px] font-bold text-[#11428E] dark:text-sky-400">
-                          {isRefresherOpen ? 'Collapse ▲' : 'Open ▼'}
+                        <span className="text-[10px] font-bold text-[#11428E] dark:text-sky-400 inline-flex items-center gap-1">
+                          {isRefresherOpen ? <>Collapse <ChevronUp size={12} /></> : <>Open <ChevronDown size={12} /></>}
                         </span>
                       </button>
 
@@ -1014,7 +1018,7 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                         <span>Exit Quiz</span>
                       </button>
                       <div className="flex items-center gap-1 text-amber-500 text-xs font-extrabold">
-                        <span>⭐</span>
+                        <Star size={13} className="fill-amber-400 text-amber-500" />
                         <span>{earnedStars} Stars</span>
                       </div>
                     </div>
@@ -1065,8 +1069,9 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                       </div>
 
                       {quizSubmitted && (
-                        <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-200 text-[11px] leading-relaxed">
-                          🎉 <strong>Correct!</strong> 3/4 × 2 = 6/4 = 1 1/2 cups. You earned 1 Star &amp; +15 XP!
+                        <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-200 text-[11px] leading-relaxed flex items-center gap-1.5">
+                          <Sparkles size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span><strong>Correct!</strong> 3/4 × 2 = 6/4 = 1 1/2 cups. You earned 1 Star &amp; +15 XP!</span>
                         </div>
                       )}
                     </div>
@@ -1463,7 +1468,10 @@ export const MobileAppShowcase: React.FC<MobileAppShowcaseProps> = ({
                         </div>
                         <p className="text-xs font-bold text-[var(--text-main)]">What is 1/2 + 1/4?</p>
                         <div className="grid grid-cols-2 gap-1.5 mt-1 text-[11px]">
-                          <span className="p-1.5 rounded-lg border border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold">A. 3/4 ✓</span>
+                          <span className="p-1.5 rounded-lg border border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold inline-flex items-center justify-between">
+                            <span>A. 3/4</span>
+                            <Check size={12} className="text-emerald-600 dark:text-emerald-400" />
+                          </span>
                           <span className="p-1.5 rounded-lg border border-[var(--border-color)] text-[var(--text-muted)]">B. 2/6</span>
                         </div>
                       </div>

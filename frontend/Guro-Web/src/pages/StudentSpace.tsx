@@ -461,7 +461,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
                     setSelectedGrade(newGrade);
                     localStorage.setItem('guro_student_grade', String(newGrade));
                     effectiveGrade = newGrade;
-                    toast(`Profile grade switched to Grade ${newGrade} to match classroom.`, { icon: 'ℹ️' });
+                    toast(`Profile grade switched to Grade ${newGrade} to match classroom.`);
                 }
 
                 setClassroomCode(data.classroomId);
@@ -696,7 +696,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     useEffect(() => {
         if (step !== 'quiz' || !isQuizTimed) return;
         if (quizTimeRemaining <= 0) {
-            toast('⏱️ Time is up! Submitting your answers...', { icon: '⏳' });
+            toast('Time is up! Submitting your answers...');
             setStep('results');
             return;
         }
@@ -704,7 +704,7 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
             setQuizTimeRemaining((prev) => {
                 if (prev <= 1) {
                     clearInterval(timer);
-                    toast('⏱️ Time is up! Submitting your answers...', { icon: '⏳' });
+                    toast('Time is up! Submitting your answers...');
                     setStep('results');
                     return 0;
                 }

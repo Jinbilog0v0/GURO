@@ -131,14 +131,14 @@ export const DashboardStep: React.FC<DashboardStepProps> = ({
 
     React.useEffect(() => {
         const msgs = [
-            "You're doing amazing! Ready to learn something new today? 🚀",
-            "Learning is a superpower, and you're doing great! 🌟",
-            "Stuck on a topic? Review the concept cards anytime! 📚",
-            "Each correct answer is a step closer to mastery! Keep going! 🎯",
-            "Don't forget to visit the Mascot Shop to dress me up! 🎓👑",
-            "Consistency is key! Let's keep our daily streak alive! 🔥",
-            "Make sure to read the lesson guides carefully, they have cool pictures now! 🖼️",
-            "You're leveling up fast! Keep it up, explorer! 🎖️"
+            "You're doing amazing! Ready to learn something new today?",
+            "Learning is a superpower, and you're doing great!",
+            "Stuck on a topic? Review the concept cards anytime!",
+            "Each correct answer is a step closer to mastery! Keep going!",
+            "Don't forget to visit the Mascot Shop to dress me up!",
+            "Consistency is key! Let's keep our daily streak alive!",
+            "Make sure to read the lesson guides carefully, they have cool illustrations!",
+            "You're leveling up fast! Keep it up, explorer!"
         ];
         const randomMsg = msgs[Math.floor(Math.random() * msgs.length)];
         setMascotMessage(randomMsg);
