@@ -1711,41 +1711,40 @@ export function ParentDashboard({ navigation }: Props) {
 
       {/* ── Tab 2: Teacher Consultation Chat ── */}
       <View style={activeTab === 'chat' ? { flex: 1 } : { display: 'none', height: 0, flex: 0 }}>
-        {/* ── Sticky Full-Width Header Bar for Teacher Consultation ── */}
-        <View style={styles.header}>
+        {/* ── Streamlined Top Header Bar for Teacher Consultation ── */}
+        <View style={{
+          backgroundColor: '#FFFFFF',
+          paddingHorizontal: Spacing.lg,
+          paddingTop: Spacing.sm,
+          paddingBottom: Spacing.xs,
+          borderBottomWidth: 1,
+          borderBottomColor: Colors.border,
+          position: 'relative',
+        }}>
           <View style={styles.headerAccentLine} />
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flexWrap: 'wrap' }}>
-                <Text style={styles.headerTitle}>Teacher Consultation</Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 4,
-                    backgroundColor: 'rgba(17,66,142,0.08)',
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderRadius: Radius.sm,
-                    borderWidth: 1,
-                    borderColor: 'rgba(17,66,142,0.15)',
-                  }}
-                >
-                  <Calendar size={11} color={Colors.accentPrimary} />
-                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
-                    {`S.Y. ${activeSchoolYear} • ${activeTerm}`}
-                  </Text>
-                </View>
-              </View>
-              <Text style={styles.headerSub}>
-                {selectedChild
-                  ? `Direct consultation for ${selectedChild.studentName} (${selectedChild.studentId})`
-                  : 'Direct consultation channel with your child’s classroom teacher'}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, letterSpacing: -0.3 }}>
+                Teacher Consultation
               </Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 3,
+                  backgroundColor: 'rgba(17,66,142,0.08)',
+                  paddingHorizontal: 6,
+                  paddingVertical: 2,
+                  borderRadius: Radius.sm,
+                }}
+              >
+                <Calendar size={10} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 9.5, color: Colors.accentPrimary }}>
+                  {`S.Y. ${activeSchoolYear} • ${activeTerm}`}
+                </Text>
+              </View>
             </View>
-            <View style={styles.headerRight}>
-              <Badge label="Parent" variant="indigo" style={styles.roleBadge} />
-            </View>
+            <Badge label="Parent" variant="indigo" style={styles.roleBadge} />
           </View>
         </View>
 
@@ -1755,7 +1754,7 @@ export function ParentDashboard({ navigation }: Props) {
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingHorizontal: Spacing.lg,
-          paddingTop: Spacing.sm,
+          paddingTop: Spacing.xs,
           paddingBottom: Spacing.xs,
           backgroundColor: Colors.bgMain,
           borderBottomWidth: 1,
@@ -1771,12 +1770,10 @@ export function ParentDashboard({ navigation }: Props) {
               flexDirection: 'row',
               alignItems: 'center',
               gap: 4,
-              paddingVertical: 7,
-              paddingHorizontal: 12,
+              paddingVertical: 6,
+              paddingHorizontal: 10,
               backgroundColor: 'rgba(17,66,142,0.08)',
               borderRadius: Radius.md,
-              borderWidth: 1,
-              borderColor: 'rgba(17,66,142,0.15)',
             }}
           >
             <ChevronLeft size={16} color={Colors.accentPrimary} />
@@ -1911,7 +1908,7 @@ export function ParentDashboard({ navigation }: Props) {
 
         {/* Messages Stream & Sticky Input wrapped in KeyboardAvoidingView */}
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior="padding"
           keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
           style={{ flex: 1 }}
         >
@@ -2106,7 +2103,7 @@ export function ParentDashboard({ navigation }: Props) {
             style={[
               styles.chatInputContainer,
               {
-                paddingBottom: isKeyboardVisible ? Spacing.sm : Math.max(insets.bottom, Spacing.sm),
+                paddingBottom: Spacing.sm,
               },
             ]}
           >
@@ -2487,7 +2484,7 @@ export function ParentDashboard({ navigation }: Props) {
             height: 60 + insets.bottom,
             paddingTop: 8,
             paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-            display: activeTab === 'chat' ? 'none' : 'flex',
+            display: activeTab === 'chat' && isKeyboardVisible ? 'none' : 'flex',
           },
         ]}
       >
