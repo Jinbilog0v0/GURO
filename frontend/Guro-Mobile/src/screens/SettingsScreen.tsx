@@ -45,6 +45,7 @@ import {
   Moon,
 } from 'lucide-react-native';
 import { UserManualModal } from '../components/shared/UserManualModal';
+import { useAppUpdate } from '../context/AppUpdateContext';
 
 // ── Update Service ──────────────────────────────────────────────────────────
 import {
@@ -63,7 +64,7 @@ import { PrimaryButton, SecondaryButton, DangerButton } from '../components/ui/B
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { toast } from '../components';
 import { styles } from '../styles/SettingsScreen.styles';
-import { getFormattedAppVersion, getAppVersionFooter } from '../constants/appVersion';
+import { APP_VERSION, getFormattedAppVersion, getAppVersionFooter } from '../constants/appVersion';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -129,6 +130,17 @@ export function SettingsScreen({ navigation }: Props) {
   const [purchasingOutfit, setPurchasingOutfit] = useState<any | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
+
+  // App Update Context (safe fallback for test environment)
+  let appUpdate: any = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    appUpdate = useAppUpdate();
+  } catch {
+    // Rendered outside AppUpdateProvider
+  }
+  const showNewPatchBanner = appUpdate?.showNewPatchBanner ?? false;
+  const currentAppVersion = appUpdate?.currentVersion ?? APP_VERSION;
 
   // Email verification modal states
   const [showEmailVerifyModal, setShowEmailVerifyModal] = useState(false);
@@ -1365,12 +1377,38 @@ export function SettingsScreen({ navigation }: Props) {
                       borderRadius: Radius.md,
                       borderWidth: 1,
                       borderColor: Colors.border,
+                      minHeight: 44,
                     }}
                     activeOpacity={0.7}
                   >
                     <RotateCw size={14} color={Colors.accentPrimary} />
                     <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
                       {isCheckingUpdate ? 'Checking EAS Server...' : 'Check for Updates Now'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    testID="view-patch-notes-btn"
+                    onPress={() => navigation.navigate('PatchNotes')}
+                    style={{
+                      marginTop: Spacing.xs,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      paddingVertical: Spacing.sm,
+                      paddingHorizontal: Spacing.md,
+                      backgroundColor: 'rgba(0, 56, 168, 0.08)',
+                      borderRadius: Radius.md,
+                      borderWidth: 1,
+                      borderColor: 'rgba(0, 56, 168, 0.2)',
+                      minHeight: 44,
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Sparkles size={14} color={Colors.accentPrimary} />
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                      View Release Notes & What's New
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1408,6 +1446,21 @@ export function SettingsScreen({ navigation }: Props) {
           <BookOpen size={12} color="#11428E" style={{ marginRight: 4 }} />
           <Text style={[styles.headerSubtitleText, { color: '#11428E' }]}>Manual</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          testID="header-updates-btn"
+          onPress={() => navigation.navigate('PatchNotes')}
+          style={[styles.headerSubtitleBadge, { flexDirection: 'row', alignItems: 'center' }]}
+          activeOpacity={0.75}
+          accessibilityLabel="View Updates and Patch Notes"
+        >
+          <Sparkles size={12} color="#F59E0B" style={{ marginRight: 4 }} />
+          <Text style={[styles.headerSubtitleText, { color: '#D97706' }]}>Updates</Text>
+          {showNewPatchBanner && (
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#EF4444', marginLeft: 4 }} />
+          )}
+        </TouchableOpacity>
+
         <View style={styles.headerSubtitleBadge}>
           <Text style={styles.headerSubtitleText}>
             {appMode === 'online' ? 'Connected' : 'Offline Mode'}
@@ -1450,11 +1503,16 @@ export function SettingsScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
       >
         {renderSettingsBox()}
-        <View style={{ alignItems: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xs }}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('PatchNotes')}
+          activeOpacity={0.7}
+          accessibilityLabel="View patch notes"
+          style={{ alignItems: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xs, paddingVertical: 4 }}
+        >
           <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
             {getAppVersionFooter()}
           </Text>
-        </View>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}

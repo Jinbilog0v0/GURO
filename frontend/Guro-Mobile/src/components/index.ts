@@ -12,6 +12,7 @@ export { ToastContainer, toast } from './ui/ToastContainer';
 export { ConfirmDialog } from './ui/ConfirmDialog';
 export { ConfettiEffect } from './ui/ConfettiEffect';
 export { EducationalImagePicker } from './ui/EducationalImagePicker';
+export { AppUpdateModal } from './ui/AppUpdateModal';
 
 // Shared Components
 export { PinPad } from './shared/PinPad';

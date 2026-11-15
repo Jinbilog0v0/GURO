@@ -12,6 +12,7 @@ import { StudyScreen } from '../screens/StudyScreen';
 import { DetailsScreen } from '../screens/DetailsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { StudentProgressReportScreen } from '../screens/StudentProgressReportScreen';
+import { PatchNotesScreen } from '../screens/PatchNotesScreen';
 import { Colors } from '../theme/colors';
 import { Fonts, FontSizes } from '../theme/typography';
 
@@ -26,6 +27,7 @@ export type RootStackParamList = {
   Details: { fileName: string; content: string };
   Settings: undefined;
   StudentProgressReport: undefined;
+  PatchNotes: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -107,6 +109,11 @@ export function AppNavigator() {
         name="StudentProgressReport"
         component={StudentProgressReportScreen}
         options={{ title: "GURO Learner's Progress Report" }}
+      />
+      <Stack.Screen
+        name="PatchNotes"
+        component={PatchNotesScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

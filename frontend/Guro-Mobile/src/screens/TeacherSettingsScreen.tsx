@@ -1359,11 +1359,16 @@ export function TeacherSettingsScreen() {
           />
         )}
 
-        <View style={{ alignItems: 'center', marginTop: Spacing.md, marginBottom: Spacing.sm }}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('PatchNotes')}
+          activeOpacity={0.7}
+          style={{ alignItems: 'center', marginTop: Spacing.md, marginBottom: Spacing.sm, paddingVertical: 4 }}
+          accessibilityLabel="View patch notes"
+        >
           <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted }}>
             {getAppVersionFooter()}
           </Text>
-        </View>
+        </TouchableOpacity>
 
         {/* Teacher Logout Confirmation */}
         <ConfirmDialog

@@ -20,6 +20,8 @@ export const APP_VERSION_CODE = 20;
 export const APP_NAME = 'GURO';
 export const APP_FULL_NAME = 'GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION';
 export const APP_TAGLINE = 'Offline-first · SQLite powered';
+export const APP_VERSION_TAG = `v${APP_VERSION}`;
+export const APP_FULL_VERSION = `${APP_NAME} • ${APP_VERSION_TAG}`;
 
 export interface AppVersionMetadata {
   version: string;
