@@ -269,7 +269,11 @@ describe('ParentDashboard', () => {
       chatTabBtn.props.onPress();
       await new Promise(resolve => setTimeout(resolve, 10));
     });
+
+    // Open consultation thread
+    const threadBtn = root.root.find((node: any) => typeof node.props?.accessibilityLabel === 'string' && node.props.accessibilityLabel.startsWith('Open consultation for'));
     await act(async () => {
+      threadBtn.props.onPress();
       await new Promise(resolve => setTimeout(resolve, 10));
     });
 
@@ -335,6 +339,13 @@ describe('ParentDashboard', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
     });
 
+    // Open consultation thread
+    const threadBtn = root.root.find((node: any) => typeof node.props?.accessibilityLabel === 'string' && node.props.accessibilityLabel.startsWith('Open consultation for'));
+    await act(async () => {
+      threadBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
     const json = JSON.stringify(root.toJSON());
     expect(json).toContain('(edited)');
 
@@ -368,6 +379,13 @@ describe('ParentDashboard', () => {
     const chatTabBtn = root.root.findByProps({ accessibilityLabel: 'Teacher Chat' });
     await act(async () => {
       chatTabBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    // Open consultation thread
+    const threadBtn = root.root.find((node: any) => typeof node.props?.accessibilityLabel === 'string' && node.props.accessibilityLabel.startsWith('Open consultation for'));
+    await act(async () => {
+      threadBtn.props.onPress();
       await new Promise(resolve => setTimeout(resolve, 10));
     });
 
@@ -429,6 +447,13 @@ describe('ParentDashboard', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
     });
 
+    // Open consultation thread
+    const threadBtn = root.root.find((node: any) => typeof node.props?.accessibilityLabel === 'string' && node.props.accessibilityLabel.startsWith('Open consultation for'));
+    await act(async () => {
+      threadBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
     const optionsBtn = root.root.findByProps({ accessibilityLabel: 'Options for message 99' });
     expect(optionsBtn).toBeDefined();
 
@@ -463,6 +488,13 @@ describe('ParentDashboard', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
     });
 
+    // Open consultation thread
+    const threadBtn = root.root.find((node: any) => typeof node.props?.accessibilityLabel === 'string' && node.props.accessibilityLabel.startsWith('Open consultation for'));
+    await act(async () => {
+      threadBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
     const optionsBtn = root.root.findByProps({ accessibilityLabel: 'Options for message 1' });
     await act(async () => {
       optionsBtn.props.onPress();
@@ -486,6 +518,46 @@ describe('ParentDashboard', () => {
 
     json = JSON.stringify(root.toJSON());
     expect(json).toContain('You unsent a message');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test('allows navigating back to consultation thread list via Chats back button', async () => {
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<ParentDashboard navigation={mockNavigation as any} route={{} as any} />);
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    const chatTabBtn = root.root.findByProps({ accessibilityLabel: 'Teacher Chat' });
+    await act(async () => {
+      chatTabBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    // Open consultation thread
+    const threadBtn = root.root.find((node: any) => typeof node.props?.accessibilityLabel === 'string' && node.props.accessibilityLabel.startsWith('Open consultation for'));
+    await act(async () => {
+      threadBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    // Back button
+    const backBtn = root.root.findByProps({ accessibilityLabel: 'Back to consultations list' });
+    expect(backBtn).toBeDefined();
+
+    await act(async () => {
+      backBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    // Should be back in consultation threads list
+    const json = JSON.stringify(root.toJSON());
+    expect(json).toContain('Consultation Threads');
 
     act(() => {
       root.unmount();

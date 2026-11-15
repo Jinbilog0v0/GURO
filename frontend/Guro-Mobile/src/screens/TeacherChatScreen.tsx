@@ -11,6 +11,7 @@ import {
   Modal,
   Pressable,
   Keyboard,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore, resolveServerUrl } from '../store/useAppStore';
@@ -41,6 +42,8 @@ import {
   School,
   CheckCircle2,
   ChevronRight,
+  ChevronLeft,
+  Search,
 } from 'lucide-react-native';
 
 export interface ChatThread {
@@ -70,6 +73,15 @@ export interface ChatMessage {
   edit_history?: Array<{ previous_body: string; edited_at: string }> | null;
 }
 
+const formatTime = (ts?: string | null) => {
+  if (!ts) return '';
+  try {
+    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '';
+  }
+};
+
 export function TeacherChatScreen() {
   const insets = useSafeAreaInsets();
   const currentUser = useAppStore((state) => state.currentUser);
@@ -91,8 +103,7 @@ export function TeacherChatScreen() {
   const [inputText, setInputText] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false);
-  const [showUserSidebar, setShowUserSidebar] = useState<boolean>(false);
-  const [sidebarSearch, setSidebarSearch] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Forgiveness & options state
   const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
@@ -119,9 +130,9 @@ export function TeacherChatScreen() {
         setThreads(threadList);
         if (data.consultationHours) setConsultationHours(data.consultationHours);
 
-        // Auto-select first thread if none is currently active
-        if (!activeStudentId && threadList.length > 0) {
-          setActiveStudentId(threadList[0].studentId);
+        // Keep active student if already selected; otherwise stay on inbox list
+        if (activeStudentId && !threadList.some((t) => t.studentId === activeStudentId)) {
+          setActiveStudentId(null);
         }
       }
     } catch (e) {
@@ -402,162 +413,389 @@ export function TeacherChatScreen() {
 
   const activeThread = threads.find((t) => t.studentId === activeStudentId);
 
-  const filteredSidebarThreads = threads.filter((t) => {
-    const q = sidebarSearch.trim().toLowerCase();
+  const filteredThreads = threads.filter((t) => {
+    const q = searchQuery.trim().toLowerCase();
     if (!q) return true;
     return (
       t.studentName.toLowerCase().includes(q) ||
-      (t.parentName && t.parentName.toLowerCase().includes(q))
+      (t.parentName && t.parentName.toLowerCase().includes(q)) ||
+      t.studentId.toLowerCase().includes(q)
     );
   });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bgMain }} edges={['top', 'left', 'right']}>
-      {/* ── Sticky Top Header with Semester Badge & Hours ── */}
-      <View
-        style={{
-          paddingHorizontal: Spacing.md,
-          paddingTop: Spacing.md,
-          paddingBottom: Spacing.sm,
-          backgroundColor: '#FFFFFF',
-          borderBottomWidth: 1,
-          borderBottomColor: Colors.border,
-          position: 'relative',
-        }}
-      >
-        {/* Blue Line on Top */}
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 3,
-            backgroundColor: Colors.accentPrimary,
-          }}
-        />
+      {!activeStudentId ? (
+        /* ── INBOX LIST VIEW (Messenger-Style Thread List First) ── */
+        <View style={{ flex: 1, backgroundColor: Colors.bgApp }}>
+          {/* Sticky Top Header with S.Y. & Consultation Hours */}
+          <View
+            style={{
+              paddingHorizontal: Spacing.md,
+              paddingTop: Spacing.md,
+              paddingBottom: Spacing.sm,
+              backgroundColor: '#FFFFFF',
+              borderBottomWidth: 1,
+              borderBottomColor: Colors.border,
+              position: 'relative',
+            }}
+          >
+            {/* Top Blue Line */}
+            <View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 3,
+                backgroundColor: Colors.accentPrimary,
+              }}
+            />
 
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, letterSpacing: -0.5, fontWeight: '700' }}>
-              Parent Consultation
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, letterSpacing: -0.5, fontWeight: '700' }}>
+                  Parent Consultation
+                </Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    backgroundColor: 'rgba(17,66,142,0.08)',
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: 'rgba(17,66,142,0.15)',
+                    alignSelf: 'flex-start',
+                    marginTop: 4,
+                    marginBottom: 3,
+                  }}
+                >
+                  <Calendar size={11} color={Colors.accentPrimary} />
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                    {`S.Y. ${activeSchoolYear} • ${activeTerm}`}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
+                  <Clock size={11} color={Colors.accentPrimary} />
+                  <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
+                    {consultationHours || 'Monday – Friday: 3:00 PM – 5:00 PM'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Right Stack: Connected status beside TEACHER badge */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <SyncBadge />
+                <View
+                  style={{
+                    backgroundColor: 'rgba(17,66,142,0.08)',
+                    paddingHorizontal: 10,
+                    paddingVertical: 3,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: 'rgba(17,66,142,0.18)',
+                  }}
+                >
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
+                    TEACHER
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Search Input Bar */}
+          <View style={{ paddingHorizontal: Spacing.md, paddingTop: Spacing.sm, paddingBottom: Spacing.xs }}>
             <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 4,
-                backgroundColor: 'rgba(17,66,142,0.08)',
-                paddingHorizontal: 8,
-                paddingVertical: 3,
+                backgroundColor: '#FFFFFF',
                 borderRadius: 12,
                 borderWidth: 1,
-                borderColor: 'rgba(17,66,142,0.15)',
-                alignSelf: 'flex-start',
-                marginTop: 4,
-                marginBottom: 3,
+                borderColor: Colors.border,
+                paddingHorizontal: 10,
+                height: 42,
               }}
             >
-              <Calendar size={11} color={Colors.accentPrimary} />
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
-                {`S.Y. ${activeSchoolYear} • ${activeTerm}`}
-              </Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
-              <Clock size={11} color={Colors.accentPrimary} />
-              <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
-                {consultationHours || 'Monday – Friday: 3:00 PM – 5:00 PM'}
-              </Text>
+              <Search size={16} color={Colors.textMuted} />
+              <TextInput
+                placeholder="Search students or parents..."
+                placeholderTextColor={Colors.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={{
+                  flex: 1,
+                  marginLeft: 8,
+                  fontFamily: Fonts.body,
+                  fontSize: 13,
+                  color: Colors.textMain,
+                  paddingVertical: 0,
+                }}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <X size={16} color={Colors.textMuted} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
-          {/* Right Stack: Connected status beside TEACHER badge, and Drawer button below */}
-          <View style={{ alignItems: 'flex-end', gap: 6 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <SyncBadge />
-              <View
+          {/* Inbox Conversations List */}
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, paddingBottom: Spacing.xxl }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => {
+                  setRefreshing(true);
+                  fetchThreads();
+                }}
+                colors={[Colors.accentPrimary]}
+                tintColor={Colors.accentPrimary}
+              />
+            }
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xs, marginTop: 4 }}>
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Conversations ({filteredThreads.length})
+              </Text>
+              <TouchableOpacity onPress={() => fetchThreads()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Refresh conversations">
+                <RefreshCw size={13} color={Colors.accentPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            {loadingThreads && threads.length === 0 ? (
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted, marginTop: 8 }}>
+                  Loading conversations...
+                </Text>
+              </View>
+            ) : filteredThreads.length === 0 ? (
+              <View style={{ paddingVertical: 48, alignItems: 'center', paddingHorizontal: Spacing.xl }}>
+                <View
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                    backgroundColor: 'rgba(17,66,142,0.08)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginBottom: Spacing.sm,
+                  }}
+                >
+                  <MessageSquare size={24} color={Colors.accentPrimary} />
+                </View>
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700', textAlign: 'center' }}>
+                  No Conversations Found
+                </Text>
+                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, textAlign: 'center', marginTop: 4, lineHeight: 18 }}>
+                  {searchQuery
+                    ? 'No student or parent matches your search query.'
+                    : 'When parents send consultation messages regarding their children, conversations will appear here.'}
+                </Text>
+              </View>
+            ) : (
+              filteredThreads.map((thread) => {
+                const initials =
+                  thread.studentName
+                    .split(' ')
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((w) => w[0])
+                    .join('')
+                    .toUpperCase() || 'ST';
+                const hasUnread = (thread.unreadCount || 0) > 0;
+                return (
+                  <TouchableOpacity
+                    key={thread.studentId}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open conversation with ${thread.studentName}`}
+                    onPress={() => {
+                      setActiveStudentId(thread.studentId);
+                      fetchMessages(thread.studentId);
+                    }}
+                    activeOpacity={0.7}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: 14,
+                      padding: Spacing.sm,
+                      marginBottom: 8,
+                      borderWidth: 1,
+                      borderColor: hasUnread ? 'rgba(17,66,142,0.3)' : Colors.border,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.04,
+                      shadowRadius: 3,
+                      elevation: 1,
+                    }}
+                  >
+                    {/* Circle Avatar with Initials */}
+                    <View
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 22,
+                        backgroundColor: hasUnread ? 'rgba(17,66,142,0.15)' : 'rgba(17,66,142,0.08)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginRight: 12,
+                      }}
+                    >
+                      <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.accentPrimary }}>
+                        {initials}
+                      </Text>
+                    </View>
+
+                    {/* Details */}
+                    <View style={{ flex: 1, justifyContent: 'center' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Text numberOfLines={1} style={{ fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.textMain, flex: 1, marginRight: 6 }}>
+                          {thread.studentName}
+                        </Text>
+                        {thread.latestTimestamp && (
+                          <Text style={{ fontFamily: Fonts.body, fontSize: 10.5, color: Colors.textMuted }}>
+                            {formatTime(thread.latestTimestamp)}
+                          </Text>
+                        )}
+                      </View>
+
+                      {thread.parentName ? (
+                        <Text numberOfLines={1} style={{ fontFamily: Fonts.bodySemiBold, fontSize: 11.5, color: Colors.accentPrimary, marginTop: 1 }}>
+                          Parent: {thread.parentName}
+                        </Text>
+                      ) : null}
+
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          fontFamily: hasUnread ? Fonts.bodyBold : Fonts.body,
+                          fontSize: 12.5,
+                          color: hasUnread ? Colors.textMain : Colors.textMuted,
+                          marginTop: 2,
+                        }}
+                      >
+                        {thread.latestMessage || 'No messages yet'}
+                      </Text>
+                    </View>
+
+                    {/* Right: Unread Badge & Chevron */}
+                    <View style={{ alignItems: 'flex-end', marginLeft: 8, gap: 4 }}>
+                      {hasUnread && (
+                        <View
+                          style={{
+                            backgroundColor: Colors.accentPrimary,
+                            minWidth: 18,
+                            height: 18,
+                            borderRadius: 9,
+                            paddingHorizontal: 5,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: '#FFFFFF' }}>
+                            {thread.unreadCount}
+                          </Text>
+                        </View>
+                      )}
+                      <ChevronRight size={16} color={Colors.textMuted} />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })
+            )}
+          </ScrollView>
+        </View>
+      ) : (
+        /* ── ACTIVE CONVERSATION VIEW ── */
+        <View style={{ flex: 1 }}>
+          {/* Top Header with Back to Conversations Button */}
+          <View
+            style={{
+              paddingHorizontal: Spacing.md,
+              paddingTop: Spacing.md,
+              paddingBottom: Spacing.sm,
+              backgroundColor: '#FFFFFF',
+              borderBottomWidth: 1,
+              borderBottomColor: Colors.border,
+              position: 'relative',
+            }}
+          >
+            {/* Blue Line on Top */}
+            <View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 3,
+                backgroundColor: Colors.accentPrimary,
+              }}
+            />
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm }}>
+              {/* Back to Conversations Button */}
+              <TouchableOpacity
+                onPress={() => setActiveStudentId(null)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Back to conversations list"
                 style={{
-                  backgroundColor: 'rgba(17,66,142,0.08)',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 3,
+                  paddingVertical: 5,
                   paddingHorizontal: 10,
-                  paddingVertical: 3,
+                  backgroundColor: 'rgba(17,66,142,0.08)',
                   borderRadius: 14,
                   borderWidth: 1,
                   borderColor: 'rgba(17,66,142,0.18)',
                 }}
               >
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
-                  TEACHER
+                <ChevronLeft size={16} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.accentPrimary }}>
+                  Chats
+                </Text>
+              </TouchableOpacity>
+
+              {/* Center Title: Student Name & Parent */}
+              <View style={{ flex: 1, paddingHorizontal: 4 }}>
+                <Text numberOfLines={1} style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700' }}>
+                  {activeThread?.studentName || 'Student Consultation'}
+                </Text>
+                <Text numberOfLines={1} style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
+                  {activeThread?.parentName ? `Parent: ${activeThread.parentName}` : 'Parent Consultation'}
                 </Text>
               </View>
+
+              {/* Right: SyncBadge + TEACHER Badge */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <SyncBadge />
+                <View
+                  style={{
+                    backgroundColor: 'rgba(17,66,142,0.08)',
+                    paddingHorizontal: 10,
+                    paddingVertical: 3,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: 'rgba(17,66,142,0.18)',
+                  }}
+                >
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
+                    TEACHER
+                  </Text>
+                </View>
+              </View>
             </View>
-
-            {/* Connected Directory Sidebar Trigger */}
-            <TouchableOpacity
-              onPress={() => setShowUserSidebar(true)}
-              activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityRole="button"
-              accessibilityLabel="Open connected parents and students directory"
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 5,
-                backgroundColor: 'rgba(17,66,142,0.08)',
-                paddingHorizontal: 10,
-                paddingVertical: 5,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: 'rgba(17,66,142,0.22)',
-              }}
-            >
-              <Users size={12} color={Colors.accentPrimary} />
-              <Text
-                numberOfLines={1}
-                style={{
-                  fontFamily: Fonts.bodyBold,
-                  fontSize: 11,
-                  color: Colors.accentPrimary,
-                  maxWidth: 140,
-                }}
-              >
-                {activeThread?.parentName ? `Parent: ${activeThread.parentName}` : `Connected (${threads.length})`}
-              </Text>
-              <ChevronRight size={11} color={Colors.accentPrimary} />
-            </TouchableOpacity>
           </View>
-        </View>
-      </View>
-
-      {/* ── Active Conversation Info Bar ── */}
-      {activeThread && (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: Spacing.md,
-            paddingVertical: 6,
-            backgroundColor: 'rgba(17,66,142,0.04)',
-            borderBottomWidth: 1,
-            borderBottomColor: Colors.border,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <School size={13} color={Colors.accentPrimary} />
-            <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.textMain }}>
-              Thread: <Text style={{ fontFamily: Fonts.bodyBold }}>{activeThread.studentName}</Text>
-              {activeThread.parentName ? ` (Parent: ${activeThread.parentName})` : ''}
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => fetchMessages(activeStudentId || undefined)}
-            style={{ padding: 4 }}
-            accessibilityLabel="Refresh consultation messages"
-          >
-            <RefreshCw size={12} color={Colors.textMuted} />
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* ── Messages Stream ── */}
       <KeyboardAvoidingView
@@ -596,28 +834,6 @@ export function TeacherChatScreen() {
               <ActivityIndicator size="small" color={Colors.accentPrimary} />
               <Text style={{ fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted, marginTop: 8 }}>
                 Loading consultation history...
-              </Text>
-            </View>
-          ) : !activeStudentId ? (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: Spacing.xl }}>
-              <View
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
-                  backgroundColor: 'rgba(17,66,142,0.08)',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  marginBottom: Spacing.sm,
-                }}
-              >
-                <Users size={26} color={Colors.accentPrimary} />
-              </View>
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700' }}>
-                Select a Student Inquiry
-              </Text>
-              <Text style={{ fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted, textAlign: 'center', marginTop: 4, maxWidth: 280 }}>
-                Tap on any student chip above to view their consultation history and reply directly to their parent.
               </Text>
             </View>
           ) : messages.length === 0 ? (
@@ -861,6 +1077,8 @@ export function TeacherChatScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+    </View>
+  )}
 
       {/* ── Message Options Bottom Sheet / Modal ── */}
       <Modal
@@ -1139,216 +1357,6 @@ export function TeacherChatScreen() {
             </GlassCard>
           </TouchableOpacity>
         </TouchableOpacity>
-      </Modal>
-
-      {/* ── Connected Users & Parents Directory Sidebar (Upper Right Drawer) ── */}
-      <Modal
-        visible={showUserSidebar}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowUserSidebar(false)}
-      >
-        <View style={{ flex: 1, flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.45)' }}>
-          {/* Backdrop tap to dismiss */}
-          <TouchableOpacity
-            style={{ flex: 1 }}
-            activeOpacity={1}
-            onPress={() => setShowUserSidebar(false)}
-            accessibilityLabel="Close directory sidebar backdrop"
-          />
-
-          {/* Right-Side Drawer Panel */}
-          <View
-            style={{
-              width: '84%',
-              maxWidth: 350,
-              backgroundColor: Colors.bgSidebar,
-              borderLeftWidth: 1,
-              borderLeftColor: Colors.border,
-              paddingTop: Math.max(insets.top, Spacing.md),
-              paddingBottom: Math.max(insets.bottom, Spacing.md),
-              paddingHorizontal: Spacing.md,
-              flexDirection: 'column',
-              shadowColor: '#000',
-              shadowOffset: { width: -4, height: 0 },
-              shadowOpacity: 0.15,
-              shadowRadius: 12,
-              elevation: 16,
-            }}
-          >
-            {/* Header */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingBottom: Spacing.sm,
-                borderBottomWidth: 1,
-                borderBottomColor: Colors.border,
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 17,
-                    backgroundColor: 'rgba(17,66,142,0.1)',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Users size={17} color={Colors.accentPrimary} />
-                </View>
-                <View>
-                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.sm, color: Colors.textMain, fontWeight: '700' }}>
-                    Connected Chats
-                  </Text>
-                  <Text style={{ fontFamily: Fonts.body, fontSize: 10.5, color: Colors.textMuted }}>
-                    {threads.length} {threads.length === 1 ? 'Parent & Student' : 'Parents & Students'}
-                  </Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                onPress={() => setShowUserSidebar(false)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                style={{ padding: 4 }}
-                accessibilityLabel="Close directory sidebar"
-              >
-                <X size={18} color={Colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Search Filter */}
-            <View style={{ marginTop: Spacing.sm, marginBottom: Spacing.xs }}>
-              <ThemedTextInput
-                placeholder="Search parent or student..."
-                value={sidebarSearch}
-                onChangeText={setSidebarSearch}
-                containerStyle={{ marginBottom: 0 }}
-                style={{ fontSize: 12, height: 38 }}
-              />
-            </View>
-
-            {/* List of Connected Parents & Students */}
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingVertical: Spacing.xs, gap: 8 }}
-            >
-              {filteredSidebarThreads.length === 0 ? (
-                <View style={{ paddingVertical: Spacing.xl, alignItems: 'center' }}>
-                  <Text style={{ fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted, textAlign: 'center' }}>
-                    {sidebarSearch ? 'No matches found.' : 'No active parent consultations yet.'}
-                  </Text>
-                </View>
-              ) : (
-                filteredSidebarThreads.map((thread) => {
-                  const isSelected = thread.studentId === activeStudentId;
-                  return (
-                    <TouchableOpacity
-                      key={thread.studentId}
-                      onPress={() => {
-                        setActiveStudentId(thread.studentId);
-                        setShowUserSidebar(false);
-                        requestAnimationFrame(() => {
-                          chatScrollRef.current?.scrollToEnd({ animated: true });
-                        });
-                      }}
-                      activeOpacity={0.7}
-                      style={{
-                        padding: Spacing.sm,
-                        borderRadius: Radius.md,
-                        backgroundColor: isSelected ? 'rgba(17,66,142,0.08)' : Colors.bgInput,
-                        borderWidth: 1,
-                        borderColor: isSelected ? Colors.accentPrimary : Colors.border,
-                        gap: 6,
-                      }}
-                    >
-                      {/* Top: Blue Label Name of Parent Chat + Connected Indicator */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: 4,
-                            backgroundColor: isSelected ? Colors.accentPrimary : 'rgba(17,66,142,0.12)',
-                            paddingHorizontal: 8,
-                            paddingVertical: 3,
-                            borderRadius: 10,
-                            maxWidth: '75%',
-                          }}
-                        >
-                          <User size={10} color={isSelected ? '#FFFFFF' : Colors.accentPrimary} />
-                          <Text
-                            numberOfLines={1}
-                            style={{
-                              fontFamily: Fonts.bodyBold,
-                              fontSize: 10.5,
-                              color: isSelected ? '#FFFFFF' : Colors.accentPrimary,
-                            }}
-                          >
-                            Parent: {thread.parentName || 'Parent/Guardian'}
-                          </Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.success }} />
-                          <Text style={{ fontFamily: Fonts.body, fontSize: 9.5, color: Colors.success, fontWeight: '600' }}>
-                            Connected
-                          </Text>
-                        </View>
-                      </View>
-
-                      {/* Connected Student Name */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <School size={12} color={Colors.textMuted} />
-                        <Text
-                          numberOfLines={1}
-                          style={{
-                            fontFamily: Fonts.bodyBold,
-                            fontSize: 11.5,
-                            color: Colors.textMain,
-                            flex: 1,
-                          }}
-                        >
-                          Student: {thread.studentName}
-                        </Text>
-                        {thread.unreadCount > 0 && (
-                          <View
-                            style={{
-                              backgroundColor: Colors.accentPrimary,
-                              borderRadius: 8,
-                              paddingHorizontal: 6,
-                              paddingVertical: 1,
-                            }}
-                          >
-                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 9, color: '#FFFFFF' }}>
-                              {thread.unreadCount} new
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-
-                      {/* Latest preview snippet */}
-                      {thread.latestMessage && (
-                        <Text
-                          numberOfLines={1}
-                          style={{
-                            fontFamily: Fonts.body,
-                            fontSize: 10.5,
-                            color: Colors.textMuted,
-                          }}
-                        >
-                          {thread.latestSenderRole === 'teacher' ? 'You: ' : ''}
-                          {thread.latestMessage}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })
-              )}
-            </ScrollView>
-          </View>
-        </View>
       </Modal>
 
     </SafeAreaView>

@@ -197,6 +197,13 @@ describe('TeacherChatScreen', () => {
       await new Promise((r) => setTimeout(r, 10));
     });
 
+    // In inbox list, tap on Juan Dela Cruz's thread to open conversation
+    const threadBtn = root.root.findByProps({ accessibilityLabel: 'Open conversation with Juan Dela Cruz' });
+    await act(async () => {
+      threadBtn.props.onPress();
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
     const json = JSON.stringify(root.toJSON());
     expect(json).toContain('Good afternoon teacher, about the homework...');
     expect(json).toContain('Yes, please review chapter 3.');
@@ -237,6 +244,13 @@ describe('TeacherChatScreen', () => {
       await new Promise((r) => setTimeout(r, 10));
     });
 
+    // Open conversation first
+    const threadBtn = root.root.findByProps({ accessibilityLabel: 'Open conversation with Juan Dela Cruz' });
+    await act(async () => {
+      threadBtn.props.onPress();
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
     const editHistoryBtn = root.root.findByProps({ accessibilityLabel: 'View edit history' });
     expect(editHistoryBtn).toBeDefined();
 
@@ -261,6 +275,13 @@ describe('TeacherChatScreen', () => {
       root = renderer.create(<TeacherChatScreen />);
     });
     await act(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
+    // Open conversation first
+    const threadBtn = root.root.findByProps({ accessibilityLabel: 'Open conversation with Juan Dela Cruz' });
+    await act(async () => {
+      threadBtn.props.onPress();
       await new Promise((r) => setTimeout(r, 10));
     });
 
@@ -318,6 +339,13 @@ describe('TeacherChatScreen', () => {
       await new Promise((r) => setTimeout(r, 10));
     });
 
+    // Open conversation first
+    const threadBtn = root.root.findByProps({ accessibilityLabel: 'Open conversation with Juan Dela Cruz' });
+    await act(async () => {
+      threadBtn.props.onPress();
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
     const optionsBtn = root.root.findByProps({ accessibilityLabel: 'Options for message 99' });
     await act(async () => {
       optionsBtn.props.onPress();
@@ -341,6 +369,13 @@ describe('TeacherChatScreen', () => {
       root = renderer.create(<TeacherChatScreen />);
     });
     await act(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
+    // Open conversation first
+    const threadBtn = root.root.findByProps({ accessibilityLabel: 'Open conversation with Juan Dela Cruz' });
+    await act(async () => {
+      threadBtn.props.onPress();
       await new Promise((r) => setTimeout(r, 10));
     });
 
@@ -370,6 +405,41 @@ describe('TeacherChatScreen', () => {
 
     json = JSON.stringify(root.toJSON());
     expect(json).toContain('You unsent a message');
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test('allows navigating back to inbox from conversation view', async () => {
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<TeacherChatScreen />);
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
+    // Open thread
+    const threadBtn = root.root.findByProps({ accessibilityLabel: 'Open conversation with Juan Dela Cruz' });
+    await act(async () => {
+      threadBtn.props.onPress();
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
+    // Back button
+    const backBtn = root.root.findByProps({ accessibilityLabel: 'Back to conversations list' });
+    expect(backBtn).toBeDefined();
+
+    await act(async () => {
+      backBtn.props.onPress();
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
+    // Should be back in inbox view
+    const json = JSON.stringify(root.toJSON());
+    expect(json).toContain('Conversations (');
+    expect(json).toContain('Jose Rizal');
 
     act(() => {
       root.unmount();

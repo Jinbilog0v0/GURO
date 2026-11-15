@@ -179,8 +179,8 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
         if (data.consultationHours) setConsultationHours(data.consultationHours);
         if (data.teacherName) setActiveTeacherName(data.teacherName);
 
-        // Auto-select first thread if none selected
-        if (!activeStudentId && mappedThreads.length > 0) {
+        // Auto-select first thread if none selected on desktop viewports (>= 768px)
+        if (!activeStudentId && mappedThreads.length > 0 && typeof window !== 'undefined' && window.innerWidth >= 768) {
           setActiveStudentId(mappedThreads[0].studentId);
         }
       }
