@@ -40,6 +40,7 @@ interface Message {
 interface Thread {
   studentId: string;
   studentName: string;
+  parentName?: string;
   latestMessage: string;
   latestSenderRole: 'parent' | 'teacher' | 'admin';
   latestSenderName: string;
@@ -169,13 +170,18 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
       const res = await apiFetch(`/api/chat/threads?classroomId=${encodeURIComponent(classroomId)}`);
       if (res.ok) {
         const data = await res.json();
-        setThreads(data.threads || []);
+        const rawThreads = data.threads || [];
+        const mappedThreads: Thread[] = rawThreads.map((t: any) => ({
+          ...t,
+          parentName: t.parentName || (t.latestSenderRole === 'parent' && t.latestSenderName ? t.latestSenderName : undefined),
+        }));
+        setThreads(mappedThreads);
         if (data.consultationHours) setConsultationHours(data.consultationHours);
         if (data.teacherName) setActiveTeacherName(data.teacherName);
 
         // Auto-select first thread if none selected
-        if (!activeStudentId && data.threads && data.threads.length > 0) {
-          setActiveStudentId(data.threads[0].studentId);
+        if (!activeStudentId && mappedThreads.length > 0) {
+          setActiveStudentId(mappedThreads[0].studentId);
         }
       }
     } catch (e) {
@@ -614,6 +620,11 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
                       <div className="flex items-center justify-between gap-1 mb-1">
                         <span className={`text-xs truncate ${isActive ? 'font-bold text-[#11428E] dark:text-blue-300' : 'font-semibold text-[var(--text-main)]'}`}>
                           {thread.studentName}
+                          {thread.parentName && (
+                            <span className="text-[10px] text-[var(--text-muted)] font-normal ml-1">
+                              • {thread.parentName}
+                            </span>
+                          )}
                         </span>
                         {formattedTime && (
                           <span className="text-[10px] text-[var(--text-muted)] tabular-nums shrink-0">
@@ -664,13 +675,19 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
                     <User size={18} />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-bold text-[var(--text-main)]">
                         {activeThread ? activeThread.studentName : activeStudentId}
                       </span>
                       <span className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-color)] font-mono">
                         {activeStudentId}
                       </span>
+                      {activeThread?.parentName && (
+                        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#11428E]/10 text-[#11428E] dark:text-blue-300 border border-[#11428E]/25 flex items-center gap-1.5 shadow-xs">
+                          <Users size={12} />
+                          <span>Parent: {activeThread.parentName}</span>
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-[var(--text-muted)] mt-0.5">
                       Class: <span className="font-semibold text-[var(--text-main)]">{selectedClassroomId}</span>

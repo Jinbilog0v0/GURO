@@ -20,7 +20,6 @@ import { Spacing, Radius } from '../theme/spacing';
 import { GlassCard } from '../components/ui/GlassCard';
 import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
 import { ThemedTextInput } from '../components/ui/ThemedTextInput';
-import { Badge } from '../components/ui/Badge';
 import { SyncBadge } from '../components/shared/SyncBadge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { toast } from '../components';
@@ -452,7 +451,6 @@ export function TeacherChatScreen() {
           </View>
           <View style={{ alignItems: 'flex-end', gap: 5 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Badge label="Teacher" variant="indigo" />
               <SyncBadge />
             </View>
             {/* Blue Label Parent Chat Button (opens User Directory Sidebar) */}
@@ -608,7 +606,7 @@ export function TeacherChatScreen() {
       {/* ── Messages Stream ── */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior="padding"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
         <ScrollView

@@ -9,7 +9,8 @@ import {
   AlertCircle,
   Edit2,
   Trash2,
-  School
+  School,
+  Calendar
 } from 'lucide-react';
 import { apiFetch } from '../../utils/api';
 import { toast } from '../../utils/toast';
@@ -269,8 +270,12 @@ export const ParentConsultationView: React.FC<ParentConsultationViewProps> = ({
             <MessageCircle size={20} />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-2">
+            <h2 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-2 flex-wrap">
               Teacher Consultations
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#11428E]/10 text-[#11428E] dark:text-blue-300 border border-[#11428E]/20 flex items-center gap-1">
+                <Calendar size={11} />
+                S.Y. 2026-2027 • 1st Sem
+              </span>
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                 Official DepEd Channel
               </span>

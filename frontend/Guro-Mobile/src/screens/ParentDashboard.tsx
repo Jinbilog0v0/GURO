@@ -1711,163 +1711,210 @@ export function ParentDashboard({ navigation }: Props) {
 
       {/* ── Tab 2: Teacher Consultation Chat ── */}
       <View style={activeTab === 'chat' ? { flex: 1 } : { display: 'none', height: 0, flex: 0 }}>
-        <KeyboardAvoidingView
-          behavior="padding"
-          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
-          style={{ flex: 1 }}
-        >
-          {/* Dedicated Top Nav Bar for Consultation Chat */}
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: Spacing.lg,
-            paddingTop: Spacing.sm,
-            paddingBottom: Spacing.xs,
-          }}>
-            <TouchableOpacity
-              onPress={() => setActiveTab('progress')}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="Back to Child Progress"
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 4,
-                paddingVertical: 6,
-                paddingHorizontal: 10,
-                backgroundColor: 'rgba(17,66,142,0.08)',
-                borderRadius: Radius.md,
-              }}
-            >
-              <ChevronLeft size={16} color={Colors.accentPrimary} />
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
-                Back to Progress
-              </Text>
-            </TouchableOpacity>
-
-            <View style={{ alignItems: 'flex-end', gap: 4 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <SyncBadge />
-                <TouchableOpacity
-                  onPress={() => setActiveTab('settings')}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel="Open device settings"
+        {/* ── Sticky Full-Width Header Bar for Teacher Consultation ── */}
+        <View style={styles.header}>
+          <View style={styles.headerAccentLine} />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flexWrap: 'wrap' }}>
+                <Text style={styles.headerTitle}>Teacher Consultation</Text>
+                <View
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 4,
-                    paddingVertical: 5,
-                    paddingHorizontal: 7,
+                    backgroundColor: 'rgba(17,66,142,0.08)',
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: Radius.sm,
+                    borderWidth: 1,
+                    borderColor: 'rgba(17,66,142,0.15)',
                   }}
                 >
-                  <Settings size={14} color={Colors.textMuted} />
-                  <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                    Settings
+                  <Calendar size={11} color={Colors.accentPrimary} />
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                    {`S.Y. ${activeSchoolYear} • ${activeTerm}`}
                   </Text>
-                </TouchableOpacity>
+                </View>
               </View>
+              <Text style={styles.headerSub}>
+                {selectedChild
+                  ? `Direct consultation for ${selectedChild.studentName} (${selectedChild.studentId})`
+                  : 'Direct consultation channel with your child’s classroom teacher'}
+              </Text>
+            </View>
+            <View style={styles.headerRight}>
+              <Badge label="Parent" variant="indigo" style={styles.roleBadge} />
+            </View>
+          </View>
+        </View>
 
-              {/* Blue Label: Connected Directory Sidebar Trigger */}
+        {/* Dedicated Navigation Bar / Directory Trigger below Header */}
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: Spacing.lg,
+          paddingTop: Spacing.sm,
+          paddingBottom: Spacing.xs,
+          backgroundColor: Colors.bgMain,
+          borderBottomWidth: 1,
+          borderBottomColor: Colors.border,
+        }}>
+          <TouchableOpacity
+            onPress={() => setActiveTab('progress')}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Back to Child Progress"
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              paddingVertical: 7,
+              paddingHorizontal: 12,
+              backgroundColor: 'rgba(17,66,142,0.08)',
+              borderRadius: Radius.md,
+              borderWidth: 1,
+              borderColor: 'rgba(17,66,142,0.15)',
+            }}
+          >
+            <ChevronLeft size={16} color={Colors.accentPrimary} />
+            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+              Back to Progress
+            </Text>
+          </TouchableOpacity>
+
+          <View style={{ alignItems: 'flex-end', gap: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <SyncBadge />
               <TouchableOpacity
-                onPress={() => setShowParentChatSidebar(true)}
+                onPress={() => setActiveTab('settings')}
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 accessibilityRole="button"
-                accessibilityLabel="Open connected parent and student directory"
+                accessibilityLabel="Open device settings"
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 5,
-                  backgroundColor: 'rgba(17,66,142,0.1)',
-                  paddingHorizontal: 9,
+                  gap: 4,
                   paddingVertical: 5,
-                  borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: 'rgba(17,66,142,0.25)',
+                  paddingHorizontal: 7,
                 }}
               >
-                <Users size={12} color={Colors.accentPrimary} />
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    fontFamily: Fonts.bodyBold,
-                    fontSize: 11,
-                    color: Colors.accentPrimary,
-                    maxWidth: 150,
-                  }}
-                >
-                  {parentDisplayName ? `Parent: ${parentDisplayName}` : 'Parent Directory'}
+                <Settings size={14} color={Colors.textMuted} />
+                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                  Settings
                 </Text>
-                <ChevronRight size={11} color={Colors.accentPrimary} />
               </TouchableOpacity>
             </View>
-          </View>
 
-          {/* Teacher Consultation Header Card */}
-          <View style={{ paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs }}>
-            <GlassCard padding={Spacing.md} style={styles.chatTeacherCard}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-                  <View style={styles.teacherAvatarCircle}>
-                    <MessageCircle size={20} color={Colors.accentPrimary} />
-                  </View>
-                  <View>
-                    <Text style={styles.chatTeacherName}>
-                      {activeTeacherName || 'Classroom Teacher'}
-                    </Text>
-                    <Text style={styles.chatTeacherSubtitle}>
-                      Direct Consultation Line
-                    </Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  onPress={() => fetchChatMessages()}
-                  style={styles.chatRefreshBtn}
-                  disabled={loadingChat}
-                  accessibilityRole="button"
-                  accessibilityLabel="Refresh messages"
-                >
-                  <RefreshCw size={14} color={loadingChat ? Colors.textMuted : Colors.accentPrimary} />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.consultationHoursBadge}>
-                <Clock size={13} color={Colors.accentPrimary} />
-                <Text style={styles.consultationHoursText}>
-                  {activeConsultationHours || 'Monday – Friday: 3:00 PM – 5:00 PM (DepEd Consultation Window)'}
-                </Text>
-              </View>
-            </GlassCard>
-
-            {chatError && chatMessages.length > 0 && (
-              <View style={{
+            {/* Blue Label: Connected Directory Sidebar Trigger */}
+            <TouchableOpacity
+              onPress={() => setShowParentChatSidebar(true)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Open connected parent and student directory"
+              style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingHorizontal: Spacing.md,
-                paddingVertical: Spacing.xs,
-                backgroundColor: 'rgba(239,68,68,0.08)',
-                borderRadius: Radius.md,
+                gap: 5,
+                backgroundColor: 'rgba(17,66,142,0.1)',
+                paddingHorizontal: 9,
+                paddingVertical: 5,
+                borderRadius: 14,
                 borderWidth: 1,
-                borderColor: 'rgba(239,68,68,0.2)',
-                marginBottom: Spacing.xs,
-              }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                  <AlertCircle size={14} color={Colors.dangerText} />
-                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.dangerText }}>
-                    Connection error. Messages may be outdated.
+                borderColor: 'rgba(17,66,142,0.25)',
+              }}
+            >
+              <Users size={12} color={Colors.accentPrimary} />
+              <Text
+                numberOfLines={1}
+                style={{
+                  fontFamily: Fonts.bodyBold,
+                  fontSize: 11,
+                  color: Colors.accentPrimary,
+                  maxWidth: 150,
+                }}
+              >
+                {parentDisplayName ? `Parent: ${parentDisplayName}` : 'Parent Directory'}
+              </Text>
+              <ChevronRight size={11} color={Colors.accentPrimary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Teacher Consultation Header Card */}
+        <View style={{ paddingHorizontal: Spacing.lg, paddingTop: Spacing.xs }}>
+          <GlassCard padding={Spacing.md} style={styles.chatTeacherCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                <View style={styles.teacherAvatarCircle}>
+                  <MessageCircle size={20} color={Colors.accentPrimary} />
+                </View>
+                <View>
+                  <Text style={styles.chatTeacherName}>
+                    {activeTeacherName || 'Classroom Teacher'}
+                  </Text>
+                  <Text style={styles.chatTeacherSubtitle}>
+                    Direct Consultation Line
                   </Text>
                 </View>
-                <TouchableOpacity onPress={() => fetchChatMessages()} disabled={loadingChat}>
-                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
-                    Retry
-                  </Text>
-                </TouchableOpacity>
               </View>
-            )}
-          </View>
+              <TouchableOpacity
+                onPress={() => fetchChatMessages()}
+                style={styles.chatRefreshBtn}
+                disabled={loadingChat}
+                accessibilityRole="button"
+                accessibilityLabel="Refresh messages"
+              >
+                <RefreshCw size={14} color={loadingChat ? Colors.textMuted : Colors.accentPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.consultationHoursBadge}>
+              <Clock size={13} color={Colors.accentPrimary} />
+              <Text style={styles.consultationHoursText}>
+                {activeConsultationHours || 'Monday – Friday: 3:00 PM – 5:00 PM (DepEd Consultation Window)'}
+              </Text>
+            </View>
+          </GlassCard>
+
+          {chatError && chatMessages.length > 0 && (
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: Spacing.md,
+              paddingVertical: Spacing.xs,
+              backgroundColor: 'rgba(239,68,68,0.08)',
+              borderRadius: Radius.md,
+              borderWidth: 1,
+              borderColor: 'rgba(239,68,68,0.2)',
+              marginBottom: Spacing.xs,
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                <AlertCircle size={14} color={Colors.dangerText} />
+                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.dangerText }}>
+                  Connection error. Messages may be outdated.
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => fetchChatMessages()} disabled={loadingChat}>
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+                  Retry
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* Messages Stream & Sticky Input wrapped in KeyboardAvoidingView */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+          style={{ flex: 1 }}
+        >
 
           {/* Messages Scroll Area */}
           <ScrollView
@@ -2059,7 +2106,7 @@ export function ParentDashboard({ navigation }: Props) {
             style={[
               styles.chatInputContainer,
               {
-                paddingBottom: Spacing.sm,
+                paddingBottom: isKeyboardVisible ? Spacing.sm : Math.max(insets.bottom, Spacing.sm),
               },
             ]}
           >
@@ -2440,7 +2487,7 @@ export function ParentDashboard({ navigation }: Props) {
             height: 60 + insets.bottom,
             paddingTop: 8,
             paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-            display: activeTab === 'chat' && isKeyboardVisible ? 'none' : 'flex',
+            display: activeTab === 'chat' ? 'none' : 'flex',
           },
         ]}
       >
