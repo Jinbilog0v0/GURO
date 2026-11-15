@@ -440,7 +440,7 @@ describe('ParentDashboard', () => {
     const optionsJson = JSON.stringify(root.toJSON());
     expect(optionsJson).toContain('Message Actions');
     expect(optionsJson).not.toContain('Edit Message');
-    expect(optionsJson).toContain('Unsend Message');
+    expect(optionsJson).not.toContain('Unsend Message');
 
     act(() => {
       root.unmount();

@@ -352,6 +352,13 @@ export function TeacherChatScreen() {
 
   // Optimistic unsend handler
   const handleUnsendTeacher = async (msg: ChatMessage) => {
+    const diffMins = (Date.now() - new Date(msg.created_at).getTime()) / (60 * 1000);
+    if (diffMins > 30) {
+      toast.error('Messages can only be unsent within 30 minutes of sending.');
+      setSelectedActionMessage(null);
+      setIsConfirmingUnsend(false);
+      return;
+    }
     const prevUnsent = msg.is_unsent;
     const msgId = Number(msg.id);
     // 1. Optimistic UI update: instantly mark unsent
@@ -410,50 +417,82 @@ export function TeacherChatScreen() {
       <View
         style={{
           paddingHorizontal: Spacing.md,
-          paddingTop: Spacing.sm,
+          paddingTop: Spacing.md,
           paddingBottom: Spacing.sm,
-          backgroundColor: Colors.bgSidebar,
+          backgroundColor: '#FFFFFF',
           borderBottomWidth: 1,
           borderBottomColor: Colors.border,
+          position: 'relative',
         }}
       >
+        {/* Blue Line on Top */}
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 3,
+            backgroundColor: Colors.accentPrimary,
+          }}
+        />
+
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.sm }}>
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, fontWeight: '700' }}>
-                Parent Consultations
+            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, letterSpacing: -0.5, fontWeight: '700' }}>
+              Parent Consultation
+            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                backgroundColor: 'rgba(17,66,142,0.08)',
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: 'rgba(17,66,142,0.15)',
+                alignSelf: 'flex-start',
+                marginTop: 4,
+                marginBottom: 3,
+              }}
+            >
+              <Calendar size={11} color={Colors.accentPrimary} />
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                {`S.Y. ${activeSchoolYear} • ${activeTerm}`}
               </Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  backgroundColor: 'rgba(17,66,142,0.08)',
-                  paddingHorizontal: 8,
-                  paddingVertical: 3,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: 'rgba(17,66,142,0.15)',
-                }}
-              >
-                <Calendar size={11} color={Colors.accentPrimary} />
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
-                  {`S.Y. ${activeSchoolYear} • ${activeTerm}`}
-                </Text>
-              </View>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
               <Clock size={11} color={Colors.accentPrimary} />
               <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
-                {consultationHours}
+                {consultationHours || 'Monday – Friday: 3:00 PM – 5:00 PM'}
               </Text>
             </View>
           </View>
-          <View style={{ alignItems: 'flex-end', gap: 5 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+
+          {/* Right Stack: TEACHER badge, Connected status, and Drawer button */}
+          <View style={{ alignItems: 'flex-end', gap: 4 }}>
+            <View
+              style={{
+                backgroundColor: 'rgba(17,66,142,0.08)',
+                paddingHorizontal: 10,
+                paddingVertical: 3,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: 'rgba(17,66,142,0.18)',
+              }}
+            >
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
+                TEACHER
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
               <SyncBadge />
             </View>
-            {/* Blue Label Parent Chat Button (opens User Directory Sidebar) */}
+
+            {/* Connected Directory Sidebar Trigger */}
             <TouchableOpacity
               onPress={() => setShowUserSidebar(true)}
               activeOpacity={0.7}
@@ -464,12 +503,13 @@ export function TeacherChatScreen() {
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 5,
-                backgroundColor: 'rgba(17,66,142,0.1)',
-                paddingHorizontal: 9,
+                backgroundColor: 'rgba(17,66,142,0.08)',
+                paddingHorizontal: 10,
                 paddingVertical: 5,
                 borderRadius: 14,
                 borderWidth: 1,
-                borderColor: 'rgba(17,66,142,0.25)',
+                borderColor: 'rgba(17,66,142,0.22)',
+                marginTop: 2,
               }}
             >
               <Users size={12} color={Colors.accentPrimary} />
@@ -487,88 +527,6 @@ export function TeacherChatScreen() {
               <ChevronRight size={11} color={Colors.accentPrimary} />
             </TouchableOpacity>
           </View>
-        </View>
-
-        {/* ── Student Inquiries Chip Selector ── */}
-        <View style={{ marginTop: Spacing.sm }}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 6, paddingVertical: 2 }}
-          >
-            {threads.length === 0 ? (
-              <View style={{ paddingVertical: 4 }}>
-                <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
-                  {loadingThreads ? 'Loading student consultation threads...' : 'No student inquiry threads active.'}
-                </Text>
-              </View>
-            ) : (
-              threads.map((thread) => {
-                const isSelected = thread.studentId === activeStudentId;
-                return (
-                  <TouchableOpacity
-                    key={thread.studentId}
-                    onPress={() => setActiveStudentId(thread.studentId)}
-                    activeOpacity={0.8}
-                    accessibilityLabel={`Select student thread ${thread.studentName}`}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                      paddingVertical: 6,
-                      paddingHorizontal: 12,
-                      borderRadius: 18,
-                      backgroundColor: isSelected ? Colors.accentPrimary : Colors.bgInput,
-                      borderWidth: 1,
-                      borderColor: isSelected ? Colors.accentPrimary : Colors.border,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: 9,
-                        backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(17,66,142,0.1)',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <User size={11} color={isSelected ? '#FFFFFF' : Colors.accentPrimary} />
-                    </View>
-                    <Text
-                      style={{
-                        fontFamily: isSelected ? Fonts.bodyBold : Fonts.bodySemiBold,
-                        fontSize: 11,
-                        color: isSelected ? '#FFFFFF' : Colors.textMain,
-                      }}
-                    >
-                      {thread.studentName}
-                    </Text>
-                    {thread.unreadCount > 0 && (
-                      <View
-                        style={{
-                          backgroundColor: isSelected ? '#FFFFFF' : Colors.accentPrimary,
-                          borderRadius: 8,
-                          paddingHorizontal: 5,
-                          paddingVertical: 1,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontFamily: Fonts.bodyBold,
-                            fontSize: 9,
-                            color: isSelected ? Colors.accentPrimary : '#FFFFFF',
-                          }}
-                        >
-                          {thread.unreadCount}
-                        </Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })
-            )}
-          </ScrollView>
         </View>
       </View>
 
@@ -606,7 +564,7 @@ export function TeacherChatScreen() {
       {/* ── Messages Stream ── */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior="padding"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
         <ScrollView
@@ -969,25 +927,31 @@ export function TeacherChatScreen() {
                         </TouchableOpacity>
                       )}
 
-                    <TouchableOpacity
-                      onPress={() => setIsConfirmingUnsend(true)}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 12,
-                        paddingVertical: 12,
-                        paddingHorizontal: 14,
-                        borderRadius: 12,
-                        backgroundColor: 'rgba(239,68,68,0.06)',
-                      }}
-                      accessibilityLabel="Unsend message"
-                    >
-                      <Trash2 size={16} color={Colors.danger} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.danger }}>Unsend Message</Text>
-                        <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>Remove message for everyone</Text>
-                      </View>
-                    </TouchableOpacity>
+                    {/* Unsend Message (Sender only, within 30 mins) */}
+                    {selectedActionMessage &&
+                      (selectedActionMessage.sender_role === 'teacher' ||
+                        selectedActionMessage.sender_id === (currentUser?.userId || 'teacher')) &&
+                      Date.now() - new Date(selectedActionMessage.created_at).getTime() <= 30 * 60 * 1000 && (
+                      <TouchableOpacity
+                        onPress={() => setIsConfirmingUnsend(true)}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 12,
+                          paddingVertical: 12,
+                          paddingHorizontal: 14,
+                          borderRadius: 12,
+                          backgroundColor: 'rgba(239,68,68,0.06)',
+                        }}
+                        accessibilityLabel="Unsend message"
+                      >
+                        <Trash2 size={16} color={Colors.danger} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.danger }}>Unsend Message</Text>
+                          <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>Within 30 minutes of sending</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </>
               ) : (

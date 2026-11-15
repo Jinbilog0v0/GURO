@@ -315,7 +315,7 @@ describe('ParentConsultationHub', () => {
     });
   });
 
-  test('omits edit option in 3-dot menu if message is older than 30 minutes', async () => {
+  test('omits edit and unsend options in 3-dot menu if message is older than 30 minutes', async () => {
     const expiredMessagesResponse = {
       ...mockMessagesResponse,
       messages: [
@@ -368,6 +368,6 @@ describe('ParentConsultationHub', () => {
     });
 
     expect(screen.queryByText('Edit message')).not.toBeInTheDocument();
-    expect(screen.getByText('Unsend')).toBeInTheDocument();
+    expect(screen.queryByText('Unsend')).not.toBeInTheDocument();
   });
 });

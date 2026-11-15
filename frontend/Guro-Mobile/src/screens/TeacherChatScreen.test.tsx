@@ -178,11 +178,10 @@ describe('TeacherChatScreen', () => {
     });
 
     const json = JSON.stringify(root.toJSON());
-    expect(json).toContain('Parent Consultations');
+    expect(json).toContain('Parent Consultation');
     expect(json).toContain('S.Y. 2026-2027 • Quarter 1');
     expect(json).toContain('Monday – Friday: 3:00 PM – 5:00 PM');
     expect(json).toContain('Juan Dela Cruz');
-    expect(json).toContain('Jose Rizal');
 
     act(() => {
       root.unmount();
@@ -283,7 +282,7 @@ describe('TeacherChatScreen', () => {
     });
   });
 
-  test('omits edit option if message is older than 30 minutes', async () => {
+  test('omits edit and unsend options if message is older than 30 minutes', async () => {
     const oldMessages = [
       {
         id: 99,
@@ -328,7 +327,7 @@ describe('TeacherChatScreen', () => {
     const json = JSON.stringify(root.toJSON());
     expect(json).toContain('Message Actions');
     expect(json).not.toContain('Edit Message');
-    expect(json).toContain('Unsend Message');
+    expect(json).not.toContain('Unsend Message');
 
     act(() => {
       root.unmount();

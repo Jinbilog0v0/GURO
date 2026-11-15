@@ -234,6 +234,14 @@ export const ParentConsultationView: React.FC<ParentConsultationViewProps> = ({
   // Unsend message
   const handleUnsend = async (messageId: number) => {
     if (isUpdatingMessage) return;
+    const targetMsg = messages.find(m => m.id === messageId);
+    if (targetMsg) {
+      const diffMins = (Date.now() - new Date(targetMsg.created_at).getTime()) / (60 * 1000);
+      if (diffMins > 30) {
+        toast.error('Messages can only be unsent within 30 minutes of sending.');
+        return;
+      }
+    }
     setIsUpdatingMessage(true);
     try {
       const res = await apiFetch('/api/chat/unsend', {
@@ -459,8 +467,8 @@ export const ParentConsultationView: React.FC<ParentConsultationViewProps> = ({
                       </div>
                     ) : (
                       <div className="flex items-start gap-1 max-w-[85%] md:max-w-[70%]">
-                        {/* Parent message action trigger */}
-                        {isMe && (
+                        {/* Parent message action trigger (within 30 mins) */}
+                        {isMe && (Date.now() - new Date(msg.created_at).getTime()) <= 30 * 60 * 1000 && (
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 mt-1">
                             <button
                               type="button"

@@ -378,6 +378,12 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
     const targetMsg = messages.find(m => m.id === messageId);
     if (!targetMsg) return;
 
+    const diffMins = (Date.now() - new Date(targetMsg.created_at).getTime()) / (60 * 1000);
+    if (diffMins > 30) {
+      toast.error('Messages can only be unsent within 30 minutes of sending.');
+      return;
+    }
+
     // 1. Optimistic UI update: instantly show unsent state
     setMessages(prev => prev.map(m => m.id === messageId ? { ...m, is_unsent: true } : m));
     setThreads(prev => prev.map(t => {
@@ -835,14 +841,17 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
                                           <span>Edit message</span>
                                         </button>
                                       )}
-                                      <button
-                                        type="button"
-                                        onClick={() => handleUnsend(msg.id)}
-                                        className="w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors font-medium"
-                                      >
-                                        <Trash2 size={12} />
-                                        <span>Unsend</span>
-                                      </button>
+                                      {/* Only show unsend if within 30-minute window */}
+                                      {isWithin30Mins && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleUnsend(msg.id)}
+                                          className="w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors font-medium"
+                                        >
+                                          <Trash2 size={12} />
+                                          <span>Unsend</span>
+                                        </button>
+                                      )}
                                     </div>
                                   </>
                                 )}

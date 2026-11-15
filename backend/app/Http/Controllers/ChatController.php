@@ -222,6 +222,15 @@ class ChatController extends Controller
             return response()->json(['error' => 'Message not found.'], 404);
         }
 
+        // Validate 30-minute unsend window
+        $diffMinutes = $msg->created_at->diffInMinutes(now(), false);
+        if ($diffMinutes > 30) {
+            return response()->json([
+                'error' => 'Messages can only be unsent within 30 minutes of sending.',
+                'minutesElapsed' => $diffMinutes,
+            ], 422);
+        }
+
         $msg->is_unsent = true;
         $msg->unsent_at = now();
         $msg->save();

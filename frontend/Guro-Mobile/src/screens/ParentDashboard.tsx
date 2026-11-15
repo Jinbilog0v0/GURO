@@ -335,6 +335,13 @@ export function ParentDashboard({ navigation }: Props) {
   };
 
   const handleUnsendMobile = async (msg: any) => {
+    const diffMins = (Date.now() - new Date(msg.created_at).getTime()) / (60 * 1000);
+    if (diffMins > 30) {
+      toast.error('Messages can only be unsent within 30 minutes of sending.');
+      setSelectedActionMessage(null);
+      setIsConfirmingUnsend(false);
+      return;
+    }
     const prevUnsent = msg.is_unsent;
     const msgId = Number(msg.id);
     // 1. Optimistic UI update: instantly mark as unsent and dismiss modal
@@ -1711,134 +1718,158 @@ export function ParentDashboard({ navigation }: Props) {
 
       {/* ── Tab 2: Teacher Consultation Chat ── */}
       <View style={activeTab === 'chat' ? { flex: 1 } : { display: 'none', height: 0, flex: 0 }}>
-        {/* ── Streamlined Top Header Bar for Teacher Consultation ── */}
-        <View style={{
-          backgroundColor: '#FFFFFF',
-          paddingHorizontal: Spacing.lg,
-          paddingTop: Spacing.sm,
-          paddingBottom: Spacing.xs,
-          borderBottomWidth: 1,
-          borderBottomColor: Colors.border,
-          position: 'relative',
-        }}>
-          <View style={styles.headerAccentLine} />
+        {/* ── Unified Top Header Bar for Parent Consultation (Matching Reference Design) ── */}
+        <View
+          style={{
+            backgroundColor: '#FFFFFF',
+            paddingHorizontal: Spacing.md,
+            paddingTop: Spacing.md,
+            paddingBottom: Spacing.sm,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+            position: 'relative',
+          }}
+        >
+          {/* Top Blue Accent Line */}
+          <View
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 3,
+              backgroundColor: Colors.accentPrimary,
+            }}
+          />
+
+          {/* Row 1: Title + Term Chip (Left) & PARENT badge (Right) */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, letterSpacing: -0.3 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', flex: 1 }}>
+              <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.lg, color: Colors.textMain, fontWeight: '700', letterSpacing: -0.5 }}>
                 Teacher Consultation
               </Text>
               <View
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 3,
+                  gap: 4,
                   backgroundColor: 'rgba(17,66,142,0.08)',
-                  paddingHorizontal: 6,
-                  paddingVertical: 2,
-                  borderRadius: Radius.sm,
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: 'rgba(17,66,142,0.15)',
                 }}
               >
-                <Calendar size={10} color={Colors.accentPrimary} />
-                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 9.5, color: Colors.accentPrimary }}>
+                <Calendar size={11} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
                   {`S.Y. ${activeSchoolYear} • ${activeTerm}`}
                 </Text>
               </View>
             </View>
-            <Badge label="Parent" variant="indigo" style={styles.roleBadge} />
-          </View>
-        </View>
 
-        {/* Dedicated Navigation Bar / Directory Trigger below Header */}
-        <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingHorizontal: Spacing.lg,
-          paddingTop: Spacing.xs,
-          paddingBottom: Spacing.xs,
-          backgroundColor: Colors.bgMain,
-          borderBottomWidth: 1,
-          borderBottomColor: Colors.border,
-        }}>
-          <TouchableOpacity
-            onPress={() => setActiveTab('progress')}
-            activeOpacity={0.7}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityRole="button"
-            accessibilityLabel="Back to Child Progress"
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 4,
-              paddingVertical: 6,
-              paddingHorizontal: 10,
-              backgroundColor: 'rgba(17,66,142,0.08)',
-              borderRadius: Radius.md,
-            }}
-          >
-            <ChevronLeft size={16} color={Colors.accentPrimary} />
-            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
-              Back to Progress
-            </Text>
-          </TouchableOpacity>
-
-          <View style={{ alignItems: 'flex-end', gap: 4 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <SyncBadge />
-              <TouchableOpacity
-                onPress={() => setActiveTab('settings')}
-                activeOpacity={0.7}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityRole="button"
-                accessibilityLabel="Open device settings"
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 4,
-                  paddingVertical: 5,
-                  paddingHorizontal: 7,
-                }}
-              >
-                <Settings size={14} color={Colors.textMuted} />
-                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                  Settings
-                </Text>
-              </TouchableOpacity>
+            <View
+              style={{
+                backgroundColor: 'rgba(17,66,142,0.08)',
+                paddingHorizontal: 10,
+                paddingVertical: 3,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: 'rgba(17,66,142,0.18)',
+              }}
+            >
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
+                PARENT
+              </Text>
             </View>
+          </View>
 
-            {/* Blue Label: Connected Directory Sidebar Trigger */}
+          {/* Row 2: Back to Progress (Left) & Connected/Settings + Parent Directory Pill (Right) */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: Spacing.sm }}>
             <TouchableOpacity
-              onPress={() => setShowParentChatSidebar(true)}
+              onPress={() => setActiveTab('progress')}
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityRole="button"
-              accessibilityLabel="Open connected parent and student directory"
+              accessibilityLabel="Back to Child Progress"
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 5,
-                backgroundColor: 'rgba(17,66,142,0.1)',
-                paddingHorizontal: 9,
-                paddingVertical: 5,
-                borderRadius: 14,
+                gap: 4,
+                paddingVertical: 6,
+                paddingHorizontal: 12,
+                backgroundColor: 'rgba(17,66,142,0.08)',
+                borderRadius: 16,
                 borderWidth: 1,
-                borderColor: 'rgba(17,66,142,0.25)',
+                borderColor: 'rgba(17,66,142,0.15)',
+                marginTop: 2,
               }}
             >
-              <Users size={12} color={Colors.accentPrimary} />
-              <Text
-                numberOfLines={1}
+              <ChevronLeft size={15} color={Colors.accentPrimary} />
+              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.accentPrimary }}>
+                Back to Progress
+              </Text>
+            </TouchableOpacity>
+
+            <View style={{ alignItems: 'flex-end', gap: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <SyncBadge />
+                <TouchableOpacity
+                  onPress={() => setActiveTab('settings')}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open device settings"
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    paddingVertical: 3,
+                    paddingHorizontal: 6,
+                  }}
+                >
+                  <Settings size={14} color={Colors.textMuted} />
+                  <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 12, color: Colors.textMuted }}>
+                    Settings
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Connected Parent Directory Trigger Pill */}
+              <TouchableOpacity
+                onPress={() => setShowParentChatSidebar(true)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Open connected parent and student directory"
                 style={{
-                  fontFamily: Fonts.bodyBold,
-                  fontSize: 11,
-                  color: Colors.accentPrimary,
-                  maxWidth: 150,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  backgroundColor: 'rgba(17,66,142,0.08)',
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: 'rgba(17,66,142,0.22)',
+                  marginTop: 2,
                 }}
               >
-                {parentDisplayName ? `Parent: ${parentDisplayName}` : 'Parent Directory'}
-              </Text>
-              <ChevronRight size={11} color={Colors.accentPrimary} />
-            </TouchableOpacity>
+                <Users size={12} color={Colors.accentPrimary} />
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontFamily: Fonts.bodyBold,
+                    fontSize: 11,
+                    color: Colors.accentPrimary,
+                    maxWidth: 160,
+                  }}
+                >
+                  {parentDisplayName ? `Parent: ${parentDisplayName}` : 'Parent Directory'}
+                </Text>
+                <ChevronRight size={11} color={Colors.accentPrimary} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -1908,7 +1939,7 @@ export function ParentDashboard({ navigation }: Props) {
 
         {/* Messages Stream & Sticky Input wrapped in KeyboardAvoidingView */}
         <KeyboardAvoidingView
-          behavior="padding"
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
           style={{ flex: 1 }}
         >
@@ -2735,25 +2766,27 @@ export function ParentDashboard({ navigation }: Props) {
                       </TouchableOpacity>
                     )}
 
-                    <TouchableOpacity
-                      onPress={() => setIsConfirmingUnsend(true)}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 12,
-                        paddingVertical: 12,
-                        paddingHorizontal: 14,
-                        borderRadius: 12,
-                        backgroundColor: 'rgba(239,68,68,0.06)',
-                      }}
-                      accessibilityLabel="Unsend message"
-                    >
-                      <Trash2 size={16} color={Colors.danger} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.danger }}>Unsend Message</Text>
-                        <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>Remove for everyone in chat</Text>
-                      </View>
-                    </TouchableOpacity>
+                    {selectedActionMessage && (Date.now() - new Date(selectedActionMessage.created_at).getTime() <= 30 * 60 * 1000) && (
+                      <TouchableOpacity
+                        onPress={() => setIsConfirmingUnsend(true)}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 12,
+                          paddingVertical: 12,
+                          paddingHorizontal: 14,
+                          borderRadius: 12,
+                          backgroundColor: 'rgba(239,68,68,0.06)',
+                        }}
+                        accessibilityLabel="Unsend message"
+                      >
+                        <Trash2 size={16} color={Colors.danger} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.danger }}>Unsend Message</Text>
+                          <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>Within 30 minutes of sending</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </>
               ) : (
