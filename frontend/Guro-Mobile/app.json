@@ -22,7 +22,8 @@
     },
     "android": {
       "package": "com.guro.app",
-      "versionCode": 22,
+      "versionCode": 23,
+      "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",

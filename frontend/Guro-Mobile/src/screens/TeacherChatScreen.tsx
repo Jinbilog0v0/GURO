@@ -41,6 +41,7 @@ import {
   Users,
   School,
   CheckCircle2,
+  ChevronRight,
 } from 'lucide-react-native';
 
 export interface ChatThread {
@@ -91,6 +92,8 @@ export function TeacherChatScreen() {
   const [inputText, setInputText] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false);
+  const [showUserSidebar, setShowUserSidebar] = useState<boolean>(false);
+  const [sidebarSearch, setSidebarSearch] = useState<string>('');
 
   // Forgiveness & options state
   const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
@@ -393,6 +396,15 @@ export function TeacherChatScreen() {
 
   const activeThread = threads.find((t) => t.studentId === activeStudentId);
 
+  const filteredSidebarThreads = threads.filter((t) => {
+    const q = sidebarSearch.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      t.studentName.toLowerCase().includes(q) ||
+      (t.parentName && t.parentName.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bgMain }} edges={['top', 'left', 'right']}>
       {/* ── Sticky Top Header with Semester Badge & Hours ── */}
@@ -438,9 +450,44 @@ export function TeacherChatScreen() {
               </Text>
             </View>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Badge label="Teacher" variant="indigo" />
-            <SyncBadge />
+          <View style={{ alignItems: 'flex-end', gap: 5 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Badge label="Teacher" variant="indigo" />
+              <SyncBadge />
+            </View>
+            {/* Blue Label Parent Chat Button (opens User Directory Sidebar) */}
+            <TouchableOpacity
+              onPress={() => setShowUserSidebar(true)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Open connected parents and students directory"
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 5,
+                backgroundColor: 'rgba(17,66,142,0.1)',
+                paddingHorizontal: 9,
+                paddingVertical: 5,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: 'rgba(17,66,142,0.25)',
+              }}
+            >
+              <Users size={12} color={Colors.accentPrimary} />
+              <Text
+                numberOfLines={1}
+                style={{
+                  fontFamily: Fonts.bodyBold,
+                  fontSize: 11,
+                  color: Colors.accentPrimary,
+                  maxWidth: 140,
+                }}
+              >
+                {activeThread?.parentName ? `Parent: ${activeThread.parentName}` : `Connected (${threads.length})`}
+              </Text>
+              <ChevronRight size={11} color={Colors.accentPrimary} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -561,7 +608,7 @@ export function TeacherChatScreen() {
       {/* ── Messages Stream ── */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
         <ScrollView
@@ -1105,6 +1152,216 @@ export function TeacherChatScreen() {
             </GlassCard>
           </TouchableOpacity>
         </TouchableOpacity>
+      </Modal>
+
+      {/* ── Connected Users & Parents Directory Sidebar (Upper Right Drawer) ── */}
+      <Modal
+        visible={showUserSidebar}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowUserSidebar(false)}
+      >
+        <View style={{ flex: 1, flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.45)' }}>
+          {/* Backdrop tap to dismiss */}
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={1}
+            onPress={() => setShowUserSidebar(false)}
+            accessibilityLabel="Close directory sidebar backdrop"
+          />
+
+          {/* Right-Side Drawer Panel */}
+          <View
+            style={{
+              width: '84%',
+              maxWidth: 350,
+              backgroundColor: Colors.bgSidebar,
+              borderLeftWidth: 1,
+              borderLeftColor: Colors.border,
+              paddingTop: Math.max(insets.top, Spacing.md),
+              paddingBottom: Math.max(insets.bottom, Spacing.md),
+              paddingHorizontal: Spacing.md,
+              flexDirection: 'column',
+              shadowColor: '#000',
+              shadowOffset: { width: -4, height: 0 },
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 16,
+            }}
+          >
+            {/* Header */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingBottom: Spacing.sm,
+                borderBottomWidth: 1,
+                borderBottomColor: Colors.border,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 17,
+                    backgroundColor: 'rgba(17,66,142,0.1)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Users size={17} color={Colors.accentPrimary} />
+                </View>
+                <View>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.sm, color: Colors.textMain, fontWeight: '700' }}>
+                    Connected Chats
+                  </Text>
+                  <Text style={{ fontFamily: Fonts.body, fontSize: 10.5, color: Colors.textMuted }}>
+                    {threads.length} {threads.length === 1 ? 'Parent & Student' : 'Parents & Students'}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowUserSidebar(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{ padding: 4 }}
+                accessibilityLabel="Close directory sidebar"
+              >
+                <X size={18} color={Colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Search Filter */}
+            <View style={{ marginTop: Spacing.sm, marginBottom: Spacing.xs }}>
+              <ThemedTextInput
+                placeholder="Search parent or student..."
+                value={sidebarSearch}
+                onChangeText={setSidebarSearch}
+                containerStyle={{ marginBottom: 0 }}
+                style={{ fontSize: 12, height: 38 }}
+              />
+            </View>
+
+            {/* List of Connected Parents & Students */}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingVertical: Spacing.xs, gap: 8 }}
+            >
+              {filteredSidebarThreads.length === 0 ? (
+                <View style={{ paddingVertical: Spacing.xl, alignItems: 'center' }}>
+                  <Text style={{ fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted, textAlign: 'center' }}>
+                    {sidebarSearch ? 'No matches found.' : 'No active parent consultations yet.'}
+                  </Text>
+                </View>
+              ) : (
+                filteredSidebarThreads.map((thread) => {
+                  const isSelected = thread.studentId === activeStudentId;
+                  return (
+                    <TouchableOpacity
+                      key={thread.studentId}
+                      onPress={() => {
+                        setActiveStudentId(thread.studentId);
+                        setShowUserSidebar(false);
+                        requestAnimationFrame(() => {
+                          chatScrollRef.current?.scrollToEnd({ animated: true });
+                        });
+                      }}
+                      activeOpacity={0.7}
+                      style={{
+                        padding: Spacing.sm,
+                        borderRadius: Radius.md,
+                        backgroundColor: isSelected ? 'rgba(17,66,142,0.08)' : Colors.bgInput,
+                        borderWidth: 1,
+                        borderColor: isSelected ? Colors.accentPrimary : Colors.border,
+                        gap: 6,
+                      }}
+                    >
+                      {/* Top: Blue Label Name of Parent Chat + Connected Indicator */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 4,
+                            backgroundColor: isSelected ? Colors.accentPrimary : 'rgba(17,66,142,0.12)',
+                            paddingHorizontal: 8,
+                            paddingVertical: 3,
+                            borderRadius: 10,
+                            maxWidth: '75%',
+                          }}
+                        >
+                          <User size={10} color={isSelected ? '#FFFFFF' : Colors.accentPrimary} />
+                          <Text
+                            numberOfLines={1}
+                            style={{
+                              fontFamily: Fonts.bodyBold,
+                              fontSize: 10.5,
+                              color: isSelected ? '#FFFFFF' : Colors.accentPrimary,
+                            }}
+                          >
+                            Parent: {thread.parentName || 'Parent/Guardian'}
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.success }} />
+                          <Text style={{ fontFamily: Fonts.body, fontSize: 9.5, color: Colors.success, fontWeight: '600' }}>
+                            Connected
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Connected Student Name */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <School size={12} color={Colors.textMuted} />
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            fontFamily: Fonts.bodyBold,
+                            fontSize: 11.5,
+                            color: Colors.textMain,
+                            flex: 1,
+                          }}
+                        >
+                          Student: {thread.studentName}
+                        </Text>
+                        {thread.unreadCount > 0 && (
+                          <View
+                            style={{
+                              backgroundColor: Colors.accentPrimary,
+                              borderRadius: 8,
+                              paddingHorizontal: 6,
+                              paddingVertical: 1,
+                            }}
+                          >
+                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 9, color: '#FFFFFF' }}>
+                              {thread.unreadCount} new
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+
+                      {/* Latest preview snippet */}
+                      {thread.latestMessage && (
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            fontFamily: Fonts.body,
+                            fontSize: 10.5,
+                            color: Colors.textMuted,
+                          }}
+                        >
+                          {thread.latestSenderRole === 'teacher' ? 'You: ' : ''}
+                          {thread.latestMessage}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
 
     </SafeAreaView>

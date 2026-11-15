@@ -79,6 +79,8 @@ import {
   History,
   Ban,
   ChevronLeft,
+  ChevronRight,
+  School,
 } from 'lucide-react-native';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ParentDashboard'>;
@@ -253,6 +255,7 @@ export function ParentDashboard({ navigation }: Props) {
   const [isSavingChatEdit, setIsSavingChatEdit] = useState(false);
   const [viewHistoryMessage, setViewHistoryMessage] = useState<any | null>(null);
   const [isConfirmingUnsend, setIsConfirmingUnsend] = useState(false);
+  const [showParentChatSidebar, setShowParentChatSidebar] = useState(false);
 
   const handleOpenMessageOptions = (msg: any) => {
     setIsConfirmingUnsend(false);
@@ -988,6 +991,8 @@ export function ParentDashboard({ navigation }: Props) {
     return false;
   };
 
+  const parentDisplayName = currentUser?.name || 'Parent';
+
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       {/* ── Sticky Full-Width Header Bar (Edge-to-Edge) — Main Screen / Child Progress Only ── */}
@@ -1707,7 +1712,7 @@ export function ParentDashboard({ navigation }: Props) {
       {/* ── Tab 2: Teacher Consultation Chat ── */}
       <View style={activeTab === 'chat' ? { flex: 1 } : { display: 'none', height: 0, flex: 0 }}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior="padding"
           keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
           style={{ flex: 1 }}
         >
@@ -1741,24 +1746,63 @@ export function ParentDashboard({ navigation }: Props) {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => setActiveTab('settings')}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="Open device settings"
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 4,
-                paddingVertical: 6,
-                paddingHorizontal: 8,
-              }}
-            >
-              <Settings size={14} color={Colors.textMuted} />
-              <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
-                Settings
-              </Text>
-            </TouchableOpacity>
+            <View style={{ alignItems: 'flex-end', gap: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <SyncBadge />
+                <TouchableOpacity
+                  onPress={() => setActiveTab('settings')}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open device settings"
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    paddingVertical: 5,
+                    paddingHorizontal: 7,
+                  }}
+                >
+                  <Settings size={14} color={Colors.textMuted} />
+                  <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                    Settings
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Blue Label: Connected Directory Sidebar Trigger */}
+              <TouchableOpacity
+                onPress={() => setShowParentChatSidebar(true)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Open connected parent and student directory"
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  backgroundColor: 'rgba(17,66,142,0.1)',
+                  paddingHorizontal: 9,
+                  paddingVertical: 5,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: 'rgba(17,66,142,0.25)',
+                }}
+              >
+                <Users size={12} color={Colors.accentPrimary} />
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontFamily: Fonts.bodyBold,
+                    fontSize: 11,
+                    color: Colors.accentPrimary,
+                    maxWidth: 150,
+                  }}
+                >
+                  {parentDisplayName ? `Parent: ${parentDisplayName}` : 'Parent Directory'}
+                </Text>
+                <ChevronRight size={11} color={Colors.accentPrimary} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Teacher Consultation Header Card */}
@@ -2822,6 +2866,215 @@ export function ParentDashboard({ navigation }: Props) {
               style={{ marginTop: Spacing.xs }}
             />
           </GlassCard>
+        </View>
+      </Modal>
+
+      {/* ── Connected Users & Children Directory Sidebar (Upper Right Drawer) ── */}
+      <Modal
+        visible={showParentChatSidebar}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowParentChatSidebar(false)}
+      >
+        <View style={{ flex: 1, flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.45)' }}>
+          {/* Backdrop tap to dismiss */}
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={1}
+            onPress={() => setShowParentChatSidebar(false)}
+            accessibilityLabel="Close directory sidebar backdrop"
+          />
+
+          {/* Right-Side Drawer Panel */}
+          <View
+            style={{
+              width: '84%',
+              maxWidth: 350,
+              backgroundColor: Colors.bgSidebar,
+              borderLeftWidth: 1,
+              borderLeftColor: Colors.border,
+              paddingTop: Math.max(insets.top, Spacing.md),
+              paddingBottom: Math.max(insets.bottom, Spacing.md),
+              paddingHorizontal: Spacing.md,
+              flexDirection: 'column',
+              shadowColor: '#000',
+              shadowOffset: { width: -4, height: 0 },
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 16,
+            }}
+          >
+            {/* Header */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingBottom: Spacing.sm,
+                borderBottomWidth: 1,
+                borderBottomColor: Colors.border,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 17,
+                    backgroundColor: 'rgba(17,66,142,0.1)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Users size={17} color={Colors.accentPrimary} />
+                </View>
+                <View>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.sm, color: Colors.textMain, fontWeight: '700' }}>
+                    Connected Directory
+                  </Text>
+                  <Text style={{ fontFamily: Fonts.body, fontSize: 10.5, color: Colors.textMuted }}>
+                    Parent & Children Line
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowParentChatSidebar(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{ padding: 4 }}
+                accessibilityLabel="Close directory sidebar"
+              >
+                <X size={18} color={Colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingVertical: Spacing.md, gap: Spacing.md }}
+            >
+              {/* Active Parent Profile Card */}
+              <View
+                style={{
+                  padding: Spacing.md,
+                  borderRadius: Radius.md,
+                  backgroundColor: 'rgba(17,66,142,0.06)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(17,66,142,0.18)',
+                  gap: 6,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 5,
+                      backgroundColor: Colors.accentPrimary,
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      borderRadius: 10,
+                    }}
+                  >
+                    <User size={11} color="#FFFFFF" />
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10.5, color: '#FFFFFF' }}>
+                      {parentDisplayName} (Parent)
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.success }} />
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.success }}>Connected</Text>
+                  </View>
+                </View>
+                <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted, marginTop: 2 }}>
+                  Role: Verified Parent / Guardian
+                </Text>
+                <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
+                  Email: {currentUser?.email || 'parent@guro.dev'}
+                </Text>
+              </View>
+
+              {/* Active Teacher Line Card */}
+              <View
+                style={{
+                  padding: Spacing.md,
+                  borderRadius: Radius.md,
+                  backgroundColor: Colors.bgInput,
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  gap: 6,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <School size={14} color={Colors.accentPrimary} />
+                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.textMain }}>
+                    Classroom Teacher
+                  </Text>
+                </View>
+                <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 12, color: Colors.accentPrimary }}>
+                  {activeTeacherName || 'Classroom Teacher'}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Clock size={11} color={Colors.textMuted} />
+                  <Text style={{ fontFamily: Fonts.body, fontSize: 10.5, color: Colors.textMuted }}>
+                    {activeConsultationHours || 'Mon – Fri: 3:00 PM – 5:00 PM'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Connected Children List */}
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xs, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Connected Children ({myChildren.length})
+                </Text>
+
+                {myChildren.length === 0 ? (
+                  <View style={{ padding: Spacing.md, borderRadius: Radius.md, backgroundColor: Colors.bgInput, alignItems: 'center' }}>
+                    <Text style={{ fontFamily: Fonts.body, fontSize: 11.5, color: Colors.textMuted }}>
+                      No children linked yet.
+                    </Text>
+                  </View>
+                ) : (
+                  myChildren.map((child) => {
+                    const isSelected = child.studentId === activeChildId;
+                    return (
+                      <TouchableOpacity
+                        key={child.studentId}
+                        onPress={() => {
+                          handleSelectChild(child);
+                          setShowParentChatSidebar(false);
+                          requestAnimationFrame(() => {
+                            chatScrollRef.current?.scrollToEnd({ animated: true });
+                          });
+                        }}
+                        activeOpacity={0.7}
+                        style={{
+                          padding: Spacing.sm,
+                          borderRadius: Radius.md,
+                          backgroundColor: isSelected ? 'rgba(17,66,142,0.08)' : Colors.bgInput,
+                          borderWidth: 1,
+                          borderColor: isSelected ? Colors.accentPrimary : Colors.border,
+                          gap: 4,
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.textMain }}>
+                            {child.studentName || child.studentId}
+                          </Text>
+                          {isSelected && (
+                            <View style={{ backgroundColor: Colors.accentPrimary, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 8 }}>
+                              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 9, color: '#FFFFFF' }}>Active Chat</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={{ fontFamily: Fonts.body, fontSize: 10.5, color: Colors.textMuted }}>
+                          ID: {child.studentId} {child.section ? `• Sec: ${child.section}` : ''}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
+              </View>
+            </ScrollView>
+          </View>
         </View>
       </Modal>
 
