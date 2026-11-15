@@ -90,6 +90,7 @@ export function TeacherChatScreen() {
   const [consultationHours, setConsultationHours] = useState<string>('Monday – Friday: 3:00 PM – 5:00 PM');
   const [inputText, setInputText] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false);
 
   // Forgiveness & options state
   const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
@@ -179,6 +180,47 @@ export function TeacherChatScreen() {
     }
   }, [activeStudentId]);
 
+  // Synchronize keyboard open/hide events to ensure active thread text is not obscured
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard?.addListener
+      ? Keyboard.addListener(showEvent, () => {
+          setIsKeyboardVisible(true);
+          requestAnimationFrame(() => {
+            chatScrollRef.current?.scrollToEnd({ animated: true });
+          });
+          setTimeout(() => {
+            chatScrollRef.current?.scrollToEnd({ animated: true });
+          }, 200);
+        })
+      : undefined;
+
+    const hideSub = Keyboard?.addListener
+      ? Keyboard.addListener(hideEvent, () => {
+          setIsKeyboardVisible(false);
+        })
+      : undefined;
+
+    return () => {
+      showSub?.remove?.();
+      hideSub?.remove?.();
+    };
+  }, []);
+
+  // Auto-scroll when messages stream updates
+  useEffect(() => {
+    if (messages.length > 0) {
+      requestAnimationFrame(() => {
+        chatScrollRef.current?.scrollToEnd({ animated: true });
+      });
+      setTimeout(() => {
+        chatScrollRef.current?.scrollToEnd({ animated: true });
+      }, 150);
+    }
+  }, [messages.length, activeStudentId]);
+
   // Send message from teacher
   const handleSendMessage = async () => {
     const text = inputText.trim();
@@ -211,6 +253,12 @@ export function TeacherChatScreen() {
         } else {
           await fetchMessages(activeStudentId);
         }
+        requestAnimationFrame(() => {
+          chatScrollRef.current?.scrollToEnd({ animated: true });
+        });
+        setTimeout(() => {
+          chatScrollRef.current?.scrollToEnd({ animated: true });
+        }, 150);
 
         // Update local thread preview
         setThreads((prev) =>
@@ -519,10 +567,16 @@ export function TeacherChatScreen() {
         <ScrollView
           ref={chatScrollRef}
           style={{ flex: 1, paddingHorizontal: Spacing.md }}
-          contentContainerStyle={{ paddingVertical: Spacing.md, flexGrow: 1 }}
+          contentContainerStyle={{ paddingTop: Spacing.sm, paddingBottom: Spacing.xl, flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          onContentSizeChange={() => {
+            chatScrollRef.current?.scrollToEnd({ animated: true });
+          }}
+          onLayout={() => {
+            chatScrollRef.current?.scrollToEnd({ animated: false });
+          }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -751,7 +805,8 @@ export function TeacherChatScreen() {
         <View
           style={{
             paddingHorizontal: Spacing.md,
-            paddingVertical: Spacing.sm,
+            paddingTop: Spacing.sm,
+            paddingBottom: isKeyboardVisible ? Spacing.sm : Math.max(insets.bottom, Spacing.sm),
             backgroundColor: Colors.bgSidebar,
             borderTopWidth: 1,
             borderTopColor: Colors.border,
@@ -768,9 +823,13 @@ export function TeacherChatScreen() {
               editable={Boolean(activeStudentId)}
               containerStyle={{ marginBottom: 0 }}
               onFocus={() => {
+                setIsKeyboardVisible(true);
+                requestAnimationFrame(() => {
+                  chatScrollRef.current?.scrollToEnd({ animated: true });
+                });
                 setTimeout(() => {
                   chatScrollRef.current?.scrollToEnd({ animated: true });
-                }, 120);
+                }, 250);
               }}
             />
           </View>

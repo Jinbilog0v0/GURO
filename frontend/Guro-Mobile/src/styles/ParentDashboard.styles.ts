@@ -491,7 +491,7 @@ export const styles = StyleSheet.create({
   chatScrollContent: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.xs,
-    paddingBottom: Spacing.lg,
+    paddingBottom: Spacing.xl,
     flexGrow: 1,
   },
   chatEmptyContainer: {

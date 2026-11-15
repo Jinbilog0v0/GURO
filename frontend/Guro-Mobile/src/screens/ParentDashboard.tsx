@@ -122,23 +122,29 @@ export function ParentDashboard({ navigation }: Props) {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
     const showSub = Keyboard?.addListener
-      ? Keyboard.addListener(
-          Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-          () => {
-            setIsKeyboardVisible(true);
-            if (activeTab === 'chat') {
-              setTimeout(() => chatScrollRef.current?.scrollToEnd({ animated: true }), 100);
-            }
+      ? Keyboard.addListener(showEvent, () => {
+          setIsKeyboardVisible(true);
+          if (activeTab === 'chat') {
+            requestAnimationFrame(() => {
+              chatScrollRef.current?.scrollToEnd({ animated: true });
+            });
+            setTimeout(() => {
+              chatScrollRef.current?.scrollToEnd({ animated: true });
+            }, 200);
           }
-        )
+        })
       : undefined;
+
     const hideSub = Keyboard?.addListener
-      ? Keyboard.addListener(
-          Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-          () => setIsKeyboardVisible(false)
-        )
+      ? Keyboard.addListener(hideEvent, () => {
+          setIsKeyboardVisible(false);
+        })
       : undefined;
+
     return () => {
       showSub?.remove?.();
       hideSub?.remove?.();
@@ -226,6 +232,18 @@ export function ParentDashboard({ navigation }: Props) {
   const [chatError, setChatError] = useState<string | null>(null);
   const [activeTeacherName, setActiveTeacherName] = useState<string | null>(null);
   const [activeConsultationHours, setActiveConsultationHours] = useState<string | null>(null);
+
+  // Auto-scroll when consultation chat message stream updates
+  useEffect(() => {
+    if (activeTab === 'chat' && chatMessages && chatMessages.length > 0) {
+      requestAnimationFrame(() => {
+        chatScrollRef.current?.scrollToEnd({ animated: true });
+      });
+      setTimeout(() => {
+        chatScrollRef.current?.scrollToEnd({ animated: true });
+      }, 150);
+    }
+  }, [chatMessages?.length, activeTab]);
 
   // Chat message forgiveness state
   const [selectedActionMessage, setSelectedActionMessage] = useState<any | null>(null);
@@ -596,6 +614,12 @@ export function ParentDashboard({ navigation }: Props) {
       if (res.ok) {
         setChatInput('');
         await fetchChatMessages(cId, sId);
+        requestAnimationFrame(() => {
+          chatScrollRef.current?.scrollToEnd({ animated: true });
+        });
+        setTimeout(() => {
+          chatScrollRef.current?.scrollToEnd({ animated: true });
+        }, 150);
         toast.success('Message sent to teacher.');
       } else {
         toast.error('Failed to send message.');
@@ -1808,7 +1832,12 @@ export function ParentDashboard({ navigation }: Props) {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-            onContentSizeChange={() => chatScrollRef.current?.scrollToEnd({ animated: true })}
+            onContentSizeChange={() => {
+              chatScrollRef.current?.scrollToEnd({ animated: true });
+            }}
+            onLayout={() => {
+              chatScrollRef.current?.scrollToEnd({ animated: false });
+            }}
           >
             {loadingChat && chatMessages.length === 0 ? (
               <View style={styles.chatEmptyContainer}>
@@ -1998,9 +2027,12 @@ export function ParentDashboard({ navigation }: Props) {
                 containerStyle={{ marginBottom: 0 }}
                 onFocus={() => {
                   setIsKeyboardVisible(true);
+                  requestAnimationFrame(() => {
+                    chatScrollRef.current?.scrollToEnd({ animated: true });
+                  });
                   setTimeout(() => {
                     chatScrollRef.current?.scrollToEnd({ animated: true });
-                  }, 120);
+                  }, 250);
                 }}
               />
             </View>

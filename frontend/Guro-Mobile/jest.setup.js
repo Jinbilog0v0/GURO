@@ -25,7 +25,7 @@ jest.mock('expo-updates', () => ({
   isEmbeddedLaunch: true,
   updateId: 'mock-update-id-001',
   channel: 'production',
-  runtimeVersion: '1.0.3',
+  runtimeVersion: '1.0.5',
   checkForUpdateAsync: jest.fn().mockResolvedValue({ isAvailable: false }),
   fetchUpdateAsync: jest.fn().mockResolvedValue({ isNew: false }),
   reloadAsync: jest.fn().mockResolvedValue(undefined),

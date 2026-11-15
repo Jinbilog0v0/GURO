@@ -11,9 +11,9 @@ import {
 
 describe('App Version Hub', () => {
   it('should export the expected core version constants', () => {
-    expect(APP_VERSION).toBe('1.0.3');
-    expect(APP_BUILD_NUMBER).toBe('7');
-    expect(APP_VERSION_CODE).toBe(15);
+    expect(APP_VERSION).toBe('1.0.5');
+    expect(APP_BUILD_NUMBER).toBe('9');
+    expect(APP_VERSION_CODE).toBe(22);
     expect(APP_NAME).toBe('GURO');
   });
 
