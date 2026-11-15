@@ -1768,23 +1768,26 @@ export function ParentDashboard({ navigation }: Props) {
               </View>
             </View>
 
-            <View
-              style={{
-                backgroundColor: 'rgba(17,66,142,0.08)',
-                paddingHorizontal: 10,
-                paddingVertical: 3,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: 'rgba(17,66,142,0.18)',
-              }}
-            >
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
-                PARENT
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <SyncBadge />
+              <View
+                style={{
+                  backgroundColor: 'rgba(17,66,142,0.08)',
+                  paddingHorizontal: 10,
+                  paddingVertical: 3,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: 'rgba(17,66,142,0.18)',
+                }}
+              >
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
+                  PARENT
+                </Text>
+              </View>
             </View>
           </View>
 
-          {/* Row 2: Back to Progress (Left) & Connected/Settings + Parent Directory Pill (Right) */}
+          {/* Row 2: Back to Progress (Left) & Settings + Parent Directory Pill (Right) */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: Spacing.sm }}>
             <TouchableOpacity
               onPress={() => setActiveTab('progress')}
@@ -1812,8 +1815,7 @@ export function ParentDashboard({ navigation }: Props) {
             </TouchableOpacity>
 
             <View style={{ alignItems: 'flex-end', gap: 4 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <SyncBadge />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <TouchableOpacity
                   onPress={() => setActiveTab('settings')}
                   activeOpacity={0.7}

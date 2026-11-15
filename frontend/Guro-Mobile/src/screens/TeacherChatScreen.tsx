@@ -471,25 +471,24 @@ export function TeacherChatScreen() {
             </View>
           </View>
 
-          {/* Right Stack: TEACHER badge, Connected status, and Drawer button */}
-          <View style={{ alignItems: 'flex-end', gap: 4 }}>
-            <View
-              style={{
-                backgroundColor: 'rgba(17,66,142,0.08)',
-                paddingHorizontal: 10,
-                paddingVertical: 3,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: 'rgba(17,66,142,0.18)',
-              }}
-            >
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
-                TEACHER
-              </Text>
-            </View>
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+          {/* Right Stack: Connected status beside TEACHER badge, and Drawer button below */}
+          <View style={{ alignItems: 'flex-end', gap: 6 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <SyncBadge />
+              <View
+                style={{
+                  backgroundColor: 'rgba(17,66,142,0.08)',
+                  paddingHorizontal: 10,
+                  paddingVertical: 3,
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: 'rgba(17,66,142,0.18)',
+                }}
+              >
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary, letterSpacing: 0.5 }}>
+                  TEACHER
+                </Text>
+              </View>
             </View>
 
             {/* Connected Directory Sidebar Trigger */}
@@ -509,7 +508,6 @@ export function TeacherChatScreen() {
                 borderRadius: 14,
                 borderWidth: 1,
                 borderColor: 'rgba(17,66,142,0.22)',
-                marginTop: 2,
               }}
             >
               <Users size={12} color={Colors.accentPrimary} />
