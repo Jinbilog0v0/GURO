@@ -572,58 +572,94 @@ export function ParentDashboard({ navigation }: Props) {
     }
   };
 
-  const fetchChatMessages = async (classroomIdToUse?: string, studentIdToUse?: string) => {
+  const fetchChatMessages = async (classroomIdToUse?: string, studentIdToUse?: string, silent: boolean = false) => {
     const cId = classroomIdToUse || selectedChild?.classroomId || searchedLogs[0]?.classroomId || useAppStore.getState().classroomId;
     const sId = studentIdToUse || selectedChild?.studentId || searchStudentId.trim() || studentId;
     if (!cId || !sId) return;
-    setLoadingChat(true);
-    setChatError(null);
+    if (!silent) {
+      setLoadingChat(true);
+      setChatError(null);
+    }
     try {
       const resolvedUrl = resolveServerUrl(serverUrl);
-      const res = await fetch(`${resolvedUrl}/api/chat/messages?classroomId=${encodeURIComponent(cId)}&studentId=${encodeURIComponent(sId)}`);
+      const res = await fetch(`${resolvedUrl}/api/chat/messages?classroomId=${encodeURIComponent(cId.trim())}&studentId=${encodeURIComponent(sId.trim())}`);
       if (res.ok) {
         const data = await res.json();
-        if (data.messages) setChatMessages(data.messages);
+        if (data.messages) {
+          setChatMessages((prev) => {
+            if (silent && prev.length === data.messages.length && prev[prev.length - 1]?.id === data.messages[data.messages.length - 1]?.id) {
+              const hasChange = data.messages.some((m: any, idx: number) => m.message_body !== prev[idx]?.message_body || m.is_unsent !== prev[idx]?.is_unsent || m.edited_at !== prev[idx]?.edited_at);
+              if (!hasChange) return prev;
+            }
+            return data.messages;
+          });
+        }
         if (data.teacherName) setActiveTeacherName(data.teacherName);
         if (data.consultationHours) setActiveConsultationHours(data.consultationHours);
         setChatError(null);
-      } else {
+      } else if (!silent) {
         setChatError('Server returned an error. Please try again.');
       }
     } catch (e: any) {
-      console.warn('[ParentChat] fetch error:', e);
-      setChatError('Failed to connect to school server. Please verify your internet connection.');
+      if (!silent) {
+        console.warn('[ParentChat] fetch error:', e);
+        setChatError('Failed to connect to school server. Please verify your internet connection.');
+      }
     } finally {
-      setLoadingChat(false);
+      if (!silent) setLoadingChat(false);
     }
   };
 
   const handleSendChat = async () => {
     const body = chatInput.trim();
-    if (!body) return;
+    if (!body || isSendingChat) return;
     const cId = selectedChild?.classroomId || searchedLogs[0]?.classroomId || useAppStore.getState().classroomId;
     const sId = selectedChild?.studentId || searchStudentId.trim() || studentId;
     if (!cId) {
       toast.error('No classroom associated with this student profile.');
       return;
     }
+
+    const tempId = Date.now();
+    const optimisticMessage = {
+      id: tempId,
+      sender_name: currentUser?.name || 'Parent/Guardian',
+      sender_role: 'parent',
+      message_body: body,
+      created_at: new Date().toISOString(),
+    };
+
     setIsSendingChat(true);
+    setChatInput('');
+    setChatMessages((prev) => [...prev, optimisticMessage]);
+
+    requestAnimationFrame(() => {
+      chatScrollRef.current?.scrollToEnd({ animated: true });
+    });
+    setTimeout(() => {
+      chatScrollRef.current?.scrollToEnd({ animated: true });
+    }, 150);
+
     try {
       const resolvedUrl = resolveServerUrl(serverUrl);
       const res = await fetch(`${resolvedUrl}/api/chat/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          classroomId: cId,
-          studentId: sId,
+          classroomId: cId.trim(),
+          studentId: sId.trim(),
           messageBody: body,
           senderRole: 'parent',
           senderName: currentUser?.name || 'Parent/Guardian',
         }),
       });
       if (res.ok) {
-        setChatInput('');
-        await fetchChatMessages(cId, sId);
+        const data = await res.json();
+        if (data.message) {
+          setChatMessages((prev) => prev.map((m) => (m.id === tempId ? data.message : m)));
+        } else {
+          await fetchChatMessages(cId, sId, true);
+        }
         requestAnimationFrame(() => {
           chatScrollRef.current?.scrollToEnd({ animated: true });
         });
@@ -632,9 +668,11 @@ export function ParentDashboard({ navigation }: Props) {
         }, 150);
         toast.success('Message sent to teacher.');
       } else {
+        setChatMessages((prev) => prev.filter((m) => m.id !== tempId));
         toast.error('Failed to send message.');
       }
     } catch {
+      setChatMessages((prev) => prev.filter((m) => m.id !== tempId));
       toast.error('Network error. Could not send message.');
     } finally {
       setIsSendingChat(false);
@@ -643,9 +681,13 @@ export function ParentDashboard({ navigation }: Props) {
 
   useEffect(() => {
     if (activeTab === 'chat') {
-      fetchChatMessages();
+      fetchChatMessages(undefined, undefined, false);
+      const interval = setInterval(() => {
+        fetchChatMessages(undefined, undefined, true);
+      }, 3500);
+      return () => clearInterval(interval);
     }
-  }, [activeTab]);
+  }, [activeTab, isChatThreadOpen, selectedChild?.classroomId, selectedChild?.studentId, searchStudentId, searchedLogs]);
 
   // Run initial search automatically on mount if ID and Access Code are available in AsyncStorage
   useEffect(() => {

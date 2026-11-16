@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Classroom;
+use App\Models\ClassroomMember;
 use App\Models\ParentTeacherMessage;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -34,25 +35,53 @@ class ChatController extends Controller
         $threads = [];
         $grouped = $messages->groupBy('student_id');
 
-        foreach ($grouped as $studentId => $msgs) {
-            $latest = $msgs->first();
-            $unreadCount = $msgs->where('sender_role', 'parent')->whereNull('read_at')->count();
+        $members = ClassroomMember::where('classroom_id', $classroomId)->get();
+        $allStudentIds = $grouped->keys()->merge($members->pluck('student_id'))->filter()->unique()->values();
+        $students = User::whereIn('user_id', $allStudentIds)->get()->keyBy('user_id');
 
-            $student = User::where('user_id', $studentId)->first();
+        foreach ($allStudentIds as $studentId) {
+            $msgs = $grouped->get($studentId);
+            $student = $students->get($studentId);
             $studentName = $student ? $student->name : (string) $studentId;
 
-            $threads[] = [
-                'studentId' => (string) $studentId,
-                'studentName' => $studentName,
-                'latestMessage' => $latest->is_unsent ? 'This message was unsent' : $latest->message_body,
-                'latestSenderRole' => $latest->sender_role,
-                'latestSenderName' => $latest->sender_name,
-                'latestTimestamp' => $latest->created_at ? $latest->created_at->toISOString() : null,
-                'latestIsUnsent' => (bool) $latest->is_unsent,
-                'latestEditedAt' => $latest->edited_at ? $latest->edited_at->toISOString() : null,
-                'unreadCount' => $unreadCount,
-            ];
+            if ($msgs && $msgs->count() > 0) {
+                $latest = $msgs->first();
+                $unreadCount = $msgs->where('sender_role', 'parent')->whereNull('read_at')->count();
+
+                $threads[] = [
+                    'studentId' => (string) $studentId,
+                    'studentName' => $studentName,
+                    'latestMessage' => $latest->is_unsent ? 'This message was unsent' : $latest->message_body,
+                    'latestSenderRole' => $latest->sender_role,
+                    'latestSenderName' => $latest->sender_name,
+                    'latestTimestamp' => $latest->created_at ? $latest->created_at->toISOString() : null,
+                    'latestIsUnsent' => (bool) $latest->is_unsent,
+                    'latestEditedAt' => $latest->edited_at ? $latest->edited_at->toISOString() : null,
+                    'unreadCount' => $unreadCount,
+                ];
+            } else {
+                $threads[] = [
+                    'studentId' => (string) $studentId,
+                    'studentName' => $studentName,
+                    'latestMessage' => null,
+                    'latestSenderRole' => null,
+                    'latestSenderName' => null,
+                    'latestTimestamp' => null,
+                    'latestIsUnsent' => false,
+                    'latestEditedAt' => null,
+                    'unreadCount' => 0,
+                ];
+            }
         }
+
+        usort($threads, function ($a, $b) {
+            if ($a['latestTimestamp'] && $b['latestTimestamp']) {
+                return strcmp($b['latestTimestamp'], $a['latestTimestamp']);
+            }
+            if ($a['latestTimestamp']) return -1;
+            if ($b['latestTimestamp']) return 1;
+            return strcasecmp($a['studentName'], $b['studentName']);
+        });
 
         return response()->json([
             'success' => true,
@@ -83,7 +112,11 @@ class ChatController extends Controller
         }
 
         $messages = ParentTeacherMessage::where('classroom_id', $classroomId)
-            ->where('student_id', $studentId)
+            ->where(function ($q) use ($studentId) {
+                $q->where('student_id', $studentId)
+                    ->orWhere('student_id', strtolower($studentId))
+                    ->orWhere('student_id', strtoupper($studentId));
+            })
             ->orderBy('created_at', 'asc')
             ->get();
 
@@ -112,7 +145,12 @@ class ChatController extends Controller
         ]);
 
         $classroomId = strtoupper(trim($request->input('classroomId')));
-        $studentId = trim($request->input('studentId'));
+        $rawStudentId = trim($request->input('studentId'));
+        $student = User::where('user_id', $rawStudentId)
+            ->orWhere('user_id', strtoupper($rawStudentId))
+            ->first();
+        $studentId = $student ? $student->user_id : $rawStudentId;
+
         $messageBody = trim($request->input('messageBody'));
         $senderRole = $request->input('senderRole');
         $senderName = $request->input('senderName');
@@ -128,7 +166,6 @@ class ChatController extends Controller
             $receiverId = $classroom->teacher_user_id;
         } else {
             // Find parent user linked to student
-            $student = User::where('user_id', $studentId)->first();
             if ($student) {
                 $receiverId = $student->parent_user_id ?? $student->parent_access_token;
             }

@@ -943,11 +943,17 @@ class AuthController extends Controller
             })
             ->get();
 
-        $classroomIds = $children->pluck('classroom_id')->filter()->unique()->toArray();
+        $studentUserIds = $children->pluck('user_id')->toArray();
+        $memberships = ClassroomMember::whereIn('student_id', $studentUserIds)->get()->keyBy('student_id');
+
+        $classroomIds = $children->map(function ($c) use ($memberships) {
+            return $c->classroom_id ?: ($memberships->get($c->user_id)->classroom_id ?? null);
+        })->filter()->unique()->toArray();
         $classrooms = Classroom::whereIn('classroom_id', $classroomIds)->get()->keyBy('classroom_id');
 
-        $result = $children->map(function ($c) use ($classrooms) {
-            $classroom = $c->classroom_id ? $classrooms->get($c->classroom_id) : null;
+        $result = $children->map(function ($c) use ($classrooms, $memberships) {
+            $effectiveClassroomId = $c->classroom_id ?: ($memberships->get($c->user_id)->classroom_id ?? null);
+            $classroom = $effectiveClassroomId ? $classrooms->get($effectiveClassroomId) : null;
 
             return [
                 'userId' => $c->user_id,
@@ -957,7 +963,7 @@ class AuthController extends Controller
                 'middleName' => $c->middle_name,
                 'lastName' => $c->last_name,
                 'email' => $c->email,
-                'classroomId' => $c->classroom_id,
+                'classroomId' => $effectiveClassroomId,
                 'gradeLevel' => $classroom ? $classroom->grade_level : null,
                 'sectionName' => $classroom ? $classroom->section_name : null,
                 'subject' => $classroom ? $classroom->subject : null,

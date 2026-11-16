@@ -88,16 +88,49 @@ export function TeacherChatScreen() {
   const activeSchoolYear = useAppStore((state) => state.activeSchoolYear || '2026-2027');
   const activeTerm = useAppStore((state) => state.activeTerm || 'Quarter 1');
   const storedClassroomId = useAppStore((state) => state.classroomId);
+  const token = useAppStore((state) => state.token);
   const serverUrlFromStore = useAppStore((state) => state.serverUrl);
   const serverUrl = serverUrlFromStore || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
 
   const [activeClassroomId, setActiveClassroomId] = useState<string>(currentUser?.classroomId || storedClassroomId || '');
+  const [classrooms, setClassrooms] = useState<any[]>([]);
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loadingThreads, setLoadingThreads] = useState<boolean>(false);
   const [loadingMessages, setLoadingMessages] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  // Sync activeClassroomId if store or currentUser changes
+  useEffect(() => {
+    const candidate = currentUser?.classroomId || storedClassroomId;
+    if (candidate && !activeClassroomId) {
+      setActiveClassroomId(candidate);
+    }
+  }, [currentUser?.classroomId, storedClassroomId]);
+
+  // Fetch teacher classrooms to support switching sections or fallback if classroomId is empty
+  useEffect(() => {
+    const fetchTeacherClassrooms = async () => {
+      try {
+        const resolvedUrl = resolveServerUrl(serverUrl);
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch(`${resolvedUrl}/api/classroom/my-classrooms`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          const list = data.classrooms || [];
+          setClassrooms(list);
+          if (!activeClassroomId && list.length > 0) {
+            setActiveClassroomId(list[0].id);
+          }
+        }
+      } catch (e) {
+        // Silent
+      }
+    };
+    fetchTeacherClassrooms();
+  }, [token, serverUrl]);
 
   const [consultationHours, setConsultationHours] = useState<string>('Monday – Friday: 3:00 PM – 5:00 PM');
   const [inputText, setInputText] = useState<string>('');
@@ -117,13 +150,13 @@ export function TeacherChatScreen() {
   const chatScrollRef = useRef<ScrollView>(null);
 
   // Fetch threads for teacher classroom
-  const fetchThreads = async (classroomIdToUse?: string) => {
+  const fetchThreads = async (classroomIdToUse?: string, silent: boolean = false) => {
     const cId = classroomIdToUse || activeClassroomId;
     if (!cId) return;
-    setLoadingThreads(true);
+    if (!silent) setLoadingThreads(true);
     try {
       const resolvedUrl = resolveServerUrl(serverUrl);
-      const res = await fetch(`${resolvedUrl}/api/chat/threads?classroomId=${encodeURIComponent(cId)}`);
+      const res = await fetch(`${resolvedUrl}/api/chat/threads?classroomId=${encodeURIComponent(cId.trim())}`);
       if (res.ok) {
         const data = await res.json();
         const threadList: ChatThread[] = data.threads || [];
@@ -132,34 +165,42 @@ export function TeacherChatScreen() {
 
         // Keep active student if already selected; otherwise stay on inbox list
         if (activeStudentId && !threadList.some((t) => t.studentId === activeStudentId)) {
-          setActiveStudentId(null);
+          // Keep active student view active
         }
       }
     } catch (e) {
-      console.warn('[TeacherChatScreen] fetchThreads error:', e);
+      if (!silent) console.warn('[TeacherChatScreen] fetchThreads error:', e);
     } finally {
-      setLoadingThreads(false);
-      setRefreshing(false);
+      if (!silent) {
+        setLoadingThreads(false);
+        setRefreshing(false);
+      }
     }
   };
 
   // Fetch messages for active student thread
-  const fetchMessages = async (studentIdToUse?: string) => {
+  const fetchMessages = async (studentIdToUse?: string, silent: boolean = false) => {
     const sId = studentIdToUse || activeStudentId;
     if (!activeClassroomId || !sId) return;
-    setLoadingMessages(true);
+    if (!silent) setLoadingMessages(true);
     try {
       const resolvedUrl = resolveServerUrl(serverUrl);
-      const res = await fetch(`${resolvedUrl}/api/chat/messages?classroomId=${encodeURIComponent(activeClassroomId)}&studentId=${encodeURIComponent(sId)}`);
+      const res = await fetch(`${resolvedUrl}/api/chat/messages?classroomId=${encodeURIComponent(activeClassroomId.trim())}&studentId=${encodeURIComponent(sId.trim())}`);
       if (res.ok) {
         const data = await res.json();
         const msgs: ChatMessage[] = data.messages || [];
-        setMessages(msgs);
+        setMessages((prev) => {
+          if (silent && prev.length === msgs.length && prev[prev.length - 1]?.id === msgs[msgs.length - 1]?.id) {
+            const hasChange = msgs.some((m, idx) => m.message_body !== prev[idx]?.message_body || m.is_unsent !== prev[idx]?.is_unsent || m.edited_at !== prev[idx]?.edited_at);
+            if (!hasChange) return prev;
+          }
+          return msgs;
+        });
         if (data.consultationHours) setConsultationHours(data.consultationHours);
 
         // Mark unread parent messages as read
         const unreadParentMsgIds = msgs
-          .filter((m) => m.sender_role === 'parent')
+          .filter((m) => m.sender_role === 'parent' && !(m as any).read_at)
           .map((m) => m.id);
 
         if (unreadParentMsgIds.length > 0) {
@@ -175,9 +216,9 @@ export function TeacherChatScreen() {
         }
       }
     } catch (e) {
-      console.warn('[TeacherChatScreen] fetchMessages error:', e);
+      if (!silent) console.warn('[TeacherChatScreen] fetchMessages error:', e);
     } finally {
-      setLoadingMessages(false);
+      if (!silent) setLoadingMessages(false);
     }
   };
 
@@ -192,6 +233,20 @@ export function TeacherChatScreen() {
       fetchMessages(activeStudentId);
     }
   }, [activeStudentId]);
+
+  // Auto-polling for active thread and inbox messages
+  useEffect(() => {
+    if (!activeClassroomId) return;
+    const interval = setInterval(() => {
+      if (activeStudentId) {
+        fetchMessages(activeStudentId, true);
+      } else {
+        fetchThreads(activeClassroomId, true);
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [activeClassroomId, activeStudentId]);
 
   // Synchronize keyboard open/hide events to ensure active thread text is not obscured
   useEffect(() => {
@@ -239,18 +294,54 @@ export function TeacherChatScreen() {
     const text = inputText.trim();
     if (!text || !activeClassroomId || !activeStudentId || isSending) return;
 
+    const tempId = Date.now();
+    const teacherName = currentUser?.name || 'Teacher';
+    const teacherId = currentUser?.userId || 'teacher';
+    const optimisticMsg: ChatMessage = {
+      id: tempId,
+      classroom_id: activeClassroomId,
+      student_id: activeStudentId,
+      sender_id: teacherId,
+      sender_name: teacherName,
+      sender_role: 'teacher',
+      message_body: text,
+      created_at: new Date().toISOString(),
+    };
+
     setIsSending(true);
+    setInputText('');
+    setMessages((prev) => [...prev, optimisticMsg]);
+
+    requestAnimationFrame(() => {
+      chatScrollRef.current?.scrollToEnd({ animated: true });
+    });
+    setTimeout(() => {
+      chatScrollRef.current?.scrollToEnd({ animated: true });
+    }, 150);
+
+    // Update local thread preview
+    setThreads((prev) =>
+      prev.map((t) =>
+        t.studentId === activeStudentId
+          ? {
+              ...t,
+              latestMessage: text,
+              latestSenderRole: 'teacher',
+              latestSenderName: 'You',
+              latestTimestamp: new Date().toISOString(),
+            }
+          : t
+      )
+    );
+
     try {
       const resolvedUrl = resolveServerUrl(serverUrl);
-      const teacherName = currentUser?.name || 'Teacher';
-      const teacherId = currentUser?.userId || 'teacher';
-
       const res = await fetch(`${resolvedUrl}/api/chat/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          classroomId: activeClassroomId,
-          studentId: activeStudentId,
+          classroomId: activeClassroomId.trim(),
+          studentId: activeStudentId.trim(),
           messageBody: text,
           senderRole: 'teacher',
           senderName: teacherName,
@@ -260,11 +351,10 @@ export function TeacherChatScreen() {
 
       if (res.ok) {
         const data = await res.json();
-        setInputText('');
         if (data.message) {
-          setMessages((prev) => [...prev, data.message]);
+          setMessages((prev) => prev.map((m) => (m.id === tempId ? data.message : m)));
         } else {
-          await fetchMessages(activeStudentId);
+          await fetchMessages(activeStudentId, true);
         }
         requestAnimationFrame(() => {
           chatScrollRef.current?.scrollToEnd({ animated: true });
@@ -272,30 +362,13 @@ export function TeacherChatScreen() {
         setTimeout(() => {
           chatScrollRef.current?.scrollToEnd({ animated: true });
         }, 150);
-
-        // Update local thread preview
-        setThreads((prev) =>
-          prev.map((t) =>
-            t.studentId === activeStudentId
-              ? {
-                  ...t,
-                  latestMessage: text,
-                  latestSenderRole: 'teacher',
-                  latestSenderName: 'You',
-                  latestTimestamp: new Date().toISOString(),
-                }
-              : t
-          )
-        );
-
-        setTimeout(() => {
-          chatScrollRef.current?.scrollToEnd({ animated: true });
-        }, 100);
         toast.success('Consultation reply sent.');
       } else {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
         toast.error('Failed to send consultation reply.');
       }
     } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       toast.error('Network error sending message.');
     } finally {
       setIsSending(false);
@@ -507,6 +580,46 @@ export function TeacherChatScreen() {
               </View>
             </View>
           </View>
+
+          {/* Classroom Selector (if teacher manages multiple sections) */}
+          {classrooms.length > 1 && (
+            <View style={{ paddingHorizontal: Spacing.md, paddingTop: Spacing.sm }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
+                {classrooms.map((c) => {
+                  const isActive = (activeClassroomId || '').toUpperCase() === (c.id || '').toUpperCase();
+                  return (
+                    <TouchableOpacity
+                      key={c.id}
+                      onPress={() => {
+                        setActiveClassroomId(c.id);
+                        setActiveStudentId(null);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Switch to classroom ${c.sectionName || c.id}`}
+                      style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 5,
+                        borderRadius: 14,
+                        backgroundColor: isActive ? Colors.accentPrimary : '#FFFFFF',
+                        borderWidth: 1,
+                        borderColor: isActive ? Colors.accentPrimary : Colors.border,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: Fonts.bodyBold,
+                          fontSize: 11,
+                          color: isActive ? '#FFFFFF' : Colors.textMain,
+                        }}
+                      >
+                        {c.sectionName || c.id}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
 
           {/* Search Input Bar */}
           <View style={{ paddingHorizontal: Spacing.md, paddingTop: Spacing.sm, paddingBottom: Spacing.xs }}>
