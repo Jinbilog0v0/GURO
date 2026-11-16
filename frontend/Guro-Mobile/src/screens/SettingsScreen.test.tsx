@@ -121,14 +121,16 @@ describe('SettingsScreen', () => {
     });
   });
 
-  it('renders save button and handles saving settings', async () => {
+  it('renders header utilities and save changes button', async () => {
     let root: any;
     await act(async () => {
       root = renderer.create(<SettingsScreen navigation={mockNavigation} route={mockRoute} />);
     });
 
     const rootJSON = root.toJSON();
-    expect(findTextInJSON(rootJSON, 'Save')).toBe(true);
+    expect(findTextInJSON(rootJSON, 'Manual')).toBe(true);
+    expect(findTextInJSON(rootJSON, 'STUDENT')).toBe(true);
+    expect(findTextInJSON(rootJSON, 'Updates')).toBe(true);
     expect(findTextInJSON(rootJSON, 'Save Changes')).toBe(true);
 
     act(() => {

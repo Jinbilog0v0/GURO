@@ -1464,12 +1464,12 @@ export function SettingsScreen({ navigation }: Props) {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
       {/* ── Header (Sticky, Standard Theme with Blue Accent Top Line) ── */}
       <View style={styles.headerBar}>
         <View style={styles.headerAccentLine} />
 
-        {/* Row 1: Return button on left, Manual / Updates / Student Badge / Sync on right */}
+        {/* Row 1: Return button on left, Updates and Connected side-by-side on upper right corner */}
         <View style={styles.headerTopRow}>
           <TouchableOpacity
             onPress={() => navigation.navigate('StudentDashboard')}
@@ -1477,49 +1477,38 @@ export function SettingsScreen({ navigation }: Props) {
             activeOpacity={0.75}
             accessibilityRole="button"
             accessibilityLabel="Return to student dashboard"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <ChevronLeft size={15} color={Colors.accentPrimary} />
+            <ChevronLeft size={16} color={Colors.accentPrimary} />
             <Text style={styles.backBtnText}>Return</Text>
           </TouchableOpacity>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <TouchableOpacity
-              onPress={() => setShowManualModal(true)}
-              style={styles.headerUtilityBtn}
-              activeOpacity={0.75}
-              accessibilityLabel="Open User Manual"
-            >
-              <BookOpen size={12} color={Colors.accentPrimary} />
-              <Text style={styles.headerUtilityText}>Manual</Text>
-            </TouchableOpacity>
-
+          <View style={styles.headerTopRight}>
             <TouchableOpacity
               testID="header-updates-btn"
               onPress={() => navigation.navigate('PatchNotes')}
               style={styles.headerUtilityBtn}
               activeOpacity={0.75}
+              accessibilityRole="button"
               accessibilityLabel="View Updates and Patch Notes"
+              hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
             >
               <Sparkles size={12} color="#D97706" />
-              <Text style={[styles.headerUtilityText, { color: '#D97706' }]}>Updates</Text>
+              <Text style={styles.headerUtilityText}>Updates</Text>
               {showNewPatchBanner && <View style={styles.updateDot} />}
             </TouchableOpacity>
 
-            <Badge label="Student" variant="indigo" style={{ paddingHorizontal: 8, paddingVertical: 2.5 }} />
             <SyncBadge />
           </View>
         </View>
 
-        {/* Row 2: Screen Title & Academic Period on left, Save Changes button on right */}
+        {/* Row 2: Screen Title & Role (Student) on left, Manual button on right replacing Save */}
         <View style={styles.headerBottomRow}>
           <View style={{ flex: 1, minWidth: 0, paddingRight: Spacing.xs }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'nowrap' }}>
               <Text numberOfLines={1} style={styles.screenTitle}>GURO System Settings</Text>
-              <View style={styles.termBadge}>
-                <Calendar size={10} color={Colors.accentPrimary} />
-                <Text style={styles.termBadgeText}>
-                  S.Y. {activeSchoolYear} • {activeTerm}
-                </Text>
+              <View style={styles.roleBadge}>
+                <Text style={styles.roleBadgeText}>STUDENT</Text>
               </View>
             </View>
             <Text numberOfLines={1} style={styles.screenSubtitle}>
@@ -1528,15 +1517,16 @@ export function SettingsScreen({ navigation }: Props) {
           </View>
 
           <TouchableOpacity
-            onPress={handleSaveAllSettings}
-            disabled={isSaving}
+            testID="header-manual-btn"
+            onPress={() => setShowManualModal(true)}
             activeOpacity={0.75}
-            style={styles.headerSaveBtn}
+            style={styles.headerManualBtn}
             accessibilityRole="button"
-            accessibilityLabel="Save all settings"
+            accessibilityLabel="Open User Manual"
+            hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
           >
-            <Save size={13} color="#FFFFFF" />
-            <Text style={styles.headerSaveBtnText}>{isSaving ? 'Saving...' : 'Save'}</Text>
+            <BookOpen size={13} color={Colors.accentPrimary} />
+            <Text style={styles.headerManualBtnText}>Manual</Text>
           </TouchableOpacity>
         </View>
       </View>
