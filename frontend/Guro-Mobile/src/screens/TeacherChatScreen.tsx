@@ -82,7 +82,7 @@ const formatTime = (ts?: string | null) => {
   }
 };
 
-export function TeacherChatScreen() {
+export function TeacherChatScreen({ navigation }: any = {}) {
   const insets = useSafeAreaInsets();
   const currentUser = useAppStore((state) => state.currentUser);
   const activeSchoolYear = useAppStore((state) => state.activeSchoolYear || '2026-2027');
@@ -100,6 +100,31 @@ export function TeacherChatScreen() {
   const [loadingThreads, setLoadingThreads] = useState<boolean>(false);
   const [loadingMessages, setLoadingMessages] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  // Dynamically hide bottom navigation bar when inside a consultation thread
+  useEffect(() => {
+    const targetNav = navigation?.getParent?.() || navigation;
+    if (targetNav?.setOptions) {
+      targetNav.setOptions({
+        tabBarStyle: activeStudentId
+          ? { display: 'none' }
+          : {
+              backgroundColor: Colors.bgSidebar,
+              borderTopWidth: 1,
+              borderTopColor: Colors.border,
+              height: 60 + insets.bottom,
+              paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+              paddingTop: 8,
+              elevation: 8,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 8,
+              overflow: 'visible',
+            },
+      });
+    }
+  }, [activeStudentId, navigation, insets.bottom]);
 
   // Sync activeClassroomId if store or currentUser changes
   useEffect(() => {
@@ -161,6 +186,8 @@ export function TeacherChatScreen() {
         const data = await res.json();
         const threadList: ChatThread[] = data.threads || [];
         setThreads(threadList);
+        const totalUnread = threadList.reduce((acc, t) => acc + (t.unreadCount || 0), 0);
+        useAppStore.getState().setUnreadChatCount(totalUnread);
         if (data.consultationHours) setConsultationHours(data.consultationHours);
 
         // Keep active student if already selected; otherwise stay on inbox list
@@ -209,9 +236,12 @@ export function TeacherChatScreen() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ messageIds: unreadParentMsgIds }),
           }).then(() => {
-            setThreads((prev) =>
-              prev.map((t) => (t.studentId === sId ? { ...t, unreadCount: 0 } : t))
-            );
+            setThreads((prev) => {
+              const updated = prev.map((t) => (t.studentId === sId ? { ...t, unreadCount: 0 } : t));
+              const totalUnread = updated.reduce((acc, t) => acc + (t.unreadCount || 0), 0);
+              useAppStore.getState().setUnreadChatCount(totalUnread);
+              return updated;
+            });
           }).catch(() => {});
         }
       }
@@ -1142,16 +1172,17 @@ export function TeacherChatScreen() {
         {/* ── Sticky Input Bar at Bottom ── */}
         <View
           style={{
-            paddingHorizontal: Spacing.md,
+            paddingLeft: Spacing.md,
+            paddingRight: Math.max(insets.right + 12, 18),
             paddingTop: 6,
-            paddingBottom: isKeyboardVisible ? 4 : Math.max(insets.bottom, 8),
+            paddingBottom: isKeyboardVisible ? 6 : Math.max(insets.bottom, 10),
             backgroundColor: Colors.bgSidebar,
             borderTopWidth: 1,
             borderTopColor: Colors.border,
             flexDirection: 'row',
             alignItems: 'center',
             gap: Spacing.sm,
-            minHeight: isKeyboardVisible ? 48 : 58,
+            minHeight: isKeyboardVisible ? 50 : 60,
           }}
         >
           <View style={{ flex: 1 }}>
@@ -1185,6 +1216,7 @@ export function TeacherChatScreen() {
               alignItems: 'center',
               borderWidth: 1,
               borderColor: inputText.trim() && activeStudentId ? Colors.accentPrimary : Colors.border,
+              marginRight: 2,
             }}
           >
             {isSending ? (

@@ -184,6 +184,8 @@ interface AppState {
   trackActiveMinutes: (minutes: number) => void;
   resetDailyMinutes: () => void;
   initializeLocalStore: (targetStudentId?: string) => Promise<void>;
+  unreadChatCount: number;
+  setUnreadChatCount: (count: number) => void;
 }
 export function resolveServerUrl(url?: string | null): string {
   const fallback = process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
@@ -248,6 +250,8 @@ export const useAppStore = create<AppState>()(
       serverUrl: process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app',
       adaptiveTiers: {},
       consecutiveFailures: {},
+      unreadChatCount: 0,
+      setUnreadChatCount: (count) => set({ unreadChatCount: count }),
       setActiveChildId: (id) => set({ activeChildId: id }),
       fetchMyChildren: async (serverUrl?: string) => {
         const token = get().token;

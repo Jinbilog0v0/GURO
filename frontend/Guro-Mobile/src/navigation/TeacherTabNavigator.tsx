@@ -10,6 +10,7 @@ import { TeacherLessonBuilderScreen } from '../screens/TeacherLessonBuilderScree
 import { TeacherSettingsScreen } from '../screens/TeacherSettingsScreen';
 import { Colors } from '../theme/colors';
 import { Fonts, FontSizes } from '../theme/typography';
+import { useAppStore } from '../store/useAppStore';
 
 export type TeacherTabParamList = {
   Dashboard: undefined;
@@ -29,6 +30,7 @@ interface CustomGCashTabButtonProps {
 
 function CustomGCashChatButton({ onPress, accessibilityState }: CustomGCashTabButtonProps) {
   const isSelected = Boolean(accessibilityState?.selected);
+  const unreadChatCount = useAppStore((state) => state.unreadChatCount);
 
   return (
     <TouchableOpacity
@@ -59,9 +61,42 @@ function CustomGCashChatButton({ onPress, accessibilityState }: CustomGCashTabBu
           shadowOpacity: 0.35,
           shadowRadius: 6,
           elevation: 7,
+          position: 'relative',
         }}
       >
         <MessageSquare size={22} color="#FFFFFF" strokeWidth={2.2} />
+
+        {unreadChatCount > 0 && (
+          <View
+            style={{
+              position: 'absolute',
+              top: -3,
+              right: -3,
+              backgroundColor: '#EF4444',
+              borderRadius: 10,
+              minWidth: 20,
+              height: 20,
+              paddingHorizontal: 4,
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderWidth: 2,
+              borderColor: '#FFFFFF',
+              elevation: 4,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: Fonts.bodyBold,
+                fontSize: 10,
+                color: '#FFFFFF',
+                textAlign: 'center',
+                lineHeight: 12,
+              }}
+            >
+              {unreadChatCount > 99 ? '99+' : unreadChatCount}
+            </Text>
+          </View>
+        )}
       </View>
       <Text
         style={{

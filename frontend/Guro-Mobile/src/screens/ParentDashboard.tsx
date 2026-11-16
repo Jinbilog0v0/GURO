@@ -686,8 +686,39 @@ export function ParentDashboard({ navigation }: Props) {
         fetchChatMessages(undefined, undefined, true);
       }, 3500);
       return () => clearInterval(interval);
+    } else {
+      const backgroundInterval = setInterval(() => {
+        fetchChatMessages(undefined, undefined, true);
+      }, 15000);
+      return () => clearInterval(backgroundInterval);
     }
   }, [activeTab, isChatThreadOpen, selectedChild?.classroomId, selectedChild?.studentId, searchStudentId, searchedLogs]);
+
+  // Mark teacher messages as read when parent opens the conversation thread
+  useEffect(() => {
+    if (isChatThreadOpen && activeTab === 'chat' && chatMessages && chatMessages.length > 0) {
+      const unreadTeacherMsgIds = chatMessages
+        .filter((m) => m.sender_role === 'teacher' && !(m as any).read_at)
+        .map((m) => m.id);
+
+      if (unreadTeacherMsgIds.length > 0) {
+        const resolvedUrl = resolveServerUrl(serverUrl);
+        fetch(`${resolvedUrl}/api/chat/mark-read`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messageIds: unreadTeacherMsgIds }),
+        }).then(() => {
+          setChatMessages((prev) =>
+            prev.map((m) =>
+              unreadTeacherMsgIds.includes(m.id)
+                ? { ...m, read_at: new Date().toISOString() }
+                : m
+            )
+          );
+        }).catch(() => {});
+      }
+    }
+  }, [isChatThreadOpen, activeTab, chatMessages.length]);
 
   // Run initial search automatically on mount if ID and Access Code are available in AsyncStorage
   useEffect(() => {
@@ -1041,6 +1072,10 @@ export function ParentDashboard({ navigation }: Props) {
   };
 
   const parentDisplayName = currentUser?.name || 'Parent';
+
+  const unreadTeacherCount = (chatMessages || []).filter(
+    (m) => m.sender_role === 'teacher' && !(m as any).read_at
+  ).length;
 
   const chatChildrenList = (myChildren && myChildren.length > 0)
     ? myChildren
@@ -2318,9 +2353,11 @@ export function ParentDashboard({ navigation }: Props) {
             style={[
               styles.chatInputContainer,
               {
+                paddingLeft: Spacing.md,
+                paddingRight: Math.max(insets.right + 12, 18),
                 paddingTop: 6,
-                paddingBottom: isKeyboardVisible ? 4 : Math.max(insets.bottom, 8),
-                minHeight: isKeyboardVisible ? 48 : 58,
+                paddingBottom: isKeyboardVisible ? 6 : Math.max(insets.bottom, 10),
+                minHeight: isKeyboardVisible ? 50 : 60,
               },
             ]}
           >
@@ -2351,6 +2388,7 @@ export function ParentDashboard({ navigation }: Props) {
                 styles.chatSendBtn,
                 {
                   backgroundColor: chatInput.trim() ? Colors.accentPrimary : Colors.border,
+                  marginRight: 2,
                 },
               ]}
             >
@@ -2703,7 +2741,7 @@ export function ParentDashboard({ navigation }: Props) {
             height: 60 + insets.bottom,
             paddingTop: 8,
             paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-            display: activeTab === 'chat' && isKeyboardVisible ? 'none' : 'flex',
+            display: (activeTab === 'chat' && (isChatThreadOpen || isKeyboardVisible)) ? 'none' : 'flex',
           },
         ]}
       >
@@ -2737,10 +2775,43 @@ export function ParentDashboard({ navigation }: Props) {
           accessibilityState={{ selected: activeTab === 'chat' }}
           accessibilityLabel="Teacher Chat"
         >
-          <MessageCircle
-            size={22}
-            color={activeTab === 'chat' ? Colors.accentPrimary : Colors.textDark}
-          />
+          <View style={{ position: 'relative' }}>
+            <MessageCircle
+              size={22}
+              color={activeTab === 'chat' ? Colors.accentPrimary : Colors.textDark}
+            />
+            {unreadTeacherCount > 0 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: -5,
+                  right: -9,
+                  backgroundColor: '#EF4444',
+                  borderRadius: 9,
+                  minWidth: 18,
+                  height: 18,
+                  paddingHorizontal: 4,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderWidth: 1.5,
+                  borderColor: '#FFFFFF',
+                  elevation: 4,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: Fonts.bodyBold,
+                    fontSize: 10,
+                    color: '#FFFFFF',
+                    lineHeight: 12,
+                    textAlign: 'center',
+                  }}
+                >
+                  {unreadTeacherCount > 99 ? '99+' : unreadTeacherCount}
+                </Text>
+              </View>
+            )}
+          </View>
           <Text
             style={[
               styles.tabLabel,
