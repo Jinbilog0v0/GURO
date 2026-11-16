@@ -103,28 +103,16 @@ export function TeacherChatScreen({ navigation }: any = {}) {
 
   // Dynamically hide bottom navigation bar when inside a consultation thread
   useEffect(() => {
-    const targetNav = navigation?.getParent?.() || navigation;
-    if (targetNav?.setOptions) {
-      targetNav.setOptions({
-        tabBarStyle: activeStudentId
-          ? { display: 'none' }
-          : {
-              backgroundColor: Colors.bgSidebar,
-              borderTopWidth: 1,
-              borderTopColor: Colors.border,
-              height: 60 + insets.bottom,
-              paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-              paddingTop: 8,
-              elevation: 8,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: -2 },
-              shadowOpacity: 0.08,
-              shadowRadius: 8,
-              overflow: 'visible',
-            },
+    useAppStore.getState().setTeacherChatThreadOpen(Boolean(activeStudentId));
+    if (navigation?.setOptions) {
+      navigation.setOptions({
+        tabBarStyle: activeStudentId ? { display: 'none', height: 0 } : undefined,
       });
     }
-  }, [activeStudentId, navigation, insets.bottom]);
+    return () => {
+      useAppStore.getState().setTeacherChatThreadOpen(false);
+    };
+  }, [activeStudentId, navigation]);
 
   // Sync activeClassroomId if store or currentUser changes
   useEffect(() => {
@@ -161,7 +149,33 @@ export function TeacherChatScreen({ navigation }: any = {}) {
   const [inputText, setInputText] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false);
+  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  useEffect(() => {
+    const showEvt = Platform.OS === 'android' ? 'keyboardDidShow' : 'keyboardWillShow';
+    const hideEvt = Platform.OS === 'android' ? 'keyboardDidHide' : 'keyboardWillHide';
+
+    const showSub = Keyboard.addListener(showEvt, (e) => {
+      setIsKeyboardVisible(true);
+      setKeyboardHeight(e.endCoordinates.height);
+      if (activeStudentId) {
+        requestAnimationFrame(() => {
+          chatScrollRef.current?.scrollToEnd({ animated: true });
+        });
+      }
+    });
+
+    const hideSub = Keyboard.addListener(hideEvt, () => {
+      setIsKeyboardVisible(false);
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [activeStudentId]);
 
   // Forgiveness & options state
   const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
@@ -871,7 +885,15 @@ export function TeacherChatScreen({ navigation }: any = {}) {
               borderBottomColor: Colors.border,
               position: 'relative',
               flexShrink: 0,
-              zIndex: 10,
+              zIndex: 9999,
+              elevation: 10,
+              transform: [
+                {
+                  translateY: Platform.OS === 'android' && isKeyboardVisible && keyboardHeight > 0
+                    ? Math.max(0, keyboardHeight - insets.bottom)
+                    : 0,
+                },
+              ],
             }}
           >
             {/* Blue Line on Top */}
@@ -1173,7 +1195,7 @@ export function TeacherChatScreen({ navigation }: any = {}) {
         <View
           style={{
             paddingLeft: Spacing.md,
-            paddingRight: Math.max(insets.right + 12, 18),
+            paddingRight: Math.max(insets.right + 16, 20),
             paddingTop: 6,
             paddingBottom: isKeyboardVisible ? 6 : Math.max(insets.bottom, 10),
             backgroundColor: Colors.bgSidebar,
@@ -1181,7 +1203,7 @@ export function TeacherChatScreen({ navigation }: any = {}) {
             borderTopColor: Colors.border,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: Spacing.sm,
+            gap: 10,
             minHeight: isKeyboardVisible ? 50 : 60,
           }}
         >
@@ -1216,7 +1238,7 @@ export function TeacherChatScreen({ navigation }: any = {}) {
               alignItems: 'center',
               borderWidth: 1,
               borderColor: inputText.trim() && activeStudentId ? Colors.accentPrimary : Colors.border,
-              marginRight: 2,
+              marginRight: 4,
             }}
           >
             {isSending ? (

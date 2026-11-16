@@ -122,14 +122,18 @@ export function ParentDashboard({ navigation }: Props) {
   const bottomInset = Math.max(insets.bottom || 0, 24);
   const [activeTab, setActiveTab] = useState<'progress' | 'chat' | 'settings'>('progress');
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
     const showSub = Keyboard?.addListener
-      ? Keyboard.addListener(showEvent, () => {
+      ? Keyboard.addListener(showEvent, (e: any) => {
           setIsKeyboardVisible(true);
+          if (e?.endCoordinates?.height) {
+            setKeyboardHeight(e.endCoordinates.height);
+          }
           if (activeTab === 'chat') {
             requestAnimationFrame(() => {
               chatScrollRef.current?.scrollToEnd({ animated: true });
@@ -144,6 +148,7 @@ export function ParentDashboard({ navigation }: Props) {
     const hideSub = Keyboard?.addListener
       ? Keyboard.addListener(hideEvent, () => {
           setIsKeyboardVisible(false);
+          setKeyboardHeight(0);
         })
       : undefined;
 
@@ -2051,7 +2056,15 @@ export function ParentDashboard({ navigation }: Props) {
                 borderBottomColor: Colors.border,
                 position: 'relative',
                 flexShrink: 0,
-                zIndex: 10,
+                zIndex: 9999,
+                elevation: 10,
+                transform: [
+                  {
+                    translateY: Platform.OS === 'android' && isKeyboardVisible && keyboardHeight > 0
+                      ? Math.max(0, keyboardHeight - insets.bottom)
+                      : 0,
+                  },
+                ],
               }}
             >
               {/* Top Blue Accent Line */}
@@ -2354,10 +2367,11 @@ export function ParentDashboard({ navigation }: Props) {
               styles.chatInputContainer,
               {
                 paddingLeft: Spacing.md,
-                paddingRight: Math.max(insets.right + 12, 18),
+                paddingRight: Math.max(insets.right + 16, 20),
                 paddingTop: 6,
                 paddingBottom: isKeyboardVisible ? 6 : Math.max(insets.bottom, 10),
                 minHeight: isKeyboardVisible ? 50 : 60,
+                gap: 10,
               },
             ]}
           >
@@ -2388,7 +2402,7 @@ export function ParentDashboard({ navigation }: Props) {
                 styles.chatSendBtn,
                 {
                   backgroundColor: chatInput.trim() ? Colors.accentPrimary : Colors.border,
-                  marginRight: 2,
+                  marginRight: 4,
                 },
               ]}
             >
@@ -2738,9 +2752,9 @@ export function ParentDashboard({ navigation }: Props) {
         style={[
           styles.bottomTabBar,
           {
-            height: 60 + insets.bottom,
-            paddingTop: 8,
-            paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+            height: (activeTab === 'chat' && (isChatThreadOpen || isKeyboardVisible)) ? 0 : 60 + insets.bottom,
+            paddingTop: (activeTab === 'chat' && (isChatThreadOpen || isKeyboardVisible)) ? 0 : 8,
+            paddingBottom: (activeTab === 'chat' && (isChatThreadOpen || isKeyboardVisible)) ? 0 : (insets.bottom > 0 ? insets.bottom : 8),
             display: (activeTab === 'chat' && (isChatThreadOpen || isKeyboardVisible)) ? 'none' : 'flex',
           },
         ]}

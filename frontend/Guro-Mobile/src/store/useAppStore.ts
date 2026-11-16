@@ -186,6 +186,8 @@ interface AppState {
   initializeLocalStore: (targetStudentId?: string) => Promise<void>;
   unreadChatCount: number;
   setUnreadChatCount: (count: number) => void;
+  isTeacherChatThreadOpen: boolean;
+  setTeacherChatThreadOpen: (open: boolean) => void;
 }
 export function resolveServerUrl(url?: string | null): string {
   const fallback = process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
@@ -252,6 +254,8 @@ export const useAppStore = create<AppState>()(
       consecutiveFailures: {},
       unreadChatCount: 0,
       setUnreadChatCount: (count) => set({ unreadChatCount: count }),
+      isTeacherChatThreadOpen: false,
+      setTeacherChatThreadOpen: (open) => set({ isTeacherChatThreadOpen: open }),
       setActiveChildId: (id) => set({ activeChildId: id }),
       fetchMyChildren: async (serverUrl?: string) => {
         const token = get().token;

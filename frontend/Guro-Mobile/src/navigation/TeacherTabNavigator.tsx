@@ -31,6 +31,11 @@ interface CustomGCashTabButtonProps {
 function CustomGCashChatButton({ onPress, accessibilityState }: CustomGCashTabButtonProps) {
   const isSelected = Boolean(accessibilityState?.selected);
   const unreadChatCount = useAppStore((state) => state.unreadChatCount);
+  const isTeacherChatThreadOpen = useAppStore((state) => state.isTeacherChatThreadOpen);
+
+  if (isTeacherChatThreadOpen) {
+    return null;
+  }
 
   return (
     <TouchableOpacity
@@ -114,6 +119,7 @@ function CustomGCashChatButton({ onPress, accessibilityState }: CustomGCashTabBu
 
 export function TeacherTabNavigator() {
   const insets = useSafeAreaInsets();
+  const isTeacherChatThreadOpen = useAppStore((state) => state.isTeacherChatThreadOpen);
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
@@ -125,20 +131,22 @@ export function TeacherTabNavigator() {
       screenOptions={{
         headerShown: false,
         tabBarHideOnKeyboard: true,
-        tabBarStyle: {
-          backgroundColor: Colors.bgSidebar,
-          borderTopWidth: 1,
-          borderTopColor: Colors.border,
-          height: 60 + insets.bottom,
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-          paddingTop: 8,
-          elevation: 8,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 8,
-          overflow: 'visible',
-        },
+        tabBarStyle: isTeacherChatThreadOpen
+          ? { display: 'none', height: 0, position: 'absolute', bottom: -100 }
+          : {
+              backgroundColor: Colors.bgSidebar,
+              borderTopWidth: 1,
+              borderTopColor: Colors.border,
+              height: 60 + insets.bottom,
+              paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+              paddingTop: 8,
+              elevation: 8,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 8,
+              overflow: 'visible',
+            },
         tabBarActiveTintColor: Colors.accentPrimary,
         tabBarInactiveTintColor: Colors.textDark,
         tabBarLabelStyle: {
