@@ -897,7 +897,11 @@ export function TeacherChatScreen({ navigation }: any = {}) {
         </View>
       ) : (
         /* ── ACTIVE CONVERSATION VIEW ── */
-        <View style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+        >
           {/* Top Header with Back to Conversations Button */}
           <View
             style={{
@@ -984,12 +988,7 @@ export function TeacherChatScreen({ navigation }: any = {}) {
           </View>
 
       {/* ── Messages Stream ── */}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
-      >
-        <ScrollView
+      <ScrollView
           ref={chatScrollRef}
           style={{ flex: 1, paddingHorizontal: Spacing.md }}
           contentContainerStyle={{ paddingTop: Spacing.sm, paddingBottom: Spacing.xl, flexGrow: 1 }}
@@ -1214,7 +1213,8 @@ export function TeacherChatScreen({ navigation }: any = {}) {
             paddingLeft: Spacing.md,
             paddingRight: Math.max(insets.right + 16, 20),
             paddingTop: 6,
-            paddingBottom: isKeyboardVisible ? 6 : Math.max(insets.bottom, 10),
+            paddingBottom: isKeyboardVisible ? 10 : Math.max(insets.bottom, 10),
+            marginBottom: isKeyboardVisible ? (Platform.OS === 'android' ? 6 : 0) : 0,
             backgroundColor: Colors.bgSidebar,
             borderTopWidth: 1,
             borderTopColor: Colors.border,
@@ -1266,8 +1266,7 @@ export function TeacherChatScreen({ navigation }: any = {}) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </View>
-  )}
+    )}
 
       {/* ── Message Options Bottom Sheet / Modal ── */}
       <Modal

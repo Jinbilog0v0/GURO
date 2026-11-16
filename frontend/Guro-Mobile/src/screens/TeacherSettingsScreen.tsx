@@ -652,69 +652,6 @@ export function TeacherSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-      {/* ── Sticky Top Header Bar ── */}
-      <View
-        style={{
-          paddingHorizontal: Spacing.md,
-          paddingTop: Spacing.sm,
-          paddingBottom: Spacing.sm,
-          backgroundColor: '#FFFFFF',
-          borderBottomWidth: 1,
-          borderBottomColor: Colors.border,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'relative',
-          zIndex: 10,
-        }}
-      >
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: Colors.accentPrimary }} />
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700' }}>
-            Teacher Settings
-          </Text>
-          <View
-            style={{
-              backgroundColor: 'rgba(17,66,142,0.08)',
-              paddingHorizontal: 8,
-              paddingVertical: 2,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: 'rgba(17,66,142,0.18)',
-            }}
-          >
-            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>TEACHER</Text>
-          </View>
-        </View>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <TouchableOpacity
-            testID="header-updates-btn"
-            onPress={() => navigation.navigate('PatchNotes')}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 4,
-              backgroundColor: 'rgba(217,119,6,0.1)',
-              paddingHorizontal: 8,
-              paddingVertical: 4,
-              borderRadius: Radius.md,
-              borderWidth: 1,
-              borderColor: 'rgba(217,119,6,0.25)',
-            }}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="View Updates and Patch Notes"
-            hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-          >
-            <Sparkles size={12} color="#D97706" />
-            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: '#D97706' }}>Updates</Text>
-          </TouchableOpacity>
-
-          <SyncBadge />
-        </View>
-      </View>
-
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.md }]}

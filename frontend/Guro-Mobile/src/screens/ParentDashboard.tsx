@@ -2089,7 +2089,11 @@ export function ParentDashboard({ navigation }: Props) {
           </View>
         ) : (
           /* ── ACTIVE 1-ON-1 CONVERSATION VIEW ── */
-          <View style={{ flex: 1 }}>
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+          >
             {/* Top Header with Back to Consultations Button */}
             <View
               style={{
@@ -2203,15 +2207,8 @@ export function ParentDashboard({ navigation }: Props) {
               </View>
             )}
 
-            {/* Messages Stream & Sticky Input wrapped in KeyboardAvoidingView */}
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-              keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
-              style={{ flex: 1 }}
-            >
-
-          {/* Messages Scroll Area */}
-          <ScrollView
+            {/* Messages Scroll Area */}
+            <ScrollView
             ref={chatScrollRef}
             contentContainerStyle={styles.chatScrollContent}
             showsVerticalScrollIndicator={false}
@@ -2408,7 +2405,8 @@ export function ParentDashboard({ navigation }: Props) {
                 paddingLeft: Spacing.md,
                 paddingRight: Math.max(insets.right + 16, 20),
                 paddingTop: 6,
-                paddingBottom: isKeyboardVisible ? 6 : Math.max(insets.bottom, 10),
+                paddingBottom: isKeyboardVisible ? 10 : Math.max(insets.bottom, 10),
+                marginBottom: isKeyboardVisible ? (Platform.OS === 'android' ? 6 : 0) : 0,
                 minHeight: isKeyboardVisible ? 50 : 60,
                 gap: 10,
               },
@@ -2453,75 +2451,11 @@ export function ParentDashboard({ navigation }: Props) {
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
-      </View>
-    )}
-  </View>
+      )}
+    </View>
 
       {/* ── Tab 3: Local Device & Portal Settings ── */}
       <View style={activeTab === 'settings' ? { flex: 1 } : { display: 'none', height: 0, flex: 0 }}>
-        {/* Sticky Top Header Bar for Settings */}
-        <View
-          style={{
-            paddingHorizontal: Spacing.md,
-            paddingTop: Spacing.sm,
-            paddingBottom: Spacing.sm,
-            backgroundColor: '#FFFFFF',
-            borderBottomWidth: 1,
-            borderBottomColor: Colors.border,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            position: 'relative',
-            zIndex: 10,
-          }}
-        >
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: Colors.accentPrimary }} />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700' }}>
-              Parent Settings
-            </Text>
-            <View
-              style={{
-                backgroundColor: 'rgba(17,66,142,0.08)',
-                paddingHorizontal: 8,
-                paddingVertical: 2,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: 'rgba(17,66,142,0.18)',
-              }}
-            >
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>PARENT</Text>
-            </View>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <TouchableOpacity
-              testID="parent-header-updates-btn"
-              onPress={() => navigation.navigate('PatchNotes')}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 4,
-                backgroundColor: 'rgba(217,119,6,0.1)',
-                paddingHorizontal: 8,
-                paddingVertical: 4,
-                borderRadius: Radius.md,
-                borderWidth: 1,
-                borderColor: 'rgba(217,119,6,0.25)',
-              }}
-              activeOpacity={0.75}
-              accessibilityRole="button"
-              accessibilityLabel="View Updates and Patch Notes"
-              hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-            >
-              <Sparkles size={12} color="#D97706" />
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: '#D97706' }}>Updates</Text>
-            </TouchableOpacity>
-
-            <SyncBadge />
-          </View>
-        </View>
-
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={styles.scroll}
