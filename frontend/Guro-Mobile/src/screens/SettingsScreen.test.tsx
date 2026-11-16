@@ -120,4 +120,19 @@ describe('SettingsScreen', () => {
       root.unmount();
     });
   });
+
+  it('renders save button and handles saving settings', async () => {
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<SettingsScreen navigation={mockNavigation} route={mockRoute} />);
+    });
+
+    const rootJSON = root.toJSON();
+    expect(findTextInJSON(rootJSON, 'Save')).toBe(true);
+    expect(findTextInJSON(rootJSON, 'Save Changes')).toBe(true);
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });

@@ -43,7 +43,11 @@ import {
   BookOpen,
   Sun,
   Moon,
+  Save,
+  Calendar,
+  Check,
 } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserManualModal } from '../components/shared/UserManualModal';
 import { useAppUpdate } from '../context/AppUpdateContext';
 
@@ -62,6 +66,8 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { PrimaryButton, SecondaryButton, DangerButton } from '../components/ui/Buttons';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { Badge } from '../components/ui/Badge';
+import { SyncBadge } from '../components/shared/SyncBadge';
 import { toast } from '../components';
 import { styles } from '../styles/SettingsScreen.styles';
 import { APP_VERSION, getFormattedAppVersion, getAppVersionFooter } from '../constants/appVersion';
@@ -106,9 +112,12 @@ export function SettingsScreen({ navigation }: Props) {
   const setVoiceGuideTheme = useAppStore((state) => state.setVoiceGuideTheme);
   const setCorrectSoundTheme = useAppStore((state) => state.setCorrectSoundTheme);
   const syncProgressNow = useAppStore((state) => state.syncProgressNow);
+  const activeSchoolYear = useAppStore((state) => state.activeSchoolYear || '2026-2027');
+  const activeTerm = useAppStore((state) => state.activeTerm || 'Quarter 1');
 
   // ── Local Screen State ────────────────────────────────────────────────────
   const [activeCategory, setActiveCategory] = useState<Category>('profile');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Account promotion (Go Online) form states
   const [promoteFirstName, setPromoteFirstName] = useState('');
@@ -523,6 +532,37 @@ export function SettingsScreen({ navigation }: Props) {
       toast.error('Connection error: Failed to update profile.');
     } finally {
       setIsSavingProfile(false);
+    }
+  };
+
+  const handleSaveAllSettings = async () => {
+    setIsSaving(true);
+    try {
+      if (isEditingProfile && (profileFirstName.trim() || profileLastName.trim())) {
+        await handleSaveProfile();
+      }
+
+      await AsyncStorage.setItem('guro_sound_effects', JSON.stringify(soundEffectsEnabled));
+      await AsyncStorage.setItem('guro_speech_rate', JSON.stringify(speechRate));
+      await AsyncStorage.setItem('guro_theme_mode', themeMode);
+      await AsyncStorage.setItem('guro_voice_guide_theme', voiceGuideTheme);
+      await AsyncStorage.setItem('guro_correct_sound_theme', correctSoundTheme);
+      await AsyncStorage.setItem('guro_student_avatar', avatarEmoji);
+      await AsyncStorage.setItem('guro_mascot_outfit', mascotOutfit);
+
+      if (appMode === 'online') {
+        try {
+          await syncProgressNow();
+        } catch {
+          // Continue silently if offline
+        }
+      }
+
+      toast.success('Settings saved successfully!');
+    } catch {
+      toast.error('Failed to save settings.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1425,46 +1465,79 @@ export function SettingsScreen({ navigation }: Props) {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.screen}>
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {/* ── Header (Sticky, Standard Theme with Blue Accent Top Line) ── */}
       <View style={styles.headerBar}>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('StudentDashboard')}
-          style={styles.backBtn}
-          activeOpacity={0.75}
-        >
-          <Text style={styles.backBtnText}>← Return</Text>
-        </TouchableOpacity>
+        <View style={styles.headerAccentLine} />
 
-        <Text style={styles.headerTitle}>GURO System Settings</Text>
+        {/* Row 1: Return button on left, Manual / Updates / Student Badge / Sync on right */}
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('StudentDashboard')}
+            style={styles.backBtn}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="Return to student dashboard"
+          >
+            <ChevronLeft size={15} color={Colors.accentPrimary} />
+            <Text style={styles.backBtnText}>Return</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => setShowManualModal(true)}
-          style={[styles.headerSubtitleBadge, { flexDirection: 'row', alignItems: 'center' }]}
-          activeOpacity={0.75}
-          accessibilityLabel="Open User Manual"
-        >
-          <BookOpen size={12} color="#11428E" style={{ marginRight: 4 }} />
-          <Text style={[styles.headerSubtitleText, { color: '#11428E' }]}>Manual</Text>
-        </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <TouchableOpacity
+              onPress={() => setShowManualModal(true)}
+              style={styles.headerUtilityBtn}
+              activeOpacity={0.75}
+              accessibilityLabel="Open User Manual"
+            >
+              <BookOpen size={12} color={Colors.accentPrimary} />
+              <Text style={styles.headerUtilityText}>Manual</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          testID="header-updates-btn"
-          onPress={() => navigation.navigate('PatchNotes')}
-          style={[styles.headerSubtitleBadge, { flexDirection: 'row', alignItems: 'center' }]}
-          activeOpacity={0.75}
-          accessibilityLabel="View Updates and Patch Notes"
-        >
-          <Sparkles size={12} color="#F59E0B" style={{ marginRight: 4 }} />
-          <Text style={[styles.headerSubtitleText, { color: '#D97706' }]}>Updates</Text>
-          {showNewPatchBanner && (
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#EF4444', marginLeft: 4 }} />
-          )}
-        </TouchableOpacity>
+            <TouchableOpacity
+              testID="header-updates-btn"
+              onPress={() => navigation.navigate('PatchNotes')}
+              style={styles.headerUtilityBtn}
+              activeOpacity={0.75}
+              accessibilityLabel="View Updates and Patch Notes"
+            >
+              <Sparkles size={12} color="#D97706" />
+              <Text style={[styles.headerUtilityText, { color: '#D97706' }]}>Updates</Text>
+              {showNewPatchBanner && <View style={styles.updateDot} />}
+            </TouchableOpacity>
 
-        <View style={styles.headerSubtitleBadge}>
-          <Text style={styles.headerSubtitleText}>
-            {appMode === 'online' ? 'Connected' : 'Offline Mode'}
-          </Text>
+            <Badge label="Student" variant="indigo" style={{ paddingHorizontal: 8, paddingVertical: 2.5 }} />
+            <SyncBadge />
+          </View>
+        </View>
+
+        {/* Row 2: Screen Title & Academic Period on left, Save Changes button on right */}
+        <View style={styles.headerBottomRow}>
+          <View style={{ flex: 1, minWidth: 0, paddingRight: Spacing.xs }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <Text numberOfLines={1} style={styles.screenTitle}>GURO System Settings</Text>
+              <View style={styles.termBadge}>
+                <Calendar size={10} color={Colors.accentPrimary} />
+                <Text style={styles.termBadgeText}>
+                  S.Y. {activeSchoolYear} • {activeTerm}
+                </Text>
+              </View>
+            </View>
+            <Text numberOfLines={1} style={styles.screenSubtitle}>
+              Preferences, Mascot Closet &amp; Device Controls
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={handleSaveAllSettings}
+            disabled={isSaving}
+            activeOpacity={0.75}
+            style={styles.headerSaveBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Save all settings"
+          >
+            <Save size={13} color="#FFFFFF" />
+            <Text style={styles.headerSaveBtnText}>{isSaving ? 'Saving...' : 'Save'}</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -1503,6 +1576,16 @@ export function SettingsScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
       >
         {renderSettingsBox()}
+
+        {/* Dedicated Save Changes Action Button */}
+        <PrimaryButton
+          label={isSaving ? "Saving Settings..." : "Save Changes"}
+          icon={<Save size={16} color="#FFFFFF" style={{ marginRight: 6 }} />}
+          onPress={handleSaveAllSettings}
+          loading={isSaving}
+          style={{ marginTop: Spacing.sm }}
+        />
+
         <TouchableOpacity
           onPress={() => navigation.navigate('PatchNotes')}
           activeOpacity={0.7}
