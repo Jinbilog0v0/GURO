@@ -12,6 +12,7 @@ import {
   Pressable,
   Keyboard,
   TextInput,
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore, resolveServerUrl } from '../store/useAppStore';
@@ -103,16 +104,39 @@ export function TeacherChatScreen({ navigation }: any = {}) {
 
   // Dynamically hide bottom navigation bar when inside a consultation thread
   useEffect(() => {
-    useAppStore.getState().setTeacherChatThreadOpen(Boolean(activeStudentId));
+    const isOpen = Boolean(activeStudentId);
+    useAppStore.getState().setTeacherChatThreadOpen(isOpen);
     if (navigation?.setOptions) {
       navigation.setOptions({
-        tabBarStyle: activeStudentId ? { display: 'none', height: 0 } : undefined,
+        tabBarStyle: isOpen ? { display: 'none', height: 0 } : undefined,
+      });
+    }
+    const parentNav = navigation?.getParent?.();
+    if (parentNav?.setOptions) {
+      parentNav.setOptions({
+        tabBarStyle: isOpen ? { display: 'none', height: 0 } : undefined,
       });
     }
     return () => {
       useAppStore.getState().setTeacherChatThreadOpen(false);
+      if (navigation?.setOptions) {
+        navigation.setOptions({ tabBarStyle: undefined });
+      }
+      if (parentNav?.setOptions) {
+        parentNav.setOptions({ tabBarStyle: undefined });
+      }
     };
   }, [activeStudentId, navigation]);
+
+  // Intercept Android back press to close active consultation thread
+  useEffect(() => {
+    if (!activeStudentId) return;
+    const backSub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setActiveStudentId(null);
+      return true;
+    });
+    return () => backSub.remove();
+  }, [activeStudentId]);
 
   // Sync activeClassroomId if store or currentUser changes
   useEffect(() => {
@@ -887,13 +911,6 @@ export function TeacherChatScreen({ navigation }: any = {}) {
               flexShrink: 0,
               zIndex: 9999,
               elevation: 10,
-              transform: [
-                {
-                  translateY: Platform.OS === 'android' && isKeyboardVisible && keyboardHeight > 0
-                    ? Math.max(0, keyboardHeight - insets.bottom)
-                    : 0,
-                },
-              ],
             }}
           >
             {/* Blue Line on Top */}

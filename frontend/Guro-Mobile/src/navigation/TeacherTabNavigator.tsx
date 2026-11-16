@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BackHandler, View, Text, TouchableOpacity } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, BottomTabBar } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BarChart2, Zap, Settings, PenLine, MessageSquare } from 'lucide-react-native';
 import { TeacherDashboardScreen } from '../screens/TeacherDashboardScreen';
@@ -135,6 +135,7 @@ export function TeacherTabNavigator() {
 
   return (
     <Tab.Navigator
+      tabBar={(props) => (isTeacherChatThreadOpen ? null : <BottomTabBar {...props} />)}
       screenOptions={{
         headerShown: false,
         tabBarHideOnKeyboard: true,
@@ -183,6 +184,7 @@ export function TeacherTabNavigator() {
         name="Chat"
         component={TeacherChatScreen}
         options={{
+          tabBarStyle: isTeacherChatThreadOpen ? { display: 'none', height: 0 } : undefined,
           tabBarButton: (props) => <CustomGCashChatButton {...props} />,
         }}
       />

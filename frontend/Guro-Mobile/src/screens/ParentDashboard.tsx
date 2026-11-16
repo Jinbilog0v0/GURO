@@ -199,6 +199,10 @@ export function ParentDashboard({ navigation }: Props) {
   // ── Intercept Android hardware back button ────────────────────────────────
   useEffect(() => {
     const onBackPress = () => {
+      if (activeTab === 'chat' && isChatThreadOpen) {
+        setIsChatThreadOpen(false);
+        return true;
+      }
       if (!isPinMode) {
         return true; // Intercept and prevent escaping back to Login
       }
@@ -209,7 +213,7 @@ export function ParentDashboard({ navigation }: Props) {
       onBackPress
     );
     return () => backHandler.remove();
-  }, [isPinMode]);
+  }, [activeTab, isChatThreadOpen, isPinMode]);
 
   // Server configurations
   const serverUrlFromStore = useAppStore((state) => state.serverUrl);
@@ -2099,13 +2103,6 @@ export function ParentDashboard({ navigation }: Props) {
                 flexShrink: 0,
                 zIndex: 9999,
                 elevation: 10,
-                transform: [
-                  {
-                    translateY: Platform.OS === 'android' && isKeyboardVisible && keyboardHeight > 0
-                      ? Math.max(0, keyboardHeight - insets.bottom)
-                      : 0,
-                  },
-                ],
               }}
             >
               {/* Top Blue Accent Line */}
