@@ -174,6 +174,7 @@ export function TeacherChatScreen({ navigation }: any = {}) {
   const [isSending, setIsSending] = useState<boolean>(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false);
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
+  const [chatHeaderHeight, setChatHeaderHeight] = useState<number>(88);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
@@ -899,11 +900,15 @@ export function TeacherChatScreen({ navigation }: any = {}) {
         /* ── ACTIVE CONVERSATION VIEW ── */
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
         >
           {/* Top Header with Back to Conversations Button */}
           <View
+            onLayout={(e) => {
+              const h = Math.round(e.nativeEvent.layout.height);
+              if (h > 40 && h < 160) setChatHeaderHeight(h);
+            }}
             style={{
               paddingHorizontal: Spacing.md,
               paddingTop: Spacing.md,
@@ -915,6 +920,11 @@ export function TeacherChatScreen({ navigation }: any = {}) {
               flexShrink: 0,
               zIndex: 9999,
               elevation: 10,
+              transform: [
+                {
+                  translateY: Platform.OS === 'android' && isKeyboardVisible ? chatHeaderHeight : 0,
+                },
+              ],
             }}
           >
             {/* Blue Line on Top */}
@@ -1212,16 +1222,15 @@ export function TeacherChatScreen({ navigation }: any = {}) {
           style={{
             paddingLeft: Spacing.md,
             paddingRight: Math.max(insets.right + 16, 20),
-            paddingTop: 6,
-            paddingBottom: isKeyboardVisible ? 10 : Math.max(insets.bottom, 10),
-            marginBottom: isKeyboardVisible ? (Platform.OS === 'android' ? 6 : 0) : 0,
+            paddingTop: 8,
+            paddingBottom: isKeyboardVisible ? 12 : Math.max(insets.bottom, 10),
             backgroundColor: Colors.bgSidebar,
             borderTopWidth: 1,
             borderTopColor: Colors.border,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 10,
-            minHeight: isKeyboardVisible ? 50 : 60,
+            minHeight: isKeyboardVisible ? 54 : 60,
           }}
         >
           <View style={{ flex: 1 }}>

@@ -129,6 +129,7 @@ export function ParentDashboard({ navigation }: Props) {
   const [activeTab, setActiveTab] = useState<'progress' | 'chat' | 'settings'>('progress');
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
+  const [chatHeaderHeight, setChatHeaderHeight] = useState<number>(88);
 
   // OTA Updates State
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
@@ -2091,11 +2092,15 @@ export function ParentDashboard({ navigation }: Props) {
           /* ── ACTIVE 1-ON-1 CONVERSATION VIEW ── */
           <KeyboardAvoidingView
             style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
           >
             {/* Top Header with Back to Consultations Button */}
             <View
+              onLayout={(e) => {
+                const h = Math.round(e.nativeEvent.layout.height);
+                if (h > 40 && h < 160) setChatHeaderHeight(h);
+              }}
               style={{
                 backgroundColor: '#FFFFFF',
                 paddingHorizontal: Spacing.md,
@@ -2107,6 +2112,11 @@ export function ParentDashboard({ navigation }: Props) {
                 flexShrink: 0,
                 zIndex: 9999,
                 elevation: 10,
+                transform: [
+                  {
+                    translateY: Platform.OS === 'android' && isKeyboardVisible ? chatHeaderHeight : 0,
+                  },
+                ],
               }}
             >
               {/* Top Blue Accent Line */}
@@ -2404,10 +2414,9 @@ export function ParentDashboard({ navigation }: Props) {
               {
                 paddingLeft: Spacing.md,
                 paddingRight: Math.max(insets.right + 16, 20),
-                paddingTop: 6,
-                paddingBottom: isKeyboardVisible ? 10 : Math.max(insets.bottom, 10),
-                marginBottom: isKeyboardVisible ? (Platform.OS === 'android' ? 6 : 0) : 0,
-                minHeight: isKeyboardVisible ? 50 : 60,
+                paddingTop: 8,
+                paddingBottom: isKeyboardVisible ? 12 : Math.max(insets.bottom, 10),
+                minHeight: isKeyboardVisible ? 54 : 60,
                 gap: 10,
               },
             ]}
