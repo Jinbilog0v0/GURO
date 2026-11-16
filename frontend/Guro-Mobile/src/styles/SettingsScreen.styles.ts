@@ -3,24 +3,24 @@ import { Colors } from '../theme/colors';
 import { Fonts, FontSizes } from '../theme/typography';
 import { Spacing, Radius } from '../theme/spacing';
 
-export const styles = StyleSheet.create({
+export const getSettingsStyles = (isDark: boolean = false, colors: any = Colors) => StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.bgMain,
+    backgroundColor: isDark ? '#090D16' : colors.bgMain,
   },
   
   // ── Standard Modern Header ───────────────────────────────────────────────
   headerBar: {
-    backgroundColor: Colors.bgCard,
+    backgroundColor: isDark ? '#111827' : colors.bgCard,
     paddingTop: Spacing.xs,
     paddingBottom: Spacing.sm,
     paddingHorizontal: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : colors.border,
     position: 'relative',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: isDark ? 0.3 : 0.05,
     shadowRadius: 4,
     elevation: 3,
     zIndex: 10,
@@ -32,7 +32,7 @@ export const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 3,
-    backgroundColor: Colors.accentPrimary,
+    backgroundColor: colors.accentPrimary,
   },
   headerTopRow: {
     flexDirection: 'row',
@@ -61,14 +61,14 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 10,
     minHeight: 34,
     borderRadius: Radius.full,
-    backgroundColor: 'rgba(17,66,142,0.08)',
+    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.12)' : 'rgba(17,66,142,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(17,66,142,0.18)',
+    borderColor: isDark ? 'rgba(59, 130, 246, 0.25)' : 'rgba(17,66,142,0.18)',
   },
   backBtnText: {
     fontFamily: Fonts.bodyBold,
     fontSize: 12,
-    color: Colors.accentPrimary,
+    color: colors.accentPrimary,
   },
   headerUtilityBtn: {
     flexDirection: 'row',
@@ -78,14 +78,14 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 9,
     minHeight: 32,
     borderRadius: Radius.md,
-    backgroundColor: 'rgba(217,119,6,0.08)',
+    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.12)' : 'rgba(217,119,6,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(217,119,6,0.22)',
+    borderColor: isDark ? 'rgba(245, 158, 11, 0.25)' : 'rgba(217,119,6,0.22)',
   },
   headerUtilityText: {
     fontFamily: Fonts.bodyBold,
     fontSize: 10.5,
-    color: '#D97706',
+    color: isDark ? '#F59E0B' : '#D97706',
   },
   updateDot: {
     width: 6,
@@ -97,73 +97,73 @@ export const styles = StyleSheet.create({
   screenTitle: {
     fontFamily: Fonts.display,
     fontSize: FontSizes.md,
-    color: Colors.textMain,
+    color: isDark ? '#F8FAFC' : colors.textMain,
     letterSpacing: -0.3,
   },
   screenSubtitle: {
     fontFamily: Fonts.body,
     fontSize: 11,
-    color: Colors.textMuted,
+    color: isDark ? '#94A3B8' : colors.textMuted,
     marginTop: 1,
   },
   roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(17,66,142,0.08)',
+    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.12)' : 'rgba(17,66,142,0.08)',
     paddingHorizontal: 8,
     paddingVertical: 2.5,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(17,66,142,0.18)',
+    borderColor: isDark ? 'rgba(59, 130, 246, 0.25)' : 'rgba(17,66,142,0.18)',
   },
   roleBadgeText: {
     fontFamily: Fonts.bodyBold,
     fontSize: 10.5,
-    color: Colors.accentPrimary,
+    color: colors.accentPrimary,
     letterSpacing: 0.6,
   },
   headerManualBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(17,66,142,0.08)',
+    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.12)' : 'rgba(17,66,142,0.08)',
     paddingVertical: 6,
     paddingHorizontal: 11,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(17,66,142,0.2)',
+    borderColor: isDark ? 'rgba(59, 130, 246, 0.25)' : 'rgba(17,66,142,0.2)',
     minHeight: 36,
   },
   headerManualBtnText: {
     fontFamily: Fonts.bodyBold,
     fontSize: 12,
-    color: Colors.accentPrimary,
+    color: colors.accentPrimary,
   },
   termBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3.5,
-    backgroundColor: 'rgba(17,66,142,0.08)',
+    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.12)' : 'rgba(17,66,142,0.08)',
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(17,66,142,0.15)',
+    borderColor: isDark ? 'rgba(59, 130, 246, 0.25)' : 'rgba(17,66,142,0.15)',
   },
   termBadgeText: {
     fontFamily: Fonts.bodyBold,
     fontSize: 10,
-    color: Colors.accentPrimary,
+    color: colors.accentPrimary,
   },
   headerSaveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: Colors.accentPrimary,
+    backgroundColor: colors.accentPrimary,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: Radius.md,
-    shadowColor: Colors.accentPrimary,
+    shadowColor: colors.accentPrimary,
     shadowOffset: { width: 0, height: 1.5 },
     shadowOpacity: 0.25,
     shadowRadius: 3,
@@ -177,11 +177,11 @@ export const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: Fonts.display,
     fontSize: FontSizes.md,
-    color: Colors.textMain,
+    color: isDark ? '#F8FAFC' : colors.textMain,
     flex: 1,
   },
   headerSubtitleBadge: {
-    backgroundColor: 'rgba(17,66,142,0.08)',
+    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.12)' : 'rgba(17,66,142,0.08)',
     borderRadius: Radius.md,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xxs,
@@ -189,15 +189,15 @@ export const styles = StyleSheet.create({
   headerSubtitleText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: 10,
-    color: Colors.accentPrimary,
+    color: colors.accentPrimary,
     textTransform: 'uppercase',
   },
 
   // ── Category scroll tab bar ───────────────────────────────────────────────
   tabBar: {
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    backgroundColor: Colors.bgCard,
+    borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : colors.border,
+    backgroundColor: isDark ? '#111827' : colors.bgCard,
   },
   tabBarContent: {
     paddingHorizontal: Spacing.md,
@@ -211,21 +211,21 @@ export const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: Radius.md,
-    backgroundColor: '#ffffff',
+    backgroundColor: isDark ? '#1A2234' : '#ffffff',
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'transparent',
   },
   tabItemActive: {
-    backgroundColor: 'rgba(17,66,142,0.06)',
-    borderColor: Colors.accentPrimary,
+    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.18)' : 'rgba(17,66,142,0.06)',
+    borderColor: colors.accentPrimary,
   },
   tabItemText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
+    color: isDark ? '#94A3B8' : colors.textMuted,
   },
   tabItemTextActive: {
-    color: Colors.accentPrimary,
+    color: colors.accentPrimary,
   },
 
   // ── Scrollable Layout Container ─────────────────────────────────────────────
@@ -241,28 +241,28 @@ export const styles = StyleSheet.create({
   // ── GitHub style settings box container at the bottom ───────────────────────
   githubBox: {
     borderWidth: 1,
-    borderColor: '#d0d7de',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#d0d7de',
     borderRadius: Radius.md,
-    backgroundColor: '#ffffff',
+    backgroundColor: isDark ? '#111827' : '#ffffff',
     overflow: 'hidden',
     marginTop: Spacing.sm,
   },
   githubBoxHeader: {
-    backgroundColor: '#f6f8fa',
+    backgroundColor: isDark ? '#1A2234' : '#f6f8fa',
     borderBottomWidth: 1,
-    borderBottomColor: '#d0d7de',
+    borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#d0d7de',
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
   },
   githubBoxTitle: {
     fontFamily: Fonts.display,
     fontSize: FontSizes.md,
-    color: Colors.textMain,
+    color: isDark ? '#F8FAFC' : colors.textMain,
   },
   githubBoxSubtitle: {
     fontFamily: Fonts.body,
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
+    color: isDark ? '#94A3B8' : colors.textMuted,
     marginTop: 2,
   },
   githubBoxBody: {
@@ -274,7 +274,7 @@ export const styles = StyleSheet.create({
   formLabel: {
     fontFamily: Fonts.bodyBold,
     fontSize: FontSizes.sm,
-    color: Colors.accentSecondary,
+    color: isDark ? '#F87171' : colors.accentSecondary,
     marginBottom: Spacing.xxs,
   },
   formInputWrapper: {
@@ -295,15 +295,15 @@ export const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: Radius.md,
-    backgroundColor: Colors.bgInput,
+    backgroundColor: isDark ? '#1A2234' : colors.bgInput,
     borderWidth: 2,
-    borderColor: Colors.border,
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarItemActive: {
-    backgroundColor: Colors.accentPrimaryDeep,
-    borderColor: Colors.accentPrimary,
+    backgroundColor: colors.accentPrimaryDeep,
+    borderColor: colors.accentPrimary,
   },
   avatarEmoji: {
     fontSize: 24,
@@ -314,16 +314,16 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.bgInput,
+    backgroundColor: isDark ? '#1A2234' : colors.bgInput,
     padding: Spacing.sm,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : colors.border,
   },
   switchLabel: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSizes.sm,
-    color: Colors.textMain,
+    color: isDark ? '#F8FAFC' : colors.textMain,
   },
   switchTrack: {
     width: 42,
@@ -350,21 +350,21 @@ export const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgInput,
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : colors.border,
+    backgroundColor: isDark ? '#1A2234' : colors.bgInput,
     alignItems: 'center',
   },
   segmentBtnActive: {
-    borderColor: Colors.accentPrimary,
-    backgroundColor: Colors.accentPrimaryDeep,
+    borderColor: colors.accentPrimary,
+    backgroundColor: colors.accentPrimaryDeep,
   },
   segmentText: {
     fontFamily: Fonts.bodyBold,
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
+    color: isDark ? '#94A3B8' : colors.textMuted,
   },
   segmentTextActive: {
-    color: Colors.accentPrimary,
+    color: colors.accentPrimary,
   },
 
   // ── Theme Selection ──────────────────────────────────────────────────────────
@@ -378,8 +378,8 @@ export const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.bgInput,
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : colors.border,
+    backgroundColor: isDark ? '#1A2234' : colors.bgInput,
     alignItems: 'center',
   },
   themeBtnActive: {
@@ -394,28 +394,28 @@ export const styles = StyleSheet.create({
   themeText: {
     fontFamily: Fonts.bodyBold,
     fontSize: 9,
-    color: Colors.textMain,
+    color: isDark ? '#F8FAFC' : colors.textMain,
     textAlign: 'center',
   },
 
   // ── Screen Time gauge & details ─────────────────────────────────────────────
   timeBox: {
-    backgroundColor: Colors.bgInput,
+    backgroundColor: isDark ? '#1A2234' : colors.bgInput,
     padding: Spacing.md,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : colors.border,
     gap: Spacing.xs,
   },
   timeLabel: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
+    color: isDark ? '#94A3B8' : colors.textMuted,
   },
   timeProgressContainer: {
     height: 12,
     width: '100%',
-    backgroundColor: Colors.border,
+    backgroundColor: isDark ? '#334155' : colors.border,
     borderRadius: 6,
     overflow: 'hidden',
     marginTop: Spacing.xxs,
@@ -426,64 +426,64 @@ export const styles = StyleSheet.create({
   timeInfoItalic: {
     fontFamily: Fonts.body,
     fontSize: FontSizes.xs,
-    color: Colors.textDark,
+    color: isDark ? '#64748B' : colors.textDark,
     fontStyle: 'italic',
   },
 
   // ── Rules and stats rows ────────────────────────────────────────────────────
   statsBox: {
-    backgroundColor: Colors.bgInput,
+    backgroundColor: isDark ? '#1A2234' : colors.bgInput,
     padding: Spacing.md,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : colors.border,
     gap: Spacing.xs,
   },
   statsLabel: {
     fontFamily: Fonts.bodyBold,
     fontSize: FontSizes.sm,
-    color: Colors.accentSecondary,
+    color: isDark ? '#F87171' : colors.accentSecondary,
     marginBottom: Spacing.xxs,
   },
   statsText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
+    color: isDark ? '#94A3B8' : colors.textMuted,
   },
   logsHeading: {
     fontFamily: Fonts.bodyBold,
     fontSize: 10,
-    color: Colors.textDark,
+    color: isDark ? '#64748B' : colors.textDark,
     marginTop: Spacing.xs,
     textTransform: 'uppercase',
   },
   logLine: {
     fontFamily: Fonts.body,
     fontSize: 10,
-    color: Colors.textMuted,
+    color: isDark ? '#94A3B8' : colors.textMuted,
   },
 
   // ── Footer layout ───────────────────────────────────────────────────────────
   footerContainer: {
     padding: Spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: '#ffffff',
+    borderTopColor: isDark ? 'rgba(255, 255, 255, 0.08)' : colors.border,
+    backgroundColor: isDark ? '#111827' : '#ffffff',
   },
   // ── Gamification UI/UX Styles ──────────────────────────────────────────────
   xpBarContainer: {
     height: 16,
     width: '100%',
-    backgroundColor: '#E5E7EB',
+    backgroundColor: isDark ? '#1E293B' : '#E5E7EB',
     borderRadius: 8,
     overflow: 'hidden',
     marginTop: Spacing.xs,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#D1D5DB',
   },
   xpBarFill: {
     height: '100%',
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.accentPrimary,
   },
   closetContainer: {
     flexDirection: 'row',
@@ -495,16 +495,16 @@ export const styles = StyleSheet.create({
     width: '47%',
     padding: Spacing.sm,
     borderRadius: Radius.md,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: isDark ? '#1A2234' : '#F3F4F6',
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.xxs,
   },
   closetItemActive: {
-    borderColor: '#3B82F6',
-    backgroundColor: 'rgba(59,130,246,0.08)',
+    borderColor: colors.accentPrimary,
+    backgroundColor: colors.accentPrimaryDeep,
   },
   closetItemEmoji: {
     fontSize: 32,
@@ -513,17 +513,19 @@ export const styles = StyleSheet.create({
   closetItemTitle: {
     fontFamily: Fonts.bodyBold,
     fontSize: FontSizes.xs,
-    color: '#1F2937',
+    color: isDark ? '#F8FAFC' : '#1F2937',
   },
   closetItemPrice: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSizes.xs,
-    color: '#D97706',
+    color: isDark ? '#F59E0B' : '#D97706',
   },
   closetItemOwned: {
     fontFamily: Fonts.body,
     fontSize: 9,
-    color: '#059669',
+    color: isDark ? '#34D399' : '#059669',
     fontStyle: 'italic',
   },
 });
+
+export const styles = getSettingsStyles(false, Colors);

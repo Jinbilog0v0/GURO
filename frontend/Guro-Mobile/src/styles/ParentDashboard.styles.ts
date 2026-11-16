@@ -11,7 +11,7 @@ export const styles = StyleSheet.create({
 
   // Header
   header: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     paddingTop: Spacing.md + 4,
@@ -174,7 +174,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   subTabButtonActive: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: 'rgba(17,66,142,0.18)',
     shadowColor: '#000',
@@ -267,7 +267,7 @@ export const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: Radius.md,
     borderBottomLeftRadius: 2,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
     borderWidth: 1,
     borderColor: Colors.border,
     shadowColor: '#000',

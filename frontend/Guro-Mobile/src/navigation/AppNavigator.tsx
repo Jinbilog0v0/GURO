@@ -15,6 +15,7 @@ import { StudentProgressReportScreen } from '../screens/StudentProgressReportScr
 import { PatchNotesScreen } from '../screens/PatchNotesScreen';
 import { Colors } from '../theme/colors';
 import { Fonts, FontSizes } from '../theme/typography';
+import { useTheme } from '../theme/useTheme';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -42,19 +43,21 @@ function ReturnToStudentButton() {
 }
 
 export function AppNavigator() {
+  const { isDark, colors } = useTheme();
+
   return (
     <Stack.Navigator
       initialRouteName="Login"
       screenOptions={{
-        headerStyle: { backgroundColor: Colors.bgSidebar },
-        headerTintColor: Colors.textMain,
+        headerStyle: { backgroundColor: isDark ? '#111827' : Colors.bgSidebar },
+        headerTintColor: colors.textMain,
         headerTitleStyle: {
           fontFamily: Fonts.display,
           fontSize: FontSizes.xl,
-          color: Colors.textMain,
+          color: colors.textMain,
         },
         headerShadowVisible: true,
-        contentStyle: { backgroundColor: Colors.bgMain },
+        contentStyle: { backgroundColor: isDark ? '#090D16' : Colors.bgMain },
         animation: 'fade_from_bottom',
         gestureEnabled: false,
       }}

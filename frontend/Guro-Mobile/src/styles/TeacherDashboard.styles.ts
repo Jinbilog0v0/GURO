@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
 
   // Header
   header: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     paddingTop: Spacing.md + 4,
@@ -75,7 +75,7 @@ export const styles = StyleSheet.create({
 
   // Active Classroom Hub
   classroomCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
     borderRadius: Radius.lg,
     padding: Spacing.lg,
     borderWidth: 1,

@@ -69,7 +69,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { Badge } from '../components/ui/Badge';
 import { SyncBadge } from '../components/shared/SyncBadge';
 import { toast } from '../components';
-import { styles } from '../styles/SettingsScreen.styles';
+import { styles as defaultStyles, getSettingsStyles } from '../styles/SettingsScreen.styles';
 import { APP_VERSION, getFormattedAppVersion, getAppVersionFooter } from '../constants/appVersion';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
@@ -95,6 +95,9 @@ export function SettingsScreen({ navigation }: Props) {
   const setColorTheme = useAppStore((state) => state.setColorTheme);
   const themeMode = useAppStore((state) => state.themeMode || 'light');
   const setThemeMode = useAppStore((state) => state.setThemeMode);
+
+  const isDark = themeMode === 'dark';
+  const styles = React.useMemo(() => getSettingsStyles(isDark, Colors), [isDark, colorTheme]);
   const logs = useAppStore((state) => state.logs);
   const logoutFromCloud = useAppStore((state) => state.logoutFromCloud);
   const parentalControls = useAppStore((state) => state.parentalControls);
@@ -689,7 +692,7 @@ export function SettingsScreen({ navigation }: Props) {
               <Text style={styles.githubBoxSubtitle}>Track your learning level and sync progress.</Text>
             </View>
             <View style={styles.githubBoxBody}>
-              <View style={{ backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border }}>
+              <View style={{ backgroundColor: isDark ? '#1A2234' : Colors.bgInput, padding: Spacing.md, borderRadius: Radius.md, borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : Colors.border }}>
                 
                 {/* Visual Level indicator */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.xs }}>
@@ -789,23 +792,23 @@ export function SettingsScreen({ navigation }: Props) {
                       paddingVertical: Spacing.xs,
                       paddingHorizontal: Spacing.sm,
                       borderWidth: 1,
-                      borderColor: Colors.border,
+                      borderColor: isDark ? 'rgba(255,255,255,0.12)' : Colors.border,
                       borderRadius: Radius.sm,
-                      backgroundColor: 'transparent',
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'transparent',
                       alignItems: 'center',
                       flexDirection: 'row',
                       justifyContent: 'center',
                       gap: 4
                     }}
                   >
-                    <User size={13} color={Colors.textMuted} />
-                    <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                    <User size={13} color={isDark ? '#94A3B8' : Colors.textMuted} />
+                    <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: isDark ? '#94A3B8' : Colors.textMuted }}>
                       Edit Name Settings
                     </Text>
                   </TouchableOpacity>
                 ) : (
                   <View style={{ marginTop: Spacing.md, gap: Spacing.xs }}>
-                    <Text style={{ fontFamily: Fonts.display, fontSize: 9, color: Colors.accentSecondary, letterSpacing: 1 }}>
+                    <Text style={{ fontFamily: Fonts.display, fontSize: 9, color: isDark ? '#F87171' : Colors.accentSecondary, letterSpacing: 1 }}>
                       EDIT NAME FIELDS
                     </Text>
                     
@@ -845,13 +848,13 @@ export function SettingsScreen({ navigation }: Props) {
                           flex: 1,
                           paddingVertical: Spacing.sm,
                           borderWidth: 1,
-                          borderColor: Colors.border,
+                          borderColor: isDark ? 'rgba(255,255,255,0.12)' : Colors.border,
                           borderRadius: Radius.sm,
-                          backgroundColor: Colors.bgInput,
+                          backgroundColor: isDark ? '#1A2234' : Colors.bgInput,
                           alignItems: 'center'
                         }}
                       >
-                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.textMuted }}>
+                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: isDark ? '#94A3B8' : Colors.textMuted }}>
                           Cancel
                         </Text>
                       </TouchableOpacity>
@@ -878,7 +881,7 @@ export function SettingsScreen({ navigation }: Props) {
               </View>
 
               {appMode === 'offline' && (
-                <View style={{ gap: Spacing.xs, marginTop: Spacing.sm, padding: Spacing.md, borderWidth: 1, borderColor: '#d0d7de', borderRadius: Radius.md, backgroundColor: '#f6f8fa' }}>
+                <View style={{ gap: Spacing.xs, marginTop: Spacing.sm, padding: Spacing.md, borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#d0d7de', borderRadius: Radius.md, backgroundColor: isDark ? '#1A2234' : '#f6f8fa' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Globe size={18} color={Colors.accentSecondary} />
                     <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.accentSecondary }}>
@@ -1186,16 +1189,16 @@ export function SettingsScreen({ navigation }: Props) {
                       paddingVertical: 10,
                       paddingHorizontal: 12,
                       borderRadius: Radius.md,
-                      backgroundColor: themeMode === 'light' ? Colors.accentPrimaryDeep : Colors.bgInput,
+                      backgroundColor: themeMode === 'light' ? Colors.accentPrimaryDeep : (isDark ? '#1A2234' : Colors.bgInput),
                       borderWidth: 1.5,
-                      borderColor: themeMode === 'light' ? Colors.accentPrimary : Colors.border,
+                      borderColor: themeMode === 'light' ? Colors.accentPrimary : (isDark ? 'rgba(255,255,255,0.1)' : Colors.border),
                     }}
                   >
-                    <Sun size={16} color={themeMode === 'light' ? Colors.accentPrimary : Colors.textMuted} />
+                    <Sun size={16} color={themeMode === 'light' ? Colors.accentPrimary : (isDark ? '#94A3B8' : Colors.textMuted)} />
                     <Text style={{
                       fontFamily: Fonts.bodyBold,
                       fontSize: FontSizes.xs,
-                      color: themeMode === 'light' ? Colors.accentPrimary : Colors.textMain,
+                      color: themeMode === 'light' ? Colors.accentPrimary : (isDark ? '#F8FAFC' : Colors.textMain),
                     }}>
                       Light Mode
                     </Text>
@@ -1216,16 +1219,16 @@ export function SettingsScreen({ navigation }: Props) {
                       paddingVertical: 10,
                       paddingHorizontal: 12,
                       borderRadius: Radius.md,
-                      backgroundColor: themeMode === 'dark' ? Colors.accentPrimaryDeep : Colors.bgInput,
+                      backgroundColor: themeMode === 'dark' ? Colors.accentPrimaryDeep : (isDark ? '#1A2234' : Colors.bgInput),
                       borderWidth: 1.5,
-                      borderColor: themeMode === 'dark' ? Colors.accentPrimary : Colors.border,
+                      borderColor: themeMode === 'dark' ? Colors.accentPrimary : (isDark ? 'rgba(255,255,255,0.1)' : Colors.border),
                     }}
                   >
-                    <Moon size={16} color={themeMode === 'dark' ? Colors.accentPrimary : Colors.textMuted} />
+                    <Moon size={16} color={themeMode === 'dark' ? Colors.accentPrimary : (isDark ? '#94A3B8' : Colors.textMuted)} />
                     <Text style={{
                       fontFamily: Fonts.bodyBold,
                       fontSize: FontSizes.xs,
-                      color: themeMode === 'dark' ? Colors.accentPrimary : Colors.textMain,
+                      color: themeMode === 'dark' ? Colors.accentPrimary : (isDark ? '#F8FAFC' : Colors.textMain),
                     }}>
                       Dark Mode
                     </Text>
@@ -1658,12 +1661,12 @@ export function SettingsScreen({ navigation }: Props) {
                       height: 52,
                       borderRadius: 14,
                       borderWidth: 1.5,
-                      borderColor: digit ? Colors.accentPrimary : '#E2E8F0',
-                      backgroundColor: '#F8FAFC',
+                      borderColor: digit ? Colors.accentPrimary : (isDark ? 'rgba(255,255,255,0.12)' : '#E2E8F0'),
+                      backgroundColor: isDark ? '#1A2234' : '#F8FAFC',
                       textAlign: 'center',
                       fontFamily: Fonts.bodyBold,
                       fontSize: 22,
-                      color: Colors.textMain,
+                      color: isDark ? '#F8FAFC' : Colors.textMain,
                     }}
                     accessibilityLabel={`Verification digit ${index + 1}`}
                   />

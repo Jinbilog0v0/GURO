@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import {
   Quicksand_300Light,
@@ -28,6 +28,8 @@ export default function App() {
   const addLog = useAppStore((state) => state.addLog);
   const syncProgressNow = useAppStore((state) => state.syncProgressNow);
   const serverUrl = useAppStore((state) => state.serverUrl);
+  const themeMode = useAppStore((state) => state.themeMode || 'light');
+  const isDark = themeMode === 'dark';
 
   // ── Load Google Fonts ───────────────────────────────────────────────────────
   const [fontsLoaded, fontError] = useFonts({
@@ -94,11 +96,11 @@ export default function App() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <AppUpdateProvider>
-          <NavigationContainer>
+          <NavigationContainer theme={isDark ? DarkTheme : DefaultTheme}>
             <AppNavigator />
             <AppUpdateModal />
             <ToastContainer />
-            <StatusBar style="dark" />
+            <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={isDark ? '#090D16' : '#FFFFFF'} />
           </NavigationContainer>
         </AppUpdateProvider>
       </ErrorBoundary>

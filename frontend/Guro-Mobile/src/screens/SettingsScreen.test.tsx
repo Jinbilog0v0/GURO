@@ -137,4 +137,23 @@ describe('SettingsScreen', () => {
       root.unmount();
     });
   });
+
+  it('switches to dark mode and preserves edit name settings without crash', async () => {
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<SettingsScreen navigation={mockNavigation} route={mockRoute} />);
+    });
+
+    // Switch to dark mode
+    act(() => {
+      useAppStore.getState().setThemeMode('dark');
+    });
+
+    const rootJSON = root.toJSON();
+    expect(findTextInJSON(rootJSON, 'Edit Name Settings')).toBe(true);
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });

@@ -39,7 +39,7 @@ export const Layout = StyleSheet.create({
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.bgCard,
     gap: Spacing.sm,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },

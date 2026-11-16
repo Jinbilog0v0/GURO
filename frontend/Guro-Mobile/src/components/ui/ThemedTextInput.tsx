@@ -14,6 +14,7 @@ import { Colors } from '../../theme/colors';
 import { Fonts, FontSizes, LetterSpacing } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
 import { Eye, EyeOff } from 'lucide-react-native';
+import { useTheme } from '../../theme/useTheme';
 
 export interface ThemedInputProps extends TextInputProps {
   label?: string;
@@ -35,6 +36,7 @@ export const ThemedTextInput = forwardRef<RNTextInput, ThemedInputProps>(functio
   const [focused, setFocused] = useState(false);
   const [secureTextVisible, setSecureTextVisible] = useState(false);
   const innerRef = useRef<RNTextInput>(null);
+  const { isDark, colors } = useTheme();
 
   useImperativeHandle(ref, () => innerRef.current as RNTextInput);
 
@@ -44,13 +46,33 @@ export const ThemedTextInput = forwardRef<RNTextInput, ThemedInputProps>(functio
     innerRef.current?.focus();
   };
 
+  const containerBg = isDark
+    ? (focused ? '#1E293B' : colors.bgInput)
+    : (focused ? '#FFFFFF' : colors.bgInput);
+
+  const containerBorder = error
+    ? colors.danger
+    : focused
+    ? colors.accentPrimary
+    : isDark
+    ? 'rgba(255, 255, 255, 0.12)'
+    : colors.border;
+
   return (
     <View style={[styles.group, containerStyle]}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {label ? (
+        <Text style={[styles.label, { color: isDark ? colors.textMuted : Colors.textMuted }]}>
+          {label}
+        </Text>
+      ) : null}
       <Pressable
         onPress={handleContainerPress}
         style={[
           styles.inputContainer,
+          {
+            backgroundColor: containerBg,
+            borderColor: containerBorder,
+          },
           props.multiline && styles.inputContainerMultiline,
           focused && styles.inputFocused,
           error ? styles.inputError : {},
@@ -62,11 +84,14 @@ export const ThemedTextInput = forwardRef<RNTextInput, ThemedInputProps>(functio
           secureTextEntry={isSecure && !secureTextVisible}
           style={[
             styles.input,
+            {
+              color: colors.textMain,
+            },
             props.multiline && styles.inputMultiline,
             props.style,
           ]}
           textAlignVertical={props.multiline ? 'top' : 'center'}
-          placeholderTextColor={Colors.textDark}
+          placeholderTextColor={isDark ? colors.textDark : Colors.textDark}
           onFocus={(e) => {
             setFocused(true);
             props.onFocus?.(e);
@@ -86,17 +111,17 @@ export const ThemedTextInput = forwardRef<RNTextInput, ThemedInputProps>(functio
             style={styles.toggleButton}
           >
             {secureTextVisible ? (
-              <EyeOff size={20} color={Colors.textMuted} />
+              <EyeOff size={20} color={isDark ? colors.textMuted : Colors.textMuted} />
             ) : (
-              <Eye size={20} color={Colors.textMuted} />
+              <Eye size={20} color={isDark ? colors.textMuted : Colors.textMuted} />
             )}
           </TouchableOpacity>
         )}
       </Pressable>
       {error ? (
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
       ) : helperText ? (
-        <Text style={styles.helperText}>{helperText}</Text>
+        <Text style={[styles.helperText, { color: isDark ? colors.textMuted : Colors.textMuted }]}>{helperText}</Text>
       ) : null}
     </View>
   );
@@ -142,9 +167,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.xs,
   },
   inputFocused: {
-    borderColor: Colors.accentPrimary,
     borderWidth: 1.5,
-    backgroundColor: '#FFFFFF',
     shadowColor: Colors.accentPrimary,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.12,
@@ -152,7 +175,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   inputError: {
-    borderColor: Colors.danger,
     borderWidth: 1.5,
   },
   toggleButton: {

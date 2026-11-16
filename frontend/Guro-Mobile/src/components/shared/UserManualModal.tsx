@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   X,
   BookOpen,
@@ -22,6 +22,7 @@ import {
 import { Colors } from '../../theme/colors';
 import { Fonts, FontSizes } from '../../theme/typography';
 import { Spacing, Radius } from '../../theme/spacing';
+import { useTheme } from '../../theme/useTheme';
 
 interface UserManualModalProps {
   visible: boolean;
@@ -35,6 +36,7 @@ export function UserManualModal({
   defaultRole = 'student',
 }: UserManualModalProps) {
   const [activeTab, setActiveTab] = useState<'student' | 'teacher' | 'parent'>(defaultRole);
+  const { isDark, colors } = useTheme();
 
   return (
     <Modal
@@ -44,16 +46,16 @@ export function UserManualModal({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <SafeAreaView style={styles.modalContainer}>
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: isDark ? '#111827' : '#FFFFFF' }]}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0' }]}>
             <View style={styles.headerLeft}>
-              <View style={styles.iconCircle}>
-                <BookOpen size={20} color="#11428E" />
+              <View style={[styles.iconCircle, { backgroundColor: isDark ? 'rgba(59,130,246,0.15)' : 'rgba(17, 66, 142, 0.1)' }]}>
+                <BookOpen size={20} color={colors.accentPrimary} />
               </View>
               <View>
-                <Text style={styles.title}>GURO User Manual</Text>
-                <Text style={styles.subtitle}>Quick guide for students, teachers & parents</Text>
+                <Text style={[styles.title, { color: isDark ? '#F8FAFC' : '#0F172A' }]}>GURO User Manual</Text>
+                <Text style={[styles.subtitle, { color: isDark ? '#94A3B8' : '#64748B' }]}>Quick guide for students, teachers & parents</Text>
               </View>
             </View>
             <TouchableOpacity
@@ -62,12 +64,12 @@ export function UserManualModal({
               accessibilityLabel="Close manual"
               accessibilityRole="button"
             >
-              <X size={20} color={Colors.textMuted} />
+              <X size={20} color={isDark ? '#94A3B8' : Colors.textMuted} />
             </TouchableOpacity>
           </View>
 
           {/* Role Tabs */}
-          <View style={styles.tabBar}>
+          <View style={[styles.tabBar, { backgroundColor: isDark ? '#1A2234' : '#F8FAFC', borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0' }]}>
             {[
               { id: 'student' as const, label: 'Student', Icon: GraduationCap },
               { id: 'teacher' as const, label: 'Teacher', Icon: Users },
@@ -251,8 +253,8 @@ export function UserManualModal({
           </ScrollView>
 
           {/* Footer */}
-          <View style={styles.footer}>
-            <TouchableOpacity style={styles.gotItButton} onPress={onClose}>
+          <View style={[styles.footer, { backgroundColor: isDark ? '#111827' : '#FFFFFF', borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0' }]}>
+            <TouchableOpacity style={[styles.gotItButton, { backgroundColor: colors.accentPrimary }]} onPress={onClose}>
               <Text style={styles.gotItButtonText}>Close Guide</Text>
             </TouchableOpacity>
           </View>
@@ -355,10 +357,10 @@ const styles = StyleSheet.create({
   },
   guideCard: {
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Colors.bgInput,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.border,
     padding: Spacing.md,
     gap: Spacing.sm,
     alignItems: 'flex-start',
@@ -385,20 +387,20 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.sm,
     fontFamily: Fonts.heading,
     fontWeight: '700',
-    color: '#0F172A',
+    color: Colors.textMain,
     marginBottom: 4,
   },
   cardText: {
     fontSize: FontSizes.xs,
     fontFamily: Fonts.body,
-    color: '#475569',
+    color: Colors.textMuted,
     lineHeight: 18,
   },
   footer: {
     padding: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.bgCard,
   },
   gotItButton: {
     backgroundColor: '#11428E',
