@@ -766,7 +766,7 @@ export function ParentConsultationHub({ currentUser, classroomHistory = [] }: Pa
                           <span className={`text-[10px] font-bold uppercase tracking-wider ${
                             isTeacher ? 'text-[#11428E] dark:text-blue-300' : 'text-amber-500'
                           }`}>
-                            {isTeacher ? 'You (Teacher)' : (msg.sender_name || 'Parent')}
+                            {isTeacher ? 'You (Teacher)' : `${msg.sender_name || activeThread?.parentName || 'Parent'} (Parent)`}
                           </span>
                           <span className="text-[10px] text-[var(--text-muted)] tabular-nums">
                             {timeStr}

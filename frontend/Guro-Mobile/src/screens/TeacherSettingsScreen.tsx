@@ -29,7 +29,14 @@ import { SyncBadge } from '../components/shared/SyncBadge';
 import { styles } from '../styles/TeacherDashboard.styles';
 import { getAppVersionFooter } from '../constants/appVersion';
 import {
+  checkForAppUpdate,
+  fetchAndApplyAppUpdate,
+  getUpdateMetadata,
+} from '../services/updateService';
+import {
   RefreshCw,
+  RotateCw,
+  Sparkles,
   Users,
   Lock,
   Unlock,
@@ -57,6 +64,38 @@ export function TeacherSettingsScreen() {
   const clearLogs = useAppStore((state) => state.clearLogs);
 
   const [fullHistoryVisible, setFullHistoryVisible] = useState(false);
+
+  // OTA Updates State
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [updateStatusText, setUpdateStatusText] = useState<string | null>(null);
+
+  const handleCheckForUpdates = async () => {
+    setIsCheckingUpdate(true);
+    setUpdateStatusText('Checking EAS server for updates...');
+    try {
+      const result = await checkForAppUpdate();
+      if (result.isAvailable) {
+        setUpdateStatusText('New update found! Downloading bundle...');
+        toast.info('New update found! Downloading bundle...');
+        const applyRes = await fetchAndApplyAppUpdate();
+        if (applyRes.success) {
+          toast.success('Update ready! Restarting runtime...');
+        } else {
+          setUpdateStatusText(`Update error: ${applyRes.error}`);
+          toast.error(`Update failed: ${applyRes.error}`);
+        }
+      } else {
+        const msg = result.reason || 'App is up to date!';
+        setUpdateStatusText(msg);
+        toast.success(msg);
+      }
+    } catch {
+      setUpdateStatusText('Error checking updates');
+      toast.error('Could not check for updates');
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
 
   // Email verification modal states
   const [showEmailVerifyModal, setShowEmailVerifyModal] = useState(false);
@@ -613,9 +652,72 @@ export function TeacherSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      {/* ── Sticky Top Header Bar ── */}
+      <View
+        style={{
+          paddingHorizontal: Spacing.md,
+          paddingTop: Spacing.sm,
+          paddingBottom: Spacing.sm,
+          backgroundColor: '#FFFFFF',
+          borderBottomWidth: 1,
+          borderBottomColor: Colors.border,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'relative',
+          zIndex: 10,
+        }}
+      >
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: Colors.accentPrimary }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700' }}>
+            Teacher Settings
+          </Text>
+          <View
+            style={{
+              backgroundColor: 'rgba(17,66,142,0.08)',
+              paddingHorizontal: 8,
+              paddingVertical: 2,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: 'rgba(17,66,142,0.18)',
+            }}
+          >
+            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>TEACHER</Text>
+          </View>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <TouchableOpacity
+            testID="header-updates-btn"
+            onPress={() => navigation.navigate('PatchNotes')}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              backgroundColor: 'rgba(217,119,6,0.1)',
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: Radius.md,
+              borderWidth: 1,
+              borderColor: 'rgba(217,119,6,0.25)',
+            }}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="View Updates and Patch Notes"
+            hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+          >
+            <Sparkles size={12} color="#D97706" />
+            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: '#D97706' }}>Updates</Text>
+          </TouchableOpacity>
+
+          <SyncBadge />
+        </View>
+      </View>
+
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.lg }]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.md }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -1349,6 +1451,81 @@ export function TeacherSettingsScreen() {
             </GlassCard>
           </View>
         </Modal>
+
+        {/* ── EAS Over-The-Air (OTA) Updates Panel ── */}
+        <GlassCard style={styles.section}>
+          <SectionHeader
+            title={
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                <Sparkles size={18} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain }}>
+                  App Updates &amp; System Version
+                </Text>
+              </View>
+            }
+            subtitle="Check EAS servers for zero-downtime updates &amp; patches"
+          />
+
+          <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginBottom: Spacing.sm }}>
+            Active Version: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getUpdateMetadata().runtimeVersion}</Text> • Channel: <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.textMain }}>{getUpdateMetadata().channel || 'production'}</Text>
+          </Text>
+
+          {updateStatusText && (
+            <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: FontSizes.xs, color: Colors.accentPrimary, marginBottom: Spacing.xs }}>
+              {updateStatusText}
+            </Text>
+          )}
+
+          <TouchableOpacity
+            testID="check-updates-btn"
+            onPress={handleCheckForUpdates}
+            disabled={isCheckingUpdate}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              paddingVertical: Spacing.sm,
+              paddingHorizontal: Spacing.md,
+              backgroundColor: Colors.bgInput,
+              borderRadius: Radius.md,
+              borderWidth: 1,
+              borderColor: Colors.border,
+              minHeight: 44,
+            }}
+            activeOpacity={0.7}
+          >
+            <RotateCw size={14} color={Colors.accentPrimary} />
+            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+              {isCheckingUpdate ? 'Checking EAS Server...' : 'Check for Updates Now'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            testID="view-patch-notes-btn"
+            onPress={() => navigation.navigate('PatchNotes')}
+            style={{
+              marginTop: Spacing.xs,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              paddingVertical: Spacing.sm,
+              paddingHorizontal: Spacing.md,
+              backgroundColor: 'rgba(0, 56, 168, 0.08)',
+              borderRadius: Radius.md,
+              borderWidth: 1,
+              borderColor: 'rgba(0, 56, 168, 0.2)',
+              minHeight: 44,
+            }}
+            activeOpacity={0.7}
+          >
+            <Sparkles size={14} color={Colors.accentPrimary} />
+            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: FontSizes.xs, color: Colors.accentPrimary }}>
+              View Release Notes &amp; What's New
+            </Text>
+          </TouchableOpacity>
+        </GlassCard>
 
         {/* ── Log Out ── */}
         {!isPinMode && (

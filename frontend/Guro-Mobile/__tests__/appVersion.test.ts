@@ -40,7 +40,7 @@ describe('App Version Hub', () => {
     const footer = getAppVersionFooter();
     expect(footer).toContain('GURO');
     expect(footer).toContain(APP_VERSION);
-    expect(footer).toContain('Offline-first · SQLite powered');
+    expect(footer).toContain('Offline-capable · SQLite powered');
   });
 
   it('should return complete metadata object', () => {

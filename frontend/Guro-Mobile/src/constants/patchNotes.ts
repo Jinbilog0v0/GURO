@@ -105,7 +105,7 @@ export const PATCH_NOTES_HISTORY: PatchNoteItem[] = [
     badge: 'INITIAL',
     badgeVariant: 'secondary',
     highlights: [
-      'Complete offline-first learning system powered by SQLite local database.',
+      'Complete offline-capable learning system powered by SQLite local database.',
       'EAS Over-The-Air (OTA) zero-downtime update engine with runtimeVersion locking.',
       'DepEd MELC-aligned curriculum content for Grades 1 to 3 across English, Math, and Filipino.',
       'Dedicated Parent and Teacher consultation workspaces.',

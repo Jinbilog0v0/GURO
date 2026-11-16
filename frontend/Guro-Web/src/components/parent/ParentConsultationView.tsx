@@ -427,7 +427,7 @@ export const ParentConsultationView: React.FC<ParentConsultationViewProps> = ({
                   <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} group relative`}>
                     <div className="flex items-center gap-1.5 mb-1 px-1 text-[11px] text-[var(--text-muted)]">
                       <span className="font-bold text-[var(--text-main)]">
-                        {isMe ? 'You' : msg.sender_name}
+                        {isMe ? `You (${currentUser?.name || 'Parent'} • Parent of ${activeChild?.name || 'Child'})` : `${msg.sender_name || teacherName || 'Teacher'} (Teacher)`}
                       </span>
                       <span>•</span>
                       <span className="tabular-nums">

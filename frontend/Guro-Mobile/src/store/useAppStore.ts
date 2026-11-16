@@ -186,6 +186,7 @@ interface AppState {
   initializeLocalStore: (targetStudentId?: string) => Promise<void>;
   unreadChatCount: number;
   setUnreadChatCount: (count: number) => void;
+  fetchTeacherUnreadChatCount: () => Promise<number>;
   isTeacherChatThreadOpen: boolean;
   setTeacherChatThreadOpen: (open: boolean) => void;
 }
@@ -254,6 +255,38 @@ export const useAppStore = create<AppState>()(
       consecutiveFailures: {},
       unreadChatCount: 0,
       setUnreadChatCount: (count) => set({ unreadChatCount: count }),
+      fetchTeacherUnreadChatCount: async () => {
+        try {
+          const rawUrl = get().serverUrl || process.env.EXPO_PUBLIC_API_URL || 'https://neoguro.app';
+          const resolvedUrl = resolveServerUrl(rawUrl);
+          let cId = get().currentUser?.classroomId || get().classroomId;
+          const token = get().token;
+          if (!cId && token) {
+            const res = await fetch(`${resolvedUrl}/api/classroom/my-classrooms`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.classrooms && data.classrooms.length > 0) {
+                cId = data.classrooms[0].id;
+                set({ classroomId: cId });
+              }
+            }
+          }
+          if (!cId) return 0;
+          const res = await fetch(`${resolvedUrl}/api/chat/threads?classroomId=${encodeURIComponent(cId.trim())}`);
+          if (res.ok) {
+            const data = await res.json();
+            const threadList = data.threads || [];
+            const totalUnread = threadList.reduce((acc: number, t: any) => acc + (t.unreadCount || 0), 0);
+            set({ unreadChatCount: totalUnread });
+            return totalUnread;
+          }
+        } catch {
+          // non-fatal
+        }
+        return 0;
+      },
       isTeacherChatThreadOpen: false,
       setTeacherChatThreadOpen: (open) => set({ isTeacherChatThreadOpen: open }),
       setActiveChildId: (id) => set({ activeChildId: id }),
@@ -430,6 +463,9 @@ export const useAppStore = create<AppState>()(
             get().initializeLocalStore(incomingStudentId).catch(console.error);
             if (data.user?.role === 'parent') {
               get().fetchMyChildren().catch(console.warn);
+            }
+            if (data.user?.role === 'teacher') {
+              get().fetchTeacherUnreadChatCount().catch(console.warn);
             }
             return { success: true, message: `Successfully logged in as ${data.user.name}` };
           } else {

@@ -19,7 +19,7 @@ export const APP_BUILD_NUMBER = '9';
 export const APP_VERSION_CODE = 22;
 export const APP_NAME = 'GURO';
 export const APP_FULL_NAME = 'GURO: GUIDED UNIFIED RESOURCE OPTIMIZATION';
-export const APP_TAGLINE = 'Offline-first · SQLite powered';
+export const APP_TAGLINE = 'Offline-capable · SQLite powered';
 export const APP_VERSION_TAG = `v${APP_VERSION}`;
 export const APP_FULL_VERSION = `${APP_NAME} • ${APP_VERSION_TAG}`;
 

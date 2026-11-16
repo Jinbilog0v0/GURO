@@ -44,6 +44,17 @@ class ChatController extends Controller
             $student = $students->get($studentId);
             $studentName = $student ? $student->name : (string) $studentId;
 
+            $parentName = null;
+            if ($msgs && $msgs->count() > 0) {
+                $parentMsg = $msgs->firstWhere('sender_role', 'parent');
+                if ($parentMsg && $parentMsg->sender_name) {
+                    $parentName = $parentMsg->sender_name;
+                }
+            }
+            if (!$parentName && $student && !empty($student->parent_name)) {
+                $parentName = $student->parent_name;
+            }
+
             if ($msgs && $msgs->count() > 0) {
                 $latest = $msgs->first();
                 $unreadCount = $msgs->where('sender_role', 'parent')->whereNull('read_at')->count();
@@ -51,6 +62,7 @@ class ChatController extends Controller
                 $threads[] = [
                     'studentId' => (string) $studentId,
                     'studentName' => $studentName,
+                    'parentName' => $parentName,
                     'latestMessage' => $latest->is_unsent ? 'This message was unsent' : $latest->message_body,
                     'latestSenderRole' => $latest->sender_role,
                     'latestSenderName' => $latest->sender_name,
@@ -63,6 +75,7 @@ class ChatController extends Controller
                 $threads[] = [
                     'studentId' => (string) $studentId,
                     'studentName' => $studentName,
+                    'parentName' => $parentName,
                     'latestMessage' => null,
                     'latestSenderRole' => null,
                     'latestSenderName' => null,
@@ -120,10 +133,25 @@ class ChatController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
 
+        $student = User::where('user_id', $studentId)
+            ->orWhere('user_id', strtoupper($studentId))
+            ->first();
+        $studentName = $student ? $student->name : $studentId;
+
+        $parentName = null;
+        $parentMsg = $messages->firstWhere('sender_role', 'parent');
+        if ($parentMsg && $parentMsg->sender_name) {
+            $parentName = $parentMsg->sender_name;
+        } elseif ($student && !empty($student->parent_name)) {
+            $parentName = $student->parent_name;
+        }
+
         return response()->json([
             'success' => true,
             'classroomId' => $classroomId,
             'studentId' => $studentId,
+            'studentName' => $studentName,
+            'parentName' => $parentName,
             'teacherName' => $classroom->teacher_name,
             'consultationHours' => $classroom->consultation_hours,
             'messages' => $messages,

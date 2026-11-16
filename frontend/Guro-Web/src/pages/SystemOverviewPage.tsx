@@ -360,7 +360,7 @@ export const SystemOverviewPage: React.FC<SystemOverviewPageProps> = ({
 
             {/* Main Title */}
             <h1 className="text-[clamp(1.75rem,5.6vw,2.75rem)] sm:text-5xl lg:text-6xl font-black text-[var(--text-main)] tracking-tight w-full max-w-sm sm:max-w-4xl leading-[1.14] sm:leading-[1.12]">
-              Adaptive, Offline-First Learning for{' '}
+              Adaptive, Offline-Capable Learning for{' '}
               <span className="bg-gradient-to-r from-[#11428E] via-[#2563EB] to-[#A01322] bg-clip-text text-transparent">
                 Philippine Classrooms
               </span>

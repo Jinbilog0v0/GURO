@@ -816,7 +816,7 @@ export function TeacherChatScreen({ navigation }: any = {}) {
                     <View style={{ flex: 1, justifyContent: 'center' }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Text numberOfLines={1} style={{ fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.textMain, flex: 1, marginRight: 6 }}>
-                          {thread.studentName}
+                          {thread.studentName} <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.textMuted }}>(Student)</Text>
                         </Text>
                         {thread.latestTimestamp && (
                           <Text style={{ fontFamily: Fonts.body, fontSize: 10.5, color: Colors.textMuted }}>
@@ -955,7 +955,7 @@ export function TeacherChatScreen({ navigation }: any = {}) {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.xs, gap: Spacing.sm }}>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text numberOfLines={1} style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700' }}>
-                  {activeThread?.studentName || 'Student Consultation'}
+                  {activeThread?.studentName || 'Student'} <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 12, color: Colors.textMuted }}>(Student)</Text>
                 </Text>
                 <Text numberOfLines={1} style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>
                   {activeThread?.parentName ? `Parent: ${activeThread.parentName}` : 'Parent Consultation'}
@@ -1140,7 +1140,7 @@ export function TeacherChatScreen({ navigation }: any = {}) {
                           color: isTeacher ? 'rgba(255,255,255,0.9)' : Colors.accentPrimary,
                         }}
                       >
-                        {isTeacher ? 'You (Teacher)' : (msg.sender_name || 'Parent')}
+                        {isTeacher ? 'You (Teacher)' : `${msg.sender_name || activeThread?.parentName || 'Parent'} (Parent)`}
                       </Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <Text

@@ -123,7 +123,14 @@ export function TeacherTabNavigator() {
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
-    return () => sub.remove();
+    useAppStore.getState().fetchTeacherUnreadChatCount();
+    const pollTimer = setInterval(() => {
+      useAppStore.getState().fetchTeacherUnreadChatCount();
+    }, 12000);
+    return () => {
+      sub.remove();
+      clearInterval(pollTimer);
+    };
   }, []);
 
   return (
