@@ -54,9 +54,10 @@ export function TeacherIngestionScreen({ route }: any) {
   const [loading, setLoading] = useState(false);
   const [commiting, setCommiting] = useState(false);
 
-  // PDF states
-  const [pdfName, setPdfName] = useState('');
-  const [pdfBase64, setPdfBase64] = useState('');
+  // Document states (PDF / PPTX)
+  const [docName, setDocName] = useState('');
+  const [docBase64, setDocBase64] = useState('');
+  const [docType, setDocType] = useState<'pdf' | 'pptx' | ''>('');
 
   // Prefill hook
   useEffect(() => {
@@ -80,7 +81,11 @@ export function TeacherIngestionScreen({ route }: any) {
   const handlePickDocument = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/pdf',
+        type: [
+          'application/pdf',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          'application/vnd.ms-powerpoint',
+        ],
         copyToCacheDirectory: true,
       });
 
@@ -89,22 +94,26 @@ export function TeacherIngestionScreen({ route }: any) {
         const base64Str = await FileSystem.readAsStringAsync(asset.uri, {
           encoding: FileSystem.EncodingType.Base64,
         });
-        setPdfName(asset.name);
-        setPdfBase64(base64Str);
-        toast.success(`Selected PDF: ${asset.name}`);
+        const isPptx = asset.name.toLowerCase().endsWith('.pptx');
+        const detectedType: 'pdf' | 'pptx' = isPptx ? 'pptx' : 'pdf';
+        setDocName(asset.name);
+        setDocBase64(base64Str);
+        setDocType(detectedType);
+        toast.success(`Selected ${isPptx ? 'PowerPoint (.pptx)' : 'PDF'}: ${asset.name}`);
         if (!topic.trim()) {
-          const cleanName = asset.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
+          const cleanName = asset.name.replace(/\.(pdf|pptx)$/i, '').replace(/[-_]/g, ' ');
           setTopic(cleanName);
         }
       }
     } catch (err) {
-      toast.error('Failed to pick or read the PDF file.');
+      toast.error('Failed to pick or read document file.');
     }
   };
 
-  const handleClearPdf = () => {
-    setPdfName('');
-    setPdfBase64('');
+  const handleClearDocument = () => {
+    setDocName('');
+    setDocBase64('');
+    setDocType('');
   };
 
   // Staged AI results
@@ -139,8 +148,10 @@ export function TeacherIngestionScreen({ route }: any) {
           subject,
           grade,
           topic: topic.trim(),
-          lessonText: pdfBase64 ? undefined : (lessonText.trim() || undefined),
-          pdf: pdfBase64 || undefined,
+          lessonText: docBase64 ? undefined : (lessonText.trim() || undefined),
+          pdf: docType === 'pdf' ? docBase64 : undefined,
+          pptx: docType === 'pptx' ? docBase64 : undefined,
+          fileName: docName || undefined,
           questionCount,
         })
       });
@@ -351,20 +362,34 @@ export function TeacherIngestionScreen({ route }: any) {
             >
               <FileText size={18} color={Colors.accentPrimary} />
               <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.accentPrimary }}>
-                {pdfName ? 'Change PDF Reference' : 'Upload PDF Lesson Plan'}
+                {docName ? 'Change Document (PDF / PPTX)' : 'Upload PDF or PowerPoint (.pptx)'}
               </Text>
             </TouchableOpacity>
           </View>
 
-          {pdfName !== '' && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(17,66,142,0.06)', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.sm, marginBottom: Spacing.md, borderWidth: 1, borderColor: 'rgba(17,66,142,0.1)' }}>
+          {docName !== '' && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: docType === 'pptx' ? 'rgba(234,88,12,0.08)' : 'rgba(17,66,142,0.06)', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.sm, marginBottom: Spacing.md, borderWidth: 1, borderColor: docType === 'pptx' ? 'rgba(234,88,12,0.2)' : 'rgba(17,66,142,0.1)' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                <FileText size={16} color={Colors.accentPrimary} />
+                <View style={{
+                  backgroundColor: docType === 'pptx' ? 'rgba(234,88,12,0.2)' : 'rgba(17,66,142,0.15)',
+                  paddingHorizontal: 6,
+                  paddingVertical: 2,
+                  borderRadius: 4,
+                }}>
+                  <Text style={{
+                    fontFamily: Fonts.bodyBold,
+                    fontSize: 9,
+                    color: docType === 'pptx' ? '#C2410C' : Colors.accentPrimary,
+                    textTransform: 'uppercase',
+                  }}>
+                    {docType || 'DOC'}
+                  </Text>
+                </View>
                 <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMain, flex: 1 }} numberOfLines={1}>
-                  {pdfName}
+                  {docName}
                 </Text>
               </View>
-              <TouchableOpacity onPress={handleClearPdf} style={{ padding: 4 }}>
+              <TouchableOpacity onPress={handleClearDocument} style={{ padding: 4 }}>
                 <Trash2 size={16} color={Colors.danger} />
               </TouchableOpacity>
             </View>
@@ -445,7 +470,7 @@ export function TeacherIngestionScreen({ route }: any) {
             })}
           </View>
 
-          {!pdfBase64 && (
+          {!docBase64 && (
             <ThemedTextInput
               label="Raw Lesson Plan / Reference Material (Optional)"
               placeholder="Paste textbook snippet, outline notes, or leave blank for full AI curriculum generation…"
@@ -458,11 +483,11 @@ export function TeacherIngestionScreen({ route }: any) {
             />
           )}
 
-          {pdfBase64 !== '' && (
+          {docBase64 !== '' && (
             <View style={{ backgroundColor: Colors.bgInput, padding: Spacing.md, borderRadius: Radius.sm, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
               <Info size={16} color={Colors.textMuted} style={{ marginTop: 2, flexShrink: 0 }} />
               <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, flex: 1, lineHeight: 16 }}>
-                Text Ingestion is disabled because a PDF document is selected. The generator will parse study content and items directly from the PDF context.
+                Text Ingestion is disabled because a {docType === 'pptx' ? 'PowerPoint presentation (.pptx)' : 'PDF document'} is selected. The generator will parse study content and assessment items directly from the {docType === 'pptx' ? 'presentation slides' : 'PDF context'}.
               </Text>
             </View>
           )}

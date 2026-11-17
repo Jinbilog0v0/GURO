@@ -37,7 +37,8 @@ Route::post('/chat/mark-read', [ChatController::class, 'markRead']);
 Route::post('/chat/thread/delete', [ChatController::class, 'deleteThreadMessages']);
 
 // Educational visuals generator
-Route::post('/lesson/generate-image', [ClassroomController::class, 'generateLessonImage']);
+Route::post('/lesson/generate-image', [ClassroomController::class, 'generateLessonImage']);
+Route::post('/lesson/extract-document', [ClassroomController::class, 'extractDocument']);
 
 // Protected — valid Sanctum token required for Teachers & Admins
 Route::middleware('auth:sanctum')->group(function () {
@@ -104,4 +105,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/teacher-verifications/{id}', [AdminController::class, 'deleteTeacherVerification']);
     });
 });
+
 

@@ -202,7 +202,7 @@ describe('LandingPage Portal (Web)', () => {
     const studentBtn = screen.getByRole('button', { name: /student/i });
     fireEvent.click(studentBtn);
 
-    const emailInput = screen.getByPlaceholderText('you@school.edu') as HTMLInputElement;
+    const emailInput = screen.getByPlaceholderText(/you@school\.edu/i) as HTMLInputElement;
     const passwordInput = screen.getByPlaceholderText('••••••••') as HTMLInputElement;
 
     expect(emailInput.value).toBe('student@guro.dev');

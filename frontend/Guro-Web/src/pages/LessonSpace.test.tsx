@@ -147,4 +147,10 @@ describe('LessonSpace Page', () => {
       );
     });
   });
+
+  test('renders document upload dropzone for PDF and PowerPoint (.pptx)', () => {
+    render(<LessonSpace currentUser={null} />);
+    expect(screen.getByText(/Upload Lesson Document \(PDF or PowerPoint \.pptx\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Drag & drop or click to upload PDF or PowerPoint \(\.pptx\)/i)).toBeInTheDocument();
+  });
 });

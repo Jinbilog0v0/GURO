@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Save, BookOpen, Languages, X, Lightbulb, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
+import { Plus, Trash2, Save, BookOpen, Languages, X, Lightbulb, ChevronDown, ChevronUp, HelpCircle, FileText, Presentation, Upload, Loader2 } from 'lucide-react';
 import { toast } from '../../utils/toast';
 import { EducationalImagePicker } from '../shared/EducationalImagePicker';
 
@@ -55,6 +55,9 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
   const [topic, setTopic] = useState('');
   const [lessonText, setLessonText] = useState('');
   const [lessonImage, setLessonImage] = useState('');
+  const [attachedDocName, setAttachedDocName] = useState<string | null>(null);
+  const [attachedDocType, setAttachedDocType] = useState<'pdf' | 'pptx' | null>(null);
+  const [extractingDoc, setExtractingDoc] = useState(false);
 
   const [enableRefresher, setEnableRefresher] = useState(false);
   const [activeRefresherIdx, setActiveRefresherIdx] = useState<number | null>(0);
@@ -130,6 +133,95 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
   const handleTopicChange = (val: string) => {
     setTopic(val);
     setQuestions(prev => updateAllQuestionIds(subject, grade, val, prev));
+  };
+
+  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileNameLower = file.name.toLowerCase();
+    const isPdf = file.type === 'application/pdf' || fileNameLower.endsWith('.pdf');
+    const isPptx = file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || 
+                   file.type === 'application/vnd.ms-powerpoint' ||
+                   fileNameLower.endsWith('.pptx');
+
+    if (!isPdf && !isPptx) {
+      toast.error('Please upload a valid PDF or PowerPoint (.pptx) file.');
+      return;
+    }
+
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('File size exceeds the 20MB limit.');
+      return;
+    }
+
+    setExtractingDoc(true);
+    const toastId = toast.loading(`Reading & extracting ${isPptx ? 'PowerPoint (.pptx)' : 'PDF'} content...`);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64 = typeof reader.result === 'string' ? reader.result.split(',')[1] : '';
+          const token = localStorage.getItem('guro_auth_token');
+          const res = await fetch('/api/lesson/extract-document', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({
+              fileBase64: base64,
+              fileName: file.name,
+              fileType: isPptx ? 'pptx' : 'pdf',
+            }),
+          });
+
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || 'Failed to extract content from document.');
+          }
+
+          const data = await res.json();
+          setAttachedDocName(file.name);
+          setAttachedDocType(isPptx ? 'pptx' : 'pdf');
+
+          // Auto-fill topic title if blank
+          if (!topic.trim() && data.suggestedTopic) {
+            handleTopicChange(data.suggestedTopic);
+          }
+
+          // Populate lesson summary content
+          if (data.text) {
+            if (!lessonText.trim()) {
+              setLessonText(data.text);
+            } else {
+              setLessonText(prev => `${prev}\n\n--- Extracted from ${file.name} ---\n${data.text}`);
+            }
+          }
+
+          const slidesMsg = data.slidesCount ? ` (${data.slidesCount} slides extracted)` : '';
+          toast.success(`Extracted content from ${file.name}${slidesMsg}!`, { id: toastId });
+        } catch (err: any) {
+          toast.error(err.message || 'Error processing document.', { id: toastId });
+        } finally {
+          setExtractingDoc(false);
+        }
+      };
+      reader.onerror = () => {
+        toast.error('Failed to read file.', { id: toastId });
+        setExtractingDoc(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to parse file.', { id: toastId });
+      setExtractingDoc(false);
+    }
+  };
+
+  const handleClearAttachedDoc = () => {
+    setAttachedDocName(null);
+    setAttachedDocType(null);
   };
 
   // Add a new question slot
@@ -333,7 +425,11 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
             vocabulary: [], 
             summary: [],
             refresherQuiz: validRefreshers,
-            imageUrl: lessonImage.trim() || undefined
+            imageUrl: lessonImage.trim() || undefined,
+            attachedDocument: attachedDocName ? {
+              fileName: attachedDocName,
+              fileType: attachedDocType,
+            } : undefined
           }
         : null;
       const payload = classroomId
@@ -381,6 +477,8 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
       setTopic('');
       setLessonText('');
       setLessonImage('');
+      setAttachedDocName(null);
+      setAttachedDocType(null);
       setEnableRefresher(false);
       setActiveRefresherIdx(0);
       setRefresherQuestions([
@@ -441,6 +539,68 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
               onChange={(e) => handleTopicChange(e.target.value)}
               required
             />
+          </div>
+
+          {/* Reference Document Dropzone & Extractor */}
+          <div className="form-group" style={{ marginBottom: '14px' }}>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-[var(--text-main)] flex items-center gap-1.5" style={{ margin: 0 }}>
+                <FileText size={14} className="text-[#11428E] dark:text-sky-400" />
+                <span>Reference Document (PDF / PowerPoint .pptx)</span>
+              </label>
+              <span className="text-[10px] text-[var(--text-muted)]">Optional auto-fill</span>
+            </div>
+
+            {!attachedDocName ? (
+              <div 
+                className="relative border-2 border-dashed border-[var(--border-color)] hover:border-[#11428E] dark:hover:border-sky-500 rounded-xl p-3.5 text-center cursor-pointer bg-[var(--bg-main)]/50 hover:bg-[var(--bg-main)] transition-all group"
+              >
+                <input
+                  type="file"
+                  accept=".pdf, .pptx, application/pdf, application/vnd.openxmlformats-officedocument.presentationml.presentation, application/vnd.ms-powerpoint"
+                  onChange={handleDocUpload}
+                  disabled={extractingDoc}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                />
+                <div className="flex items-center justify-center gap-2">
+                  {extractingDoc ? (
+                    <Loader2 size={16} className="animate-spin text-[#11428E] dark:text-sky-400" />
+                  ) : (
+                    <Upload size={16} className="text-[var(--text-muted)] group-hover:text-[#11428E] dark:group-hover:text-sky-400 transition-colors" />
+                  )}
+                  <span className="text-xs font-semibold text-[var(--text-main)]">
+                    {extractingDoc ? 'Extracting slide content...' : 'Upload PDF or PowerPoint (.pptx) to populate summary'}
+                  </span>
+                </div>
+                <span className="text-[10px] text-[var(--text-muted)] mt-1 block">
+                  Auto-extracts slides, chapter outline, and suggested topic
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#11428E]/10 dark:bg-sky-950/30 border border-[#11428E]/25 dark:border-sky-500/30">
+                <div className="flex items-center gap-2 min-w-0">
+                  {attachedDocType === 'pptx' ? (
+                    <Presentation size={16} className="text-amber-500 shrink-0" />
+                  ) : (
+                    <FileText size={16} className="text-[#11428E] dark:text-sky-400 shrink-0" />
+                  )}
+                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-[#11428E]/20 text-[#11428E] dark:text-sky-300">
+                    {attachedDocType?.toUpperCase()}
+                  </span>
+                  <span className="text-xs font-medium text-[var(--text-main)] truncate">
+                    {attachedDocName}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearAttachedDoc}
+                  className="p-1 text-[var(--text-muted)] hover:text-red-500 transition-colors cursor-pointer"
+                  title="Remove document"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="form-group">

@@ -55,6 +55,7 @@ describe('Teacher Lesson Ingestor & Manual Builder Picture Options (Mobile)', ()
 
     const json = JSON.stringify(tree.toJSON());
     expect(json).toContain('Manual Lesson Builder');
+    expect(json).toContain('Upload PDF or PowerPoint (.pptx)');
     expect(json).toContain('Lesson Summary Visualization');
     expect(json).toContain('Question Visualization / Diagram (Optional)');
     expect(json).toContain('AI Picture');
@@ -68,6 +69,7 @@ describe('Teacher Lesson Ingestor & Manual Builder Picture Options (Mobile)', ()
 
     const json = JSON.stringify(tree.toJSON());
     expect(json).toContain('AI Lesson Ingestor');
+    expect(json).toContain('Upload PDF or PowerPoint (.pptx)');
     expect(json).toContain('Generate 15 Assessment Items');
   });
 });

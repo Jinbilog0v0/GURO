@@ -111,4 +111,10 @@ describe('ManualLessonBuilder Component', () => {
 
     expect(toast.success).toHaveBeenCalledWith('Successfully saved "Nouns" lesson with 1 questions manually!');
   });
+
+  test('renders document upload dropzone for PDF and PowerPoint', () => {
+    render(<ManualLessonBuilder />);
+    expect(screen.getByText(/Reference Document \(PDF \/ PowerPoint \.pptx\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Upload PDF or PowerPoint \(\.pptx\) to populate summary/i)).toBeInTheDocument();
+  });
 });

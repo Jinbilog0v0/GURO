@@ -195,6 +195,10 @@ class ClassroomController extends Controller
 
             'pdf' => 'nullable|string',
 
+            'pptx' => 'nullable|string',
+
+            'fileName' => 'nullable|string',
+
             'questionCount' => 'nullable|integer|min:5|max:30',
 
         ]);
@@ -276,6 +280,17 @@ class ClassroomController extends Controller
         $lessonText = $request->input('lessonText') ?? $request->input('competency');
 
         $pdf = $request->input('pdf');
+        $pptx = $request->input('pptx');
+        $fileName = $request->input('fileName');
+
+        if ($pptx) {
+            $binary = base64_decode($pptx);
+            $slides = $this->extractTextFromPptx($binary);
+            if (!empty($slides)) {
+                $pptxText = "PowerPoint Presentation Slides (" . ($fileName ?: 'Lesson Slides') . "):\n\n" . implode("\n\n", $slides);
+                $lessonText = $lessonText ? "{$lessonText}\n\n{$pptxText}" : $pptxText;
+            }
+        }
 
         $questionCount = (int) $request->input('questionCount', 15);
 
@@ -2869,6 +2884,112 @@ class ClassroomController extends Controller
 
         return response()->json($records);
 
+    }
+
+    /**
+     * POST /api/lesson/extract-document
+     * Extracts text, slide titles, and suggested topic from an uploaded PDF or PPTX file.
+     */
+    public function extractDocument(Request $request)
+    {
+        $request->validate([
+            'file' => 'nullable|file|max:20480',
+            'fileBase64' => 'nullable|string',
+            'fileType' => 'nullable|string',
+            'fileName' => 'nullable|string',
+        ]);
+
+        $fileName = (string) $request->input('fileName', '');
+        $fileType = strtolower((string) $request->input('fileType', ''));
+
+        if ($request->hasFile('file')) {
+            $uploaded = $request->file('file');
+            $fileName = $uploaded->getClientOriginalName();
+            $ext = strtolower($uploaded->getClientOriginalExtension());
+            if ($ext === 'pptx') $fileType = 'pptx';
+            elseif ($ext === 'pdf') $fileType = 'pdf';
+            $binary = file_get_contents($uploaded->getRealPath());
+        } elseif ($request->filled('fileBase64')) {
+            $binary = base64_decode($request->input('fileBase64'));
+            if (!$fileType && $fileName) {
+                $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                if ($ext === 'pptx') $fileType = 'pptx';
+                elseif ($ext === 'pdf') $fileType = 'pdf';
+            }
+        } else {
+            return response()->json(['error' => 'No file or fileBase64 provided.'], 422);
+        }
+
+        $slides = [];
+        $text = '';
+
+        if ($fileType === 'pptx') {
+            $slides = $this->extractTextFromPptx($binary);
+            $text = implode("\n\n", $slides);
+        } elseif ($fileType === 'pdf') {
+            $text = $this->extractTextFromPdf($binary);
+        }
+
+        $cleanTopic = preg_replace('/(\.pptx|\.pdf)$/i', '', str_replace(['_', '-'], ' ', $fileName));
+
+        return response()->json([
+            'success' => true,
+            'fileName' => $fileName,
+            'fileType' => $fileType ?: 'document',
+            'slidesCount' => count($slides),
+            'slides' => $slides,
+            'text' => $text,
+            'suggestedTopic' => trim($cleanTopic),
+        ]);
+    }
+
+    /**
+     * Helper to extract slide text from a PowerPoint PPTX file.
+     */
+    public function extractTextFromPptx(string $binaryData): array
+    {
+        $tempFile = tempnam(sys_get_temp_dir(), 'pptx_');
+        file_put_contents($tempFile, $binaryData);
+        $zip = new \ZipArchive();
+        $slides = [];
+
+        if ($zip->open($tempFile) === true) {
+            $slideIndex = 1;
+            while (($slideXml = $zip->getFromName("ppt/slides/slide{$slideIndex}.xml")) !== false) {
+                preg_match_all('/<a:t[^>]*>(.*?)<\/a:t>/is', $slideXml, $matches);
+                if (!empty($matches[1])) {
+                    $cleaned = array_map(function ($t) {
+                        return trim(html_entity_decode($t, ENT_QUOTES | ENT_XML1, 'UTF-8'));
+                    }, $matches[1]);
+                    $cleaned = array_filter($cleaned);
+                    if (!empty($cleaned)) {
+                        $slideContent = implode(' ', $cleaned);
+                        $slides[] = "Slide {$slideIndex}: {$slideContent}";
+                    }
+                }
+                $slideIndex++;
+            }
+            $zip->close();
+        }
+
+        @unlink($tempFile);
+        return $slides;
+    }
+
+    /**
+     * Helper to extract raw text blocks from a PDF document.
+     */
+    public function extractTextFromPdf(string $binaryData): string
+    {
+        $text = '';
+        if (preg_match_all('/BT[\s\r\n]+(.*?)[\s\r\n]+ET/s', $binaryData, $matches)) {
+            foreach ($matches[1] as $block) {
+                if (preg_match_all('/\((.*?)\)\s*T[jJ]/s', $block, $tMatches)) {
+                    $text .= implode(' ', $tMatches[1]) . "\n";
+                }
+            }
+        }
+        return trim($text);
     }
 
 }

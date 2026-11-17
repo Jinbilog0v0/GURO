@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from '../utils/toast';
 import { apiFetch } from '../utils/api';
-import { BookOpenText, Wrench, FolderOpen, Folder, FileText, Star, BookOpen, FileCheck, Loader2, X, Zap, Briefcase, Check, Sparkles, Hourglass, Languages, Lightbulb } from 'lucide-react';
+import { BookOpenText, Wrench, FolderOpen, Folder, FileText, Presentation, Star, BookOpen, FileCheck, Loader2, X, Zap, Briefcase, Check, Sparkles, Hourglass, Languages, Lightbulb } from 'lucide-react';
 import { EducationalImagePicker } from '../components/shared/EducationalImagePicker';
 
 export interface Question {
@@ -48,8 +48,9 @@ export function LessonSpace({
   const [questionCount, setQuestionCount] = useState<number>(15);
   const [filterDifficulty, setFilterDifficulty] = useState<'All' | 'Easy' | 'Average' | 'Difficult'>('All');
   const [lessonText, setLessonText] = useState('');
-  const [pdfBase64, setPdfBase64] = useState<string | null>(null);
-  const [pdfFileName, setPdfFileName] = useState<string | null>(null);
+  const [docBase64, setDocBase64] = useState<string | null>(null);
+  const [docFileName, setDocFileName] = useState<string | null>(null);
+  const [docFileType, setDocFileType] = useState<'pdf' | 'pptx' | null>(null);
 
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [progressPercent, setProgressPercent] = useState(0);
@@ -126,13 +127,19 @@ export function LessonSpace({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'application/pdf') {
-      toast.error('Please upload a valid PDF file.');
+    const fileNameLower = file.name.toLowerCase();
+    const isPdf = file.type === 'application/pdf' || fileNameLower.endsWith('.pdf');
+    const isPptx = file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || 
+                   file.type === 'application/vnd.ms-powerpoint' ||
+                   fileNameLower.endsWith('.pptx');
+
+    if (!isPdf && !isPptx) {
+      toast.error('Please upload a valid PDF or PowerPoint (.pptx) file.');
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File size exceeds the 10MB limit.');
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('File size exceeds the 20MB limit.');
       return;
     }
 
@@ -140,19 +147,26 @@ export function LessonSpace({
     reader.onload = () => {
       if (typeof reader.result === 'string') {
         const base64 = reader.result.split(',')[1];
-        setPdfBase64(base64);
-        setPdfFileName(file.name);
+        setDocBase64(base64);
+        setDocFileName(file.name);
+        setDocFileType(isPptx ? 'pptx' : 'pdf');
+        if (!topic.trim()) {
+          const cleanTopic = file.name.replace(/\.(pdf|pptx)$/i, '').replace(/[-_]/g, ' ');
+          setTopic(cleanTopic);
+        }
+        toast.success(`Attached ${isPptx ? 'PowerPoint (.pptx)' : 'PDF'}: ${file.name}`);
       }
     };
     reader.onerror = () => {
-      toast.error('Failed to read PDF file.');
+      toast.error('Failed to read uploaded document.');
     };
     reader.readAsDataURL(file);
   };
 
   const handleClearFile = () => {
-    setPdfBase64(null);
-    setPdfFileName(null);
+    setDocBase64(null);
+    setDocFileName(null);
+    setDocFileType(null);
   };
 
   const handleGenerate = async (e: React.FormEvent) => {
@@ -173,7 +187,9 @@ export function LessonSpace({
           grade: parseInt(grade),
           topic: topic.trim(),
           lessonText: lessonText.trim() || null,
-          pdf: pdfBase64,
+          pdf: docFileType === 'pdf' ? docBase64 : null,
+          pptx: docFileType === 'pptx' ? docBase64 : null,
+          fileName: docFileName,
           questionCount,
         }),
       });
@@ -186,8 +202,8 @@ export function LessonSpace({
             errMsg = errData.error;
           }
         } catch (e) {
-          if (pdfBase64) {
-            errMsg += ' Gemini failed to parse the PDF document. Ensure the PDF is not password-protected, corrupted, or too large.';
+          if (docBase64) {
+            errMsg += ` AI generator failed to parse the uploaded ${docFileType?.toUpperCase() || 'document'}. Ensure the file is valid and readable.`;
           } else {
             errMsg += ' The server encountered an internal error processing the request.';
           }
@@ -292,8 +308,9 @@ export function LessonSpace({
       setStagedStudyContent(null);
       setTopic('');
       setLessonText('');
-      setPdfBase64(null);
-      setPdfFileName(null);
+      setDocBase64(null);
+      setDocFileName(null);
+      setDocFileType(null);
     } catch (error: any) {
       toast.error(error.message || 'Failed to write questions.', { id: saveToastId });
     } finally {
@@ -590,7 +607,7 @@ export function LessonSpace({
           </div>
 
           <div className="form-group">
-            <label>Lesson Summary Content (Optional if PDF uploaded)</label>
+            <label>Lesson Summary Content (Optional if document uploaded)</label>
             <textarea
               placeholder="Paste textbook chapter summary, learning materials, or core concepts..."
               value={lessonText}
@@ -599,8 +616,8 @@ export function LessonSpace({
           </div>
 
           <div className="form-group" style={{ marginBottom: '16px' }}>
-            <label>Upload Lesson PDF (Optional if text provided)</label>
-            {!pdfFileName ? (
+            <label>Upload Lesson Document (PDF or PowerPoint .pptx)</label>
+            {!docFileName ? (
               <div 
                 style={{
                   border: '2px dashed var(--border-color)',
@@ -615,7 +632,7 @@ export function LessonSpace({
               >
                 <input
                   type="file"
-                  accept=".pdf"
+                  accept=".pdf, .pptx, application/pdf, application/vnd.openxmlformats-officedocument.presentationml.presentation, application/vnd.ms-powerpoint"
                   onChange={handleFileChange}
                   style={{
                     position: 'absolute',
@@ -631,10 +648,10 @@ export function LessonSpace({
                   <Folder className="size-8 text-slate-400 mx-auto" />
                 </span>
                 <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                  Drag & drop or click to upload PDF
+                  Drag & drop or click to upload PDF or PowerPoint (.pptx)
                 </span>
                 <span style={{ fontSize: '11px', display: 'block', color: 'var(--text-dark)', marginTop: '4px' }}>
-                  Max size: 10MB
+                  Max size: 20MB • Slides and text extracted automatically
                 </span>
               </div>
             ) : (
@@ -644,22 +661,37 @@ export function LessonSpace({
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '12px',
-                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  backgroundColor: docFileType === 'pptx' ? 'rgba(234, 88, 12, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                  border: docFileType === 'pptx' ? '1px solid rgba(234, 88, 12, 0.3)' : '1px solid rgba(59, 130, 246, 0.3)',
                   borderRadius: '8px',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                  <FileText className="size-5 text-blue-400 shrink-0" />
+                  {docFileType === 'pptx' ? (
+                    <Presentation className="size-5 text-amber-500 shrink-0" />
+                  ) : (
+                    <FileText className="size-5 text-blue-400 shrink-0" />
+                  )}
+                  <span style={{ 
+                    fontSize: '10px', 
+                    fontWeight: 700, 
+                    padding: '2px 6px', 
+                    borderRadius: '4px',
+                    backgroundColor: docFileType === 'pptx' ? 'rgba(234, 88, 12, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                    color: docFileType === 'pptx' ? '#FDBA74' : '#93C5FD',
+                    letterSpacing: '0.5px'
+                  }}>
+                    {docFileType?.toUpperCase()}
+                  </span>
                   <span style={{ 
                     fontSize: '13px', 
-                    color: '#93C5FD', 
+                    color: docFileType === 'pptx' ? '#FED7AA' : '#93C5FD', 
                     whiteSpace: 'nowrap', 
                     textOverflow: 'ellipsis', 
                     overflow: 'hidden',
                     fontWeight: 500
                   }}>
-                    {pdfFileName}
+                    {docFileName}
                   </span>
                 </div>
                 <button 
@@ -677,8 +709,9 @@ export function LessonSpace({
                     borderRadius: '4px',
                     transition: 'color 0.2s',
                   }}
+                  title="Remove document"
                 >
-                  <X className="size-4" />
+                  <X className="size-4 hover:text-white" />
                 </button>
               </div>
             )}

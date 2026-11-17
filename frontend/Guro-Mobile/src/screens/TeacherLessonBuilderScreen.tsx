@@ -22,6 +22,8 @@ import { SyncBadge } from '../components/shared/SyncBadge';
 import { toast } from '../components';
 import { EducationalImagePicker } from '../components/ui/EducationalImagePicker';
 import { styles } from '../styles/TeacherDashboard.styles';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import {
   BookOpen,
   Plus,
@@ -31,6 +33,7 @@ import {
   Send,
   AlertTriangle,
   Calendar,
+  FileText,
 } from 'lucide-react-native';
 
 interface QuestionDraft {
@@ -65,6 +68,9 @@ export function TeacherLessonBuilderScreen() {
   const [topic, setTopic] = useState('');
   const [studyIntro, setStudyIntro] = useState('');
   const [lessonImage, setLessonImage] = useState('');
+  const [attachedDocName, setAttachedDocName] = useState('');
+  const [attachedDocType, setAttachedDocType] = useState<'pdf' | 'pptx' | ''>('');
+  const [extractingDoc, setExtractingDoc] = useState(false);
   const [questions, setQuestions] = useState<QuestionDraft[]>([emptyQuestion()]);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -136,6 +142,77 @@ export function TeacherLessonBuilderScreen() {
     toast.success('Reset questions to 1 clean slot.');
   };
 
+  const handlePickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          'application/pdf',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          'application/vnd.ms-powerpoint',
+        ],
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setExtractingDoc(true);
+        toast.info('Extracting content from document...');
+
+        const base64Str = await FileSystem.readAsStringAsync(asset.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const isPptx = asset.name.toLowerCase().endsWith('.pptx');
+        const detectedType: 'pdf' | 'pptx' = isPptx ? 'pptx' : 'pdf';
+
+        const resolvedUrl = resolveServerUrl(serverUrl);
+        const res = await fetch(`${resolvedUrl}/api/lesson/extract-document`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${useAppStore.getState().token}`,
+          },
+          body: JSON.stringify({
+            fileBase64: base64Str,
+            fileName: asset.name,
+            fileType: detectedType,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setAttachedDocName(asset.name);
+          setAttachedDocType(detectedType);
+
+          if (!topic.trim() && data.suggestedTopic) {
+            setTopic(data.suggestedTopic);
+          }
+
+          if (data.text) {
+            if (!studyIntro.trim()) {
+              setStudyIntro(data.text);
+            } else {
+              setStudyIntro((prev) => `${prev}\n\n--- Extracted from ${asset.name} ---\n${data.text}`);
+            }
+          }
+          const slidesMsg = data.slidesCount ? ` (${data.slidesCount} slides)` : '';
+          toast.success(`Extracted content from ${asset.name}${slidesMsg}!`);
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          toast.error(errData.error || 'Failed to extract content from file.');
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error reading document file.');
+    } finally {
+      setExtractingDoc(false);
+    }
+  };
+
+  const handleClearDocument = () => {
+    setAttachedDocName('');
+    setAttachedDocType('');
+  };
+
   const validateAndSubmit = async () => {
     if (!topic.trim()) {
       toast.error('Please enter a lesson topic.');
@@ -168,12 +245,16 @@ export function TeacherLessonBuilderScreen() {
       subject,
       grade,
       topic: topic.trim(),
-      studyContent: (studyIntro.trim() || lessonImage.trim())
+      studyContent: (studyIntro.trim() || lessonImage.trim() || attachedDocName)
         ? {
             introduction: studyIntro.trim(),
             imageUrl: lessonImage.trim() || undefined,
             vocabulary: [],
             summary: [],
+            attachedDocument: attachedDocName ? {
+              fileName: attachedDocName,
+              fileType: attachedDocType,
+            } : undefined,
           }
         : null,
        questions: questions.map((q, i) => {
@@ -209,6 +290,8 @@ export function TeacherLessonBuilderScreen() {
         setTopic('');
         setStudyIntro('');
         setLessonImage('');
+        setAttachedDocName('');
+        setAttachedDocType('');
         setQuestions([emptyQuestion()]);
       } else {
         const err = await res.json().catch(() => ({}));
@@ -350,6 +433,61 @@ export function TeacherLessonBuilderScreen() {
                 );
               })}
             </View>
+
+            {/* Reference Document Import (PDF / PPTX) */}
+            <View style={{ marginBottom: Spacing.md }}>
+              <TouchableOpacity
+                onPress={handlePickDocument}
+                disabled={extractingDoc}
+                activeOpacity={0.75}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  paddingVertical: Spacing.md,
+                  backgroundColor: 'rgba(17,66,142,0.04)',
+                  borderWidth: 1,
+                  borderStyle: 'dashed',
+                  borderColor: Colors.accentPrimary,
+                  borderRadius: Radius.md,
+                  opacity: extractingDoc ? 0.6 : 1,
+                }}
+              >
+                <FileText size={18} color={Colors.accentPrimary} />
+                <Text style={{ fontFamily: Fonts.bodyBold, color: Colors.accentPrimary }}>
+                  {extractingDoc ? 'Extracting Slide Content...' : attachedDocName ? 'Change Reference Document' : 'Upload PDF or PowerPoint (.pptx)'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {attachedDocName !== '' && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: attachedDocType === 'pptx' ? 'rgba(234,88,12,0.08)' : 'rgba(17,66,142,0.06)', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: Radius.sm, marginBottom: Spacing.md, borderWidth: 1, borderColor: attachedDocType === 'pptx' ? 'rgba(234,88,12,0.2)' : 'rgba(17,66,142,0.1)' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                  <View style={{
+                    backgroundColor: attachedDocType === 'pptx' ? 'rgba(234,88,12,0.2)' : 'rgba(17,66,142,0.15)',
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    borderRadius: 4,
+                  }}>
+                    <Text style={{
+                      fontFamily: Fonts.bodyBold,
+                      fontSize: 9,
+                      color: attachedDocType === 'pptx' ? '#C2410C' : Colors.accentPrimary,
+                      textTransform: 'uppercase',
+                    }}>
+                      {attachedDocType || 'DOC'}
+                    </Text>
+                  </View>
+                  <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: FontSizes.xs, color: Colors.textMain, flex: 1 }} numberOfLines={1}>
+                    {attachedDocName}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={handleClearDocument} style={{ padding: 4 }}>
+                  <Trash2 size={16} color={Colors.danger} />
+                </TouchableOpacity>
+              </View>
+            )}
 
             <ThemedTextInput
               label="Lesson Topic *"
