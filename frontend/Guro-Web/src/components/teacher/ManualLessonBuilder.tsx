@@ -407,7 +407,7 @@ export const ManualLessonBuilder: React.FC<ManualLessonBuilderProps> = ({ classr
 
   return (
     <form onSubmit={handleSubmit} className="w-full fade-in">
-      <div className="grid grid-cols-[340px_1fr] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] xl:grid-cols-[380px_1fr] gap-6 items-start">
         {/* Left Form: Lesson details */}
         <div className="glass-panel p-6 flex flex-col gap-4.5">
           <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-3 mb-1">

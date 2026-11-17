@@ -152,69 +152,69 @@ export const EducationalImagePicker: React.FC<EducationalImagePickerProps> = ({
       {/* Input depending on mode */}
       <div className="w-full min-w-0">
         {mode === 'ai' && (
-          <div className="space-y-2">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <input
-              type="text"
-              placeholder={defaultPrompt ? `Prompt (e.g. ${defaultPrompt})` : 'Describe the educational graphic...'}
-              value={customPrompt}
-              onChange={(e) => setCustomPrompt(e.target.value)}
-              className="flex-1 py-1.5 px-3 border border-[var(--border-color)] rounded-lg text-xs bg-[var(--bg-main)] text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#11428E]"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleGenerateAI();
-                }
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => handleGenerateAI()}
-              disabled={isGenerating}
-              className="px-3 py-1.5 rounded-lg bg-[#11428E] hover:bg-[#0d3470] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all disabled:opacity-50 cursor-pointer shrink-0"
-            >
-              {isGenerating ? (
-                <>
-                  <RefreshCw size={12} className="animate-spin" />
-                  <span>Generating...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles size={12} />
-                  <span>{value ? 'Regenerate' : 'Generate Visual'}</span>
-                </>
-              )}
-            </button>
-          </div>
+          <div className="flex flex-col gap-2.5 w-full min-w-0">
+            <div className="flex flex-col gap-2 w-full">
+              <input
+                type="text"
+                placeholder={defaultPrompt ? `Prompt (e.g. ${defaultPrompt})` : 'Describe the educational graphic...'}
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                className="w-full py-2 px-3 border border-[var(--border-color)] rounded-xl text-xs bg-[var(--bg-main)] text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#11428E] focus:ring-2 focus:ring-[#11428E]/20 transition-all"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleGenerateAI();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => handleGenerateAI()}
+                disabled={isGenerating}
+                className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-[#11428E] to-[#1d5ab6] hover:brightness-110 active:scale-[0.99] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {isGenerating ? (
+                  <>
+                    <RefreshCw size={13} className="animate-spin" />
+                    <span>Generating Visual with AI...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={13} />
+                    <span>{value ? 'Regenerate Visual' : 'Generate Visual'}</span>
+                  </>
+                )}
+              </button>
+            </div>
 
-          {/* Quick-Pick Verified Curriculum Diagrams */}
-          <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-            <span className="text-[10px] font-bold text-[var(--text-muted)]">Curated Diagrams:</span>
-            {[
-              { label: '3/4 Fraction Pie', icon: PieChart, prompt: 'fraction pie divided into 4 slices, 3 shaded' },
-              { label: '10x10 Decimals Grid', icon: Grid, prompt: 'decimals 10x10 grid model with shaded squares' },
-              { label: 'Number Line', icon: Ruler, prompt: 'number line with tick marks from 0 to 10' },
-              { label: 'Geometric Shapes', icon: Shapes, prompt: 'geometric shapes triangle square circle rectangle' },
-              { label: 'Figures of Speech', icon: Lightbulb, prompt: 'figures of speech simile metaphor illustration' },
-              { label: 'Place Value', icon: Calculator, prompt: 'place value blocks chart hundreds tens ones' },
-            ].map((item) => {
-              const IconComp = item.icon;
-              return (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={() => {
-                    setCustomPrompt(item.prompt);
-                    handleGenerateAI(item.prompt);
-                  }}
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[var(--bg-main)] hover:bg-[#11428E]/10 hover:text-[#11428E] border border-[var(--border-color)] text-[var(--text-muted)] transition-colors cursor-pointer flex items-center gap-1.5"
-                >
-                  <IconComp size={11} className="text-[#11428E] dark:text-blue-400" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
+            {/* Quick-Pick Verified Curriculum Diagrams */}
+            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+              <span className="text-[10px] font-bold text-[var(--text-muted)]">Curated Diagrams:</span>
+              {[
+                { label: '3/4 Fraction Pie', icon: PieChart, prompt: 'fraction pie divided into 4 slices, 3 shaded' },
+                { label: '10x10 Decimals Grid', icon: Grid, prompt: 'decimals 10x10 grid model with shaded squares' },
+                { label: 'Number Line', icon: Ruler, prompt: 'number line with tick marks from 0 to 10' },
+                { label: 'Geometric Shapes', icon: Shapes, prompt: 'geometric shapes triangle square circle rectangle' },
+                { label: 'Figures of Speech', icon: Lightbulb, prompt: 'figures of speech simile metaphor illustration' },
+                { label: 'Place Value', icon: Calculator, prompt: 'place value blocks chart hundreds tens ones' },
+              ].map((item) => {
+                const IconComp = item.icon;
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => {
+                      setCustomPrompt(item.prompt);
+                      handleGenerateAI(item.prompt);
+                    }}
+                    className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-[var(--bg-main)] hover:bg-[#11428E]/10 hover:text-[#11428E] border border-[var(--border-color)] text-[var(--text-muted)] transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <IconComp size={11} className="text-[#11428E] dark:text-blue-400" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
