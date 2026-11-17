@@ -198,7 +198,7 @@ class GeminiService
                         'properties' => [
                             'id' => ['type' => 'STRING', 'description' => 'Unique uppercase question ID, e.g., ENG-G5-ADJ-001.'],
                             'difficulty' => ['type' => 'STRING', 'enum' => ['Easy', 'Average', 'Difficult']],
-                            'category' => ['type' => 'STRING', 'enum' => $categories],
+                            'category' => ['type' => 'STRING', 'description' => 'Curriculum competency category or domain (e.g. Reading Comprehension, Vocabulary, Fractions, Number Sense, etc.).'],
                             'type' => ['type' => 'STRING', 'enum' => $types],
                             'questionText' => ['type' => 'STRING', 'description' => 'The question text. For fill-in-the-blank, include exactly one "[[blank]]" placeholder.'],
                             'imageUrl' => ['type' => 'STRING', 'description' => 'Optional. A valid Unsplash photo URL representing visual aids for the question. Only include if visual helper is beneficial.'],
@@ -245,31 +245,61 @@ class GeminiService
         Log::info("[GeminiService] Triggering Gemini generation for {$subject} Grade {$grade} - Topic: {$topic}");
 
         $baseUrl = rtrim((string) (config('services.gemini.base_url') ?: env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com')), '/');
-        $model = config('services.gemini.model') ?: env('GEMINI_MODEL', 'gemini-3-flash-preview');
+        $primaryModel = config('services.gemini.model') ?: env('GEMINI_MODEL', 'gemini-2.5-flash');
+        $candidateModels = array_unique(array_filter([
+            $primaryModel,
+            'gemini-2.5-flash',
+            'gemini-2.0-flash',
+            'gemini-1.5-flash',
+        ]));
 
-        $response = Http::withoutVerifying()->withHeaders([
-            'Content-Type' => 'application/json',
-        ])->timeout(120)->post("{$baseUrl}/v1beta/models/{$model}:generateContent?key={$apiKey}", [
-            'contents' => [
-                [
-                    'parts' => $parts,
-                ],
-            ],
-            'generationConfig' => [
-                'responseMimeType' => 'application/json',
-                'responseSchema' => $schema,
-                'temperature' => 0.2,
-                'thinkingConfig' => [
-                    'thinkingBudget' => 0,
-                ],
-            ],
-        ]);
+        $response = null;
+        $lastError = null;
 
-        if ($response->failed()) {
-            $errData = $response->json();
-            $geminiMsg = $errData['error']['message'] ?? $response->body();
-            Log::error('[GeminiService] API Request failed: '.$response->body());
-            throw new \Exception("Gemini generation failed: {$geminiMsg}");
+        foreach ($candidateModels as $candidate) {
+            try {
+                $payload = [
+                    'contents' => [
+                        [
+                            'parts' => $parts,
+                        ],
+                    ],
+                    'generationConfig' => [
+                        'responseMimeType' => 'application/json',
+                        'responseSchema' => $schema,
+                        'temperature' => 0.2,
+                    ],
+                ];
+
+                if (str_contains($candidate, 'gemini-2.5') || str_contains($candidate, 'gemini-3')) {
+                    $payload['generationConfig']['thinkingConfig'] = [
+                        'thinkingBudget' => 0,
+                    ];
+                }
+
+                $res = Http::withoutVerifying()->withHeaders([
+                    'Content-Type' => 'application/json',
+                ])->timeout(120)->post("{$baseUrl}/v1beta/models/{$candidate}:generateContent?key={$apiKey}", $payload);
+
+                if ($res->successful()) {
+                    $response = $res;
+                    Log::info("[GeminiService] Successfully generated with model: {$candidate}");
+                    break;
+                }
+
+                $errData = $res->json();
+                $geminiMsg = $errData['error']['message'] ?? $res->body();
+                Log::warning("[GeminiService] Model {$candidate} failed (HTTP {$res->status()}): {$geminiMsg}. Trying fallback...");
+                $lastError = $geminiMsg;
+            } catch (\Exception $ex) {
+                Log::warning("[GeminiService] Request error for {$candidate}: {$ex->getMessage()}. Trying fallback...");
+                $lastError = $ex->getMessage();
+            }
+        }
+
+        if (! $response || $response->failed()) {
+            Log::error('[GeminiService] All Gemini models failed. Last error: '.$lastError);
+            throw new \Exception("Gemini generation failed: {$lastError}");
         }
 
         $data = $response->json();
@@ -306,17 +336,54 @@ class GeminiService
             }
         }
 
-        // Convert matchingPairs from array of {"key": "...", "value": "..."} to associative array and sanitize question images
+        // Convert matchingPairs and sanitize questions
         if (isset($result['questions']) && is_array($result['questions'])) {
-            foreach ($result['questions'] as &$q) {
+            $subCode = strtoupper(substr($subject, 0, 3));
+            $cleanTopic = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $topic), 0, 3)) ?: 'TOP';
+
+            foreach ($result['questions'] as $idx => &$q) {
+                if (empty($q['id'])) {
+                    $q['id'] = sprintf('%s-G%d-%s-%03d', $subCode, $grade, $cleanTopic, $idx + 1);
+                }
+
+                if (empty($q['category'])) {
+                    $q['category'] = $topic ?: $subject;
+                }
+
+                if (empty($q['difficulty']) || !in_array($q['difficulty'], ['Easy', 'Average', 'Difficult'])) {
+                    $q['difficulty'] = 'Average';
+                }
+
                 if (isset($q['matchingPairs']) && is_array($q['matchingPairs'])) {
                     $pairs = [];
-                    foreach ($q['matchingPairs'] as $item) {
-                        if (isset($item['key'], $item['value'])) {
+                    foreach ($q['matchingPairs'] as $k => $item) {
+                        if (is_array($item) && isset($item['key'], $item['value'])) {
                             $pairs[$item['key']] = $item['value'];
+                        } elseif (is_string($k) && is_string($item)) {
+                            $pairs[$k] = $item;
                         }
                     }
-                    $q['matchingPairs'] = $pairs;
+                    if (!empty($pairs)) {
+                        $q['matchingPairs'] = $pairs;
+                    }
+                }
+
+                if (empty($q['options']) || !is_array($q['options'])) {
+                    $q['options'] = ['Option A', 'Option B', 'Option C', 'Option D'];
+                }
+
+                if (($q['type'] ?? 'multiple-choice') === 'multiple-choice' || ($q['type'] ?? '') === 'fill-in-the-blank') {
+                    if (empty($q['correctAnswer']) || !in_array($q['correctAnswer'], $q['options'])) {
+                        $q['correctAnswer'] = $q['options'][0] ?? 'Option A';
+                    }
+                }
+
+                if (empty($q['feedback']) || !is_array($q['feedback'])) {
+                    $fb = is_string($q['feedback'] ?? null) ? $q['feedback'] : 'Correct answer based on the lesson concept.';
+                    $q['feedback'] = ['en' => $fb, 'fil' => $fb];
+                } else {
+                    if (empty($q['feedback']['en'])) $q['feedback']['en'] = 'Correct answer based on the lesson concept.';
+                    if (empty($q['feedback']['fil'])) $q['feedback']['fil'] = $q['feedback']['en'];
                 }
 
                 if (! empty($q['imageUrl'])) {

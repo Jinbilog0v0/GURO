@@ -206,67 +206,37 @@ class ClassroomController extends Controller
 
 
         // ── Rate limit enforcement ────────────────────────────────────────────
-
-        $user = $request->user();
-
+        $user = $request->user('sanctum') ?? $request->user();
         $role = $user->role ?? 'teacher';
 
-
-
-        $config = RateLimitConfig::where('role', $role)->where('is_enabled', true)->first();
-
-
-
-        if ($config) {
-
-            $since = now()->subMinutes($config->window_minutes);
-
-            $usageCount = AiGenerationLog::where('user_id', $user->id)
-
-                ->where('generated_at', '>=', $since)
-
-                ->count();
-
-
-
-            if ($usageCount >= $config->max_requests) {
-
-                $resetAt = AiGenerationLog::where('user_id', $user->id)
-
+        if ($user) {
+            $config = RateLimitConfig::where('role', $role)->where('is_enabled', true)->first();
+            if ($config) {
+                $since = now()->subMinutes($config->window_minutes);
+                $usageCount = AiGenerationLog::where('user_id', $user->id)
                     ->where('generated_at', '>=', $since)
+                    ->count();
 
-                    ->oldest('generated_at')
+                if ($usageCount >= $config->max_requests) {
+                    $resetAt = AiGenerationLog::where('user_id', $user->id)
+                        ->where('generated_at', '>=', $since)
+                        ->oldest('generated_at')
+                        ->value('generated_at');
 
-                    ->value('generated_at');
+                    $resetIn = $resetAt
+                        ? (int) ceil(now()->diffInMinutes($resetAt->addMinutes($config->window_minutes), false))
+                        : $config->window_minutes;
 
-
-
-                $resetIn = $resetAt
-
-                    ? (int) ceil(now()->diffInMinutes($resetAt->addMinutes($config->window_minutes), false))
-
-                    : $config->window_minutes;
-
-
-
-                return response()->json([
-
-                    'error' => "AI generation rate limit reached. You have used {$usageCount}/{$config->max_requests} requests in the last {$config->window_minutes} minutes.",
-
-                    'limit' => $config->max_requests,
-
-                    'window_minutes' => $config->window_minutes,
-
-                    'used' => $usageCount,
-
-                    'reset_in_minutes' => max(1, $resetIn),
-
-                ], 429);
-
+                    return response()->json([
+                        'error' => "AI generation rate limit reached. You have used {$usageCount}/{$config->max_requests} requests in the last {$config->window_minutes} minutes.",
+                        'limit' => $config->max_requests,
+                        'window_minutes' => $config->window_minutes,
+                        'used' => $usageCount,
+                        'reset_in_minutes' => max(1, $resetIn),
+                    ], 429);
+                }
             }
-
         }
-
         // ─────────────────────────────────────────────────────────────────────
 
 
@@ -311,16 +281,12 @@ class ClassroomController extends Controller
 
 
             // Log successful generation for rate tracking
-
-            AiGenerationLog::create([
-
-                'user_id' => $user->id,
-
-                'role' => $role,
-
-            ]);
-
-
+            if ($user) {
+                AiGenerationLog::create([
+                    'user_id' => $user->id,
+                    'role' => $role,
+                ]);
+            }
 
             return response()->json($result);
 

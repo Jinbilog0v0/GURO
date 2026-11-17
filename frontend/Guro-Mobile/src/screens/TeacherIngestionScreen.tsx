@@ -138,11 +138,12 @@ export function TeacherIngestionScreen({ route }: any) {
     
     try {
       const resolvedUrl = resolveServerUrl(serverUrl);
+      const token = useAppStore.getState().token;
       const res = await fetch(`${resolvedUrl}/api/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${useAppStore.getState().token}`,
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           subject,
@@ -163,7 +164,7 @@ export function TeacherIngestionScreen({ route }: any) {
         toast.success('Successfully parsed lesson and generated questions!');
       } else {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `Server error: ${res.status}`);
+        throw new Error(errData.error || errData.message || `Server error: ${res.status}`);
       }
     } catch (e: any) {
       toast.error(e.message || 'Unable to connect to the generator API.');

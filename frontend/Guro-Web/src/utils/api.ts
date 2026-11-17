@@ -15,7 +15,7 @@ export const apiFetch = async (path: string, init?: RequestInit): Promise<Respon
       ...(init?.headers ?? {}),
     },
   });
-  if (res.status === 401) {
+  if (res.status === 401 && token) {
     clearAuthToken();
     localStorage.removeItem('guro_user_session');
     window.dispatchEvent(new Event('guro_unauthorized'));
