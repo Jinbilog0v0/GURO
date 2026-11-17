@@ -43,7 +43,7 @@ class ZamboangaGrade6AcostaSeeder extends Seeder
         $studentHash = $this->hashPassword($studentPassword);
         $parentHash = $this->hashPassword($parentPassword);
 
-        // 1. Seed or retrieve Teacher Meyer Marlene Acosta
+        // 1. Seed or retrieve Teacher Meyer Marlene Acosta (both emails for convenience)
         $teacher = User::updateOrCreate(
             ['email' => 'marlene.acosta@guro.app'],
             [
@@ -60,8 +60,25 @@ class ZamboangaGrade6AcostaSeeder extends Seeder
             ]
         );
 
-        // Also ensure fallback teacher@guro.dev is available and approved
+        User::updateOrCreate(
+            ['email' => 'teacher@zamboanga.deped.gov.ph'],
+            [
+                'user_id' => 'USR-TCHR-ZAMBOANGA',
+                'password_hash' => $teacherHash,
+                'name' => 'Meyer Marlene Acosta (Teacher)',
+                'first_name' => 'Meyer Marlene',
+                'last_name' => 'Acosta',
+                'role' => 'teacher',
+                'verification_status' => 'approved',
+                'school_name' => 'Zamboanga Central School',
+                'school_id_number' => '199006',
+                'verified_at' => now(),
+            ]
+        );
+
+        // Also ensure fallback teacher@guro.dev is available, approved, and accepts Teacher2026!
         User::where('email', 'teacher@guro.dev')->update([
+            'password_hash' => $teacherHash,
             'verification_status' => 'approved',
             'school_name' => 'Zamboanga Central School',
             'school_id_number' => '199006',
