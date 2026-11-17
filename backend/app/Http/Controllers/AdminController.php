@@ -286,6 +286,200 @@ class AdminController extends Controller
         ]);
     }
 
+    // POST /api/admin/users/create
+    public function createUser(Request $request)
+    {
+        $this->authorizeAdmin($request);
+
+        $request->validate([
+            'role' => 'required|in:student,teacher,parent,admin,developer',
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|string|max:255',
+            'password' => 'required|string|min:6',
+            'first_name' => 'nullable|string|max:100',
+            'last_name' => 'nullable|string|max:100',
+            'middle_name' => 'nullable|string|max:100',
+            // Student specific
+            'lrn' => 'nullable|string|max:20',
+            'gender' => 'nullable|string|in:Male,Female',
+            'classroom_id' => 'nullable|string|max:50',
+            // Teacher specific
+            'school_name' => 'nullable|string|max:255',
+            'school_id_number' => 'nullable|string|max:50',
+            'section_name' => 'nullable|string|max:100',
+            // Parent specific
+            'linked_student_id' => 'nullable|string|max:50',
+        ]);
+
+        $role = strtolower($request->input('role'));
+        $name = trim($request->input('name'));
+        $firstName = trim($request->input('first_name') ?: '');
+        $lastName = trim($request->input('last_name') ?: '');
+        $middleName = trim($request->input('middle_name') ?: '');
+        $password = $request->input('password');
+        $email = strtolower(trim($request->input('email') ?: ''));
+
+        // Handle LRN & Auto-Email generation for Students
+        $lrn = $request->input('lrn') ? preg_replace('/\D/', '', $request->input('lrn')) : null;
+        if ($role === 'student') {
+            if ($lrn && strlen($lrn) === 12) {
+                if (User::where('lrn', $lrn)->exists()) {
+                    return response()->json(['error' => "A student with LRN {$lrn} already exists."], 422);
+                }
+                if (empty($email)) {
+                    $email = "lrn{$lrn}@student.guro.local";
+                }
+                $userId = 'LRN-' . $lrn;
+            } else {
+                $userId = 'STU-' . strtoupper(\Illuminate\Support\Str::random(8));
+                if (empty($email)) {
+                    $email = strtolower(\Illuminate\Support\Str::slug($name) . '.' . \Illuminate\Support\Str::random(4) . '@student.guro.local');
+                }
+            }
+        } elseif ($role === 'teacher') {
+            $userId = 'TCHR-' . strtoupper(\Illuminate\Support\Str::random(8));
+            if (empty($email)) {
+                return response()->json(['error' => 'Email address is required for teachers.'], 422);
+            }
+        } elseif ($role === 'parent') {
+            $userId = 'PRNT-' . strtoupper(\Illuminate\Support\Str::random(8));
+            if (empty($email)) {
+                return response()->json(['error' => 'Email or phone identifier is required for parents.'], 422);
+            }
+        } else {
+            $userId = 'USR-' . strtoupper(\Illuminate\Support\Str::random(8));
+            if (empty($email)) {
+                return response()->json(['error' => 'Email address is required.'], 422);
+            }
+        }
+
+        if (User::where('email', $email)->exists()) {
+            return response()->json(['error' => "An account with email {$email} already exists."], 422);
+        }
+
+        // Generate unique parent access code if student
+        $parentAccessCode = null;
+        if ($role === 'student') {
+            $normalized = strtoupper(preg_replace('/\s+/', '-', trim($userId)));
+            $salt = 'GURO_PARENT_SALT';
+            $hash = crc32($normalized . $salt);
+            $parentAccessCode = (string) (100000 + (abs($hash) % 900000));
+            while (User::where('parent_access_token', $parentAccessCode)->exists()) {
+                $parentAccessCode = (string) random_int(100000, 999999);
+            }
+        }
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $user = User::create([
+                'user_id' => $userId,
+                'email' => $email,
+                'password_hash' => $this->hashPassword($password),
+                'name' => $name,
+                'first_name' => $firstName ?: null,
+                'last_name' => $lastName ?: null,
+                'middle_name' => $middleName ?: null,
+                'role' => $role,
+                'lrn' => $lrn,
+                'gender' => $request->input('gender') ?: 'Male',
+                'classroom_id' => $request->input('classroom_id') ?: null,
+                'parent_access_token' => $parentAccessCode,
+                'verification_status' => 'approved',
+                'verified_at' => now(),
+                'school_name' => $request->input('school_name') ?: null,
+                'school_id_number' => $request->input('school_id_number') ?: null,
+            ]);
+
+            // Link to Classroom if Student
+            if ($role === 'student' && $request->filled('classroom_id')) {
+                $targetClassroomId = $request->input('classroom_id');
+                $targetClassroom = Classroom::where('classroom_id', $targetClassroomId)->orWhere('id', $targetClassroomId)->first();
+                if ($targetClassroom) {
+                    ClassroomMember::firstOrCreate([
+                        'classroom_id' => $targetClassroom->classroom_id,
+                        'student_id' => $user->user_id,
+                    ], [
+                        'lrn' => $lrn,
+                        'gender' => $user->gender,
+                        'section_name' => $targetClassroom->section_name,
+                        'status' => 'enrolled',
+                    ]);
+                    $user->classroom_id = $targetClassroom->classroom_id;
+                    $user->save();
+                }
+            }
+
+            // Link to Student if Parent
+            if ($role === 'parent' && $request->filled('linked_student_id')) {
+                $studentIdentifier = trim($request->input('linked_student_id'));
+                $targetStudent = User::where('user_id', $studentIdentifier)
+                    ->orWhere('lrn', $studentIdentifier)
+                    ->orWhere('id', $studentIdentifier)
+                    ->first();
+                if ($targetStudent) {
+                    $targetStudent->parent_user_id = $user->id;
+                    $targetStudent->save();
+                }
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully created {$role} account for {$name}.",
+                'user' => [
+                    'id' => $user->id,
+                    'userId' => $user->user_id,
+                    'lrn' => $user->lrn,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'classroomId' => $user->classroom_id,
+                    'parentAccessToken' => $user->parent_access_token,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json(['error' => 'Failed to create user: ' . $e->getMessage()], 500);
+        }
+    }
+
+    // POST /api/admin/users/link-parent-student
+    public function linkParentStudent(Request $request)
+    {
+        $this->authorizeAdmin($request);
+
+        $request->validate([
+            'parent_id' => 'required',
+            'student_id' => 'required',
+        ]);
+
+        $parent = User::where('id', $request->input('parent_id'))
+            ->orWhere('user_id', $request->input('parent_id'))
+            ->first();
+
+        if (! $parent || $parent->role !== 'parent') {
+            return response()->json(['error' => 'Valid parent user not found.'], 404);
+        }
+
+        $student = User::where('id', $request->input('student_id'))
+            ->orWhere('user_id', $request->input('student_id'))
+            ->orWhere('lrn', $request->input('student_id'))
+            ->first();
+
+        if (! $student || $student->role !== 'student') {
+            return response()->json(['error' => 'Valid student user not found.'], 404);
+        }
+
+        $student->parent_user_id = $parent->id;
+        $student->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Linked parent {$parent->name} to student {$student->name}.",
+        ]);
+    }
+
     // GET /api/admin/classrooms
     public function getClassrooms(Request $request)
     {

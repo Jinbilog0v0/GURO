@@ -205,18 +205,30 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|string',
             'password' => 'required|string',
             'role' => 'nullable|string',
         ]);
 
-        $email = strtolower(trim($request->input('email')));
+        $loginInput = trim($request->input('email'));
         $password = $request->input('password');
 
-        $user = User::where('email', $email)->first();
+        // Support login by 12-digit DepEd LRN, student user ID, or standard email
+        if (preg_match('/^\d{12}$/', $loginInput)) {
+            $user = User::where('lrn', $loginInput)
+                ->orWhere('user_id', 'LRN-' . $loginInput)
+                ->orWhere('email', strtolower("lrn{$loginInput}@student.guro.local"))
+                ->first();
+        } else {
+            $normalizedEmail = strtolower($loginInput);
+            $user = User::where('email', $normalizedEmail)
+                ->orWhere('user_id', $loginInput)
+                ->orWhere('lrn', $loginInput)
+                ->first();
+        }
 
         if (! $user || ! $this->verifyPassword($password, $user->password_hash)) {
-            return response()->json(['error' => 'Invalid email or password.'], 401);
+            return response()->json(['error' => 'Invalid email/LRN or password.'], 401);
         }
 
         // Strict role validation if specified by caller

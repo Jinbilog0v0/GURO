@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             StudentUserSeeder::class,
             ParentUserSeeder::class,
             DemoClassroomSeeder::class,
+            ZamboangaGrade6AcostaSeeder::class,
         ]);
     }
 }

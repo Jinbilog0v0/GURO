@@ -170,7 +170,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     // Inline field validation errors
     const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string; firstName?: string; lastName?: string }>({});
 
-    const validateEmail = (val: string) => !val.includes('@') || val.length < 5 ? 'Enter a valid email address.' : '';
+    const validateEmail = (val: string) => {
+        const trimmed = val.trim();
+        if (/^\d{12}$/.test(trimmed)) return ''; // Valid 12-digit DepEd LRN
+        return !trimmed.includes('@') || trimmed.length < 5 ? 'Enter a valid email address or 12-digit LRN.' : '';
+    };
     const validatePassword = (val: string) => {
         if (val.length < 8) return 'Password must be at least 8 characters.';
         if (!/[a-zA-Z]/.test(val)) return 'Password must include at least one letter.';
@@ -937,13 +941,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <label className={labelCls} htmlFor="login-email">Email address</label>
+                                <label className={labelCls} htmlFor="login-email">Email address or 12-digit LRN</label>
                                 <div className="relative">
                                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-[var(--text-dark)]" aria-hidden="true" />
                                     <input
                                         id="login-email"
-                                        type="email"
-                                        placeholder={isAdminMode ? "admin@guro.dev" : "you@school.edu"}
+                                        type="text"
+                                        placeholder={isAdminMode ? "admin@guro.dev" : "you@school.edu or 12-digit LRN"}
                                         className={fieldErrors.email ? inputErrCls : inputCls}
                                         value={email}
                                         onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: '' })); }}

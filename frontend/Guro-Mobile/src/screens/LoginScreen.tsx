@@ -357,13 +357,14 @@ export function LoginScreen({ navigation }: Props) {
     setPasswordError('');
     
     const trimmedEmail = email.trim();
+    const isLrn = /^\d{12}$/.test(trimmedEmail);
     if (!trimmedEmail) {
-      setEmailError('Email is required');
-      toast.error('Please enter your email address.');
+      setEmailError('Email or 12-digit LRN is required');
+      toast.error('Please enter your email or 12-digit DepEd LRN.');
       valid = false;
-    } else if (!/\S+@\S+\.\S+/.test(trimmedEmail)) {
-      setEmailError('Invalid email format');
-      toast.error('Please enter a valid email address.');
+    } else if (!isLrn && !/\S+@\S+\.\S+/.test(trimmedEmail)) {
+      setEmailError('Invalid email format or 12-digit LRN');
+      toast.error('Please enter a valid email address or 12-digit DepEd LRN.');
       valid = false;
     }
 
@@ -617,7 +618,7 @@ export function LoginScreen({ navigation }: Props) {
 
             <View style={styles.formGroup}>
               <ThemedTextInput
-                label="Email"
+                label="Email or 12-digit LRN"
                 placeholder="your@email.com"
                 value={email}
                 onChangeText={(t) => { setEmail(t); setEmailError(''); }}

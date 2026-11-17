@@ -85,7 +85,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('admin')->group(function () {
         Route::get('/overview', [AdminController::class, 'overview']);
         Route::post('/cache-purge', [AdminController::class, 'purgeCache']);
-        Route::get('/users', [AdminController::class, 'getUsers']);
+        Route::get('/users', [AdminController::class, 'getUsers']);
+        Route::post('/users/create', [AdminController::class, 'createUser']);
+        Route::post('/users/link-parent-student', [AdminController::class, 'linkParentStudent']);
         Route::post('/users/{id}/update-role', [AdminController::class, 'updateUserRole']);
         Route::post('/users/{id}/reset-password', [AdminController::class, 'resetUserPassword']);
         Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../../utils/api';
-import { Users, Search, KeyRound, Trash2, Edit3, RefreshCw, X, Building2, Clock, XCircle, CheckCircle2, Shield } from 'lucide-react';
+import { Users, Search, KeyRound, Trash2, Edit3, RefreshCw, X, Building2, Clock, XCircle, CheckCircle2, Shield, UserPlus, GraduationCap, School } from 'lucide-react';
 import { toast } from '../../utils/toast';
 import { ConfirmModal } from '../shared/ConfirmModal';
 
@@ -49,6 +49,122 @@ export function AdminUserDirectory() {
   // Delete User Confirmation Modal
   const [deletingUser, setDeletingUser] = useState<UserRecord | null>(null);
   const [submittingDelete, setSubmittingDelete] = useState(false);
+
+  // Create User Modal & Association State
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createRole, setCreateRole] = useState<'teacher' | 'student' | 'parent'>('student');
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    firstName: '',
+    lastName: '',
+    middleName: '',
+    email: '',
+    password: 'Guro2026!',
+    lrn: '',
+    gender: 'Male',
+    classroomId: '',
+    schoolName: 'Zamboanga Central School',
+    schoolIdNumber: '199006',
+    linkedStudentId: '',
+  });
+  const [submittingCreate, setSubmittingCreate] = useState(false);
+  const [availableClassrooms, setAvailableClassrooms] = useState<any[]>([]);
+
+  const fetchClassrooms = async () => {
+    try {
+      const res = await apiFetch('/api/admin/classrooms');
+      if (res.ok) {
+        const data = await res.json();
+        const list = data.classrooms || [];
+        setAvailableClassrooms(list);
+        if (list.length > 0 && !createForm.classroomId) {
+          setCreateForm(prev => ({ ...prev, classroomId: list[0].classroomId }));
+        }
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingCreate(true);
+    try {
+      const payload: any = {
+        role: createRole,
+        password: createForm.password || 'Guro2026!',
+      };
+
+      if (createRole === 'student') {
+        const fullName = createForm.name.trim() || `${createForm.firstName.trim()} ${createForm.lastName.trim()}`.trim();
+        if (!fullName) {
+          toast.error('Student name is required.');
+          setSubmittingCreate(false);
+          return;
+        }
+        payload.name = fullName;
+        payload.first_name = createForm.firstName.trim();
+        payload.last_name = createForm.lastName.trim();
+        payload.middle_name = createForm.middleName.trim();
+        payload.lrn = createForm.lrn.trim();
+        payload.gender = createForm.gender;
+        payload.classroom_id = createForm.classroomId;
+        payload.email = createForm.email.trim();
+      } else if (createRole === 'teacher') {
+        if (!createForm.name.trim() || !createForm.email.trim()) {
+          toast.error('Teacher name and email are required.');
+          setSubmittingCreate(false);
+          return;
+        }
+        payload.name = createForm.name.trim();
+        payload.email = createForm.email.trim();
+        payload.school_name = createForm.schoolName.trim();
+        payload.school_id_number = createForm.schoolIdNumber.trim();
+      } else if (createRole === 'parent') {
+        if (!createForm.name.trim() || !createForm.email.trim()) {
+          toast.error('Parent name and email/contact are required.');
+          setSubmittingCreate(false);
+          return;
+        }
+        payload.name = createForm.name.trim();
+        payload.email = createForm.email.trim();
+        payload.linked_student_id = createForm.linkedStudentId.trim();
+      }
+
+      const res = await apiFetch('/api/admin/users/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || 'User account successfully created!');
+        setShowCreateModal(false);
+        setCreateForm({
+          name: '',
+          firstName: '',
+          lastName: '',
+          middleName: '',
+          email: '',
+          password: 'Guro2026!',
+          lrn: '',
+          gender: 'Male',
+          classroomId: availableClassrooms[0]?.classroomId || '',
+          schoolName: 'Zamboanga Central School',
+          schoolIdNumber: '199006',
+          linkedStudentId: '',
+        });
+        fetchUsers();
+      } else {
+        toast.error(data.error || 'Failed to create user account.');
+      }
+    } catch {
+      toast.error('Network error creating user.');
+    } finally {
+      setSubmittingCreate(false);
+    }
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -200,6 +316,17 @@ export function AdminUserDirectory() {
             title="Refresh"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowCreateModal(true);
+              fetchClassrooms();
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm transition-all whitespace-nowrap ml-1"
+          >
+            <UserPlus size={14} />
+            <span>Create User</span>
           </button>
         </form>
       </div>
@@ -424,6 +551,274 @@ export function AdminUserDirectory() {
                 {submittingReset ? 'Resetting…' : 'Apply Password'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Create User Modal ── */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl p-6 max-w-lg w-full shadow-2xl flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-[var(--border-color)]">
+              <div className="flex items-center gap-2 text-emerald-600">
+                <UserPlus size={20} />
+                <h4 className="font-extrabold text-lg text-[var(--text-main)] m-0">Create New Account</h4>
+              </div>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="p-1 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-main)] cursor-pointer transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Role Switcher Tabs */}
+            <div className="grid grid-cols-3 gap-2 bg-[var(--bg-main)] p-1.5 rounded-2xl border border-[var(--border-color)]">
+              <button
+                type="button"
+                onClick={() => setCreateRole('student')}
+                className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  createRole === 'student'
+                    ? 'bg-amber-500 text-white shadow-sm'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                }`}
+              >
+                <GraduationCap size={15} />
+                <span>Student</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateRole('teacher')}
+                className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  createRole === 'teacher'
+                    ? 'bg-[#11428E] text-white shadow-sm'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                }`}
+              >
+                <School size={15} />
+                <span>Teacher</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateRole('parent')}
+                className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  createRole === 'parent'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                }`}
+              >
+                <Users size={15} />
+                <span>Parent</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateUser} className="flex flex-col gap-4">
+              {/* Common / Student Form Fields */}
+              {createRole === 'student' && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">First Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={createForm.firstName}
+                        onChange={e => setCreateForm({ ...createForm, firstName: e.target.value })}
+                        placeholder="e.g. Albvin"
+                        className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-semibold focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Last Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={createForm.lastName}
+                        onChange={e => setCreateForm({ ...createForm, lastName: e.target.value })}
+                        placeholder="e.g. Amsid"
+                        className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-semibold focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Middle Name</label>
+                      <input
+                        type="text"
+                        value={createForm.middleName}
+                        onChange={e => setCreateForm({ ...createForm, middleName: e.target.value })}
+                        placeholder="e.g. Martinez"
+                        className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-semibold focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Gender</label>
+                      <select
+                        value={createForm.gender}
+                        onChange={e => setCreateForm({ ...createForm, gender: e.target.value })}
+                        className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-semibold focus:outline-none focus:border-amber-500"
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">12-Digit DepEd LRN</label>
+                    <input
+                      type="text"
+                      maxLength={12}
+                      value={createForm.lrn}
+                      onChange={e => setCreateForm({ ...createForm, lrn: e.target.value.replace(/\D/g, '') })}
+                      placeholder="e.g. 126207190184"
+                      className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-mono font-bold focus:outline-none focus:border-amber-500"
+                    />
+                    <span className="text-[10px] text-[var(--text-muted)]">Students can log in with this 12-digit number directly.</span>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Enrolled Classroom / Room *</label>
+                    <select
+                      value={createForm.classroomId}
+                      onChange={e => setCreateForm({ ...createForm, classroomId: e.target.value })}
+                      className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-semibold focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="">-- Select Classroom --</option>
+                      {availableClassrooms.map(c => (
+                        <option key={c.id || c.classroomId} value={c.classroomId}>
+                          {c.sectionName || c.classroomId} — {c.teacherName} (Grade {c.gradeLevel})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {/* Teacher Form Fields */}
+              {createRole === 'teacher' && (
+                <>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Teacher Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={createForm.name}
+                      onChange={e => setCreateForm({ ...createForm, name: e.target.value })}
+                      placeholder="e.g. Meyer Marlene Acosta"
+                      className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-semibold focus:outline-none focus:border-[#11428E]"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Teacher Email *</label>
+                    <input
+                      type="email"
+                      required
+                      value={createForm.email}
+                      onChange={e => setCreateForm({ ...createForm, email: e.target.value })}
+                      placeholder="e.g. marlene.acosta@guro.app"
+                      className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-semibold focus:outline-none focus:border-[#11428E]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">School Name</label>
+                      <input
+                        type="text"
+                        value={createForm.schoolName}
+                        onChange={e => setCreateForm({ ...createForm, schoolName: e.target.value })}
+                        placeholder="e.g. Zamboanga Central School"
+                        className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-semibold focus:outline-none focus:border-[#11428E]"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">School ID</label>
+                      <input
+                        type="text"
+                        value={createForm.schoolIdNumber}
+                        onChange={e => setCreateForm({ ...createForm, schoolIdNumber: e.target.value })}
+                        placeholder="e.g. 199006"
+                        className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-semibold focus:outline-none focus:border-[#11428E]"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Parent Form Fields */}
+              {createRole === 'parent' && (
+                <>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Parent Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={createForm.name}
+                      onChange={e => setCreateForm({ ...createForm, name: e.target.value })}
+                      placeholder="e.g. Almer Amsid"
+                      className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-semibold focus:outline-none focus:border-emerald-600"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Parent Email / Contact *</label>
+                    <input
+                      type="text"
+                      required
+                      value={createForm.email}
+                      onChange={e => setCreateForm({ ...createForm, email: e.target.value })}
+                      placeholder="e.g. parent.amsid@guro.app"
+                      className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-semibold focus:outline-none focus:border-emerald-600"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Link to Child / Student (LRN or Student ID)</label>
+                    <input
+                      type="text"
+                      value={createForm.linkedStudentId}
+                      onChange={e => setCreateForm({ ...createForm, linkedStudentId: e.target.value })}
+                      placeholder="e.g. 126207190184 or LRN-126207190184"
+                      className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-mono font-bold focus:outline-none focus:border-emerald-600"
+                    />
+                    <span className="text-[10px] text-[var(--text-muted)]">Automatically links this parent account to their child for consultation chat and telemetry.</span>
+                  </div>
+                </>
+              )}
+
+              {/* Initial Password */}
+              <div className="flex flex-col gap-1 pt-1">
+                <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Initial Password *</label>
+                <input
+                  type="text"
+                  required
+                  value={createForm.password}
+                  onChange={e => setCreateForm({ ...createForm, password: e.target.value })}
+                  placeholder="Password"
+                  className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] text-xs text-[var(--text-main)] font-mono font-bold focus:outline-none focus:border-[#11428E]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--border-color)]">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="btn btn-secondary text-xs px-4 py-2 font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingCreate}
+                  className="btn bg-emerald-600 text-white hover:bg-emerald-700 text-xs px-5 py-2 font-bold rounded-xl cursor-pointer disabled:opacity-50 transition-colors shadow-sm"
+                >
+                  {submittingCreate ? 'Creating Account…' : 'Create Account'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
