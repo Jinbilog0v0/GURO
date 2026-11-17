@@ -87,6 +87,8 @@ import {
   ChevronLeft,
   ChevronRight,
   School,
+  Archive,
+  RotateCcw,
 } from 'lucide-react-native';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ParentDashboard'>;
@@ -305,6 +307,78 @@ export function ParentDashboard({ navigation }: Props) {
   const [viewHistoryMessage, setViewHistoryMessage] = useState<any | null>(null);
   const [isConfirmingUnsend, setIsConfirmingUnsend] = useState(false);
   const [isChatThreadOpen, setIsChatThreadOpen] = useState(false);
+
+  // Edit & Archive mode for parent consultation threads
+  const [isEditingChatThreads, setIsEditingChatThreads] = useState(false);
+  const [archivedParentThreadIds, setArchivedParentThreadIds] = useState<string[]>([]);
+  const [chatThreadTab, setChatThreadTab] = useState<'active' | 'archived'>('active');
+  const [parentThreadToDelete, setParentThreadToDelete] = useState<any | null>(null);
+
+  const parentUserId = currentUser?.user_id || 'default_parent';
+  const parentArchiveKey = `@guro_archived_chat_threads_parent_${parentUserId}`;
+
+  useEffect(() => {
+    const loadParentArchived = async () => {
+      try {
+        const raw = await AsyncStorage.getItem(parentArchiveKey);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) setArchivedParentThreadIds(parsed);
+        }
+      } catch {
+        // Silent
+      }
+    };
+    loadParentArchived();
+  }, [parentUserId, parentArchiveKey]);
+
+  const persistParentArchived = async (newIds: string[]) => {
+    setArchivedParentThreadIds(newIds);
+    try {
+      await AsyncStorage.setItem(parentArchiveKey, JSON.stringify(newIds));
+    } catch {
+      // Silent
+    }
+  };
+
+  const handleArchiveParentThread = async (studentId: string) => {
+    if (!archivedParentThreadIds.includes(studentId)) {
+      const updated = [...archivedParentThreadIds, studentId];
+      await persistParentArchived(updated);
+      toast.success('Consultation archived.');
+    }
+  };
+
+  const handleUnarchiveParentThread = async (studentId: string) => {
+    const updated = archivedParentThreadIds.filter((id) => id !== studentId);
+    await persistParentArchived(updated);
+    toast.success('Consultation restored to active.');
+  };
+
+  const handleDeleteParentThreadConfirmed = async () => {
+    if (!parentThreadToDelete) return;
+    const studentId = parentThreadToDelete.studentId;
+    try {
+      if (selectedChild?.classroomId && studentId) {
+        const resolvedUrl = resolveServerUrl(serverUrl);
+        await fetch(`${resolvedUrl}/api/chat/thread/delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            classroomId: selectedChild.classroomId,
+            studentId,
+          }),
+        }).catch(() => {});
+      }
+      const updated = Array.from(new Set([...archivedParentThreadIds, studentId]));
+      await persistParentArchived(updated);
+      toast.success(`Removed consultation for ${parentThreadToDelete.name || parentThreadToDelete.studentName || 'child'}.`);
+    } catch {
+      toast.error('Failed to remove consultation.');
+    } finally {
+      setParentThreadToDelete(null);
+    }
+  };
 
   const handleOpenMessageOptions = (msg: any) => {
     setIsConfirmingUnsend(false);
@@ -1955,137 +2029,316 @@ export function ParentDashboard({ navigation }: Props) {
                 />
               }
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xs, marginTop: 4 }}>
-                <View>
-                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Consultation Threads ({chatChildrenList.length})
-                  </Text>
-                  {parentDisplayName && (
-                    <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.accentPrimary, marginTop: 2 }}>
-                      {`Parent: ${parentDisplayName} (Parent)`}
-                    </Text>
-                  )}
-                </View>
-                <TouchableOpacity onPress={() => fetchChatMessages()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Refresh consultation lines">
-                  <RefreshCw size={13} color={Colors.accentPrimary} />
-                </TouchableOpacity>
-              </View>
+              {(() => {
+                const activeChatChildren = chatChildrenList.filter((c: any) => !archivedParentThreadIds.includes(c.studentId));
+                const archivedChatChildren = chatChildrenList.filter((c: any) => archivedParentThreadIds.includes(c.studentId));
+                const displayedChatChildren = chatThreadTab === 'active' ? activeChatChildren : archivedChatChildren;
 
-              {chatChildrenList.length === 0 ? (
-                <View style={{ paddingVertical: 48, alignItems: 'center', paddingHorizontal: Spacing.xl }}>
-                  <View
-                    style={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: 28,
-                      backgroundColor: 'rgba(17,66,142,0.08)',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      marginBottom: Spacing.sm,
-                    }}
-                  >
-                    <MessageCircle size={24} color={Colors.accentPrimary} />
-                  </View>
-                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700', textAlign: 'center' }}>
-                    No Linked Student Found
-                  </Text>
-                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, textAlign: 'center', marginTop: 4, lineHeight: 18, maxWidth: 280 }}>
-                    Please claim or search for your child under the Child Progress tab to connect with their classroom teacher.
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => setActiveTab('progress')}
-                    style={{
-                      marginTop: Spacing.md,
-                      paddingVertical: 10,
-                      paddingHorizontal: 20,
-                      borderRadius: 14,
-                      backgroundColor: Colors.accentPrimary,
-                    }}
-                  >
-                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: '#FFFFFF' }}>
-                      Go to Child Progress
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                chatChildrenList.map((child: any) => {
-                  const childName = child.name || child.studentName || child.studentId || 'Student';
-                  const initials =
-                    childName
-                      .split(' ')
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .map((w: string) => w[0])
-                      .join('')
-                      .toUpperCase() || 'ST';
-                  const isCurrentChild = child.studentId === selectedChild?.studentId;
-                  const latestMsg = isCurrentChild && chatMessages.length > 0
-                    ? chatMessages[chatMessages.length - 1]?.message_body
-                    : null;
-                  return (
-                    <TouchableOpacity
-                      key={child.studentId}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Open consultation for ${childName}`}
-                      onPress={() => {
-                        handleSelectChild(child);
-                        setIsChatThreadOpen(true);
-                      }}
-                      activeOpacity={0.7}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: 14,
-                        padding: Spacing.sm,
-                        marginBottom: 10,
-                        borderWidth: 1,
-                        borderColor: isCurrentChild ? 'rgba(17,66,142,0.25)' : Colors.border,
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 1 },
-                        shadowOpacity: 0.04,
-                        shadowRadius: 3,
-                        elevation: 1,
-                      }}
-                    >
-                      {/* Initials Circle */}
+                return (
+                  <>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xs, marginTop: 4 }}>
+                      <View>
+                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                          {chatThreadTab === 'active' ? `Consultation Threads (${activeChatChildren.length})` : `Archived Consultations (${archivedChatChildren.length})`}
+                        </Text>
+                        {parentDisplayName && (
+                          <Text style={{ fontFamily: Fonts.bodySemiBold, fontSize: 11, color: Colors.accentPrimary, marginTop: 2 }}>
+                            {`Parent: ${parentDisplayName} (Parent)`}
+                          </Text>
+                        )}
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <TouchableOpacity
+                          onPress={() => setIsEditingChatThreads((prev) => !prev)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          accessibilityLabel="Edit consultation threads"
+                          accessibilityRole="button"
+                          style={{
+                            padding: 5,
+                            borderRadius: 8,
+                            backgroundColor: isEditingChatThreads ? 'rgba(17,66,142,0.14)' : 'rgba(17,66,142,0.05)',
+                          }}
+                        >
+                          <Edit2 size={13} color={Colors.accentPrimary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => fetchChatMessages()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Refresh consultation lines">
+                          <RefreshCw size={13} color={Colors.accentPrimary} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Edit Mode Management Toolbar */}
+                    {isEditingChatThreads && (
                       <View
                         style={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: 22,
-                          backgroundColor: 'rgba(17,66,142,0.08)',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          marginRight: 12,
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: 12,
+                          padding: 10,
+                          marginBottom: Spacing.sm,
+                          borderWidth: 1,
+                          borderColor: 'rgba(17,66,142,0.2)',
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 1 },
+                          shadowOpacity: 0.05,
+                          shadowRadius: 3,
+                          elevation: 1,
                         }}
                       >
-                        <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.accentPrimary }}>
-                          {initials}
-                        </Text>
-                      </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Edit2 size={13} color={Colors.accentPrimary} />
+                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.textMain }}>
+                              Manage Consultations
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => setIsEditingChatThreads(false)}
+                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                            style={{
+                              backgroundColor: 'rgba(17,66,142,0.08)',
+                              paddingHorizontal: 10,
+                              paddingVertical: 3,
+                              borderRadius: 8,
+                            }}
+                          >
+                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary }}>Done</Text>
+                          </TouchableOpacity>
+                        </View>
 
-                      {/* Details */}
-                      <View style={{ flex: 1, justifyContent: 'center' }}>
-                        <Text numberOfLines={1} style={{ fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.textMain }}>
-                          Teacher: {activeTeacherName || child.teacherName || 'Classroom Teacher'}
-                        </Text>
-                        <Text numberOfLines={1} style={{ fontFamily: Fonts.bodySemiBold, fontSize: 11.5, color: Colors.accentPrimary, marginTop: 1 }}>
-                          Student: {childName} {child.section || child.sectionName ? `• ${child.section || child.sectionName}` : ''}
-                        </Text>
-                        <Text numberOfLines={1} style={{ fontFamily: Fonts.body, fontSize: 12, color: Colors.textMuted, marginTop: 2 }}>
-                          {latestMsg ? latestMsg : 'Tap to consult with classroom teacher'}
-                        </Text>
+                        {/* Tab Switcher */}
+                        <View style={{ flexDirection: 'row', gap: 6 }}>
+                          <TouchableOpacity
+                            onPress={() => setChatThreadTab('active')}
+                            style={{
+                              flex: 1,
+                              paddingVertical: 6,
+                              borderRadius: 8,
+                              alignItems: 'center',
+                              backgroundColor: chatThreadTab === 'active' ? Colors.accentPrimary : 'rgba(17,66,142,0.06)',
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontFamily: Fonts.bodyBold,
+                                fontSize: 11.5,
+                                color: chatThreadTab === 'active' ? '#FFFFFF' : Colors.textMuted,
+                              }}
+                            >
+                              Active ({activeChatChildren.length})
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => setChatThreadTab('archived')}
+                            style={{
+                              flex: 1,
+                              paddingVertical: 6,
+                              borderRadius: 8,
+                              alignItems: 'center',
+                              backgroundColor: chatThreadTab === 'archived' ? Colors.accentPrimary : 'rgba(17,66,142,0.06)',
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontFamily: Fonts.bodyBold,
+                                fontSize: 11.5,
+                                color: chatThreadTab === 'archived' ? '#FFFFFF' : Colors.textMuted,
+                              }}
+                            >
+                              Archived ({archivedChatChildren.length})
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
+                    )}
 
-                      {/* Right Chevron */}
-                      <View style={{ marginLeft: 8 }}>
-                        <ChevronRight size={18} color={Colors.textMuted} />
+                    {displayedChatChildren.length === 0 ? (
+                      <View style={{ paddingVertical: 48, alignItems: 'center', paddingHorizontal: Spacing.xl }}>
+                        <View
+                          style={{
+                            width: 56,
+                            height: 56,
+                            borderRadius: 28,
+                            backgroundColor: 'rgba(17,66,142,0.08)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginBottom: Spacing.sm,
+                          }}
+                        >
+                          <MessageCircle size={24} color={Colors.accentPrimary} />
+                        </View>
+                        <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700', textAlign: 'center' }}>
+                          {chatThreadTab === 'archived' ? 'No Archived Consultations' : 'No Linked Student Found'}
+                        </Text>
+                        <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, textAlign: 'center', marginTop: 4, lineHeight: 18, maxWidth: 280 }}>
+                          {chatThreadTab === 'archived'
+                            ? 'Consultation threads you archive will appear here. You can restore them to active at any time.'
+                            : 'Please claim or search for your child under the Child Progress tab to connect with their classroom teacher.'}
+                        </Text>
+                        {chatThreadTab === 'active' && (
+                          <TouchableOpacity
+                            onPress={() => setActiveTab('progress')}
+                            style={{
+                              marginTop: Spacing.md,
+                              paddingVertical: 10,
+                              paddingHorizontal: 20,
+                              borderRadius: 14,
+                              backgroundColor: Colors.accentPrimary,
+                            }}
+                          >
+                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: '#FFFFFF' }}>
+                              Go to Child Progress
+                            </Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
-                    </TouchableOpacity>
-                  );
-                })
-              )}
+                    ) : (
+                      displayedChatChildren.map((child: any) => {
+                        const childName = child.name || child.studentName || child.studentId || 'Student';
+                        const initials =
+                          childName
+                            .split(' ')
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .map((w: string) => w[0])
+                            .join('')
+                            .toUpperCase() || 'ST';
+                        const isCurrentChild = child.studentId === selectedChild?.studentId;
+                        const latestMsg = isCurrentChild && chatMessages.length > 0
+                          ? chatMessages[chatMessages.length - 1]?.message_body
+                          : null;
+                        const latestSenderRole = isCurrentChild && chatMessages.length > 0
+                          ? chatMessages[chatMessages.length - 1]?.sender_role
+                          : null;
+                        return (
+                          <TouchableOpacity
+                            key={child.studentId}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Open consultation for ${childName}`}
+                            onPress={() => {
+                              if (isEditingChatThreads) return;
+                              handleSelectChild(child);
+                              setIsChatThreadOpen(true);
+                            }}
+                            activeOpacity={0.7}
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              backgroundColor: '#FFFFFF',
+                              borderRadius: 14,
+                              padding: Spacing.sm,
+                              marginBottom: 10,
+                              borderWidth: 1,
+                              borderColor: isCurrentChild ? 'rgba(17,66,142,0.25)' : Colors.border,
+                              shadowColor: '#000',
+                              shadowOffset: { width: 0, height: 1 },
+                              shadowOpacity: 0.04,
+                              shadowRadius: 3,
+                              elevation: 1,
+                            }}
+                          >
+                            {/* Initials Circle */}
+                            <View
+                              style={{
+                                width: 44,
+                                height: 44,
+                                borderRadius: 22,
+                                backgroundColor: 'rgba(17,66,142,0.08)',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                marginRight: 12,
+                              }}
+                            >
+                              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.accentPrimary }}>
+                                {initials}
+                              </Text>
+                            </View>
+
+                            {/* Details with Clear Role Labeling */}
+                            <View style={{ flex: 1, justifyContent: 'center' }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <Text numberOfLines={1} style={{ fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.textMain, maxWidth: '75%' }}>
+                                  Teacher: {activeTeacherName || child.teacherName || 'Classroom Teacher'}
+                                </Text>
+                                <View style={{ backgroundColor: 'rgba(17,66,142,0.08)', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}>
+                                  <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 9.5, color: Colors.accentPrimary, letterSpacing: 0.3 }}>
+                                    TEACHER
+                                  </Text>
+                                </View>
+                              </View>
+
+                              <Text numberOfLines={1} style={{ fontFamily: Fonts.bodySemiBold, fontSize: 11.5, color: Colors.accentPrimary, marginTop: 1.5 }}>
+                                Student: {childName} <Text style={{ fontFamily: Fonts.body, fontSize: 11, color: Colors.textMuted }}>(Student)</Text>{child.section || child.sectionName ? ` • ${child.section || child.sectionName}` : ''}
+                              </Text>
+
+                              <Text numberOfLines={1} style={{ fontFamily: Fonts.body, fontSize: 12, color: latestMsg ? Colors.textMain : Colors.textMuted, marginTop: 2 }}>
+                                {latestMsg ? (
+                                  <>
+                                    <Text style={{ fontFamily: Fonts.bodyBold, color: latestSenderRole === 'teacher' ? Colors.accentPrimary : '#059669' }}>
+                                      {latestSenderRole === 'teacher' ? 'Teacher: ' : 'You (Parent): '}
+                                    </Text>
+                                    {latestMsg}
+                                  </>
+                                ) : (
+                                  'Tap to consult with classroom teacher'
+                                )}
+                              </Text>
+                            </View>
+
+                            {/* Right side: In Edit Mode show Archive/Restore & Delete; otherwise chevron */}
+                            {isEditingChatThreads ? (
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 8 }}>
+                                {chatThreadTab === 'active' ? (
+                                  <TouchableOpacity
+                                    onPress={() => handleArchiveParentThread(child.studentId)}
+                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                    style={{
+                                      padding: 6,
+                                      borderRadius: 8,
+                                      backgroundColor: 'rgba(17,66,142,0.08)',
+                                    }}
+                                    accessibilityLabel={`Archive consultation for ${childName}`}
+                                  >
+                                    <Archive size={15} color={Colors.accentPrimary} />
+                                  </TouchableOpacity>
+                                ) : (
+                                  <TouchableOpacity
+                                    onPress={() => handleUnarchiveParentThread(child.studentId)}
+                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                    style={{
+                                      padding: 6,
+                                      borderRadius: 8,
+                                      backgroundColor: 'rgba(17,66,142,0.08)',
+                                    }}
+                                    accessibilityLabel={`Restore consultation for ${childName}`}
+                                  >
+                                    <RotateCcw size={15} color={Colors.accentPrimary} />
+                                  </TouchableOpacity>
+                                )}
+                                <TouchableOpacity
+                                  onPress={() => setParentThreadToDelete(child)}
+                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                  style={{
+                                    padding: 6,
+                                    borderRadius: 8,
+                                    backgroundColor: 'rgba(239,68,68,0.08)',
+                                  }}
+                                  accessibilityLabel={`Delete consultation for ${childName}`}
+                                >
+                                  <Trash2 size={15} color="#DC2626" />
+                                </TouchableOpacity>
+                              </View>
+                            ) : (
+                              <View style={{ marginLeft: 8 }}>
+                                <ChevronRight size={18} color={Colors.textMuted} />
+                              </View>
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })
+                    )}
+                  </>
+                );
+              })()}
             </ScrollView>
           </View>
         ) : (
@@ -3366,6 +3619,19 @@ export function ParentDashboard({ navigation }: Props) {
           </GlassCard>
         </View>
       </Modal>
+
+      {/* Confirm remove / delete consultation thread */}
+      <ConfirmDialog
+        visible={Boolean(parentThreadToDelete)}
+        title="Remove Consultation"
+        message={`Are you sure you want to remove the consultation thread for ${parentThreadToDelete?.name || parentThreadToDelete?.studentName || 'this student'}? Empty or unwanted messages will be cleaned and this consultation will be archived.`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        variant="danger"
+        isDestructive
+        onConfirm={handleDeleteParentThreadConfirmed}
+        onCancel={() => setParentThreadToDelete(null)}
+      />
 
     </SafeAreaView>
   );

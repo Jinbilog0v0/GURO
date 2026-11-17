@@ -25,6 +25,7 @@ import { ThemedTextInput } from '../components/ui/ThemedTextInput';
 import { SyncBadge } from '../components/shared/SyncBadge';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { toast } from '../components';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   MessageSquare,
   MessageCircle,
@@ -45,6 +46,8 @@ import {
   ChevronRight,
   ChevronLeft,
   Search,
+  Archive,
+  RotateCcw,
 } from 'lucide-react-native';
 
 export interface ChatThread {
@@ -553,9 +556,107 @@ export function TeacherChatScreen({ navigation }: any = {}) {
     }
   };
 
+  // Edit Mode & Archive state for teacher threads
+  const [isEditingThreads, setIsEditingThreads] = useState<boolean>(false);
+  const [archivedStudentIds, setArchivedStudentIds] = useState<string[]>([]);
+  const [threadTab, setThreadTab] = useState<'active' | 'archived'>('active');
+  const [threadToDelete, setThreadToDelete] = useState<ChatThread | null>(null);
+  const [isConfirmingCleanEmpty, setIsConfirmingCleanEmpty] = useState<boolean>(false);
+
+  // Load archived threads from AsyncStorage
+  const teacherUserId = currentUser?.user_id || 'default_teacher';
+  const archiveStorageKey = `@guro_archived_chat_threads_teacher_${teacherUserId}`;
+
+  useEffect(() => {
+    const loadArchived = async () => {
+      try {
+        const raw = await AsyncStorage.getItem(archiveStorageKey);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) setArchivedStudentIds(parsed);
+        }
+      } catch {
+        // Silent
+      }
+    };
+    loadArchived();
+  }, [teacherUserId, archiveStorageKey]);
+
+  const persistArchived = async (newIds: string[]) => {
+    setArchivedStudentIds(newIds);
+    try {
+      await AsyncStorage.setItem(archiveStorageKey, JSON.stringify(newIds));
+    } catch {
+      // Silent
+    }
+  };
+
+  const isThreadArchived = (studentId: string) => archivedStudentIds.includes(studentId);
+
+  const handleArchiveThread = async (studentId: string) => {
+    if (!archivedStudentIds.includes(studentId)) {
+      const updated = [...archivedStudentIds, studentId];
+      await persistArchived(updated);
+      toast.success('Conversation archived.');
+    }
+  };
+
+  const handleUnarchiveThread = async (studentId: string) => {
+    const updated = archivedStudentIds.filter((id) => id !== studentId);
+    await persistArchived(updated);
+    toast.success('Conversation restored to active.');
+  };
+
+  const handleCleanEmptyThreads = async () => {
+    const emptyIds = threads
+      .filter((t) => !t.latestMessage)
+      .map((t) => t.studentId);
+    if (emptyIds.length === 0) {
+      toast.info('No empty conversations found.');
+      setIsConfirmingCleanEmpty(false);
+      return;
+    }
+    const updated = Array.from(new Set([...archivedStudentIds, ...emptyIds]));
+    await persistArchived(updated);
+    setIsConfirmingCleanEmpty(false);
+    toast.success(`Archived ${emptyIds.length} empty conversation${emptyIds.length === 1 ? '' : 's'}.`);
+  };
+
+  const handleDeleteThreadConfirmed = async () => {
+    if (!threadToDelete) return;
+    const studentId = threadToDelete.studentId;
+    try {
+      if (activeClassroomId) {
+        const resolvedUrl = resolveServerUrl(serverUrl);
+        await fetch(`${resolvedUrl}/api/chat/thread/delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            classroomId: activeClassroomId,
+            studentId,
+          }),
+        }).catch(() => {});
+      }
+      const updated = Array.from(new Set([...archivedStudentIds, studentId]));
+      await persistArchived(updated);
+      setThreads((prev) => prev.filter((t) => t.studentId !== studentId));
+      toast.success(`Removed conversation for ${threadToDelete.studentName}.`);
+    } catch {
+      toast.error('Failed to remove conversation.');
+    } finally {
+      setThreadToDelete(null);
+    }
+  };
+
   const activeThread = threads.find((t) => t.studentId === activeStudentId);
 
-  const filteredThreads = threads.filter((t) => {
+  const activeThreads = threads.filter((t) => !isThreadArchived(t.studentId));
+  const archivedThreads = threads.filter((t) => isThreadArchived(t.studentId));
+  const emptyCountInActive = activeThreads.filter((t) => !t.latestMessage).length;
+
+  const currentTabThreads = threadTab === 'active' ? activeThreads : archivedThreads;
+
+  const filteredThreads = currentTabThreads.filter((t) => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return true;
     return (
@@ -744,13 +845,156 @@ export function TeacherChatScreen({ navigation }: any = {}) {
             }
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xs, marginTop: 4 }}>
-              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Conversations ({filteredThreads.length})
-              </Text>
-              <TouchableOpacity onPress={() => fetchThreads()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Refresh conversations">
-                <RefreshCw size={13} color={Colors.accentPrimary} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  {threadTab === 'active' ? `Conversations (${activeThreads.length})` : `Archived (${archivedThreads.length})`}
+                </Text>
+                {archivedStudentIds.length > 0 && threadTab === 'active' && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setIsEditingThreads(true);
+                      setThreadTab('archived');
+                    }}
+                    style={{
+                      backgroundColor: 'rgba(17,66,142,0.08)',
+                      paddingHorizontal: 7,
+                      paddingVertical: 2,
+                      borderRadius: 10,
+                    }}
+                  >
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.accentPrimary }}>
+                      {archivedStudentIds.length} archived
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <TouchableOpacity
+                  onPress={() => setIsEditingThreads((prev) => !prev)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityLabel="Edit conversation threads"
+                  accessibilityRole="button"
+                  style={{
+                    padding: 5,
+                    borderRadius: 8,
+                    backgroundColor: isEditingThreads ? 'rgba(17,66,142,0.14)' : 'rgba(17,66,142,0.05)',
+                  }}
+                >
+                  <Edit2 size={13} color={Colors.accentPrimary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => fetchThreads()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Refresh conversations">
+                  <RefreshCw size={13} color={Colors.accentPrimary} />
+                </TouchableOpacity>
+              </View>
             </View>
+
+            {/* Edit Mode Management Toolbar */}
+            {isEditingThreads && (
+              <View
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: 12,
+                  padding: 10,
+                  marginBottom: Spacing.sm,
+                  borderWidth: 1,
+                  borderColor: 'rgba(17,66,142,0.2)',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 3,
+                  elevation: 1,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Edit2 size={13} color={Colors.accentPrimary} />
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.textMain }}>
+                      Manage Conversations
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setIsEditingThreads(false)}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    style={{
+                      backgroundColor: 'rgba(17,66,142,0.08)',
+                      paddingHorizontal: 10,
+                      paddingVertical: 3,
+                      borderRadius: 8,
+                    }}
+                  >
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.accentPrimary }}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Tab Switcher */}
+                <View style={{ flexDirection: 'row', gap: 6, marginBottom: emptyCountInActive > 0 && threadTab === 'active' ? 8 : 0 }}>
+                  <TouchableOpacity
+                    onPress={() => setThreadTab('active')}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 6,
+                      borderRadius: 8,
+                      alignItems: 'center',
+                      backgroundColor: threadTab === 'active' ? Colors.accentPrimary : 'rgba(17,66,142,0.06)',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: Fonts.bodyBold,
+                        fontSize: 11.5,
+                        color: threadTab === 'active' ? '#FFFFFF' : Colors.textMuted,
+                      }}
+                    >
+                      Active ({activeThreads.length})
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setThreadTab('archived')}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 6,
+                      borderRadius: 8,
+                      alignItems: 'center',
+                      backgroundColor: threadTab === 'archived' ? Colors.accentPrimary : 'rgba(17,66,142,0.06)',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: Fonts.bodyBold,
+                        fontSize: 11.5,
+                        color: threadTab === 'archived' ? '#FFFFFF' : Colors.textMuted,
+                      }}
+                    >
+                      Archived ({archivedThreads.length})
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Clean Empty Conversations Button */}
+                {threadTab === 'active' && emptyCountInActive > 0 && (
+                  <TouchableOpacity
+                    onPress={() => setIsConfirmingCleanEmpty(true)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      backgroundColor: 'rgba(234,88,12,0.08)',
+                      paddingVertical: 7,
+                      paddingHorizontal: 10,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: 'rgba(234,88,12,0.2)',
+                    }}
+                  >
+                    <Archive size={12} color="#EA580C" />
+                    <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 11, color: '#EA580C' }}>
+                      Archive All Empty Chats ({emptyCountInActive})
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
 
             {loadingThreads && threads.length === 0 ? (
               <View style={{ paddingVertical: 40, alignItems: 'center' }}>
@@ -775,10 +1019,12 @@ export function TeacherChatScreen({ navigation }: any = {}) {
                   <MessageSquare size={24} color={Colors.accentPrimary} />
                 </View>
                 <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain, fontWeight: '700', textAlign: 'center' }}>
-                  No Conversations Found
+                  {threadTab === 'archived' ? 'No Archived Conversations' : 'No Conversations Found'}
                 </Text>
                 <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, textAlign: 'center', marginTop: 4, lineHeight: 18 }}>
-                  {searchQuery
+                  {threadTab === 'archived'
+                    ? 'Conversations you archive will appear here. You can restore them to active at any time.'
+                    : searchQuery
                     ? 'No student or parent matches your search query.'
                     : 'When parents send consultation messages regarding their children, conversations will appear here.'}
                 </Text>
@@ -800,6 +1046,7 @@ export function TeacherChatScreen({ navigation }: any = {}) {
                     accessibilityRole="button"
                     accessibilityLabel={`Open conversation with ${thread.studentName}`}
                     onPress={() => {
+                      if (isEditingThreads) return;
                       setActiveStudentId(thread.studentId);
                       fetchMessages(thread.studentId);
                     }}
@@ -850,11 +1097,11 @@ export function TeacherChatScreen({ navigation }: any = {}) {
                         )}
                       </View>
 
-                      {thread.parentName ? (
-                        <Text numberOfLines={1} style={{ fontFamily: Fonts.bodySemiBold, fontSize: 11.5, color: Colors.accentPrimary, marginTop: 1 }}>
-                          Parent: {thread.parentName}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
+                        <Text numberOfLines={1} style={{ fontFamily: Fonts.bodySemiBold, fontSize: 11.5, color: Colors.accentPrimary }}>
+                          Parent: {thread.parentName ? `${thread.parentName} (Parent)` : 'No Guardian Linked'}
                         </Text>
-                      ) : null}
+                      </View>
 
                       <Text
                         numberOfLines={1}
@@ -865,31 +1112,84 @@ export function TeacherChatScreen({ navigation }: any = {}) {
                           marginTop: 2,
                         }}
                       >
-                        {thread.latestMessage || 'No messages yet'}
+                        {thread.latestMessage ? (
+                          <>
+                            <Text style={{ fontFamily: Fonts.bodyBold, color: thread.latestSenderRole === 'teacher' ? Colors.accentPrimary : '#059669' }}>
+                              {thread.latestSenderRole === 'teacher' ? 'You (Teacher): ' : 'Parent: '}
+                            </Text>
+                            {thread.latestMessage}
+                          </>
+                        ) : (
+                          'No messages yet'
+                        )}
                       </Text>
                     </View>
 
-                    {/* Right: Unread Badge & Chevron */}
-                    <View style={{ alignItems: 'flex-end', marginLeft: 8, gap: 4 }}>
-                      {hasUnread && (
-                        <View
+                    {/* Right side: In Edit Mode show Archive/Restore & Delete; otherwise unread badge & chevron */}
+                    {isEditingThreads ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 8 }}>
+                        {threadTab === 'active' ? (
+                          <TouchableOpacity
+                            onPress={() => handleArchiveThread(thread.studentId)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={{
+                              padding: 6,
+                              borderRadius: 8,
+                              backgroundColor: 'rgba(17,66,142,0.08)',
+                            }}
+                            accessibilityLabel={`Archive conversation for ${thread.studentName}`}
+                          >
+                            <Archive size={15} color={Colors.accentPrimary} />
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity
+                            onPress={() => handleUnarchiveThread(thread.studentId)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={{
+                              padding: 6,
+                              borderRadius: 8,
+                              backgroundColor: 'rgba(17,66,142,0.08)',
+                            }}
+                            accessibilityLabel={`Restore conversation for ${thread.studentName}`}
+                          >
+                            <RotateCcw size={15} color={Colors.accentPrimary} />
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                          onPress={() => setThreadToDelete(thread)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           style={{
-                            backgroundColor: Colors.accentPrimary,
-                            minWidth: 18,
-                            height: 18,
-                            borderRadius: 9,
-                            paddingHorizontal: 5,
-                            justifyContent: 'center',
-                            alignItems: 'center',
+                            padding: 6,
+                            borderRadius: 8,
+                            backgroundColor: 'rgba(239,68,68,0.08)',
                           }}
+                          accessibilityLabel={`Delete conversation for ${thread.studentName}`}
                         >
-                          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: '#FFFFFF' }}>
-                            {thread.unreadCount}
-                          </Text>
-                        </View>
-                      )}
-                      <ChevronRight size={16} color={Colors.textMuted} />
-                    </View>
+                          <Trash2 size={15} color="#DC2626" />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <View style={{ alignItems: 'flex-end', marginLeft: 8, gap: 4 }}>
+                        {hasUnread && (
+                          <View
+                            style={{
+                              backgroundColor: Colors.accentPrimary,
+                              minWidth: 18,
+                              height: 18,
+                              borderRadius: 9,
+                              paddingHorizontal: 5,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 10, color: '#FFFFFF' }}>
+                              {thread.unreadCount}
+                            </Text>
+                          </View>
+                        )}
+                        <ChevronRight size={16} color={Colors.textMuted} />
+                      </View>
+                    )}
                   </TouchableOpacity>
                 );
               })
@@ -1555,6 +1855,29 @@ export function TeacherChatScreen({ navigation }: any = {}) {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+
+      {/* Confirm remove / delete thread */}
+      <ConfirmDialog
+        visible={Boolean(threadToDelete)}
+        title="Remove Conversation"
+        message={`Are you sure you want to remove the conversation for ${threadToDelete?.studentName || 'this student'}? Empty or unwanted messages will be cleaned and this thread will be archived.`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        isDestructive
+        onConfirm={handleDeleteThreadConfirmed}
+        onCancel={() => setThreadToDelete(null)}
+      />
+
+      {/* Confirm clean all empty threads */}
+      <ConfirmDialog
+        visible={isConfirmingCleanEmpty}
+        title="Archive Empty Conversations"
+        message={`Are you sure you want to archive all ${emptyCountInActive} conversation(s) with no messages? You can restore them anytime from the Archived tab.`}
+        confirmText="Archive Empty"
+        cancelText="Cancel"
+        onConfirm={handleCleanEmptyThreads}
+        onCancel={() => setIsConfirmingCleanEmpty(false)}
+      />
 
     </SafeAreaView>
   );

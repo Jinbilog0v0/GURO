@@ -563,4 +563,44 @@ describe('ParentDashboard', () => {
       root.unmount();
     });
   });
+
+  test('toggles edit mode in Parent consultation threads to manage and archive chats with proper role labels', async () => {
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<ParentDashboard navigation={mockNavigation as any} route={{} as any} />);
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    const chatTabBtn = root.root.findByProps({ accessibilityLabel: 'Teacher Chat' });
+    await act(async () => {
+      chatTabBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    let json = JSON.stringify(root.toJSON());
+    // Verify role labeling
+    expect(json).toContain('TEACHER');
+    expect(json).toContain('(Student)');
+
+    // Find the edit pen button
+    const editBtn = root.root.findByProps({ accessibilityLabel: 'Edit consultation threads' });
+    expect(editBtn).toBeDefined();
+
+    // Toggle edit mode
+    await act(async () => {
+      editBtn.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    json = JSON.stringify(root.toJSON());
+    expect(json).toContain('Manage Consultations');
+    expect(json).toContain('Active (');
+    expect(json).toContain('Archived (');
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });

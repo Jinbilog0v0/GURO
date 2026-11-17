@@ -321,4 +321,32 @@ class ChatController extends Controller
 
         return response()->json(['success' => true]);
     }
+
+    /**
+     * POST /api/chat/thread/delete
+     * Clear all consultation messages for a specific student in a classroom
+     */
+    public function deleteThreadMessages(Request $request)
+    {
+        $request->validate([
+            'classroomId' => 'required|string',
+            'studentId' => 'required|string',
+        ]);
+
+        $classroomId = strtoupper(trim($request->input('classroomId')));
+        $studentId = trim($request->input('studentId'));
+
+        ParentTeacherMessage::where('classroom_id', $classroomId)
+            ->where(function ($q) use ($studentId) {
+                $q->where('student_id', $studentId)
+                    ->orWhere('student_id', strtolower($studentId))
+                    ->orWhere('student_id', strtoupper($studentId));
+            })
+            ->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Thread messages deleted successfully.',
+        ]);
+    }
 }

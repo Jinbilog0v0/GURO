@@ -33,7 +33,8 @@ Route::get('/chat/messages', [ChatController::class, 'getMessages']);
 Route::post('/chat/send', [ChatController::class, 'sendMessage']);
 Route::post('/chat/edit', [ChatController::class, 'editMessage']);
 Route::post('/chat/unsend', [ChatController::class, 'unsendMessage']);
-Route::post('/chat/mark-read', [ChatController::class, 'markRead']);
+Route::post('/chat/mark-read', [ChatController::class, 'markRead']);
+Route::post('/chat/thread/delete', [ChatController::class, 'deleteThreadMessages']);
 
 // Educational visuals generator
 Route::post('/lesson/generate-image', [ClassroomController::class, 'generateLessonImage']);
@@ -103,3 +104,4 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/teacher-verifications/{id}', [AdminController::class, 'deleteTeacherVerification']);
     });
 });
+

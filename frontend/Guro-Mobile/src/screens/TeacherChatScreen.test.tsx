@@ -445,4 +445,51 @@ describe('TeacherChatScreen', () => {
       root.unmount();
     });
   });
+
+  test('toggles edit mode to archive, restore, and manage conversations with right role labels', async () => {
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<TeacherChatScreen />);
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
+    let json = JSON.stringify(root.toJSON());
+    // Verify role labeling
+    expect(json).toContain('(Student)');
+    expect(json).toContain('Maria Dela Cruz (Parent)');
+
+    // Find the edit pen button
+    const editBtn = root.root.findByProps({ accessibilityLabel: 'Edit conversation threads' });
+    expect(editBtn).toBeDefined();
+
+    // Toggle edit mode
+    await act(async () => {
+      editBtn.props.onPress();
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
+    json = JSON.stringify(root.toJSON());
+    expect(json).toContain('Manage Conversations');
+    expect(json).toContain('Active (');
+    expect(json).toContain('Archived (');
+
+    // Archive Juan Dela Cruz's thread
+    const archiveBtn = root.root.findByProps({ accessibilityLabel: 'Archive conversation for Juan Dela Cruz' });
+    expect(archiveBtn).toBeDefined();
+
+    await act(async () => {
+      archiveBtn.props.onPress();
+      await new Promise((r) => setTimeout(r, 10));
+    });
+
+    // Verify archived badge updated in header
+    json = JSON.stringify(root.toJSON());
+    expect(json).toContain(' archived');
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });
