@@ -8,6 +8,7 @@ import {
   BackHandler,
   Modal,
   TextInput,
+  Clipboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -46,6 +47,7 @@ import {
   Save,
   Calendar,
   Check,
+  Copy,
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserManualModal } from '../components/shared/UserManualModal';
@@ -169,6 +171,17 @@ export function SettingsScreen({ navigation }: Props) {
     }, 1000);
     return () => clearInterval(timer);
   }, [verifyCooldown]);
+
+  // Parent Access Code (unique auto-generated matching Web)
+  const [copiedAccessCode, setCopiedAccessCode] = useState(false);
+  const parentAccessCode = (currentUser as any)?.parent_access_token || getParentAccessCode(studentId || currentUser?.userId || guestName || 'STUDENT');
+
+  const handleCopyParentCode = () => {
+    Clipboard.setString(parentAccessCode);
+    setCopiedAccessCode(true);
+    toast.success('Parent Access Code copied to clipboard!');
+    setTimeout(() => setCopiedAccessCode(false), 2000);
+  };
 
   const handleOpenEmailVerifyModal = async () => {
     if (!currentUser?.email) {
@@ -555,7 +568,8 @@ export function SettingsScreen({ navigation }: Props) {
 
       if (appMode === 'online') {
         try {
-          await syncProgressNow();
+          const syncUrl = useAppStore.getState().serverUrl || 'https://neoguro.app';
+          await syncProgressNow(syncUrl);
         } catch {
           // Continue silently if offline
         }
@@ -717,47 +731,139 @@ export function SettingsScreen({ navigation }: Props) {
 
                 <View style={{ height: 1, backgroundColor: Colors.border, marginVertical: Spacing.sm }} />
 
-                <Text style={{ fontFamily: Fonts.display, fontSize: 9, color: Colors.accentPrimary, letterSpacing: 1.2, marginBottom: 4 }}>
-                  STUDENT ID & ACCESS
-                </Text>
-                <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.md, color: Colors.textMain }}>
-                  {guestName ?? currentUser?.name ?? 'Explorer'}
-                </Text>
-                {currentUser && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-                    <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.sm, color: Colors.textMuted }}>
-                      Email: {currentUser.email}
-                    </Text>
-                    {currentUser.emailVerifiedAt ? (
-                      <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', borderWidth: 1, borderColor: '#10B981', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                        <CheckCircle2 size={10} color="#10B981" />
-                        <Text style={{ color: '#10B981', fontSize: 10, fontFamily: Fonts.bodyBold }}>Verified</Text>
-                      </View>
-                    ) : (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', borderWidth: 1, borderColor: '#F59E0B', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                          <AlertCircle size={10} color="#F59E0B" />
-                          <Text style={{ color: '#F59E0B', fontSize: 10, fontFamily: Fonts.bodyBold }}>Unverified</Text>
+                <View style={{ alignItems: 'center', justifyContent: 'center', marginVertical: Spacing.xs }}>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: 9, color: Colors.accentPrimary, letterSpacing: 1.2, marginBottom: 4, textAlign: 'center' }}>
+                    STUDENT ID & ACCESS
+                  </Text>
+                  <Text style={{ fontFamily: Fonts.display, fontSize: FontSizes.xl, color: Colors.textMain, textAlign: 'center' }}>
+                    {guestName ?? currentUser?.name ?? 'Explorer'}
+                  </Text>
+                  {currentUser && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                      <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, textAlign: 'center' }}>
+                        Email: {currentUser.email}
+                      </Text>
+                      {currentUser.emailVerifiedAt ? (
+                        <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', borderWidth: 1, borderColor: '#10B981', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                          <CheckCircle2 size={10} color="#10B981" />
+                          <Text style={{ color: '#10B981', fontSize: 10, fontFamily: Fonts.bodyBold }}>Verified</Text>
                         </View>
-                        <TouchableOpacity
-                          onPress={handleOpenEmailVerifyModal}
-                          disabled={isSendingVerifyCode}
-                          style={{ paddingHorizontal: 6, paddingVertical: 2, backgroundColor: 'rgba(17, 66, 142, 0.1)', borderRadius: 6 }}
-                        >
-                          <Text style={{ color: Colors.accentPrimary, fontSize: 10, fontFamily: Fonts.bodyBold }}>
-                            {isSendingVerifyCode ? 'Sending...' : 'Verify Now'}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
+                      ) : (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', borderWidth: 1, borderColor: '#F59E0B', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                            <AlertCircle size={10} color="#F59E0B" />
+                            <Text style={{ color: '#F59E0B', fontSize: 10, fontFamily: Fonts.bodyBold }}>Unverified</Text>
+                          </View>
+                          <TouchableOpacity
+                            onPress={handleOpenEmailVerifyModal}
+                            disabled={isSendingVerifyCode}
+                            style={{ paddingHorizontal: 6, paddingVertical: 2, backgroundColor: 'rgba(17, 66, 142, 0.1)', borderRadius: 6 }}
+                          >
+                            <Text style={{ color: Colors.accentPrimary, fontSize: 10, fontFamily: Fonts.bodyBold }}>
+                              {isSendingVerifyCode ? 'Sending...' : 'Verify Now'}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                  <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: 4, textAlign: 'center' }}>
+                    Student ID: <Text style={{ fontFamily: Fonts.bodyBold }}>{studentId}</Text>
+                  </Text>
+                </View>
+
+                {/* ── Unique Parent Access Code Capsule (matches Web) ── */}
+                <View
+                  style={{
+                    marginTop: Spacing.sm,
+                    padding: Spacing.md,
+                    borderRadius: Radius.md,
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(245, 158, 11, 0.35)' : 'rgba(245, 158, 11, 0.3)',
+                    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.08)' : 'rgba(254, 243, 199, 0.5)',
+                    gap: Spacing.xs,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.xs }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                      <KeyRound size={15} color="#D97706" />
+                      <Text
+                        style={{
+                          fontFamily: Fonts.bodyBold,
+                          fontSize: FontSizes.xs,
+                          color: isDark ? '#FBBF24' : '#B45309',
+                        }}
+                      >
+                        Share Access with Parent or Guardian
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={handleCopyParentCode}
+                      activeOpacity={0.8}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 5,
+                        backgroundColor: '#F59E0B',
+                        paddingVertical: 5,
+                        paddingHorizontal: Spacing.sm,
+                        borderRadius: Radius.sm,
+                      }}
+                    >
+                      {copiedAccessCode ? (
+                        <Check size={12} color="#1E293B" />
+                      ) : (
+                        <Copy size={12} color="#1E293B" />
+                      )}
+                      <Text
+                        style={{
+                          fontFamily: Fonts.bodyBold,
+                          fontSize: 11,
+                          color: '#1E293B',
+                        }}
+                      >
+                        {copiedAccessCode ? 'Copied!' : 'Copy Code'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                )}
-                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: 4 }}>
-                  Student ID: <Text style={{ fontFamily: Fonts.bodyBold }}>{studentId}</Text>
-                </Text>
-                <Text style={{ fontFamily: Fonts.body, fontSize: FontSizes.xs, color: Colors.textMuted, marginTop: 4 }}>
-                  Device Access Code: <Text style={{ fontFamily: Fonts.bodyBold }}>{getParentAccessCode(studentId)}</Text>
-                </Text>
+
+                  <Text
+                    style={{
+                      fontFamily: Fonts.body,
+                      fontSize: FontSizes.xs,
+                      color: isDark ? '#E2E8F0' : '#475569',
+                      lineHeight: 16,
+                    }}
+                  >
+                    Give this unique auto-generated code to your parent or guardian. When they enter it in their Parent Space, they can follow your learning progress and achievements.
+                  </Text>
+
+                  <View
+                    style={{
+                      marginTop: 4,
+                      backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+                      borderWidth: 1,
+                      borderColor: isDark ? 'rgba(245, 158, 11, 0.3)' : 'rgba(245, 158, 11, 0.4)',
+                      borderRadius: Radius.sm,
+                      paddingVertical: Spacing.xs + 2,
+                      paddingHorizontal: Spacing.md,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: Fonts.display,
+                        fontSize: FontSizes.xl,
+                        color: isDark ? '#38BDF8' : '#11428E',
+                        letterSpacing: 4,
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      {parentAccessCode}
+                    </Text>
+                  </View>
+                </View>
 
                 {Boolean(currentUser?.email) && (
                   <TouchableOpacity

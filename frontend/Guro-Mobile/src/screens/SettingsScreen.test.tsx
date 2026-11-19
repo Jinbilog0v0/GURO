@@ -156,4 +156,27 @@ describe('SettingsScreen', () => {
       root.unmount();
     });
   });
+
+  it('renders centered student name and unique parent access code capsule', async () => {
+    act(() => {
+      useAppStore.setState({
+        guestName: 'Albvin Martinez Amsid',
+        studentId: 'LRN-126207190184',
+      });
+    });
+
+    let root: any;
+    await act(async () => {
+      root = renderer.create(<SettingsScreen navigation={mockNavigation} route={mockRoute} />);
+    });
+
+    const rootJSON = root.toJSON();
+    expect(findTextInJSON(rootJSON, 'Albvin Martinez Amsid')).toBe(true);
+    expect(findTextInJSON(rootJSON, 'Share Access with Parent or Guardian')).toBe(true);
+    expect(findTextInJSON(rootJSON, 'Copy Code')).toBe(true);
+
+    act(() => {
+      root.unmount();
+    });
+  });
 });
