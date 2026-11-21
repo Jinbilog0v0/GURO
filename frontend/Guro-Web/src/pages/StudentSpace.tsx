@@ -47,7 +47,22 @@ const STORAGE_KEY_GRADE = 'guro_student_grade';
 
 export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, currentUser, isDarkMode, onToggleTheme, onOpenSettings }) => {
     const savedName = !currentUser ? (localStorage.getItem(STORAGE_KEY_NAME) ?? '') : '';
-    const savedGrade = parseInt(localStorage.getItem(STORAGE_KEY_GRADE) ?? '4', 10) || 4;
+    const resolveStudentGrade = () => {
+        if (currentUser) {
+            if ((currentUser as any).gradeLevel) return Number((currentUser as any).gradeLevel);
+            if ((currentUser as any).grade_level) return Number((currentUser as any).grade_level);
+            if (currentUser.classroomId) {
+                const m = currentUser.classroomId.match(/(?:-G?|GURO-?)([4-6])/i);
+                if (m) return parseInt(m[1], 10);
+            }
+            if (currentUser.name) {
+                const mName = currentUser.name.match(/Grade\s*([4-6])/i);
+                if (mName) return parseInt(mName[1], 10);
+            }
+        }
+        return parseInt(localStorage.getItem(STORAGE_KEY_GRADE) ?? '4', 10) || 4;
+    };
+    const savedGrade = resolveStudentGrade();
 
     const [step, setStep] = useState<StepType>(() => {
         const storedStep = localStorage.getItem('guro_student_step') as StepType;
@@ -69,6 +84,17 @@ export const StudentSpace: React.FC<StudentSpaceProps> = ({ onExit, onLogout, cu
     const activeStudentId = currentUser?.userId || (storedEmailOrId || userName || 'STUDENT-WEB-USER').trim().replace(/\s+/g, '-').toUpperCase();
 
     const [selectedGrade, setSelectedGrade] = useState<number>(savedGrade);
+
+    // Keep grade synced when currentUser updates
+    useEffect(() => {
+        if (currentUser) {
+            const detectedGrade = resolveStudentGrade();
+            if (detectedGrade && detectedGrade !== selectedGrade) {
+                setSelectedGrade(detectedGrade);
+                localStorage.setItem(STORAGE_KEY_GRADE, String(detectedGrade));
+            }
+        }
+    }, [currentUser]);
     const [selectedSubject, setSelectedSubject] = useState<'Mathematics' | 'English'>(() => {
         const stored = localStorage.getItem('guro_student_subject');
         if (stored === 'Mathematics' || stored === 'English') return stored;

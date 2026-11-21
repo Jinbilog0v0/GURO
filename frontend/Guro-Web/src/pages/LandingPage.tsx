@@ -210,11 +210,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 const userRole = (data.user?.role || '').toLowerCase();
                 if (data.token) setAuthToken(data.token);
                 if (userRole === 'student') {
-                    let resolvedGrade = data.user?.grade_level || 4;
-                    if (data.user?.classroomId) {
-                        const m = data.user.classroomId.match(/-G([4-6])-/i);
+                    let resolvedGrade = data.user?.gradeLevel || data.user?.grade_level;
+                    if (!resolvedGrade && data.user?.classroomId) {
+                        const m = data.user.classroomId.match(/(?:-G?|GURO-?)([4-6])/i);
                         if (m) resolvedGrade = parseInt(m[1], 10);
                     }
+                    if (!resolvedGrade && data.user?.name) {
+                        const mName = data.user.name.match(/Grade\s*([4-6])/i);
+                        if (mName) resolvedGrade = parseInt(mName[1], 10);
+                    }
+                    if (!resolvedGrade) resolvedGrade = 4;
                     localStorage.setItem('guro_student_grade', String(resolvedGrade));
                 } else if (userRole === 'teacher') {
                     localStorage.removeItem('guro_teacher_classroom_code');

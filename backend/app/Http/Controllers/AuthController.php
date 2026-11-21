@@ -282,6 +282,21 @@ class AuthController extends Controller
             }
         }
 
+        $gradeLevel = null;
+        if ($classroomId) {
+            $cr = Classroom::where('classroom_id', $classroomId)->first();
+            if ($cr && $cr->grade_level) {
+                $gradeLevel = (int) $cr->grade_level;
+            }
+        }
+        if (! $gradeLevel && $user->role === 'student') {
+            if (preg_match('/Grade\s*([4-6])/i', $user->name, $gm)) {
+                $gradeLevel = (int) $gm[1];
+            } elseif ($classroomId && preg_match('/(?:-G?|GURO-?)([4-6])/i', $classroomId, $gm)) {
+                $gradeLevel = (int) $gm[1];
+            }
+        }
+
         return response()->json([
             'success' => true,
             'token' => $token,
@@ -294,14 +309,19 @@ class AuthController extends Controller
                 'lastName' => $user->last_name,
                 'role' => $user->role,
                 'classroomId' => $classroomId,
+                'gradeLevel' => $gradeLevel,
+                'grade_level' => $gradeLevel,
                 'verificationStatus' => $user->verification_status ?? 'approved',
                 'schoolName' => $user->school_name,
                 'schoolIdNumber' => $user->school_id_number,
                 'rejectionReason' => $user->rejection_reason,
                 'emailVerifiedAt' => $user->email_verified_at ? $user->email_verified_at->toISOString() : null,
+                'parentAccessToken' => $user->parent_access_token,
+                'parent_access_token' => $user->parent_access_token,
             ],
             'studentId' => $user->role === 'student' ? $user->user_id : null,
             'classroomId' => $classroomId,
+            'gradeLevel' => $gradeLevel,
         ]);
     }
 

@@ -452,12 +452,25 @@ export const useAppStore = create<AppState>()(
             const serverClassroomId = data.user?.classroomId || data.classroomId;
             const serverTeacherName = data.user?.teacherName || data.teacherName;
             const incomingStudentId = data.studentId ?? data.user.name.replace(/\\s+/g, '-').toUpperCase();
+
+            // Extract grade level if present in classroom ID or student profile
+            let resolvedGrade = data.user?.gradeLevel || data.user?.grade_level || data.gradeLevel;
+            if (!resolvedGrade && serverClassroomId) {
+              const m = serverClassroomId.match(/(?:-G?|GURO-?)([4-6])/i);
+              if (m) resolvedGrade = parseInt(m[1], 10);
+            }
+            if (!resolvedGrade && data.user?.name) {
+              const m = data.user.name.match(/Grade\s*([4-6])/i);
+              if (m) resolvedGrade = parseInt(m[1], 10);
+            }
+
             set({
               currentUser: data.user,
               studentId: incomingStudentId,
               token: data.token,
               ...(serverClassroomId ? { classroomId: serverClassroomId } : {}),
               ...(serverTeacherName ? { teacherName: serverTeacherName } : {}),
+              ...(resolvedGrade && resolvedGrade >= 4 && resolvedGrade <= 6 ? { preferredGrade: resolvedGrade } : {}),
             });
             get().addLog('Logged in as: ' + data.user.email);
             get().initializeLocalStore(incomingStudentId).catch(console.error);
